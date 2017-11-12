@@ -1301,6 +1301,9 @@ case class EntityDecl(
     result
   }
 
+  def getPropertyDeclsNoIgnore: List[PropertyDecl] =
+    for (m <- members if m.isInstanceOf[PropertyDecl]) yield m.asInstanceOf[PropertyDecl]
+
   def getPropertyDecls: List[PropertyDecl] =
     for (m <- members if m.isInstanceOf[PropertyDecl] && !UtilSMT.ignoreMember(m)) yield m.asInstanceOf[PropertyDecl]
 
