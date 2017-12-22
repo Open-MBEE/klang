@@ -738,14 +738,19 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     all.toList
   }
 
-  def allEntityDecls(model: Model): List[EntityDecl] = {
-    var allDecls = new ListBuffer[EntityDecl]()
-    val entityDecls = model.decls.asInstanceOf[List[EntityDecl]].filterNot {
+  def entityDecls(model: Model): List[EntityDecl] = {
+    val decls = model.decls.asInstanceOf[List[EntityDecl]].filterNot {
       case ed => ed.annotations exists {
         case Annotation(name, _) => name.equals("ignore")
       }
     }
-    allDecls.appendAll(entityDecls)
+    decls.toList
+  }
+
+  def allEntityDecls(model: Model): List[EntityDecl] = {
+    var allDecls = new ListBuffer[EntityDecl]()
+    val eDecls = entityDecls(model)
+    allDecls.appendAll(eDecls)
     for ( pd <- packages ) {
       val pdecls = allEntityDecls(pd.model)
       allDecls.appendAll(pdecls)
@@ -3364,6 +3369,7 @@ case class ReturnExp(exp: Exp) extends Exp {
   }
 }
 
+
 case object BreakExp extends Exp {
   override def children: List[AnyRef] = List()
 
@@ -3381,6 +3387,11 @@ case object BreakExp extends Exp {
     expression.put("type", "Expression")
     expression.put("operand", operand)
   }
+
+//  def isInstance( o: Any ) = o match {
+//    case b: BreakExp => true
+//    case _ => false
+//  }
 
 }
 
@@ -3401,6 +3412,13 @@ case object ContinueExp extends Exp {
     expression.put("type", "Expression")
     expression.put("operand", operand)
   }
+
+//  //def isInstance( o: AnyRef ) = o is ContinueExp
+//  def isInstance( o: Any ) = o match {
+//    case b: ContinueExp => true
+//    case _ => false
+//  }
+
 }
 
 case object ResultExp extends Exp {
@@ -3425,6 +3443,8 @@ case object ResultExp extends Exp {
     expression.put("operand", operand)
   }
 
+  //def isInstance( o: AnyRef ) = o is ResultExp
+
 }
 
 case object StarExp extends Exp {
@@ -3445,6 +3465,9 @@ case object StarExp extends Exp {
     expression.put("type", "Expression")
     expression.put("operand", operand)
   }
+
+  //def isInstance( o: AnyRef ) = o is StarExp
+
 }
 
 // KH: How come this became an expression?:
