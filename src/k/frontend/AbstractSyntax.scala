@@ -739,7 +739,10 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
   }
 
   def entityDecls(model: Model): List[EntityDecl] = {
-    val decls = model.decls.asInstanceOf[List[EntityDecl]].filterNot {
+    val decls = model.decls.filter {
+      case ed : EntityDecl => true
+      case _ => false
+    }.asInstanceOf[List[EntityDecl]].filterNot {
       case ed => ed.annotations exists {
         case Annotation(name, _) => name.equals("ignore")
       }
