@@ -430,6 +430,10 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       ThisLiteral
     } else if (ctx.NullLiteral() != null) {
       NullLiteral
+    } else if (ctx.DateLiteral() != null) {
+      DateLiteral(ctx.DateLiteral().getSymbol().getText())
+    } else if (ctx.DurationLiteral() != null) {
+      DurationLiteral(ctx.DurationLiteral().getSymbol().getText())
     } else {
       BooleanLiteral(java.lang.Boolean.parseBoolean(ctx.BooleanLiteral().getSymbol().getText()))
     }

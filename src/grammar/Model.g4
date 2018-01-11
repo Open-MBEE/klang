@@ -268,7 +268,9 @@ qualifiedName:
   ;
 
 literal:
-    IntegerLiteral
+  DateLiteral
+  | DurationLiteral
+  | IntegerLiteral
   | RealLiteral
   | CharacterLiteral
   | StringLiteral
@@ -280,6 +282,80 @@ literal:
 SUCHTHAT :
     ':-' 
   ;
+
+DateLiteral:
+      Year '-' Day ('T' [0-2] [0-9] ':' [0-5] [0-9] ':' [0-5] [0-9] ('.' [0-9] [0-9] [0-9])? Timezone?)?
+    ;
+
+fragment
+SimpleDateLiteral:
+      Year '-' Day ('T' [0-2] [0-9] ':' [0-5] [0-9] ':' [0-5] [0-9])?
+    ;
+
+fragment
+Year:
+      [0-9] [0-9] ([0-9] [0-9])?
+    ;
+
+fragment
+Day:
+      [0-3] [0-9] [0-9]
+    | Month '-' [0-3]? [0-9]
+    ;
+
+fragment
+Timezone:
+      ('+'|'-') [0-2]? [0-9] ':' '00'
+    | [zZ]
+    | [A-Za-z] [A-Za-z] [A-Za-z]
+    ;
+
+fragment
+Month:
+    [0-1]? [0-9]
+    | JAN | FEB | MAR | APR | MAY | JUN | JUL | AUG | SEPT | OCT | NOV | DEC
+    ;
+
+fragment
+JAN : [Jj][Aa][Nn] ;
+fragment
+FEB : [Ff][Ee][Bb] ;
+fragment
+MAR : [Mm][Aa][Rr] ;
+fragment
+APR : [Aa][Pp][Rr] ;
+fragment
+MAY : [Mm][Aa][Yy] ;
+fragment
+JUN : [Jj][Uu][Nn] ;
+fragment
+JUL : [Jj][Uu][Ll] ;
+fragment
+AUG : [Aa][Uu][Gg] ;
+fragment
+SEPT : [Ss][Ee][Pp] ;
+fragment
+OCT : [Oo][Cc][Tt] ;
+fragment
+NOV : [Nn][Oo][Vv] ;
+fragment
+DEC : [Dd][Ee][Cc] ;
+
+DurationLiteral:
+      'P' [0-9]+ 'Y' ([0-9]+ 'M')? ([0-9]+ 'W')? ([0-9]+ 'D')? TDur?
+    | 'P' [0-9]+ 'M' ([0-9]+ 'W')? ([0-9]+ 'D')? TDur?
+    | 'P' [0-9]+ 'W' ([0-9]+ 'D')? TDur?
+    | 'P' [0-9]+ 'D' TDur?
+    | 'P' TDur
+    | 'P' SimpleDateLiteral
+    ;
+
+fragment
+TDur:
+      'T' [0-9]+ 'H' ([0-9]+ 'M')? ([0-9]+ 'S')?
+    | 'T' [0-9]+ 'M' ([0-9]+ 'S')?
+    | 'T' [0-9]+ 'S'
+    ;
 
 IntegerLiteral:
       DecimalIntegerLiteral

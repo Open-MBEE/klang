@@ -422,6 +422,8 @@ class Statistics {
   var INTLIT: Int = 0
   var REALLIT: Int = 0
   var STRINGLIT: Int = 0
+  var DATELIT: Int = 0
+  var DURLIT: Int = 0
   var BOOLLIT: Int = 0
   var NULLLIT: Int = 0
   var THISLIT: Int = 0
@@ -2778,7 +2780,12 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
 
   override def toString = s"$exp1 $op $exp2"
   
-  override def toJavaString = s"${exp1.toJavaString} ${op.toJavaString} ${exp2.toJavaString}"
+  override def toJavaString: String = {
+    op match {
+      case IMPL => s"(!${exp1.toJavaString}) || ${exp2.toJavaString}"
+      case _ => s"${exp1.toJavaString} ${op.toJavaString} ${exp2.toJavaString}"
+    }
+  }
 
   override def toJson1 = {
     val expression = new JSONObject()
@@ -3934,6 +3941,54 @@ case class StringLiteral(s: String) extends Literal {
     val o = new JSONObject()
     o.put("string", s.replaceAll("\"", ""))
     o.put("type", "StringLiteral")
+  }
+
+  override def toJson2 = {
+    val value = new JSONObject()
+    value.put("type", "LiteralString").put("string", toString.replaceAll("\"", ""))
+  }
+}
+
+case class DateLiteral(s: String) extends Literal {
+  override def children = List()
+
+  override def statistics() {
+    UtilSMT.statistics.DATELIT += 1
+  }
+
+  override def toString = s
+
+  override def toJavaString =
+    "TimeUtils.dateFromTimestamp( \"" + s + "\", TimeZone.getTimeZone( \"GMT\" ) )"
+
+  override def toJson1 = {
+    val o = new JSONObject()
+    o.put("string", s.replaceAll("\"", ""))
+    o.put("type", "DateLiteral")
+  }
+
+  override def toJson2 = {
+    val value = new JSONObject()
+    value.put("type", "LiteralString").put("string", toString.replaceAll("\"", ""))
+  }
+}
+
+case class DurationLiteral(s: String) extends Literal {
+  override def children = List()
+
+  override def statistics() {
+    UtilSMT.statistics.DURLIT += 1
+  }
+
+  override def toString = s
+
+  override def toJavaString =
+    "Timepoint.nanoseconds( Duration.parse(\"" + s + "\").toNanos()"
+
+  override def toJson1 = {
+    val o = new JSONObject()
+    o.put("string", s.replaceAll("\"", ""))
+    o.put("type", "DateLiteral")
   }
 
   override def toJson2 = {
