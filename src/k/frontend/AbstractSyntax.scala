@@ -635,7 +635,7 @@ class HeapLayout(model: Model) {
   def updateInstancesByAnnotation(model: Model) {
     for (ed <- model.decls.asInstanceOf[List[EntityDecl]]) {
       for (Annotation("instances", IntegerLiteral(size)) <- ed.annotations) {
-        instancesByAnnotation += (ed.ident -> size)
+        instancesByAnnotation += (ed.ident -> size.toInt)
       }
     }
     for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
@@ -3854,7 +3854,7 @@ trait Literal extends Exp {
     this
 }
 
-case class IntegerLiteral(i: Int) extends Literal {
+case class IntegerLiteral(i: Long) extends Literal {
   override def children = List()
 
   override def statistics() {
@@ -3866,6 +3866,8 @@ case class IntegerLiteral(i: Int) extends Literal {
   }
 
   override def toScala = i.toString
+
+  override def toJavaString = i.toString + "L"
 
   override def toString = i.toString
 
@@ -3959,7 +3961,7 @@ case class DateLiteral(s: String) extends Literal {
   override def toString = s
 
   override def toJavaString =
-    "TimeUtils.dateFromTimestamp( \"" + s + "\", TimeZone.getTimeZone( \"GMT\" ) )"
+    "Timepoint.milliseconds(TimeUtils.dateFromTimestamp( \"" + s + "\", TimeZone.getTimeZone( \"GMT\" ) ).getTime())"
 
   override def toJson1 = {
     val o = new JSONObject()
@@ -3983,7 +3985,7 @@ case class DurationLiteral(s: String) extends Literal {
   override def toString = s
 
   override def toJavaString =
-    "Timepoint.nanoseconds( Duration.parse(\"" + s + "\").toNanos()"
+    "Timepoint.nanoseconds( Duration.parse(\"" + s + "\").toNanos())"
 
   override def toJson1 = {
     val o = new JSONObject()
@@ -4398,7 +4400,7 @@ case object IntType extends PrimitiveType {
 
   override def toString = "Int"
   
-  override def toJavaString = "Integer"
+  override def toJavaString = "Long"
 
   override def toJson1 = {
     new JSONObject().put("type", "IntType")

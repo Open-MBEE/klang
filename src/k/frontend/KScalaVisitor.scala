@@ -416,7 +416,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
 
   override def visitLiteral(ctx: ModelParser.LiteralContext): AnyRef = {
     if (ctx.IntegerLiteral() != null) {
-      IntegerLiteral(Integer.parseInt(ctx.IntegerLiteral().getSymbol().getText()))
+      IntegerLiteral(java.lang.Long.parseLong(ctx.IntegerLiteral().getSymbol().getText()))
     } else if (ctx.RealLiteral() != null) {
       //RealLiteral(java.lang.Float.parseFloat(ctx.RealLiteral().getSymbol().getText()))
       val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText).

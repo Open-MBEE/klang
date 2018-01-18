@@ -949,7 +949,7 @@ object Frontend {
       case "TypeCollection" =>
         TypeCollection(visitJsonObject(obj.get("ty")).asInstanceOf[Type])
       case "LiteralInteger" =>
-        IntegerLiteral(obj.getInt("i"))
+        IntegerLiteral(obj.getLong("i"))
       case "LiteralFloatingPoint" =>
         //RealLiteral(java.lang.Float.parseFloat(obj.get("f").toString)) // was: asInstanceOf[String]
         val bd = new java.math.BigDecimal(obj.get("f").toString).setScale(8, java.math.BigDecimal.ROUND_DOWN)
@@ -1264,7 +1264,7 @@ object Frontend {
           case "IntegerLiteral" | "LiteralInteger" =>
             var jo : JSONObject = obj
             if ( operand != null ) jo = operand.get(i).asInstanceOf[JSONObject]
-            IntegerLiteral(jo.getInt("integer"))
+            IntegerLiteral(jo.getLong("integer"))
           case "RealLiteral" | "LiteralReal" => // was FloatingPointLiteral
             //RealLiteral(java.lang.Float.parseFloat(operand.get(1).toString)) // was: operand.getString(1)
             val bd = new java.math.BigDecimal(obj.get("double").toString).setScale(8, java.math.BigDecimal.ROUND_DOWN)
