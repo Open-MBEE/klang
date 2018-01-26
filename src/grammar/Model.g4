@@ -148,6 +148,8 @@ primitiveType:
   | 'Real'      // double
   | 'String'
   | 'Unit'
+  | 'Time'
+  | 'Duration'
   ;
 
 classIdentifier:

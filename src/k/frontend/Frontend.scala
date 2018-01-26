@@ -958,6 +958,14 @@ object Frontend {
         CharacterLiteral(obj.get("c").asInstanceOf[Char])
       case "LiteralBoolean" =>
         BooleanLiteral(obj.getBoolean("b"))
+      // TODO
+      // case "LiteralDate" =>
+      //   DateLiteral(obj.getDate("t"))
+      // TODO
+      // case "LiteralDuration" =>
+      //   DateLiteral(obj.getDuration("d"))
+      case "LiteralBoolean" =>
+        BooleanLiteral(obj.getBoolean("b"))
       case "StringLiteral" =>
         StringLiteral(obj.getString("string"))
       case "ElementValue" =>
@@ -1079,6 +1087,8 @@ object Frontend {
       case "StringType" => StringType
       case "UnitType"   => UnitType
       case "CharType"   => CharType
+      case "TimeType"   => TimeType
+      case "DurationType"   => DurationType
       case key @ _ =>
         println("Unknown keys encountered in JSON string!: " + key).asInstanceOf[Nothing]
         //System.exit(-1).asInstanceOf[Nothing]
@@ -1276,12 +1286,19 @@ object Frontend {
             BooleanLiteral(obj.getBoolean("boolean"))
           case "StringLiteral" | "LiteralString" =>
             StringLiteral(obj.getString("string"))
+          // TODO
+          //case "DateLiteral" | "LiteralDate" =>
+          //  DateLiteral(obj.getDate("date"))
+          //case "DurationLiteral" | "LiteralDuration" =>
+          //  DurationLiteral(obj.getDuration("duration"))
           case "BoolType"   => BoolType
           case "IntType"    => IntType
           case "RealType"   => RealType
           case "StringType" => StringType
           case "UnitType"   => UnitType
           case "CharType"   => CharType
+          case "TimeType"   => TimeType
+          case "DurationType"   => DurationType
           case "IdentType" =>
             IdentType(visitJsonObject2(operand.get(i)).asInstanceOf[QualifiedName],
               null) // missing type parameters I think (null)

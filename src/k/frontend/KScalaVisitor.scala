@@ -96,6 +96,8 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       case "Real"   => RealType
       case "String" => StringType
       case "Unit"   => UnitType
+      case "Time"   => TimeType
+      case "Duration"   => DurationType
     }
   }
 

@@ -385,6 +385,8 @@ class Statistics {
   var STRINGTYPE: Int = 0
   var CHARTYPE: Int = 0
   var UNITTYPE: Int = 0
+  var TIMETYPE: Int = 0
+  var DURTYPE: Int = 0
   var PARENTYPE: Int = 0
   var SUBTYPE: Int = 0
   // --- Expressions: ---
@@ -479,6 +481,8 @@ class Statistics {
     data("string types", STRINGTYPE)
     data("char types", CHARTYPE)
     data("unit types", UNITTYPE)
+    data("unit types", TIMETYPE)
+    data("unit types", DURTYPE)
     data("parenthesized types", PARENTYPE)
     data("subtypes", SUBTYPE)
     headline("expressions")
@@ -518,6 +522,8 @@ class Statistics {
     data("string literal exp", STRINGLIT)
     data("bool literal exp", BOOLLIT)
     data("null literal exp", NULLLIT)
+    data("date literal exp", DATELIT)
+    data("duration literal exp", DURLIT)
     data("this literal exp", THISLIT)
 
     text(line)
@@ -3990,7 +3996,7 @@ case class DurationLiteral(s: String) extends Literal {
   override def toJson1 = {
     val o = new JSONObject()
     o.put("string", s.replaceAll("\"", ""))
-    o.put("type", "DateLiteral")
+    o.put("type", "DurationLiteral")
   }
 
   override def toJson2 = {
@@ -4418,7 +4424,7 @@ case object RealType extends PrimitiveType {
 
   override def toSMT: String = "Real"
 
-  override def toScala: String = "Flot"
+  override def toScala: String = "Float"
 
   override def toString = "Real"
   
@@ -4445,6 +4451,9 @@ case object StringType extends PrimitiveType {
   override def toJson1 = {
     new JSONObject().put("type", "StringType")
   }
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", "String" )
+  }
 }
 
 case object UnitType extends PrimitiveType {
@@ -4458,6 +4467,51 @@ case object UnitType extends PrimitiveType {
     new JSONObject().put("type", "UnitType")
   }
 }
+
+case object TimeType extends PrimitiveType {
+  override def statistics() {
+    UtilSMT.statistics.TIMETYPE += 1
+  }
+
+  //override def toSMT: String = "???"
+
+  override def toScala: String = "String"
+
+  override def toString = "Time"
+
+  override def toJavaString = "Long"
+
+  override def toJson1 = {
+    new JSONObject().put("type", "TimeType")
+  }
+
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", "String" )
+  }
+}
+
+case object DurationType extends PrimitiveType {
+  override def statistics() {
+    UtilSMT.statistics.DURTYPE += 1
+  }
+
+  //override def toSMT: String = "???"
+
+  override def toScala: String = "String"
+
+  override def toString = "Duration"
+
+  override def toJavaString = "Long"
+
+  override def toJson1 = {
+    new JSONObject().put("type", "DurationType")
+  }
+
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", "String" )
+  }
+}
+
 
 trait Pattern extends HasChildren {
   def children: List[AnyRef] = List()
