@@ -2788,7 +2788,7 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
   
   override def toJavaString: String = {
     op match {
-      case IMPL => s"(!${exp1.toJavaString}) || ${exp2.toJavaString}"
+      case IMPL => s"(!(${exp1.toJavaString}) || ${exp2.toJavaString})"
       case _ => s"${exp1.toJavaString} ${op.toJavaString} ${exp2.toJavaString}"
     }
   }
@@ -3991,7 +3991,7 @@ case class DurationLiteral(s: String) extends Literal {
   override def toString = s
 
   override def toJavaString =
-    "Timepoint.nanoseconds( Duration.parse(\"" + s + "\").toNanos())"
+    "Timepoint.nanoseconds( java.time.Duration.parse(\"" + s + "\").toNanos())"
 
   override def toJson1 = {
     val o = new JSONObject()
