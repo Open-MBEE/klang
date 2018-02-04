@@ -3967,7 +3967,7 @@ case class DateLiteral(s: String) extends Literal {
   override def toString = s
 
   override def toJavaString =
-    "Timepoint.milliseconds(TimeUtils.dateFromTimestamp( \"" + s + "\", TimeZone.getTimeZone( \"GMT\" ) ).getTime())"
+    "Timepoint.fromDateToInteger( TimeUtils.dateFromTimestamp( \"" + s + "\", TimeZone.getTimeZone( \"GMT\" ) ) )"
 
   override def toJson1 = {
     val o = new JSONObject()
