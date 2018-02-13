@@ -43,6 +43,10 @@ object Frontend {
   var classpath: Set[String] = Set()
   var timeoutValue = 30000
 
+  var lastParsedModel: Model = null
+  var lastVisitor: KScalaVisitor = null
+
+
   type OptionMap = Map[Symbol, Any]
 
   def log(msg: String = "") = Misc.log("main", msg)
@@ -1627,6 +1631,7 @@ object Frontend {
     var parser: ModelParser = new ModelParser(tokens)
     var tree = parser.model()
     var ksv: KScalaVisitor = new KScalaVisitor()
+    lastVisitor = ksv
     (ksv, tree)
   }
 
@@ -1638,7 +1643,8 @@ object Frontend {
     var bytes: Array[Byte] = Files.readAllBytes(path)
     var fileContents: String = new String(bytes, "UTF-8")
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(fileContents)
-    ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel
   }
 
   /**
@@ -1651,23 +1657,38 @@ object Frontend {
     var fileContents: String = new String(bytes, "UTF-8")
     fileContents
   }
-  
-  
+
+
+  def getLastDeclDict(f: String) : Map[MemberDecl, Tuple2[Int, Int]] = {
+    if (lastVisitor == null) {
+      return getDeclDict(f)
+    }
+    return lastVisitor.declToPosition
+  }
+  def getLastDeclDict() : Map[MemberDecl, Tuple2[Int, Int]] = {
+    if (lastVisitor == null) {
+      return null
+    }
+    return lastVisitor.declToPosition
+  }
   def getDeclDict(f: String) : Map[MemberDecl, Tuple2[Int, Int]] = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(f)
-    var m: Model = ksv.visit(tree).asInstanceOf[Model]  
+    var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
     ksv.declToPosition
   }
 
   def getModelFromString(f: String): Model = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(f)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
     m
   }
 
   def exp2Json(expressionString: String): String = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(expressionString)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
 
     var exp: Exp = m.decls(0).asInstanceOf[ExpressionDecl].exp
     val array = new JSONArray()
@@ -1680,6 +1701,7 @@ object Frontend {
   def exp2Json2(expressionString: String): String = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(expressionString)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
 
     var exp: Exp = m.decls(0).asInstanceOf[ExpressionDecl].exp
     val array = new JSONArray()
@@ -1700,6 +1722,7 @@ object Frontend {
   def exp2KExp(expressionString: String): Exp = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(expressionString)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
 
     if (m == null || m.decls == null || m.decls.length == 0) {
       val mm = StringLiteral("")//Model(None,List(), List(), Set(), List())
@@ -1714,12 +1737,14 @@ object Frontend {
   def exp2KExpList(expressionString: String): List[Exp] = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(expressionString)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
     m.decls.map(x => x.asInstanceOf[ExpressionDecl].exp)
   }
   
   def getEntitiesFromString(expressionString: String): List[EntityDecl] = {
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(expressionString)
     var m: Model = ksv.visit(tree).asInstanceOf[Model]
+    lastParsedModel = m
     m.decls.map(x => x.asInstanceOf[EntityDecl])
   }
   
