@@ -2417,12 +2417,13 @@ case class IfExp(cond: Exp, trueBranch: Exp, falseBranch: Option[Exp]) extends E
   }
   
   override def toJavaString = {
-    var result = s"${cond.toJavaString} ? "
+    var result = s"(${cond.toJavaString} ? "
     result += s"${trueBranch.toJavaString} : "
     result += (falseBranch match {
       case None => s"null"
       case Some(fb) => s"${fb.toJavaString}"
     })
+    result += ")"
     result
   }
 
