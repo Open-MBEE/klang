@@ -182,9 +182,14 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var t: Type = visit(ctx.`type`()).asInstanceOf[Type]
     ClassExp(t)
   }
-  
-  override def visitIndexExp(ctx: ModelParser.IndexExpContext): AnyRef = {
+
+  override def visitThisOuterExp(ctx: ModelParser.ThisOuterExpContext): AnyRef  = {
     var e: Exp = visit(ctx.expression()).asInstanceOf[Exp]
+    ThisOuterExp(e)
+  }
+
+  override def visitIndexExp(ctx: ModelParser.IndexExpContext): AnyRef = {
+    var e = visit(ctx.expression()).asInstanceOf[Exp]
     var argumentList = visit(ctx.positionalArgumentList()).asInstanceOf[List[Argument]]
     IndexExp(e, argumentList)
   }

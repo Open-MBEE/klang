@@ -2092,6 +2092,72 @@ case class IdentExp(ident: String) extends Exp {
   }
 }
 
+/**
+  * A reference to the instance of an enclosing class.
+  * @param exp the name of the enclosing class
+  */
+case class ThisOuterExp(exp: Exp) extends Exp {
+  override def children: List[Exp] = List(exp)
+
+  override def statistics() {
+    val depth = dotDepth(this)
+    UtilSMT.statistics.DOTEXP += 1
+    UtilSMT.statistics.DOTEXPMAX = Math.max(UtilSMT.statistics.DOTEXPMAX, depth)
+    if (depth > 1)
+      UtilSMT.statistics.DOTEXPLONG += 1
+  }
+
+  override def freeVariables: Set[String] = exp.freeVariables
+
+  override def substitute(substitution: Map[String, Exp]): Exp = {
+    val expRenamed = exp.substitute(substitution)
+    ThisOuterExp(expRenamed) copyType this
+  }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    val expSMT = exp.toSMT(className, subTyping)
+    val classNameOfExp = exp2Type.get(exp).toString
+    val getter = s"$classNameOfExp.this"
+    UtilSMT.addGetter(getter)
+    s"($getter $expSMT)"
+  }
+
+  override def toSMTSetContains(className: String, subTyping: Boolean)(element: Exp): String = {
+    val dotSMT = toSMT(className, subTyping)
+    val elementSMT = element.toSMT(className, subTyping)
+    s"(select $dotSMT $elementSMT)"
+  }
+
+  override def toString = s"$exp.this"
+
+  override def toJavaString = s"${exp.toJavaString}.this"
+
+  override def toJson1 = {
+    val expression = new JSONObject()
+
+    expression.put("ident", "this")
+    expression.put("exp", exp.toJson)
+    expression.put("type", "ThisOuterExp")
+  }
+
+  override def toJson2 = {
+    val expression = new JSONObject()
+    val operand = new JSONArray()
+
+    operand.put(new JSONObject().put("type", "ElementValue").put("element", "getProperty"))
+    operand.put(exp.toJson)
+    operand.put(new JSONObject().put("type", "LiteralString").put("string","this"))
+    //    operand.put(new JSONObject().put("type", "ElementValue").put("element", "Dot"))
+    //    operand.put(exp.toJson)
+    //    operand.put(new JSONObject().put("type", "LiteralString").put("string","this"))
+
+    expression.put("operand", operand)
+    expression.put("type", "Expression")
+
+    expression
+  }
+}
+
 case class DotExp(exp: Exp, ident: String) extends Exp {
   override def children: List[Exp] = List(exp)
 
@@ -3330,6 +3396,10 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
   override def toString =
     if (cast) s"$exp as $ty"
     else s"$exp is $ty"
+
+  override def toJavaString =
+    if (cast) s"(({$ty.toJavaString})${exp.toJavaString})"
+    else s"${exp.toJavaString} instanceof ${ty.toJavaString}"
 
   override def toJson1 = {
     val typecastcheckexp = new JSONObject()

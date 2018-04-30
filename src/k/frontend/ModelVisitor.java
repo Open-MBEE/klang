@@ -499,6 +499,13 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassExp(ModelParser.ClassExpContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ThisOuterExp}
+	 * labeled alternative in {@link ModelParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitThisOuterExp(ModelParser.ThisOuterExpContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code TypeCastExp}
 	 * labeled alternative in {@link ModelParser#expression}.
 	 * @param ctx the parse tree

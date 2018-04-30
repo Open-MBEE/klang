@@ -176,6 +176,7 @@ expression:
   | literal #LiteralExp
   | Identifier #IdentExp
   | primitiveType #IdentExp
+  | expression '.' ThisLiteral #ThisOuterExp
   | expression '.' Identifier #DotExp
   | type '.' 'class' #ClassExp 
   | expression '(' argumentList? ')' #AppExp
@@ -638,12 +639,22 @@ CommentBorder:
    '===' '='* 
    ;
 
+CommentChoices :
+     CommentBorder .*? CommentBorder
+     | '/*' .*? '*/'
+  ;
+
 COMMENT :
-     CommentBorder .*? CommentBorder -> skip
+     CommentChoices -> skip
+  ;
+
+LineCommentChars:
+      '--'
+    | '//'
   ;
 
 LINE_COMMENT:
-    '--' ~[\r\n]* -> skip
+    LineCommentChars ~[\r\n]* -> skip
   ;
 
 WS:
