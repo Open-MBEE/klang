@@ -636,25 +636,23 @@ JavaLetterOrDigit:
     ;
 
 CommentBorder:
-   '===' '='* 
+   '===' '='*
    ;
 
-CommentChoices :
-     CommentBorder .*? CommentBorder
-     | '/*' .*? '*/'
+CBlockComment :
+    '/*' .*? '*/' -> skip
   ;
 
-COMMENT :
-     CommentChoices -> skip
+BlockComment :
+     CommentBorder .*? CommentBorder -> skip
   ;
 
-LineCommentChars:
-      '--'
-    | '//'
+CLineComment:
+    '--' ~[\r\n]* -> skip
   ;
 
-LINE_COMMENT:
-    LineCommentChars ~[\r\n]* -> skip
+LineComment:
+    '//' ~[\r\n]* -> skip
   ;
 
 WS:

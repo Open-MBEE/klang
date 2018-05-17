@@ -33,8 +33,8 @@ public class ModelParser extends Parser {
 		T__94=95, T__95=96, Keyword=97, SUCHTHAT=98, DateLiteral=99, DurationLiteral=100, 
 		IntegerLiteral=101, RealLiteral=102, BooleanLiteral=103, NullLiteral=104, 
 		ThisLiteral=105, CharacterLiteral=106, StringLiteral=107, Identifier=108, 
-		CommentBorder=109, CommentChoices=110, COMMENT=111, LineCommentChars=112, 
-		LINE_COMMENT=113, WS=114, SEP=115;
+		CommentBorder=109, CBlockComment=110, BlockComment=111, CLineComment=112, 
+		LineComment=113, WS=114, SEP=115;
 	public static final int
 		RULE_model = 0, RULE_modelThings = 1, RULE_modelThing = 2, RULE_packageDeclaration = 3, 
 		RULE_importDeclaration = 4, RULE_annotationDeclaration = 5, RULE_annotation = 6, 
@@ -90,8 +90,8 @@ public class ModelParser extends Parser {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		null, "Keyword", "SUCHTHAT", "DateLiteral", "DurationLiteral", "IntegerLiteral", 
 		"RealLiteral", "BooleanLiteral", "NullLiteral", "ThisLiteral", "CharacterLiteral", 
-		"StringLiteral", "Identifier", "CommentBorder", "CommentChoices", "COMMENT", 
-		"LineCommentChars", "LINE_COMMENT", "WS", "SEP"
+		"StringLiteral", "Identifier", "CommentBorder", "CBlockComment", "BlockComment", 
+		"CLineComment", "LineComment", "WS", "SEP"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
