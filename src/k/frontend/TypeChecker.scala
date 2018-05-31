@@ -248,7 +248,7 @@ object ClassHierarchy {
 
   def buildHierarchy(model: Model) {
 
-    for (ed @ EntityDecl(_, _, _, _, _, _, _) <- model.decls) {
+    for (ed @ EntityDecl(_, _, _, _, _, _, _, _) <- model.decls) {
       var edParents: Set[Type] = Set()
       if (ed.entityToken.isInstanceOf[IdentifierToken]) {
         edParents += keywords(ed.entityToken.asInstanceOf[IdentifierToken].name)
@@ -334,7 +334,7 @@ class TypeChecker(model: Model) {
     val typeParams : List[TypeParam] = Nil
     val extending : List[Type] = Nil
     val members : List[MemberDecl] = Nil
-    val entityDecl = EntityDecl(Nil, ClassToken, None, name, typeParams, extending, members)
+    val entityDecl = EntityDecl(Nil, ClassToken, None, name, null, typeParams, extending, members)
     return entityDecl
   }
 
@@ -525,7 +525,7 @@ class TypeChecker(model: Model) {
     // get class information
     model.decls.foreach { d =>
       d match {
-        case ed @ EntityDecl(_, _, _, ident, _, _, _) =>
+        case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
           val dED = d.asInstanceOf[EntityDecl]
           keywords = ed.keyword match {
             case Some(kw) =>
@@ -583,7 +583,7 @@ class TypeChecker(model: Model) {
     // store it in the global type env, but also one for each class
     model.decls.foreach { d =>
       d match {
-        case ed @ EntityDecl(_, token, _, ident, _, _, _) if token != AssocToken =>
+        case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
           // add 'this' to the type env
           var classTypeEnv = TypeEnv(ed, globalTypeEnv.map + ("this" -> ClassTypeInfo(ed)))
           ed.members.foreach { m =>
@@ -598,7 +598,7 @@ class TypeChecker(model: Model) {
           }
           decl2TypeEnvi += (d -> classTypeEnv)
           origTypeEnvironments += (d -> classTypeEnv)
-        case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _) =>
+        case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _, _) =>
 
           // only support 2 members in associations
           if (ed.members.length != 2)
@@ -633,7 +633,7 @@ class TypeChecker(model: Model) {
           val cte0 =
             decl2TypeEnvi.find(p =>
               p._1 match {
-                case ed1 @ EntityDecl(_, t, _, ident, _, _, _) if t != AssocToken =>
+                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
                   if (ed1.ident.equals(m1.ty.toString)) true
                   else false
                 case _ =>
@@ -643,7 +643,7 @@ class TypeChecker(model: Model) {
           val cte1 =
             decl2TypeEnvi.find(p =>
               p._1 match {
-                case ed1 @ EntityDecl(_, t, _, ident, _, _, _) if t != AssocToken =>
+                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
                   if (ed1.ident.equals(m2.ty.toString)) true
                   true
                 case _ =>
@@ -667,7 +667,7 @@ class TypeChecker(model: Model) {
     // pass: do inheritance for each class and associations
     model.decls.foreach { d =>
       d match {
-        case ed @ EntityDecl(_, t, _, ident, _, _, _) if t != AssocToken =>
+        case ed @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
           logDebug(s"Processing $ident")
           val classTypeEnv = decl2TypeEnvi(d)
           val extending = ClassHierarchy.parentsTransitive(ed)
@@ -690,7 +690,7 @@ class TypeChecker(model: Model) {
     model.decls.foreach { d =>
       d match {
         case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
-        case ed @ EntityDecl(_, _, _, ident, _, _, _) =>
+        case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
           ed.members.foreach { m =>
             m match {
               case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(decl2TypeEnvi(ed), exp, ed))
@@ -713,7 +713,7 @@ class TypeChecker(model: Model) {
           exp2Type.put(exp, ty)
         case fd @ FunDecl(_, _, _, _, _, _) =>
           processFunction(fd, globalTypeEnv, null)
-        case ed @ EntityDecl(_, token, _, ident, _, _, _) =>
+        case ed @ EntityDecl(_, token, _, ident, _, _, _, _) =>
           val entityTypeEnv = decl2TypeEnvi(ed)
 
           ed.annotations.foreach { a =>

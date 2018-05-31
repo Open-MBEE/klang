@@ -342,7 +342,7 @@ object UtilSMT {
     val Model(packageName: Option[String], packages, imports, annotations, decls) = model
     var memberDecls: List[MemberDecl] =
       for (decl <- decls if decl.isInstanceOf[MemberDecl]) yield decl.asInstanceOf[MemberDecl]
-    val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, Nil, Nil, memberDecls)
+    val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, memberDecls)
     var entityDecls: List[EntityDecl] =
       for (decl <- decls if decl.isInstanceOf[EntityDecl]) yield decl.asInstanceOf[EntityDecl]
     val entityDeclsSorted = UtilSMT.sortEntityDecls(entityDecls)
@@ -1107,14 +1107,7 @@ trait TopDecl extends HasChildren {
   def toJson2: JSONObject
 }
 
-case class EntityDecl(
-    _annotations: List[Annotation],
-    entityToken: EntityToken,
-    keyword: Option[String],
-    ident: String,
-    typeParams: List[TypeParam],
-    extending: List[Type],
-    members: List[MemberDecl]) extends MemberDecl(_annotations) {
+case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, keyword: Option[String], ident: String, var fqName: String, typeParams: List[TypeParam], extending: List[Type], members: List[MemberDecl]) extends MemberDecl(_annotations) {
 
   override def children: List[TopDecl] = members
 
@@ -1359,6 +1352,20 @@ case class EntityDecl(
     
   def getExtendingNames: List[String] = {
     (for (e <- extending if e.isInstanceOf[IdentType]) yield e.toString)
+  }
+
+  def setFqName(newName: String) = {
+    fqName = newName
+  }
+
+  def qualifyTopLevelName = {
+    fqName = "Global." + ident
+  }
+
+  def qualifyMemberNames = {
+    for(member <- members if member.isInstanceOf[EntityDecl]) {
+      member.asInstanceOf[EntityDecl].setFqName(fqName + "." + member.asInstanceOf[EntityDecl].ident)
+    }
   }
   
 
