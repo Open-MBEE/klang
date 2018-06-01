@@ -496,6 +496,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
         ctx.Identifier(1).getText()
       else
         ctx.Identifier(0).getText()
+    var fqName: String = null
     var typeParams: List[TypeParam] =
       if (ctx.typeParameters() == null) Nil
       else visit(ctx.typeParameters()).asInstanceOf[List[TypeParam]]
@@ -507,7 +508,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
         visit(ctx.block()).asInstanceOf[List[MemberDecl]]
       else
         Nil
-    val e = EntityDecl(null, entityToken, keyword, ident, typeParams, extending, members)
+    val e = EntityDecl(null, entityToken, keyword, ident, null, typeParams, extending, members)
     val line = ctx.getStart().getLine()
     val char = ctx.getStart().getCharPositionInLine()
     declToPosition += (e -> (line, char))
