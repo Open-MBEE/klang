@@ -1329,6 +1329,9 @@ case class EntityDecl(
     propertyDeclsOfSuperClasses ++ getPropertyDecls
   }
 
+  def getExpressionDecls: List[ExpressionDecl] =
+    for (m <- members if m.isInstanceOf[ExpressionDecl]) yield m.asInstanceOf[ExpressionDecl]
+
   def getFunDecls: List[FunDecl] =
     for (m <- members if m.isInstanceOf[FunDecl]) yield m.asInstanceOf[FunDecl]
 
