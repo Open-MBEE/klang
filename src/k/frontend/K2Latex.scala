@@ -30,7 +30,7 @@ object K2Latex {
     // Decls
     file.append("\\section{Entities}\n")
 
-    for (d @ EntityDecl(_, _, _, _, _, _, _) <- model.decls) {
+    for (d @ EntityDecl(_, _, _, _, _, _, _, _) <- model.decls) {
       file.append(s"\\subsection{${d.entityToken} ${d.ident}}\n")
       d.annotations.foreach { a =>
         if (a.name.equals("doc")) {

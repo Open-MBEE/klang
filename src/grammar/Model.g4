@@ -648,11 +648,11 @@ BlockComment :
   ;
 
 CLineComment:
-    '--' ~[\r\n]* -> skip
+    '//' ~[\r\n]* -> skip
   ;
 
 LineComment:
-    '//' ~[\r\n]* -> skip
+    '--' ~[\r\n]* -> skip
   ;
 
 WS:

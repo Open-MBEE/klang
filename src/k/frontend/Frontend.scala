@@ -701,7 +701,7 @@ object Frontend {
             val specializationObject = obj.getJSONObject("specialization")
             //specializationObject.getString("type")  match {
             //  case "Element" =>
-                val entity = EntityDecl(Nil, ClassToken, None, name.replace(" ", "_"), Nil, Nil, Nil)
+                val entity = EntityDecl(Nil, ClassToken, None, name.replace(" ", "_"), null, Nil, Nil, Nil)
                 mdecls = entity :: mdecls
                 id2Decl += (obj.getString("sysmlid") -> entity)
             //  case _ => ()
@@ -734,10 +734,7 @@ object Frontend {
                     IdentType(QualifiedName(List(typeDecl.ident)), List())
                   }
                 val property = PropertyDecl(Nil, obj.getString("name").replace(" ", "_"), propertyType, None, None, None)
-                val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken,
-                  owningDecl.keyword, owningDecl.ident,
-                  owningDecl.typeParams, owningDecl.extending,
-                  property :: owningDecl.members)
+                val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken, owningDecl.keyword, owningDecl.ident, null, owningDecl.typeParams, owningDecl.extending, property :: owningDecl.members)
                 mdecls = mdecls.diff(List(owningDecl))
                 mdecls = newDecl :: mdecls
 
@@ -758,10 +755,7 @@ object Frontend {
                   var exp: Exp = m.decls(0).asInstanceOf[ExpressionDecl].exp
                   val owningDecl = id2Decl(obj.getString("owner")).asInstanceOf[EntityDecl]
                   val constraint = ConstraintDecl(Some(obj.getString("name").replace(" ", "_")), exp)
-                  val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken,
-                    owningDecl.keyword, owningDecl.ident,
-                    owningDecl.typeParams, owningDecl.extending,
-                    constraint :: owningDecl.members)
+                  val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken, owningDecl.keyword, owningDecl.ident, null, owningDecl.typeParams, owningDecl.extending, constraint :: owningDecl.members)
                   mdecls = mdecls.diff(List(owningDecl))
                   mdecls = newDecl :: mdecls
                   id2Decl += (obj.getString("owner") -> newDecl)
@@ -771,9 +765,7 @@ object Frontend {
               case "Generalization" =>
                 val owningDecl = id2Decl(specializationObject.getString("source")).asInstanceOf[EntityDecl]
                 val targetDecl = id2Decl(specializationObject.getString("target")).asInstanceOf[EntityDecl]
-                val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken,
-                  owningDecl.keyword, owningDecl.ident,
-                  owningDecl.typeParams, IdentType(QualifiedName(List(targetDecl.ident)), List()) :: owningDecl.extending, owningDecl.members)
+                val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken, owningDecl.keyword, owningDecl.ident, null, owningDecl.typeParams, IdentType(QualifiedName(List(targetDecl.ident)), List()) :: owningDecl.extending, owningDecl.members)
                 mdecls = mdecls.diff(List(owningDecl))
                 mdecls = newDecl :: mdecls
                 id2Decl += (obj.getString("owner") -> newDecl)
@@ -1016,7 +1008,7 @@ object Frontend {
           visitJsonArray(obj.get("extending"), visitJsonObject).asInstanceOf[List[Type]]
         var members: List[MemberDecl] =
           visitJsonArray(obj.get("members"), visitJsonObject).asInstanceOf[List[MemberDecl]]
-        EntityDecl(annotations, entityToken, keyword, ident, typeParams, extending, members)
+        EntityDecl(annotations, entityToken, keyword, ident, null, typeParams, extending, members)
       case "TypeParam" =>
         var ident: String = obj.get("ident").toString()
         var bound: Option[TypeBound] =
@@ -1518,7 +1510,7 @@ object Frontend {
           visitJsonArray(obj.get("extending"), visitJsonObject2).asInstanceOf[List[Type]]
         var members: List[MemberDecl] =
           visitJsonArray(obj.get("members"), visitJsonObject2).asInstanceOf[List[MemberDecl]]
-        EntityDecl(annotations, entityToken, keyword, ident, typeParams, extending, members)
+        EntityDecl(annotations, entityToken, keyword, ident, null, typeParams, extending, members)
       case "TypeParam" =>
         var ident: String = obj.get("ident").toString()
         var bound: Option[TypeBound] =
