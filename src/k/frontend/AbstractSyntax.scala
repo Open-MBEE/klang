@@ -3589,6 +3589,8 @@ case class PositionalArgument(exp: Exp) extends Argument {
 
   override def toString = exp.toString
 
+  override def toJavaString = exp.toJavaString
+
   override def toJson1 = {
     val positionalArgument = new JSONObject()
     positionalArgument.put("type", "PositionalArgument")
@@ -3615,7 +3617,7 @@ case class NamedArgument(ident: String, exp: Exp) extends Argument {
 
   override def toString = s"$ident :: $exp"
 
-  override def toJavaString = s"$exp"
+  override def toJavaString = exp.toJavaString
 
   override def toJson1 = {
     val classArgument = new JSONObject()
