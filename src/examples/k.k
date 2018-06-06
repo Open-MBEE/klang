@@ -32,7 +32,9 @@ class kclass extends kelement {
 
     var members : Set[kelement] = Set{definedProperties, constructors, functions, constraints}.flatten()
 
-    ktext = "class" + ws
+    var extendsString = if superclasses != null && superclasses.size() > 0 then "extends " + superclasses.join(",") else ""
+    ktext = "class" + ws + name + ws + extendsString "{"
+
 }
 
 class kproperty extends kelement {
