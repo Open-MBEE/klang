@@ -3130,7 +3130,7 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
     s"(select $expSMT $elementSMT)"
   }
 
-  override def toJavaString : String = "new " + kind.toJavaString + "(Arrays.asList( " + exps.mkString(",") + "))"
+  override def toJavaString : String = "new " + kind.toJavaString + "(Arrays.asList( " + exps.map(x => x.toJavaString).mkString(",") + "))"
 
   override def toString = kind + "{" + exps.mkString(",") + "}"
 
