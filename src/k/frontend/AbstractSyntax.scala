@@ -4564,7 +4564,7 @@ case object TimeType extends PrimitiveType {
 
   override def toString = "Time"
 
-  override def toJavaString = "Long"
+  override def toJavaString = "Time"
 
   override def toJson1 = {
     new JSONObject().put("type", "TimeType")
