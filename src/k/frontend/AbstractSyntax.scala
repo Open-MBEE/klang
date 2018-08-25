@@ -4471,6 +4471,8 @@ case object CharType extends PrimitiveType {
 
   override def toString = "Char"
 
+  override def toJavaString = "Character"
+
   override def toJson1 = {
     new JSONObject().put("type", "CharType")
   }
