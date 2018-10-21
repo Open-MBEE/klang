@@ -2985,7 +2985,7 @@ case class QuantifiedExp(quant: Quantifier,
 
   override def toString = s"$quant ${bindings.mkString(",")} . $exp"
   
-  override def toJavaString = s"$quant ${bindings.mkString(",")} . ${exp.toJavaString}"
+  override def toJavaString = s"Functions.$quant(${bindings.mkString(",")}, ${exp.toJavaString})"
 
   override def toJson1 = {
     val expression = new JSONObject()
@@ -3410,7 +3410,7 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
     else s"$exp is $ty"
 
   override def toJavaString =
-    if (cast) s"(({$ty.toJavaString})${exp.toJavaString})"
+    if (cast) s"((${ty.toJavaString})${exp.toJavaString})"
     else s"${exp.toJavaString} instanceof ${ty.toJavaString}"
 
   override def toJson1 = {
