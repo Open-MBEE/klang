@@ -1621,7 +1621,10 @@ object Frontend {
     var lexer: ModelLexer = new ModelLexer(input)
     var tokens: CommonTokenStream = new CommonTokenStream(lexer)
     var parser: ModelParser = new ModelParser(tokens)
+    parser.setBuildParseTree(true)
     var tree = parser.model()
+    var treeString = tree.toStringTree(parser);
+    println("PARSE TREE:\n" + treeString)
     var ksv: KScalaVisitor = new KScalaVisitor()
     lastVisitor = ksv
     (ksv, tree)
