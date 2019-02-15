@@ -426,8 +426,8 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       IntegerLiteral(java.lang.Long.parseLong(ctx.IntegerLiteral().getSymbol().getText()))
     } else if (ctx.RealLiteral() != null) {
       //RealLiteral(java.lang.Float.parseFloat(ctx.RealLiteral().getSymbol().getText()))
-      val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText).
-        setScale(16, java.math.BigDecimal.ROUND_DOWN)
+      val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText)//.
+        //setScale(16, java.math.BigDecimal.ROUND_DOWN)
       RealLiteral(bd)
     } else if (ctx.CharacterLiteral() != null) {
       CharacterLiteral(ctx.CharacterLiteral().getSymbol().getText().charAt(0))
