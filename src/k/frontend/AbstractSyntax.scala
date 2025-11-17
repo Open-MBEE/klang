@@ -342,11 +342,19 @@ object UtilSMT {
     val Model(packageName: Option[String], packages, imports, annotations, decls) = model
     var memberDecls: List[MemberDecl] =
       for (decl <- decls if decl.isInstanceOf[MemberDecl]) yield decl.asInstanceOf[MemberDecl]
-    val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, memberDecls)
     var entityDecls: List[EntityDecl] =
       for (decl <- decls if decl.isInstanceOf[EntityDecl]) yield decl.asInstanceOf[EntityDecl]
     val entityDeclsSorted = UtilSMT.sortEntityDecls(entityDecls)
-    val entityDeclsWithMain = mainClass :: entityDeclsSorted
+    
+    // Only create mainClass if there are member declarations and no packages
+    // This prevents duplicate TopLevelDeclarations in nested package structures
+    val entityDeclsWithMain = 
+      if (memberDecls.nonEmpty && packages.isEmpty) {
+        val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, memberDecls)
+        mainClass :: entityDeclsSorted
+      } else {
+        entityDeclsSorted
+      }
 
     var newPackages = ListBuffer[PackageDecl]()
     for ( pd <- packages ) {
@@ -739,7 +747,7 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       //})
     //}
     all.appendAll(theDecls)
-    for ( pd <- packages ) {
+    for ( pd <- model.packages ) {
       val pdecls = allDecls(pd.model)
       all.appendAll(pdecls)
     }
@@ -762,11 +770,12 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     var allDecls = new ListBuffer[EntityDecl]()
     val eDecls = entityDecls(model)
     allDecls.appendAll(eDecls)
-    for ( pd <- packages ) {
+    for ( pd <- model.packages ) {
       val pdecls = allEntityDecls(pd.model)
       allDecls.appendAll(pdecls)
     }
-    allDecls.toList
+    // Remove duplicates by keeping only unique entity declarations based on their identity
+    allDecls.toList.distinct
   }
 
   def toSMT: String = {
@@ -4785,6 +4794,11 @@ case class ExpCollection(exp: Exp) extends Collection {
 
   override def toSMT: String = {
     exp match {
+      case IdentExp("Int") => "Int"
+      case IdentExp("Real") => "Real"
+      case IdentExp("Bool") => "Bool"
+      case IdentExp("String") => "String"
+      case IdentExp("Char") => "Char"
       case IdentExp(id) if getEntityDecl(id) != null => // user-defined class
         "Ref"
       case _ => // TODO

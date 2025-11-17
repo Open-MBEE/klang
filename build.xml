@@ -7,17 +7,17 @@
     <property environment="env"/>
     <property name="ECLIPSE_HOME" value="../../../../bin/eclipse/"/>
     <property name="debuglevel" value="source,lines,vars"/>
-    <property name="target" value="1.7"/>
-    <property name="source" value="1.7"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
     <path id="Scala Library container [ 2.11.5 ].libraryclasspath">
-        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-lang.scala-library_2.11.5.v20150101-184742-3fafbc204f.jar"/>
-        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-lang.scala-reflect_2.11.5.v20150101-184742-3fafbc204f.jar"/>
-        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-lang.scala-actors_2.11.5.v20150101-184742-3fafbc204f.jar"/>
+        <pathelement location="export/lib/scalalib/scala-library.jar"/>
+        <pathelement location="export/lib/scalalib/scala-reflect.jar"/>
+        <pathelement location="export/lib/scalalib/scala-actors-2.11.0.jar"/>
     </path>
     <path id="Klang.classpath">
         <pathelement location="bin"/>
         <path refid="Scala Library container [ 2.11.5 ].libraryclasspath"/>
-        <pathelement location="src/antlr-4.4-complete.jar"/>
+        <pathelement location="src/grammar/antlr-4.7-complete.jar"/>
         <pathelement location="lib/com.microsoft.z3.jar"/>
         <pathelement location="lib"/>
         <pathelement location="lib/elastic4s_2.11-1.5.2-SNAPSHOT.jar"/>

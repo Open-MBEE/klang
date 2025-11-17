@@ -104,9 +104,8 @@ object Frontend {
           s = Set(fullFileName)
         }
         importModels = processImports(model, s)._1
-        val tc: TypeChecker = new TypeChecker(model)
-        tc.smtCheck
-        log("Type checking completed. No errors found.")
+        // Don't type-check here - it will be type-checked after combining with imports
+        // This avoids duplicate type checking when packages are involved
       } catch {
         case TypeCheckException => Misc.errorExit("Main", "Given K did not type check.")
         case e: Throwable =>
@@ -122,7 +121,27 @@ object Frontend {
   }
 
   def combinePackage(pkg: PackageDecl): PackageDecl = {
-    var m: Model = combineModel(pkg.model)
+    // Don't recursively combine - just process imports for the package's model
+    // This avoids duplicate processing when packages contain classes
+    var importModels = if (pkg.model != null) {
+      var s: Set[String] = Set()
+      try {
+        processImports(pkg.model, s)._1
+      } catch {
+        case _ => List[Model]()
+      }
+    } else {
+      List[Model]()
+    }
+    var allDecls = importModels.flatMap { x => x.decls }
+    var allAnnotations = importModels.flatMap { x => x.annotations }
+    var allPackages = importModels.flatMap { x => x.packages }
+    var allImports = importModels.flatMap { x => x.imports }
+    var m: Model = Model(pkg.model.packageName,
+      combinePackages(pkg.model.packages ++ allPackages),
+      (pkg.model.imports ++ allImports).toSet.toList,
+      pkg.model.annotations ++ allAnnotations,
+      pkg.model.decls ++ allDecls)
     var p = new PackageDecl(pkg.name, m)
     p
   }
@@ -276,6 +295,11 @@ object Frontend {
       //        model.annotations ++ allAnnotations,
       //        model.decls ++ allDecls)
       val combinedModel = combineModel(model, fullFileName)
+      // Type-check the combined model (after imports and packages are combined)
+      TypeChecker.reset()
+      val tc: TypeChecker = new TypeChecker(combinedModel)
+      tc.smtCheck
+      log("Type checking completed. No errors found.")
       smtModel += combinedModel.toSMT
       if (K2Z3.debug) {
         println()

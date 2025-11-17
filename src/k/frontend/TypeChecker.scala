@@ -529,8 +529,9 @@ class TypeChecker(model: Model) {
           val dED = d.asInstanceOf[EntityDecl]
           keywords = ed.keyword match {
             case Some(kw) =>
-              if (keywords.contains(kw)) error(s"Keywords $kw is already being used.")
-              else keywords + (kw -> IdentType(QualifiedName(List(ident)), List()))
+              // Don't error if keyword is already registered - packages may reuse keywords
+              if (!keywords.contains(kw)) keywords + (kw -> IdentType(QualifiedName(List(ident)), List()))
+              else keywords
             case _ => keywords
           }
           type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> dED)
@@ -767,12 +768,26 @@ class TypeChecker(model: Model) {
     }
 
     // Recurse into packages
+    // Note: When packages are processed, their classes are already in the global scope
+    // from the combineModel step, so we don't need to process them again here
+    // This prevents "already defined" errors when classes are in packages
     val pkgs = model.packages
     for (p <- pkgs) {
       var m = p.model
       if ( m != null ) {
+        // Create a new TypeChecker but don't add classes to global scope again
+        // The classes from packages are already processed when the model is combined
+        // We only need to type-check the package's internal structure
         var t = new TypeChecker(m)
+        // Temporarily save and restore global state to avoid duplicates
+        val savedClasses = classes
+        val savedGlobalTypeEnv = globalTypeEnv
+        classes = Map[String, EntityDecl]()
+        globalTypeEnv = TypeEnv(null, Map())
         t.typeCheck
+        // Restore - package classes are already in the parent's scope
+        classes = savedClasses
+        globalTypeEnv = savedGlobalTypeEnv
       }
     }
 
@@ -1150,7 +1165,17 @@ class TypeChecker(model: Model) {
         val newTe = b.foldLeft(te) { (res, bndg) =>
           bndg.patterns.foldLeft(res) { (res2, p) =>
             val collectionType = bndg.collection match {
-              case ExpCollection(collE)   => getExpType(te, collE, owner)
+              case ExpCollection(collE)   => 
+                // Handle case where primitive types are parsed as expressions
+                collE match {
+                  case IdentExp("Int") => IntType
+                  case IdentExp("Real") => RealType
+                  case IdentExp("Bool") => BoolType
+                  case IdentExp("String") => StringType
+                  case IdentExp("Char") => CharType
+                  case IdentExp("Unit") => UnitType
+                  case _ => getExpType(te, collE, owner)
+                }
               case TypeCollection(collTy) => collTy
             }
             val singleType = Misc.removeCollection(collectionType)

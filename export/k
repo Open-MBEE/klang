@@ -6,11 +6,60 @@ if [ -z "$1" ]
     exit -1
 fi
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# Resolve symlinks to get the actual directory
+# Use readlink -f if available (Linux), otherwise resolve manually
+if command -v readlink >/dev/null 2>&1 && readlink -f / >/dev/null 2>&1; then
+    # Linux-style readlink -f
+    SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+elif command -v greadlink >/dev/null 2>&1; then
+    # macOS with GNU coreutils
+    SCRIPT_PATH=$(greadlink -f "${BASH_SOURCE[0]}")
+else
+    # Manual resolution
+    SCRIPT_PATH="${BASH_SOURCE[0]}"
+    while [ -L "$SCRIPT_PATH" ]; do
+        LINK=$(readlink "$SCRIPT_PATH")
+        if [[ "$LINK" == /* ]]; then
+            SCRIPT_PATH="$LINK"
+        else
+            SCRIPT_PATH="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)/$LINK"
+        fi
+    done
+fi
+DIR=$( cd "$( dirname "$SCRIPT_PATH" )" && pwd )
+PROJECT_ROOT="$(cd "$DIR/.." && pwd)"
+echo "DIR = ${DIR}"
+echo "PROJECT_ROOT = ${PROJECT_ROOT}"
 
 export PATH=./lib:$PATH
-export DYLD_LIBRARY_PATH=$DIR/lib
+export DYLD_LIBRARY_PATH=$DIR/lib:$DYLD_LIBRARY_PATH
 
-chmod +x lib/z3
+chmod +x lib/z3 2>/dev/null || true
 
-java -classpath "$DIR/lib/*:$DIR/lib/scalalib/*:$DIR/lib/elasticsearch-1.5.0/*" k.frontend.Main -f "$1" $2 $3 $4 $5
+# Build classpath with:
+# 1. Compiled classes from bin/ (project root)
+# 2. ANTLR jar
+# 3. Z3 jar (use OSX version on Mac)
+# 4. Libraries from export/lib
+# 5. Scala libraries
+# 6. Elasticsearch libraries
+CLASSPATH="$PROJECT_ROOT/bin"
+CLASSPATH="$CLASSPATH:$PROJECT_ROOT/src/grammar/antlr-4.7-complete.jar"
+# Add Z3 jar - check for OSX version first, fallback to generic
+if [ -f "$DIR/lib/com.microsoft.z3.osx.jar" ]; then
+    CLASSPATH="$CLASSPATH:$DIR/lib/com.microsoft.z3.osx.jar"
+elif [ -f "$PROJECT_ROOT/lib/com.microsoft.z3.jar" ]; then
+    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/lib/com.microsoft.z3.jar"
+else
+    CLASSPATH="$CLASSPATH:$DIR/lib/com.microsoft.z3.jar"
+fi
+CLASSPATH="$CLASSPATH:$DIR/lib/*"
+CLASSPATH="$CLASSPATH:$DIR/lib/scalalib/*"
+CLASSPATH="$CLASSPATH:$DIR/lib/elasticsearch-1.5.0/*"
+
+# On macOS, we need to set both java.library.path and ensure DYLD_LIBRARY_PATH is used
+# Also need to work around macOS System Integrity Protection for library loading
+java -Djava.library.path="$DIR/lib" \
+     -Djava.awt.headless=true \
+     -classpath "$CLASSPATH" \
+     k.frontend.Main -f "$1" $2 $3 $4 $5

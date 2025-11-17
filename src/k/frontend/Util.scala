@@ -165,8 +165,10 @@ object Misc {
   }
 
   def errorExit(prefix: String, message: String): Nothing = {
-    log(prefix, message).asInstanceOf[Nothing]
-    //System.exit(-1).asInstanceOf[Nothing]
+    log(prefix, message)
+    // Don't use System.exit as it would kill the entire web server
+    // Instead, throw a runtime exception to terminate the current analysis
+    throw new RuntimeException(s"[$prefix] $message")
   }
 
   def errorThrow(prefix: String, message: String, e: Exception) = {

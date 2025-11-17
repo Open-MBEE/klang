@@ -174,11 +174,13 @@
 	</build>
 	
 	<dependencies>
+		<!-- Temporarily commented out - not available externally
 		<dependency>
 			<groupId>gov.nasa.jpl.mbee.util</groupId>
 			<artifactId>mbee_util</artifactId>
 			<version>2.3.6-SNAPSHOT</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr4</artifactId>

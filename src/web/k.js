@@ -1,7 +1,7 @@
 function loadExample(e,name){
     results.setValue('');
     $.ajax({
-	url: "http://niks.jpl.nasa.gov/K/k/" + name,
+	url: "examples/" + name,
 	success: function(data, status, xhr) {
 	    $("#resultsPanel").removeClass("panel-success");
 	    $("#resultsPanel").removeClass("panel-warning");
@@ -28,7 +28,7 @@ function doWork() {
     $.ajax({
 	type: "post",
 	data: editor.getValue(),
-	url: "http://niks.jpl.nasa.gov/k-service",
+	url: "/k-service",
 	success: function(data, status, xhr) {
 	    if(data.indexOf("UNSAT due") > -1){
 		$("#resultsPanel").removeClass("panel-success");

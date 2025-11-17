@@ -361,26 +361,38 @@ object K2Z3 {
     } else if (status == Status.UNSATISFIABLE) {
       log()
       log(s"The given model is NOT satisfiable. ")
-      val smt2 = ("(set-option :produce-unsat-cores true)\n") + (smtModel + "(check-sat) (get-unsat-core) (exit)")
-      val file = new File("t.smt2")
-      val tf = new PrintWriter(file)
-      tf.write(smt2)
-      tf.close
-      val res = (("z3 -smt2 t.smt2")).!!
-      val lines = res.split("\\r?\\n")
-      val assertionNames = lines(1).replace("(", "").replace(")", "").split("\\s")
-        .filter { !_.equals("xTOP") }
-        .map { UtilSMT.constraintMessageMap(_) }.toSet
-      log("UNSAT due to the following reasons: ")
-      println
-      for (
-        an <- assertionNames.filter { !_.equals("_k_ignore_") }
-      ) {
-        println(s"\t$an")
+      // Try to get unsat core, but don't fail if it doesn't work
+      try {
+        val smt2 = ("(set-option :produce-unsat-cores true)\n") + (smtModel + "(check-sat) (get-unsat-core) (exit)")
+        val file = new File("t.smt2")
+        val tf = new PrintWriter(file)
+        tf.write(smt2)
+        tf.close
+        val res = (("z3 -smt2 t.smt2")).!!
+        val lines = res.split("\\r?\\n")
+        if (lines.length > 1) {
+          val assertionNames = lines(1).replace("(", "").replace(")", "").split("\\s")
+            .filter { !_.equals("xTOP") }
+            .map { name => UtilSMT.constraintMessageMap.getOrElse(name, name) }.toSet
+          log("UNSAT due to the following reasons: ")
+          println
+          for (
+            an <- assertionNames.filter { !_.equals("_k_ignore_") }
+          ) {
+            println(s"\t$an")
+          }
+          println
+        }
+        log()
+        file.delete()
+      } catch {
+        case e: Throwable =>
+          if (debug) {
+            log("Could not extract unsat core details.")
+            if (debug) e.printStackTrace()
+          }
+          log()
       }
-      println
-      log()
-      file.delete()
     } else {
       log()
       log("Model could not be solved successfully.")

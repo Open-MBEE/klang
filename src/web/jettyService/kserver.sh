@@ -6,8 +6,8 @@
 case "$1" in
   start)
 	log_daemon_msg "Starting K Service" "KServlet" || true
-	pushd /home/rahulku/jetty
-	sudo -u rahulku java -cp "./*:.:jetty-distribution-9.2.12.v20150709/lib/*" KServlet > /var/log/kserver.log 2>&1 &
+	pushd /Users/${USER}/jetty
+	sudo -u $USER java -cp "./*:.:jetty-distribution-9.2.12.v20150709/lib/*" KServlet > /var/log/kserver.log 2>&1 &
 	;;
   stop)
 	log_daemon_msg "Stopping K Service" "KServlet" || true
