@@ -302,13 +302,14 @@ object Frontend {
       log("Type checking completed. No errors found.")
       smtModel += combinedModel.toSMT
       if (K2Z3.debug) {
-        println()
-        println("--- SMT Model ---")
-        println()
-        println(smtModel)
-        println()
-        println("-----------------")
-        println()
+        // Write SMT model to log file for debugging
+        try {
+          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_smt_model.log", false))
+          smtLogFile.println("=== SMT Model Generated (" + new java.util.Date() + ") ===")
+          smtLogFile.println(smtModel)
+          smtLogFile.close()
+          println("[SMT model written to /tmp/k_smt_model.log]")
+        } catch { case _: Throwable => }
       }
       println(UtilSMT.statistics)
       try {
@@ -328,13 +329,14 @@ object Frontend {
 
     if (rawSMT != null) {
       if (K2Z3.debug) {
-        println()
-        println("--- SMT Model ---")
-        println()
-        println(rawSMT)
-        println()
-        println("-----------------")
-        println()
+        // Write raw SMT to log file
+        try {
+          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_smt_raw.log", false))
+          smtLogFile.println("=== Raw SMT (" + new java.util.Date() + ") ===")
+          smtLogFile.println(rawSMT)
+          smtLogFile.close()
+          println("[Raw SMT written to /tmp/k_smt_raw.log]")
+        } catch { case _: Throwable => }
       }
       try {
         val res = runWithTimeout(timeoutValue) {

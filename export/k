@@ -37,13 +37,18 @@ export DYLD_LIBRARY_PATH=$DIR/lib:$DYLD_LIBRARY_PATH
 chmod +x lib/z3 2>/dev/null || true
 
 # Build classpath with:
-# 1. Compiled classes from bin/ (project root)
+# 1. Compiled classes from target/classes (Maven) or bin/ (custom build)
 # 2. ANTLR jar
 # 3. Z3 jar (use OSX version on Mac)
 # 4. Libraries from export/lib
 # 5. Scala libraries
 # 6. Elasticsearch libraries
-CLASSPATH="$PROJECT_ROOT/bin"
+# Check for Maven build output first, then fall back to custom build
+if [ -d "$PROJECT_ROOT/target/classes" ]; then
+    CLASSPATH="$PROJECT_ROOT/target/classes"
+else
+    CLASSPATH="$PROJECT_ROOT/bin"
+fi
 CLASSPATH="$CLASSPATH:$PROJECT_ROOT/src/grammar/antlr-4.7-complete.jar"
 # Add Z3 jar - check for OSX version first, fallback to generic
 if [ -f "$DIR/lib/com.microsoft.z3.osx.jar" ]; then

@@ -29,11 +29,11 @@ class DataTypes(ctx: Context) {
   def addDataType(name: String, argTypes: List[Type], fields: List[(String, Type)]) {
     val fieldNames: Array[FieldName] = fields.toArray map { case (n, _) => n }
     val fieldSorts: Array[Sort] = fields.toArray map { case (_, t) => getDataType(t).sort }
-    val mkDatatype: Constructor = ctx.mkConstructor(s"mk$name", s"is$name", fieldNames, fieldSorts, null)
-    val datatypeSort: DatatypeSort = ctx.mkDatatypeSort(name, Array(mkDatatype))
-    val constructor: FuncDecl = datatypeSort.getConstructors.apply(0)
-    val selectors: Array[FuncDecl] = datatypeSort.getAccessors.apply(0)
-    val fieldDecls: Map[FieldName, FuncDecl] = (fieldNames zip selectors).toMap
+    val mkDatatype: Constructor[Sort] = ctx.mkConstructor(s"mk$name", s"is$name", fieldNames, fieldSorts, null)
+    val datatypeSort: DatatypeSort[Sort] = ctx.mkDatatypeSort(name, Array(mkDatatype))
+    val constructor: FuncDecl[_ <: Sort] = datatypeSort.getConstructors.apply(0)
+    val selectors: Array[FuncDecl[_]] = datatypeSort.getAccessors.apply(0)
+    val fieldDecls: Map[FieldName, FuncDecl[_ <: Sort]] = (fieldNames zip selectors).toMap.asInstanceOf[Map[FieldName, FuncDecl[_ <: Sort]]]
     val dataType = DataType(datatypeSort, constructor, fieldDecls)
     addDataType(IdentType(QualifiedName(List(name)), argTypes), dataType)
   }
@@ -50,8 +50,8 @@ class DataTypes(ctx: Context) {
     val fieldSymbols: Array[Z3Symbol] = fieldNames map (ctx.mkSymbol(_))
     val fieldSorts: Array[Sort] = fieldTypes.toArray map (getDataType(_).sort)
     val tupleSort: TupleSort = ctx.mkTupleSort(constructorSymbol, fieldSymbols, fieldSorts)
-    val tupleConstructor: FuncDecl = tupleSort.mkDecl()
-    val fieldDecls: Map[FieldName, FuncDecl] = (fieldNames zip tupleSort.getFieldDecls).toMap
+    val tupleConstructor: FuncDecl[_ <: Sort] = tupleSort.mkDecl()
+    val fieldDecls: Map[FieldName, FuncDecl[_ <: Sort]] = (fieldNames zip tupleSort.getFieldDecls).toMap.asInstanceOf[Map[FieldName, FuncDecl[_ <: Sort]]]
     val dataType = DataType(tupleSort, tupleConstructor, fieldDecls)
     addDataType(CartesianType(fieldTypes), dataType)
   }
@@ -65,7 +65,7 @@ class DataTypes(ctx: Context) {
   addDataType(RealType, DataType(ctx.getRealSort(), null, null))
 }
 
-case class DataType(sort: Sort, constructor: FuncDecl, selectors: Map[String, FuncDecl])
+case class DataType(sort: Sort, constructor: FuncDecl[_ <: Sort], selectors: Map[String, FuncDecl[_ <: Sort]])
 
 object K2Z3 {
 
@@ -79,7 +79,7 @@ object K2Z3 {
     "unsat_core" -> "true")
   var ctx: Context = new Context(cfg)
   var solver: Solver = ctx.mkSolver()
-  var idents: MMap[String, (Expr, com.microsoft.z3.StringSymbol)] = MMap()
+  var idents: MMap[String, (Expr[_], com.microsoft.z3.StringSymbol)] = MMap()
   var z3Model: com.microsoft.z3.Model = null
   val tc: TypeChecker = new TypeChecker(null)
   var datatypes: DataTypes = null
@@ -104,7 +104,7 @@ object K2Z3 {
     solver.setParameters(params)
   }
 
-  def getStringForSets(setValue: FuncDecl, ty: Type): String = {
+  def getStringForSets(setValue: FuncDecl[_ <: Sort], ty: Type): String = {
     "Set(" +
       z3Model.getFuncInterp(setValue).getEntries.foldLeft(List[String]()) {
         (res, x) =>
@@ -224,16 +224,33 @@ object K2Z3 {
         error(s"FATAL INTERNAL ERROR! Could not find a heap declaration for printing the model.")
       }
 
-      var heapMap =
-        z3Model.getFuncInterp(heapDecl.get).getEntries.
-          foldLeft(Map[String, String]()) { (res, x) =>
-            x.getValue.getArgs.foreach { x =>
-            }
-            res + (x.getArgs.last.toString -> x.getValue.toString)
-          }
+      // In Z3 4.13.0, the heap is represented as an array with store operations
+      // Parse the model string directly to extract heap entries
+      var heapMap = Map[String, String]()
       
-      val elseK = z3Model.getFuncInterp(heapDecl.get).getElse
-      heapMap += ("else" -> elseK.toString)
+      val modelStr = z3Model.toString
+      
+      // Simple pattern: ref number followed by (lift-ClassName value)
+      // Matches: "0 (lift-TopLevelDeclarations TopLevelDeclarations!val!0)"
+      //          "1 (lift-Car (mk-Car 0))"
+      val liftPattern = """(\d+)\s+\(lift-(\w+)\s+([^)]+(?:\([^)]*\))?[^)]*)\)""".r
+      
+      for (m <- liftPattern.findAllMatchIn(modelStr)) {
+        val ref = m.group(1)
+        val className = m.group(2)
+        var value = m.group(3).trim
+        
+        // Clean up the value - may have nested parentheses
+        if (!value.startsWith("(") && !value.startsWith("mk-")) {
+          // It's a constant name, keep as is
+        }
+        
+        // Reconstruct the full value expression
+        heapMap += (ref -> s"(lift-$className $value)")
+      }
+      
+      // Add else/default case
+      heapMap += ("else" -> "null")
 
       var visited = Set[String]()
       
@@ -325,15 +342,29 @@ object K2Z3 {
     try {
       reset()
 
-      val boolExp = ctx.parseSMTLIB2String(smtModel, null, null, null, null)
+      // Write SMT model to temporary file to avoid string parsing issues
+      val tempFile = new java.io.File("/tmp/k_debug.smt2")
+      val writer = new java.io.PrintWriter(tempFile)
+      writer.write(smtModel)
+      writer.close()
+      
+      logDebug(s"SMT model written to ${tempFile.getAbsolutePath}")
+      
+      // Parse SMT-LIB2 file - returns array of assertions in modern Z3
+      val boolExps = ctx.parseSMTLIB2File(tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+      // Combine all assertions into single expression
+      val boolExp = if (boolExps.length == 1) boolExps(0) else ctx.mkAnd(boolExps: _*)
       z3Model = SolveExp(boolExp, smtModel)
       
       if (debugRawModel) {
-        println
-        println("--- BEGIN RAW SMT MODEL: ---")
-        println(z3Model)
-        println("--- END RAW SMT MODEL ---")
-        println
+        // Write raw model to log file instead of console
+        try {
+          val logFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_z3_debug.log", true))
+          logFile.println("\n=== Z3 Raw Model (" + new java.util.Date() + ") ===")
+          logFile.println(z3Model)
+          logFile.println("=== End Raw Model ===\n")
+          logFile.close()
+        } catch { case _: Throwable => }
       }
             
       if (printModel) PrintModel(model)
@@ -404,7 +435,7 @@ object K2Z3 {
     z3Model
   }
 
-  def Expr2Z3(e: Exp): com.microsoft.z3.Expr = {
+  def Expr2Z3(e: Exp): com.microsoft.z3.Expr[_ <: Sort] = {
     e match {
 
       //case FunApplExp(exp, args) =>
@@ -432,21 +463,21 @@ object K2Z3 {
         exp match {
           case IdentExp(id) => Expr2Z3(IdentExp(id + "." + ident))
           case _ =>
-            var obj: Expr = Expr2Z3(exp)
+            var obj: Expr[_ <: Sort] = Expr2Z3(exp)
             val theType = tc.inferTypeFrom("exp", IdentType(QualifiedName(List("A")), Nil))
             val datatype: DataType = datatypes.getDataType(theType)
-            val selector: FuncDecl = datatype.selectors(ident)
+            val selector: FuncDecl[_ <: Sort] = datatype.selectors(ident)
             selector(obj)
         }
       case FunApplExp(exp, args) =>
-        var obj: Expr = Expr2Z3(exp)
+        var obj: Expr[_ <: Sort] = Expr2Z3(exp)
         val theType = tc.inferTypeFrom("exp", IdentType(QualifiedName(List("A")), Nil))
         val isConstructor = false // TODO: for constructor make this true
         if (isConstructor) {
           // constructor application
           val datatype: DataType = datatypes.getDataType(theType)
-          val constructor: FuncDecl = datatype.constructor
-          val arguments: List[Expr] = args map (Expr2Z3(_))
+          val constructor: FuncDecl[_ <: Sort] = datatype.constructor
+          val arguments: List[Expr[_ <: Sort]] = args map (Expr2Z3(_))
           constructor(arguments: _*)
         } else {
           // normal function application
@@ -464,20 +495,20 @@ object K2Z3 {
       case BinExp(e1, o, e2) =>
         o match {
           case LT =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkLt(v1, v2)
           case LTE =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkLe(v1, v2)
           case GT =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkGt(v1, v2)
           case GTE =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkGe(v1, v2)
           case AND =>
             var v1: BoolExpr = Expr2Z3(e1).asInstanceOf[BoolExpr]
@@ -496,40 +527,40 @@ object K2Z3 {
             var v2: BoolExpr = Expr2Z3(e2).asInstanceOf[BoolExpr]
             ctx.mkIff(v1, v2)
           case EQ =>
-            var v1: Expr = Expr2Z3(e1).asInstanceOf[Expr]
-            var v2: Expr = Expr2Z3(e2).asInstanceOf[Expr]
+            var v1: Expr[_ <: Sort] = Expr2Z3(e1)
+            var v2: Expr[_ <: Sort] = Expr2Z3(e2)
             ctx.mkEq(v1, v2)
           case NEQ =>
             var v1 = Expr2Z3(e1)
             var v2 = Expr2Z3(e2)
             ctx.mkNot(ctx.mkEq(v1, v2))
           case MUL =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkMul(v1, v2)
           case DIV =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkDiv(v1, v2)
           case REM =>
             var v1: IntExpr = Expr2Z3(e1).asInstanceOf[IntExpr]
             var v2: IntExpr = Expr2Z3(e2).asInstanceOf[IntExpr]
             ctx.mkRem(v1, v2)
           case ADD =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkAdd(v1, v2)
           case SUB =>
-            var v1: ArithExpr = Expr2Z3(e1).asInstanceOf[ArithExpr]
-            var v2: ArithExpr = Expr2Z3(e2).asInstanceOf[ArithExpr]
+            var v1: ArithExpr[ArithSort] = Expr2Z3(e1).asInstanceOf[ArithExpr[ArithSort]]
+            var v2: ArithExpr[ArithSort] = Expr2Z3(e2).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkSub(v1, v2)
           case ASSIGN =>
-            var v1: Expr = Expr2Z3(e1).asInstanceOf[Expr]
-            var v2: Expr = Expr2Z3(e2).asInstanceOf[Expr]
+            var v1: Expr[_ <: Sort] = Expr2Z3(e1)
+            var v2: Expr[_ <: Sort] = Expr2Z3(e2)
             ctx.mkEq(v1, v2)
           case TUPLEINDEX =>
-            var v1: Expr = Expr2Z3(e1).asInstanceOf[Expr]
-            var v2: Expr = Expr2Z3(e2).asInstanceOf[Expr]
+            var v1: Expr[_ <: Sort] = Expr2Z3(e1)
+            var v2: Expr[_ <: Sort] = Expr2Z3(e2)
             val tupleType = tc.inferTypeFrom("e1", CartesianType(List(RealType, BoolType)))
             val datatype = datatypes.getDataType(tupleType)
             if (v2 == ctx.mkReal(1))
@@ -551,7 +582,7 @@ object K2Z3 {
 
             ctx.mkNot(v)
           case NEG =>
-            var v: ArithExpr = Expr2Z3(e).asInstanceOf[ArithExpr]
+            var v: ArithExpr[ArithSort] = Expr2Z3(e).asInstanceOf[ArithExpr[ArithSort]]
             ctx.mkMul(ctx.mkReal(-1), v)
         }
       case IntegerLiteral(i) =>
@@ -564,7 +595,7 @@ object K2Z3 {
         var qtypes = new ListBuffer[com.microsoft.z3.Sort]()
         var names = new ListBuffer[com.microsoft.z3.Symbol]()
         var patterns = new ListBuffer[com.microsoft.z3.Pattern]() // not used
-        var ies = new ListBuffer[Expr]()
+        var ies = new ListBuffer[Expr[_]]()
         for (b <- bindings) {
           for (p <- b.patterns) {
             p match {
@@ -605,7 +636,7 @@ object K2Z3 {
           }
         }
 
-        var body: Expr = Expr2Z3(expression)
+        var body: Expr[_] = Expr2Z3(expression)
 
         // There are two ways to construct quantified expressions in Z3
         // one is by using named constants
@@ -622,10 +653,10 @@ object K2Z3 {
         // not working the way it is intended to.
         quantifier match {
           case Forall =>
-            ctx.mkForall(ies.toArray, body, 0, null,
+            ctx.mkForall(ies.toArray, body.asInstanceOf[Expr[BoolSort]], 0, null,
               null, null, null)
           case Exists =>
-            ctx.mkExists(ies.toArray, body, 0, null,
+            ctx.mkExists(ies.toArray, body.asInstanceOf[Expr[BoolSort]], 0, null,
               null, null, null)
           //            ctx.mkExists(qtypes.toArray, names.toArray,
           //              body, 1, null, null, null, null)

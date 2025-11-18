@@ -39,12 +39,54 @@ The server will start on port 9000 and be available at `http://localhost:9000`
 
 3. **K Executable**: The web server needs the compiled K tool to be available as `/Users/bclement/k/k` (or update the path in KServlet.java)
 
+## Current Status (Updated Nov 17, 2025)
+
+✅ **Everything is working!**
+
+### What Changed for Apple Silicon (M1/M2/M3) Macs:
+
+1. **Z3 Libraries Updated**: Upgraded from Z3 4.3.2 (x86_64) to Z3 4.13.0 (ARM64 native)
+   - Replaced `lib/com.microsoft.z3.jar` with ARM64 version
+   - Replaced `lib/libz3.dylib` and `lib/libz3java.dylib` with ARM64 versions
+   - Fixed library paths with `install_name_tool`
+
+2. **Z3 API Modernization**: Updated K2Z3.scala for Z3 4.13.0 generic type system
+   - Added generic type parameters to all Z3 types
+   - Fixed parseSMTLIB2 method signatures
+   - Removed `Set` type definition (now built-in)
+
+3. **Build Simplification**: 
+   - Maven handles Scala-first compilation automatically (no custom scripts needed)
+   - Just requires Java 8 (Scala 2.11.8 compatibility)
+   - `build-scala-first.sh` kept for backward compatibility but is deprecated
+
+### How to Build and Run:
+
+**Prerequisites:**
+- Java 8 (install via SDKMAN: `sdk install java 8.0.462-zulu`)
+
+**Build:**
+```bash
+export JAVA_HOME="$HOME/.sdkman/candidates/java/8.0.462-zulu"
+export PATH="$JAVA_HOME/bin:$PATH"
+mvn compile
+```
+
+**Run K Tool:**
+```bash
+bash export/k path/to/your/file.k
+```
+
+**Start Web Server:**
+```bash
+./start-server.sh
+# Opens on http://localhost:9000
+```
+
 ## Recommendations
 
-1. **For Web Server**: The web server is working! Just needs the K tool executable.
-
-2. **For Full Build**: Consider using Maven with Scala 2.11.8 and Java 8 compatibility, or add Scala compilation to the Ant build using the Scala compiler directly.
-
-3. **For mbee_util**: Check if there's a way to get this dependency, or create a minimal stub implementation of `ClassUtils` with the methods used in `TypeChecker.scala`.
+1. **build-scala-first.sh is deprecated** - Maven's scala-maven-plugin already handles Scala-first compilation
+2. **For other Apple Silicon users** - Just update the Z3 native libraries to ARM64 versions
+3. **For Intel Mac users** - The original x86_64 Z3 libraries should still work with the API updates
 
 

@@ -1,17 +1,28 @@
 #!/bin/bash
 
-# Build script that compiles Scala first, then Java
-# This fixes the issue where Java files depend on Scala classes
+# Legacy build script - DEPRECATED
+# Maven already handles Scala-first compilation via scala-maven-plugin
+# Use: mvn compile (with Java 8)
+# This script is kept for backward compatibility but is no longer necessary
 
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 # Use Java 8 for Scala 2.11 compatibility
-if [ -d "/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home" ]; then
+if [ -d "/Users/bclement/.sdkman/candidates/java/8.0.462-zulu" ]; then
+    export JAVA_HOME="/Users/bclement/.sdkman/candidates/java/8.0.462-zulu"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    echo "Using Java 8 for Scala compatibility"
+    java -version
+elif [ -d "/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home" ]; then
     export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home"
     export PATH="$JAVA_HOME/bin:$PATH"
     echo "Using Java 8 for Scala compatibility"
+    java -version
+else
+    echo "Warning: Java 8 not found. Scala 2.11 requires Java 8 for best compatibility."
+    echo "Current Java version:"
     java -version
 fi
 SRC_DIR="$PROJECT_ROOT/src"
@@ -86,6 +97,25 @@ if [ -n "$JAVA_FILES" ]; then
     fi
 else
     echo "No Java files found"
+fi
+
+# Compile web server (KServlet) with Jetty libraries
+echo ""
+echo "Compiling web server..."
+JETTY_LIB="$PROJECT_ROOT/src/web/jettyService/jetty-distribution-9.2.12.v20150709/lib"
+if [ -f "$SRC_DIR/web/jettyService/KServlet.java" ]; then
+    javac -d "$BIN_DIR" \
+        -cp "$BIN_DIR:$JETTY_LIB/*" \
+        -sourcepath "$SRC_DIR" \
+        "$SRC_DIR/web/jettyService/KServlet.java" 2>&1 | tee /tmp/webserver-compile.log
+    
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        echo "Web server compilation had errors. Check /tmp/webserver-compile.log"
+    else
+        echo "✓ Web server compilation complete"
+    fi
+else
+    echo "KServlet.java not found"
 fi
 
 echo ""

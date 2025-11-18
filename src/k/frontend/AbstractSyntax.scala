@@ -805,7 +805,7 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     result1 += "(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n"
     result1 += "(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n"
     result1 += "\n"
-    result1 += "(define-sort Set (T) (Array T Bool))\n"
+    // result1 += "(define-sort Set (T) (Array T Bool))\n"  // Commented out - Set appears to be built-in in Z3 4.13.0
     // result1 += "(define-sort Bag (T) (Array T Int))\n"
 
     result1 += "\n"
