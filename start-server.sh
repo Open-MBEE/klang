@@ -38,6 +38,11 @@ fi
 echo "✅ Java 8 found and configured"
 java -version
 
+# Select appropriate Z3 libraries for this Java architecture
+echo ""
+"$PROJECT_ROOT/select-z3-architecture.sh"
+echo ""
+
 # Check if we need to build
 BUILD_NEEDED=false
 if [ ! -d "$PROJECT_ROOT/bin" ] || [ ! -f "$PROJECT_ROOT/bin/web/jettyService/KServlet.class" ]; then

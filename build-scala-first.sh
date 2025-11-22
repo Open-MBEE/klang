@@ -25,6 +25,12 @@ else
     echo "Current Java version:"
     java -version
 fi
+
+# Select appropriate Z3 libraries for this Java architecture
+echo ""
+"$PROJECT_ROOT/select-z3-architecture.sh"
+echo ""
+
 SRC_DIR="$PROJECT_ROOT/src"
 BIN_DIR="$PROJECT_ROOT/bin"
 SCALA_COMPILER="$PROJECT_ROOT/export/lib/scalalib/scala-compiler.jar"

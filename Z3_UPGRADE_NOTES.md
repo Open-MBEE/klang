@@ -1,23 +1,28 @@
 # Z3 Upgrade to 4.13.0 - Summary
 
 ## Overview
-Successfully upgraded the K language project from Z3 4.3.2 (x86_64) to Z3 4.13.0 (ARM64) on Apple Silicon Mac, updating all code to work with the modern Z3 Java API.
+Successfully upgraded the K language project from Z3 4.3.2 to Z3 4.13.0 with **multi-platform support** (macOS Intel, macOS Apple Silicon, Linux x64), updating all code to work with the modern Z3 Java API.
 
 ## Date
-November 17, 2025
+November 17-21, 2025
 
 ## Changes Made
 
-### 1. Z3 Library Upgrade
-- **From**: Z3 4.3.2 (x86_64 only)
-- **To**: Z3 4.13.0 (ARM64 native for Apple Silicon)
-- **Files Updated**:
-  - `lib/com.microsoft.z3.jar` - Z3 4.13.0 Java API
-  - `lib/libz3.dylib` - Z3 4.13.0 ARM64 native library
-  - `lib/libz3java.dylib` - Z3 4.13.0 ARM64 JNI bridge
-  - `export/lib/com.microsoft.z3.osx.jar` - Replaced with 4.13.0 version
-  - `export/lib/libz3.dylib` - ARM64 version
-  - `export/lib/libz3java.dylib` - ARM64 version (fixed with install_name_tool)
+### 1. Z3 Library Upgrade - Multi-Platform
+- **From**: Z3 4.3.2 (x86_64 macOS only)
+- **To**: Z3 4.13.0 (multi-platform support)
+- **Platforms Supported**:
+  - macOS x86_64 (Intel Macs)
+  - macOS ARM64 (Apple Silicon Macs)
+  - Linux x86_64
+- **Library Organization**:
+  ```
+  lib/ and export/lib/
+  ├── x86_64/              Z3 4.13.0 for macOS Intel
+  ├── arm64/               Z3 4.13.0 for macOS Apple Silicon  
+  └── linux/               Z3 4.13.0 for Linux x64
+  ```
+- **Automatic Selection**: `select-z3-architecture.sh` detects OS and Java architecture, automatically copying the correct libraries
 
 ### 2. Native Library Path Fix
 Fixed `libz3java.dylib` to properly load `libz3.dylib` using relative path:
@@ -138,11 +143,20 @@ All components verified working:
 
 2. **Set Comparisons**: Some examples (like Bank.k) use set comparisons (`customers >= accounts`) which aren't directly supported in SMT-LIB. These need to be rewritten to compare set sizes.
 
-## Architecture Notes
+## Platform and Java Compatibility
 
-- **Apple Silicon (ARM64)**: All native libraries are ARM64, no Rosetta 2 needed
-- **Java 8 Requirement**: Scala 2.11.8 requires Java 8 (will not work with Java 11+)
-- **Z3 4.13.0 Changes**: 
+### Supported Platforms
+- **macOS Intel (x86_64)**: Z3 4.13.0 native libraries
+- **macOS Apple Silicon (ARM64)**: Z3 4.13.0 native libraries (no Rosetta 2 needed)
+- **Linux x64**: Z3 4.13.0 native libraries
+
+### Java Version Requirements
+- **Current Requirement**: Java 8
+- **Reason**: Scala 2.11.8 compatibility (will not compile with Java 9+)
+- **Z3 Libraries**: Support newer Java versions (11, 17, 21)
+- **Future Upgrade Path**: Update to Scala 2.12+ or 2.13+ to use modern Java
+
+### Z3 4.13.0 API Changes 
   - Generic types throughout API
   - `Set` is now a built-in type
   - `parseSMTLIB2String` returns array instead of single expression

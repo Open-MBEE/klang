@@ -4,7 +4,7 @@ DATE=`date +%Y-%m-%d`
 
 if [ -z "$1" ] 
 then 
-    echo "Please provide a target OS: windows | osx"
+    echo "Please provide a target platform: windows | macos-intel | macos-arm64 | linux"
     exit -1
 fi
 
@@ -14,12 +14,12 @@ listcontains() {
   done
   return 1
 }
-oslist="windows osx"
+oslist="windows macos-intel macos-arm64 linux"
 if listcontains "$oslist" $1; 
 then 
     echo "Creating drop for $1..."; 
 else 
-    echo "Unknown OS specified. Supported choices: windows | osx"
+    echo "Unknown platform specified. Supported choices: windows | macos-intel | macos-arm64 | linux"
     exit -1
 fi
 
@@ -40,22 +40,55 @@ fi
 
 mkdir $KDIR
 
-cp -r lib $KDIR/lib
+# Copy base lib directory (excluding platform-specific subdirectories)
+mkdir $KDIR/lib
+for f in lib/*; do
+    if [ -f "$f" ]; then
+        cp "$f" $KDIR/lib/
+    fi
+done
 
-if [ "$1" = "windows" ] 
-then
-    cp k.cmd $KDIR/
-    mv $KDIR/lib/com.microsoft.z3.windows.jar $KDIR/lib/com.microsoft.z3.jar
-    rm $KDIR/lib/com.microsoft.z3.osx.jar
-else
-    cp k $KDIR/
-    mv $KDIR/lib/com.microsoft.z3.osx.jar $KDIR/lib/com.microsoft.z3.jar
-    rm $KDIR/lib/com.microsoft.z3.windows.jar
-fi
+# Copy platform-specific Z3 libraries
+case "$1" in
+    windows)
+        cp k.cmd $KDIR/
+        if [ -d lib/windows ]; then
+            cp lib/windows/* $KDIR/lib/
+        else
+            echo "Warning: lib/windows not found, using old libraries"
+        fi
+        ;;
+    macos-intel)
+        cp k $KDIR/
+        if [ -d lib/x86_64 ]; then
+            cp lib/x86_64/* $KDIR/lib/
+        else
+            echo "Warning: lib/x86_64 not found"
+        fi
+        ;;
+    macos-arm64)
+        cp k $KDIR/
+        if [ -d lib/arm64 ]; then
+            cp lib/arm64/* $KDIR/lib/
+        else
+            echo "Warning: lib/arm64 not found"
+        fi
+        ;;
+    linux)
+        cp k $KDIR/
+        if [ -d lib/linux ]; then
+            cp lib/linux/* $KDIR/lib/
+        else
+            echo "Warning: lib/linux not found"
+        fi
+        ;;
+esac
 
 cp -r ../src/tests $KDIR/tests
 cp -r ../src/examples $KDIR/examples
 cp ../README.md $KDIR/
+cp ../SETUP.md $KDIR/
 
 echo "Done."
-echo "Check $KDIR"
+echo "Created distribution in: $KDIR"
+echo "Platform: $1"

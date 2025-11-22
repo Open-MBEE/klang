@@ -1,33 +1,52 @@
 
-To create a K drop:
+To create K distributions:
 
-0. You need bash installed on Windows if you need to use this 
-   infrastructure on a windows machine. Nothing special needed for OSX.
+## Prerequisites
 
-1. create a new k.jar file from the sources:
-   1.1 In Eclipse run the Java program CreateJar in k.frontend (Run as Java Application).
-   1.2 File->export->Java->Runnable JAR file.
-   1.3 Run it (gives a warning, not a problem).
-   1.4 Move the jar file to the export/lib folder of the K distribution.
+- Bash shell (included on macOS/Linux, Git Bash on Windows)
+- Maven and Java 8 (for building from source)
 
-2. In export directory run:
+## Quick Start - Build All Distributions
 
-     ./createKDrop osx /path/To/Dir
+To create distribution packages for all supported platforms:
 
-   or:
+    ./build-all-distributions.sh [output-directory]
 
-     ./createKDrop windows /path/To/Dir
+This creates archives for:
+- macOS Intel (x86_64)
+- macOS Apple Silicon (ARM64)
+- Windows (x64)
+- Linux (x64)
 
-   to store a drop in /path/To/Dir.
+Output directory defaults to ../k-distributions/
 
-   or:
+## Manual Distribution Creation
 
-     ./all
+To create a distribution for a specific platform:
 
-   to store windows and osx drop in the export folder.
+    ./createKDrop <platform> <output-directory>
 
-   New directories "k-OSNAME-DATE" will be created where OSNAME is the 
-   name of the target operating system and DATE is today's date.
+Supported platforms:
+- macos-intel      (macOS Intel x86_64)
+- macos-arm64      (macOS Apple Silicon ARM64)
+- windows          (Windows x64)
+- linux            (Linux x64)
+
+Example:
+    ./createKDrop macos-intel /tmp
+
+This creates a directory "k-<platform>-<DATE>" with all necessary files
+including the appropriate Z3 4.13.0 libraries for that platform.
+
+## Distribution Contents
+
+Each distribution includes:
+- K executable (k or k.cmd)
+- Z3 4.13.0 libraries (platform-specific)
+- Scala and other runtime libraries
+- Example K files
+- Test files
+- Documentation (README.md, SETUP.md)
    These directories will contain everything to execute K on the target OS.
 
 3. zip up and ship these folders with https://lft.jpl.nasa.gov.

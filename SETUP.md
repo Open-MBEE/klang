@@ -2,11 +2,39 @@
 
 This document explains how to set up and run the K language web server on macOS.
 
+## Multi-Platform Support
+
+The project includes Z3 4.13.0 libraries for multiple platforms and architectures. The build and startup scripts automatically detect your operating system and Java architecture, then select the appropriate Z3 libraries.
+
+**Supported configurations:**
+- **macOS Intel (x86_64)** with Java 8 x86_64
+- **macOS Apple Silicon (ARM64)** with Java 8 ARM64 or x86_64 (via Rosetta 2)
+- **Linux (x86_64)** with Java 8 x86_64
+
+The libraries are organized as:
+```
+export/lib/
+├── libz3.dylib / libz3.so      (active - auto-selected)
+├── libz3java.dylib / libz3java.so (active - auto-selected)
+├── x86_64/                     (Z3 4.13.0 for Intel Macs)
+├── arm64/                      (Z3 4.13.0 for Apple Silicon)
+└── linux/                      (Z3 4.13.0 for Linux x64)
+```
+
 ## Prerequisites
 
 ### 1. Java 8 Installation
 
-The K language project requires Java 8 for compatibility with Scala 2.11. You can install Java 8 using SDKMAN:
+**Current Requirement: Java 8**
+
+The K language project currently requires Java 8 due to **Scala 2.11.8 compatibility**. The Z3 4.13.0 libraries themselves support newer Java versions, but the Scala code needs Java 8.
+
+**To use newer Java versions (11, 17, 21)**, you would need to:
+- Upgrade Scala to 2.12+ (for Java 11) or 2.13+ (for Java 17+)
+- Update the Maven compiler plugin source/target versions
+- Test for deprecated API usage
+
+You can install Java 8 using SDKMAN:
 
 ```bash
 # Install SDKMAN if not already installed
