@@ -253,6 +253,26 @@ object K2Z3 {
         if (debug) logDebug(s"Extracted ref $ref: $className = $value")
       }
       
+      // Pattern 1b: Const array initialization: store ((as const...) null) <ref> (lift-ClassName (mk-...))
+      // Match: (store ((as const (Array Int Any)) null) 0 (lift-TopLevelDeclarations (mk-TopLevelDeclarations ...)))
+      val constArrayPattern = """store\s+\(\(as\s+const\s+\(Array[^)]+\)\)\s+null\)\s+(\d+)\s+\(lift-(\w+)\s+\((mk-[\w\s\d]+)\)\)""".r
+      
+      if (debug) {
+        val testStr = normalizedStr.substring(normalizedStr.indexOf("store ((as const"), 
+                                               Math.min(normalizedStr.indexOf("store ((as const") + 200, normalizedStr.length))
+        logDebug(s"Looking for const-init pattern in: $testStr")
+      }
+      
+      for (m <- constArrayPattern.findAllMatchIn(normalizedStr)) {
+        val ref = m.group(1)
+        if (!heapMap.contains(ref)) {
+          val className = m.group(2)
+          val value = "(" + m.group(3) + ")"
+          heapMap += (ref -> s"(lift-$className $value)")
+          if (debug) logDebug(s"Extracted ref $ref (const-init): $className = $value")
+        }
+      }
+      
       // Pattern 2: Continuation patterns (part of outer store after nested store closes)
       // These appear as: ))) <ref> (lift-ClassName (mk-...)) or )) <ref> (lift-...)
       val contPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
@@ -314,13 +334,19 @@ object K2Z3 {
 
             className == "TopLevelDeclarations" match {
               case true =>
-                var topLevelVariables =
-                  model.decls.foldLeft(List[(String, Boolean)]()) { (res, d) =>
+                // Recursively collect top-level properties from model and all packages
+                def collectTopLevelProperties(m: Model): List[(String, Boolean)] = {
+                  val localProps = m.decls.foldLeft(List[(String, Boolean)]()) { (res, d) =>
                     d match {
                       case pd @ PropertyDecl(_, _, _, _, _, _) => (new Tuple2(pd.name, TypeChecker.isPrimitiveType(pd.ty))) :: res
                       case _                                   => res
                     }
                   }
+                  val packageProps = m.packages.flatMap(pkg => collectTopLevelProperties(pkg.model)).toList
+                  localProps ++ packageProps
+                }
+                
+                var topLevelVariables = collectTopLevelProperties(model)
                 var i = 1
                 topLevelVariables.reverse.foreach { k =>
                   if (k._2) {
