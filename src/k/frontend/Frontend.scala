@@ -227,7 +227,9 @@ object Frontend {
 
         // massage classpath
         classpath = classpath.map { x =>
-          if (!Paths.get(x).isAbsolute()) Paths.get(modelFileDirectory, x).toString
+          // Don't prepend modelFileDirectory if x is already equal to it or is absolute
+          if (!Paths.get(x).isAbsolute() && x != modelFileDirectory) 
+            Paths.get(modelFileDirectory, x).toString
           else x
         }
         classpath = classpath.map {
@@ -437,7 +439,7 @@ object Frontend {
         newProcessed += iFile
         val (importImports, iProcessed) = processImports(iModel, newProcessed)
         newProcessed = newProcessed ++ iProcessed
-        new TypeChecker(iModel).smtCheck
+        // TypeChecker will be called on the fully combined model later
         models = iModel :: (models ++ importImports)
       } else {
         log(s"Skipping $iFile (already processed).")

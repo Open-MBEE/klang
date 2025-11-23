@@ -247,23 +247,40 @@ object ClassHierarchy {
   var children = Map[EntityDecl, Set[Type]]()
 
   def buildHierarchy(model: Model) {
-
-    for (ed @ EntityDecl(_, _, _, _, _, _, _, _) <- model.decls) {
-      var edParents: Set[Type] = Set()
-      if (ed.entityToken.isInstanceOf[IdentifierToken]) {
-        edParents += keywords(ed.entityToken.asInstanceOf[IdentifierToken].name)
-      }
-      edParents ++= buildHierarchy(ed, type2Decl, Set())
-      parents += (ed -> edParents)
-      edParents.foreach { p =>
-        val parent = type2Decl(p).asInstanceOf[EntityDecl]
-        if (!children.contains(parent)) children = children + (parent -> Set())
-        children = children +
-          (parent ->
-            (children(parent) +
-              (type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](ed))))
+    // Track processed entity declarations to avoid duplicates from imports
+    var processedEntities = Set[EntityDecl]()
+    
+    def processEntityDecls(decls: List[TopDecl]): Unit = {
+      for (ed @ EntityDecl(_, _, _, _, _, _, _, _) <- decls) {
+        // Only process if we haven't seen this entity declaration before
+        if (!processedEntities.contains(ed)) {
+          processedEntities += ed
+          var edParents: Set[Type] = Set()
+          if (ed.entityToken.isInstanceOf[IdentifierToken]) {
+            edParents += keywords(ed.entityToken.asInstanceOf[IdentifierToken].name)
+          }
+          edParents ++= buildHierarchy(ed, type2Decl, Set())
+          parents += (ed -> edParents)
+          edParents.foreach { p =>
+            val parent = type2Decl(p).asInstanceOf[EntityDecl]
+            if (!children.contains(parent)) children = children + (parent -> Set())
+            children = children +
+              (parent ->
+                (children(parent) +
+                  (type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](ed))))
+          }
+        }
       }
     }
+    
+    def processModelHierarchy(m: Model): Unit = {
+      processEntityDecls(m.decls)
+      m.packages.foreach { pkg =>
+        processModelHierarchy(pkg.model)
+      }
+    }
+    
+    processModelHierarchy(model)
 
     // ensure that one cannot reach itself in the inheritance scheme
     val decl2Type = type2Decl.map(_.swap).asInstanceOf[Map[EntityDecl, Type]]
@@ -522,27 +539,49 @@ class TypeChecker(model: Model) {
       annotations += (ad.name -> ad)
     }
 
-    // get class information
-    model.decls.foreach { d =>
-      d match {
-        case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
-          val dED = d.asInstanceOf[EntityDecl]
-          keywords = ed.keyword match {
-            case Some(kw) =>
-              // Don't error if keyword is already registered - packages may reuse keywords
-              if (!keywords.contains(kw)) keywords + (kw -> IdentType(QualifiedName(List(ident)), List()))
-              else keywords
-            case _ => keywords
-          }
-          type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> dED)
-          classes = classes + (ident -> dED)
-          globalTypeEnv = globalTypeEnv.union(ident -> ClassTypeInfo(ed))
-        case td @ TypeDecl(ident, _, _) =>
-          type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> d.asInstanceOf[TypeDecl])
-          globalTypeEnv = globalTypeEnv.union(ident -> TypeTypeInfo(td))
-        case _ => ()
+    // get class information - recursively process all declarations including those in packages
+    // Track processed entity names to avoid duplicates from imports
+    var processedEntityNames = Set[String]()
+    
+    def processDecls(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
+        d match {
+          case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
+            // Only process if we haven't seen this entity name before
+            // Also check if it's already in the globalTypeEnv to handle parser duplicates
+            if (!processedEntityNames.contains(ident) && !globalTypeEnv.map.contains(ident)) {
+              processedEntityNames += ident
+              val dED = d.asInstanceOf[EntityDecl]
+              keywords = ed.keyword match {
+                case Some(kw) =>
+                  // Don't error if keyword is already registered - packages may reuse keywords
+                  if (!keywords.contains(kw)) keywords + (kw -> IdentType(QualifiedName(List(ident)), List()))
+                  else keywords
+                case _ => keywords
+              }
+              type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> dED)
+              classes = classes + (ident -> dED)
+              globalTypeEnv = globalTypeEnv.union(ident -> ClassTypeInfo(ed))
+            }
+          case td @ TypeDecl(ident, _, _) =>
+            if (!processedEntityNames.contains(ident) && !globalTypeEnv.map.contains(ident)) {
+              processedEntityNames += ident
+              type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> d.asInstanceOf[TypeDecl])
+              globalTypeEnv = globalTypeEnv.union(ident -> TypeTypeInfo(td))
+            }
+          case _ => ()
+        }
       }
     }
+    
+    def processModel(m: Model): Unit = {
+      processDecls(m.decls)
+      m.packages.foreach { pkg =>
+        processModel(pkg.model)
+      }
+    }
+    
+    processModel(model)
 
     // build inheritance model
     ClassHierarchy.buildHierarchy(model)
@@ -582,23 +621,24 @@ class TypeChecker(model: Model) {
 
     // pass: build information about properties/functions in classes
     // store it in the global type env, but also one for each class
-    model.decls.foreach { d =>
-      d match {
-        case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
-          // add 'this' to the type env
-          var classTypeEnv = TypeEnv(ed, globalTypeEnv.map + ("this" -> ClassTypeInfo(ed)))
-          ed.members.foreach { m =>
-            m match {
-              case pd @ PropertyDecl(_, _, _, _, _, _) =>
-                if (!doesTypeExist(classTypeEnv, pd.ty)) error(s"Specified type ${pd.ty} does not exist. Please check. Exiting.")
-                classTypeEnv = classTypeEnv.overwrite(pd.name -> PropertyTypeInfo(pd, false, true, ed))
-              case fd @ FunDecl(_, _, _, _, _, _) =>
-                classTypeEnv = classTypeEnv.union(fd.ident -> FunctionTypeInfo(fd, ed))
-              case _ => ()
+    def processClassProperties(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
+        d match {
+          case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
+            // add 'this' to the type env
+            var classTypeEnv = TypeEnv(ed, globalTypeEnv.map + ("this" -> ClassTypeInfo(ed)))
+            ed.members.foreach { m =>
+              m match {
+                case pd @ PropertyDecl(_, _, _, _, _, _) =>
+                  if (!doesTypeExist(classTypeEnv, pd.ty)) error(s"Specified type ${pd.ty} does not exist. Please check. Exiting.")
+                  classTypeEnv = classTypeEnv.overwrite(pd.name -> PropertyTypeInfo(pd, false, true, ed))
+                case fd @ FunDecl(_, _, _, _, _, _) =>
+                  classTypeEnv = classTypeEnv.union(fd.ident -> FunctionTypeInfo(fd, ed))
+                case _ => ()
+              }
             }
-          }
-          decl2TypeEnvi += (d -> classTypeEnv)
-          origTypeEnvironments += (d -> classTypeEnv)
+            decl2TypeEnvi += (d -> classTypeEnv)
+            origTypeEnvironments += (d -> classTypeEnv)
         case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _, _) =>
 
           // only support 2 members in associations
@@ -662,11 +702,22 @@ class TypeChecker(model: Model) {
         case _ => ()
       }
     }
+    }
+    
+    def processModelClassProperties(m: Model): Unit = {
+      processClassProperties(m.decls)
+      m.packages.foreach { pkg =>
+        processModelClassProperties(pkg.model)
+      }
+    }
+    
+    processModelClassProperties(model)
 
     logDebug(s"GlobalTE: $globalTypeEnv")
 
     // pass: do inheritance for each class and associations
-    model.decls.foreach { d =>
+    def processInheritance(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
       d match {
         case ed @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
           logDebug(s"Processing $ident")
@@ -683,6 +734,16 @@ class TypeChecker(model: Model) {
         case _ => ()
       }
     }
+    }
+    
+    def processModelInheritance(m: Model): Unit = {
+      processInheritance(m.decls)
+      m.packages.foreach { pkg =>
+        processModelInheritance(pkg.model)
+      }
+    }
+    
+    processModelInheritance(model)
 
     decl2TypeEnvi.foreach(kv => logDebug(s"${kv._2}"))
 
