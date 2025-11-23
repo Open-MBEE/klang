@@ -230,24 +230,70 @@ object K2Z3 {
       
       val modelStr = z3Model.toString
       
-      // Simple pattern: ref number followed by (lift-ClassName value)
-      // Matches: "0 (lift-TopLevelDeclarations TopLevelDeclarations!val!0)"
-      //          "1 (lift-Car (mk-Car 0))"
-      val liftPattern = """(\d+)\s+\(lift-(\w+)\s+([^)]+(?:\([^)]*\))?[^)]*)\)""".r
-      
-      for (m <- liftPattern.findAllMatchIn(modelStr)) {
-        val ref = m.group(1)
-        val className = m.group(2)
-        var value = m.group(3).trim
-        
-        // Clean up the value - may have nested parentheses
-        if (!value.startsWith("(") && !value.startsWith("mk-")) {
-          // It's a constant name, keep as is
+      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-ClassName ...))
+      // Normalize whitespace to make regex easier
+      val normalizedStr = modelStr.replaceAll("\\s+", " ")
+      if (debug) {
+        // Print all store operations to understand patterns
+        val allStores = """store\s+\S+\s+\d+\s+\(lift-\w+[^}]{0,100}""".r
+        logDebug("All store patterns found:")
+        for (m <- allStores.findAllMatchIn(normalizedStr).take(15)) {
+          logDebug(s"  ${m.matched}")
         }
-        
-        // Reconstruct the full value expression
-        heapMap += (ref -> s"(lift-$className $value)")
       }
+      
+      // Pattern 1: Full store operations: store <var> <ref> (lift-ClassName (mk-...))
+      val storePattern = """store\s+(\S+)\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
+      
+      for (m <- storePattern.findAllMatchIn(normalizedStr)) {
+        val ref = m.group(2)
+        val className = m.group(3)
+        val value = "(" + m.group(4) + ")"
+        heapMap += (ref -> s"(lift-$className $value)")
+        if (debug) logDebug(s"Extracted ref $ref: $className = $value")
+      }
+      
+      // Pattern 2: Continuation patterns (part of outer store after nested store closes)
+      // These appear as: ))) <ref> (lift-ClassName (mk-...)) or )) <ref> (lift-...)
+      val contPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
+      
+      for (m <- contPattern.findAllMatchIn(normalizedStr)) {
+        val ref = m.group(1)
+        if (!heapMap.contains(ref)) {
+          val className = m.group(2)
+          val value = "(" + m.group(3) + ")"
+          heapMap += (ref -> s"(lift-$className $value)")
+          if (debug) logDebug(s"Extracted ref $ref (cont): $className = $value")
+        }
+      }
+      
+      // Pattern 3: Const names without mk- constructor (e.g., TopLevelDeclarations!val!0)
+      val storeConstPattern = """store\s+\S+\s+(\d+)\s+\(lift-(\w+)\s+([\w!]+)\)""".r
+      
+      for (m <- storeConstPattern.findAllMatchIn(normalizedStr)) {
+        val ref = m.group(1)
+        if (!heapMap.contains(ref)) {
+          val className = m.group(2)
+          val constName = m.group(3)
+          heapMap += (ref -> s"(lift-$className ($constName))")
+          if (debug) logDebug(s"Extracted ref $ref (const): $className = $constName")
+        }
+      }
+      
+      // Pattern 4: Continuation with const names
+      val contConstPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+([\w!]+)\)""".r
+      
+      for (m <- contConstPattern.findAllMatchIn(normalizedStr)) {
+        val ref = m.group(1)
+        if (!heapMap.contains(ref)) {
+          val className = m.group(2)
+          val constName = m.group(3)
+          heapMap += (ref -> s"(lift-$className ($constName))")
+          if (debug) logDebug(s"Extracted ref $ref (cont-const): $className = $constName")
+        }
+      }
+      
+
       
       // Add else/default case
       heapMap += ("else" -> "null")

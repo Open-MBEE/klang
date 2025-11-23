@@ -652,22 +652,22 @@ class HeapLayout(model: Model) {
         instancesByAnnotation += (ed.ident -> size.toInt)
       }
     }
-    for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
-      var m = pd.model
-      updateInstancesByAnnotation(m)
-    }
+    //for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
+    //  var m = pd.model
+    //  updateInstancesByAnnotation(m)
+    //}
   }
 
   // update instancesByComputation:
-  updateInstancesByAnnotation(model)
+  updateInstancesByComputation(model)
   def updateInstancesByComputation(model: Model) {
     if (K2Z3.debug) println("\n--- dfs instance search:\n")
     for (className <- graph.getClassesToChase(2))
       dfs(className)
-    for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
-      var m = pd.model
-      updateInstancesByComputation(m)
-    }
+    //for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
+    //  var m = pd.model
+    //  updateInstancesByComputation(m)
+    //}
   }
 
   // update heapEntries:
@@ -682,10 +682,10 @@ class HeapLayout(model: Model) {
       nextFreeHeapCell = newNextFreeHeapCell
       heapEntries += (className -> range)
     }
-    for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
-      var m = pd.model
-      updateHeapEntries(m)
-    }
+    //for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
+    //  var m = pd.model
+    //  updateHeapEntries(m)
+    //}
   }
 
   if (K2Z3.debug) println(this)

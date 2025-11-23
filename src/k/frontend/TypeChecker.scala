@@ -749,84 +749,98 @@ class TypeChecker(model: Model) {
 
     // pass: build the information for expressions 
     // except expressions that are in functions (bodies)
-    model.decls.foreach { d =>
-      d match {
-        case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
-        case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
-          ed.members.foreach { m =>
-            m match {
-              case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(decl2TypeEnvi(ed), exp, ed))
-              case _                   => ()
+    def processExpressions(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
+        d match {
+          case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
+          case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
+            ed.members.foreach { m =>
+              m match {
+                case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(decl2TypeEnvi(ed), exp, ed))
+                case _                   => ()
+              }
             }
-          }
-        case cd @ ConstraintDecl(name, exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
-        case _                              => ()
+          case cd @ ConstraintDecl(name, exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
+          case _                              => ()
+        }
       }
     }
+    def processModelExpressions(m: Model): Unit = {
+      processExpressions(m.decls)
+      m.packages.foreach { pkg => processModelExpressions(pkg.model) }
+    }
+    processModelExpressions(model)
 
     // pass: now process function bodies, property initializations etc. etc.
-    model.decls.foreach { d =>
-      d match {
-        case cd @ ConstraintDecl(name, exp) =>
-          val ty = getExpType(globalTypeEnv, exp, null)
-          if (ty != BoolType) {
-            error(s"Condition $exp is not of type Bool.")
-          }
-          exp2Type.put(exp, ty)
-        case fd @ FunDecl(_, _, _, _, _, _) =>
-          processFunction(fd, globalTypeEnv, null)
-        case ed @ EntityDecl(_, token, _, ident, _, _, _, _) =>
-          val entityTypeEnv = decl2TypeEnvi(ed)
-
-          ed.annotations.foreach { a =>
-            val annotationExpType =
-              if (a.exp != null) getExpType(entityTypeEnv, a.exp, ed)
-              else UnitType
-            val annotationType = annotations(a.name).ty
-            if (!areTypesEqual(annotationExpType, annotationType, false))
-              error(s"Annotation $a does not type check.")
-          }
-
-          ed.members.foreach { m =>
-            m match {
-              case cd @ ConstraintDecl(name, exp) =>
-                val ty = getExpType(entityTypeEnv, exp, ed)
-                if (ty != BoolType && ty != AnyType) {
-                  error(s"Condition $exp is not of type Bool.")
-                }
-                exp2Type.put(exp, ty)
-              case fd @ FunDecl(_, _, _, _, _, _) =>
-                processFunction(fd, entityTypeEnv, ed)
-              case pd @ PropertyDecl(_, _, _, _, _, _) =>
-                pd.expr match {
-                  case Some(e) =>
-                    val exprType = getExpType(entityTypeEnv, e, ed)
-                    if (!areTypesEqual(exprType, pd.ty, true)) {
-                      error(s"Type does not match: ${pd.name}. Expected ${pd.ty}, Found $exprType")
-                    }
-                    exp2Type.put(e, exprType)
-                  case None => ()
-                }
-              case ExpressionDecl(e) =>
-                val exprType = getExpType(entityTypeEnv, e, ed)
-                if (exprType != UnitType) {
-                  error(s"Expression in class does not have unit type: $e\nMaybe you need to have the 'req' keyword before the expression?")
-                }
-                exp2Type.put(e, exprType)
-              case _ => ()
+    def processConstraintsAndFunctions(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
+        d match {
+          case cd @ ConstraintDecl(name, exp) =>
+            val ty = getExpType(globalTypeEnv, exp, null)
+            if (ty != BoolType) {
+              error(s"Condition $exp is not of type Bool.")
             }
-          }
-        case pd @ PropertyDecl(_, _, _, _, _, _) =>
-          if (!pd.expr.isEmpty) {
-            val exprType = getExpType(globalTypeEnv, pd.expr.get, null)
-            if (!areTypesEqual(exprType, pd.ty, true)) {
-              error(s"Type does not match: ${pd.name}. + Expected ${pd.ty}, Found $exprType")
+            exp2Type.put(exp, ty)
+          case fd @ FunDecl(_, _, _, _, _, _) =>
+            processFunction(fd, globalTypeEnv, null)
+          case ed @ EntityDecl(_, token, _, ident, _, _, _, _) =>
+            val entityTypeEnv = decl2TypeEnvi(ed)
+
+            ed.annotations.foreach { a =>
+              val annotationExpType =
+                if (a.exp != null) getExpType(entityTypeEnv, a.exp, ed)
+                else UnitType
+              val annotationType = annotations(a.name).ty
+              if (!areTypesEqual(annotationExpType, annotationType, false))
+                error(s"Annotation $a does not type check.")
             }
-            exp2Type.put(pd.expr.get, exprType)
-          }
-        case _ => ()
+
+            ed.members.foreach { m =>
+              m match {
+                case cd @ ConstraintDecl(name, exp) =>
+                  val ty = getExpType(entityTypeEnv, exp, ed)
+                  if (ty != BoolType && ty != AnyType) {
+                    error(s"Condition $exp is not of type Bool.")
+                  }
+                  exp2Type.put(exp, ty)
+                case fd @ FunDecl(_, _, _, _, _, _) =>
+                  processFunction(fd, entityTypeEnv, ed)
+                case pd @ PropertyDecl(_, _, _, _, _, _) =>
+                  pd.expr match {
+                    case Some(e) =>
+                      val exprType = getExpType(entityTypeEnv, e, ed)
+                      if (!areTypesEqual(exprType, pd.ty, true)) {
+                        error(s"Type does not match: ${pd.name}. Expected ${pd.ty}, Found $exprType")
+                      }
+                      exp2Type.put(e, exprType)
+                    case None => ()
+                  }
+                case ExpressionDecl(e) =>
+                  val exprType = getExpType(entityTypeEnv, e, ed)
+                  if (exprType != UnitType) {
+                    error(s"Expression in class does not have unit type: $e\nMaybe you need to have the 'req' keyword before the expression?")
+                  }
+                  exp2Type.put(e, exprType)
+                case _ => ()
+              }
+            }
+          case pd @ PropertyDecl(_, _, _, _, _, _) =>
+            if (!pd.expr.isEmpty) {
+              val exprType = getExpType(globalTypeEnv, pd.expr.get, null)
+              if (!areTypesEqual(exprType, pd.ty, true)) {
+                error(s"Type does not match: ${pd.name}. + Expected ${pd.ty}, Found $exprType")
+              }
+              exp2Type.put(pd.expr.get, exprType)
+            }
+          case _ => ()
+        }
       }
     }
+    def processModelConstraintsAndFunctions(m: Model): Unit = {
+      processConstraintsAndFunctions(m.decls)
+      m.packages.foreach { pkg => processModelConstraintsAndFunctions(pkg.model) }
+    }
+    processModelConstraintsAndFunctions(model)
 
     // Recurse into packages
     // Note: When packages are processed, their classes are already in the global scope
