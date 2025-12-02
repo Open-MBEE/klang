@@ -2203,7 +2203,19 @@ case class DotExp(exp: Exp, ident: String) extends Exp {
 
   override def toSMT(className: String, subTyping: Boolean): String = {
     val expSMT = exp.toSMT(className, subTyping)
-    val classNameOfExp = exp2Type.get(exp).toString
+    val expType = TypeChecker.exp2Type.get(exp)
+
+    // Handle string properties
+    if (expType == StringType) {
+      ident match {
+        case "length" =>
+          return s"(str.len $expSMT)"
+        case _ =>
+          // Fall through to regular property handling
+      }
+    }
+
+    val classNameOfExp = expType.toString
     val getter = s"$classNameOfExp.$ident"
     UtilSMT.addGetter(getter)
     s"($getter $expSMT)"
@@ -2330,6 +2342,53 @@ trait CallApplExp extends Exp {
   }
 
   override def toSMT(className: String, subTyping: Boolean): String = {
+    // Handle string method calls
+    exp1 match {
+      case DotExp(strExp, methodName) if TypeChecker.exp2Type.get(strExp) == StringType =>
+        val strSMT = strExp.toSMT(className, subTyping)
+        methodName match {
+          case "startsWith" =>
+            val argSMT = args(0).toSMT(className, subTyping)
+            return s"(str.prefixof $argSMT $strSMT)"
+          case "endsWith" =>
+            val argSMT = args(0).toSMT(className, subTyping)
+            return s"(str.suffixof $argSMT $strSMT)"
+          case "contains" =>
+            val argSMT = args(0).toSMT(className, subTyping)
+            return s"(str.contains $strSMT $argSMT)"
+          case "substring" =>
+            val startSMT = args(0).toSMT(className, subTyping)
+            val endSMT = args(1).toSMT(className, subTyping)
+            // Z3 str.substr takes (string, offset, length)
+            // K substring takes (start, end), so length = end - start
+            return s"(str.substr $strSMT $startSMT (- $endSMT $startSMT))"
+          case "charAt" | "at" =>
+            val indexSMT = args(0).toSMT(className, subTyping)
+            return s"(str.at $strSMT $indexSMT)"
+          case "indexOf" =>
+            val argSMT = args(0).toSMT(className, subTyping)
+            return s"(str.indexof $strSMT $argSMT 0)"
+          case "lastIndexOf" =>
+            // Z3 doesn't have lastIndexOf directly, would need complex formula
+            // For now, we'll use a placeholder or error
+            UtilSMT.error(s"lastIndexOf not yet implemented in SMT")
+          case "replace" =>
+            val oldSMT = args(0).toSMT(className, subTyping)
+            val newSMT = args(1).toSMT(className, subTyping)
+            return s"(str.replace $strSMT $oldSMT $newSMT)"
+          case "toUpper" =>
+            return s"(str.to_upper $strSMT)"
+          case "toLower" =>
+            return s"(str.to_lower $strSMT)"
+          case "toInt" =>
+            return s"(str.to_int $strSMT)"
+          case _ =>
+            // Fall through to regular function handling
+        }
+      case _ =>
+        // Not a string method, continue with regular handling
+    }
+
     if (isConstructor(exp1)) {
       // constructor application:
       val argMap: Map[String, Exp] = (for (NamedArgument(x, exp) <- args) yield (x -> exp)).toMap

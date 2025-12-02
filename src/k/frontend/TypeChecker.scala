@@ -1067,6 +1067,11 @@ class TypeChecker(model: Model) {
                 }
               }
             }
+          case StringType =>
+            // String methods
+            if (i == "length") IntType
+            else if (i == "toString") StringType
+            else error(s"Unknown string property: $i")
           case tt @ _ =>
             if (i == "collect") CollectType(List(tt))
             else if (i == "size") SumType(List(tt))
@@ -1105,6 +1110,60 @@ class TypeChecker(model: Model) {
             }
         }
       case FunApplExp(fexp, args) =>
+        // Check if this is a string method call
+        fexp match {
+          case DotExp(strExp, methodName) if getExpType(te, strExp, owner) == StringType =>
+            // String method calls
+            methodName match {
+              case "startsWith" | "endsWith" | "contains" =>
+                // These methods take a String argument and return Bool
+                if (args.length != 1) error(s"$methodName requires exactly 1 argument")
+                val argType = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                if (argType != StringType) error(s"$methodName argument must be String, got $argType")
+                return BoolType
+              case "substring" =>
+                // substring(start, end) returns String
+                if (args.length != 2) error(s"substring requires exactly 2 arguments")
+                val arg1Type = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                val arg2Type = getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner)
+                if (arg1Type != IntType || arg2Type != IntType)
+                  error(s"substring arguments must be Int, got $arg1Type and $arg2Type")
+                return StringType
+              case "charAt" | "at" =>
+                // charAt(index) returns String (single character)
+                if (args.length != 1) error(s"$methodName requires exactly 1 argument")
+                val argType = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                if (argType != IntType) error(s"$methodName argument must be Int, got $argType")
+                return StringType
+              case "indexOf" | "lastIndexOf" =>
+                // indexOf(str) returns Int
+                if (args.length != 1) error(s"$methodName requires exactly 1 argument")
+                val argType = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                if (argType != StringType) error(s"$methodName argument must be String, got $argType")
+                return IntType
+              case "replace" =>
+                // replace(old, new) returns String
+                if (args.length != 2) error(s"replace requires exactly 2 arguments")
+                val arg1Type = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                val arg2Type = getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner)
+                if (arg1Type != StringType || arg2Type != StringType)
+                  error(s"replace arguments must be String, got $arg1Type and $arg2Type")
+                return StringType
+              case "toUpper" | "toLower" =>
+                // Case conversion methods take no arguments, return String
+                if (args.length != 0) error(s"$methodName takes no arguments")
+                return StringType
+              case "toInt" =>
+                // toInt() returns Int
+                if (args.length != 0) error(s"toInt takes no arguments")
+                return IntType
+              case _ =>
+                // Fall through to regular function handling
+            }
+          case _ =>
+            // Not a string method, continue with regular handling
+        }
+
         val callToConstructor = isConstructorCall(te, fexp)
         if (!callToConstructor.isEmpty) {
           val ty = callToConstructor.get
