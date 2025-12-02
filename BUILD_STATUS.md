@@ -58,7 +58,6 @@ The server will start on port 9000 and be available at `http://localhost:9000`
 3. **Build Simplification**: 
    - Maven handles Scala-first compilation automatically (no custom scripts needed)
    - Just requires Java 8 (Scala 2.11.8 compatibility)
-   - `build-scala-first.sh` kept for backward compatibility but is deprecated
 
 ### How to Build and Run:
 
@@ -85,7 +84,6 @@ bash export/k path/to/your/file.k
 
 ## Recommendations
 
-1. **build-scala-first.sh is deprecated** - Maven's scala-maven-plugin already handles Scala-first compilation
 2. **For other Apple Silicon users** - Just update the Z3 native libraries to ARM64 versions
 3. **For Intel Mac users** - The original x86_64 Z3 libraries should still work with the API updates
 

@@ -86,7 +86,7 @@ Commented out the `Set` type definition that conflicts with Z3 4.13.0's built-in
 ### 4. Build System Enhancements
 
 #### Java 8 Configuration
-Enhanced `build-scala-first.sh` and `start-server.sh` to detect and use Java 8 via SDKMAN:
+Enhanced `compile.sh` and `start-server.sh` to detect and use Java 8 via SDKMAN:
 ```bash
 # Check SDKMAN Java 8 installation
 if [ -d "$HOME/.sdkman/candidates/java/8.0.462-zulu" ]; then
@@ -129,7 +129,6 @@ class SimpleTest {
 All components verified working:
 - ✅ Java 8 build with Scala 2.11.8
 - ✅ Maven compilation
-- ✅ Custom build script (build-scala-first.sh)
 - ✅ Web server startup on port 9000
 - ✅ K language parsing
 - ✅ Type checking
@@ -180,7 +179,6 @@ No significant performance changes observed. Z3 4.13.0 ARM64 native runs efficie
 - `src/k/frontend/AbstractSyntax.scala` - Commented out Set definition
 
 ### Build System
-- `build-scala-first.sh` - Added Java 8 detection
 - `start-server.sh` - Added Java 8 detection
 
 ### Libraries

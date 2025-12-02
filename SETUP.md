@@ -91,7 +91,6 @@ The custom script provides more control and was the original workaround:
 ./start-server.sh
 
 # Or build and run manually
-./build-scala-first.sh
 cd src/web/jettyService
 ./run-server.sh
 ```
@@ -104,7 +103,6 @@ cd src/web/jettyService
 - ✅ Outputs compiled classes to target/classes/
 - ✅ Web assets and examples remain in src/ (referenced directly by KServlet)
 
-### Custom Script (`./build-scala-first.sh`)
 - ✅ Compiles Scala files first (using command-line scalac)
 - ✅ Compiles Java files including KServlet  
 - ✅ Outputs compiled classes to bin/

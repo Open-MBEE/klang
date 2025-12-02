@@ -797,6 +797,12 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     result1 += "(set-option :smt.macro-finder true)\n"
     result1 += "\n"
 
+    // Import String theory for Z3 4.13.0+
+    result1 += UtilSMT.headline1("String Theory")
+    result1 += "; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n"
+    result1 += "(set-logic ALL)\n"
+    result1 += "\n"
+
     // Generate builtin datatypes:
 
     result1 += UtilSMT.headline1("Built-in datatypes")
@@ -4030,8 +4036,16 @@ case class StringLiteral(s: String) extends Literal {
   }
   
   override def toSMT(className: String, subTyping: Boolean): String = {
-    // s is already the unescaped value from the parser; re-escape for SMT-LIB
-    val escaped = s
+    // s already contains quotes from the parser (e.g., "Hello")
+    // We need to strip the outer quotes and re-escape the inner content for SMT-LIB
+    val content = if (s.startsWith("\"") && s.endsWith("\"")) {
+      s.substring(1, s.length - 1)  // Remove outer quotes
+    } else {
+      s  // Fallback if quotes aren't there
+    }
+
+    // Now escape the content for SMT-LIB
+    val escaped = content
       .replace("\\", "\\\\")
       .replace("\"", "\\\"")
       .replace("\n", "\\n")

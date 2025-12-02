@@ -1,4 +1,4 @@
-class RocketMachine {
+class SimpleStringTest {
 
   s : String
   t : String
@@ -7,4 +7,5 @@ class RocketMachine {
   req t = "world"
 
 }
+
 
