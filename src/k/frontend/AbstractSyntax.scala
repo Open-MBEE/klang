@@ -2777,6 +2777,15 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
             s"(not (select $exp2SMT $exp1SMT))"
           case PSUBSET =>
             s"(and (subset $exp1SMT $exp2SMT) (not (= $exp1SMT $exp2SMT)))"
+          case ADD =>
+            // Check if operands are strings and use str.++ for concatenation
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type == StringType || exp2Type == StringType) {
+              s"(str.++ $exp1SMT $exp2SMT)"
+            } else {
+              s"(+ $exp1SMT $exp2SMT)"
+            }
           case _ =>
             val opSMT = op.toSMT
             s"($opSMT $exp1SMT $exp2SMT)"
