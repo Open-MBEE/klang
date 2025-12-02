@@ -126,16 +126,16 @@ object UtilSMT {
     ty match {
       case CartesianType(types)          => types forall wellFormedType
       case ParenType(ty)                 => wellFormedType(ty)
-      case BoolType | IntType | RealType => true
+      case BoolType | IntType | RealType | StringType => true
       case IdentType(_, _)               => true
-      case FunctionType(_, _) | SubType(_, _, _) | CharType | StringType | UnitType =>
+      case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
         false
     }
 
   def ignoreMember(memberDecl: MemberDecl): Boolean = {
     memberDecl match {
-      case PropertyDecl(modifiers, name, ty, multiplicity, assignment, expr) =>
+      case PropertyDecl(modifiers, name, ty, None, _, exp) =>
         !wellFormedType(ty)
     }
   }
@@ -2268,14 +2268,11 @@ case class IndexExp(exp1: Exp, args: List[Argument]) extends Exp {
   override def toJson2 = {
     val expression = new JSONObject()
     val operand = new JSONArray()
-
-    expression.put("operand", operand)
-    expression.put("type", "Expression")
-
     operand.put(exp1.toJson)
     for (arg <- args) operand.put(arg.toJson)
 
-    expression
+    expression.put("type", "Expression")
+    expression.put("operand", operand)
   }
 
 }
@@ -2398,8 +2395,8 @@ trait CallApplExp extends Exp {
     val expression = new JSONObject()
     val operand = new JSONArray()
 
-    expression.put("operand", operand)
     expression.put("type", "Expression")
+    expression.put("operand", operand)
 
     operand.put(exp1.toJson)
     for (arg <- args) operand.put(arg.toJson)
@@ -2644,15 +2641,11 @@ case class BlockExp(body: List[MemberDecl]) extends Exp {
   override def toJson2 = {
     val expression = new JSONObject()
     val operand = new JSONArray()
-
-    expression.put("type", "Expression")
-    expression.put("operand", operand)
-
     operand.put(new JSONObject().put("type", "ElementValue").put("element", "BlockExp"))
     for (md <- body) operand.put(md.toJson)
 
-    expression
-
+    expression.put("type", "Expression")
+    expression.put("operand", operand)
   }
 }
 
@@ -2952,13 +2945,11 @@ case class UnaryExp(op: UnaryOp, exp: Exp) extends Exp {
     val expression = new JSONObject()
     val operand = new JSONArray()
 
-    expression.put("operand", operand)
-    expression.put("type", "Expression")
-
     operand.put(new JSONObject().put("type", "ElementValue").put("element", op.toJsonName))
     operand.put(exp.toJson)
 
-    expression
+    expression.put("type", "Expression")
+    expression.put("operand", operand)
   }
 }
 
@@ -3155,7 +3146,7 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
   override def toJson2 = {
     val expression = new JSONObject()
     val operand = new JSONArray()
-    operand.put(new JSONObject().put("type", "ElementValue").put("element", kind.toJson))
+    operand.put(new JSONObject().put("type", "ElementValue").put("element", "CollectionEnumExp"))
     for (exp <- exps) operand.put(exp.toJson)
     expression.put("type", "Expression")
     expression.put("operand", operand)
@@ -3226,7 +3217,7 @@ case class CollectionRangeExp(kind: CollectionKind, exp1: Exp, exp2: Exp) extend
   override def toJson2 = {
     val expression = new JSONObject()
     val operand = new JSONArray()
-    operand.put(new JSONObject().put("type", "ElementValue").put("element", kind))
+    operand.put(new JSONObject().put("type", "ElementValue").put("element", "CollectionRangeExp"))
     operand.put(exp1.toJson)
     operand.put(exp2.toJson)
     expression.put("type", "Expression")
@@ -3373,6 +3364,7 @@ case class AssertExp(exp: Exp) extends Exp {
   override def toJson2 = {
     val expression = new JSONObject()
     val operand = new JSONArray()
+
     operand.put(new JSONObject().put("type", "ElementValue").put("element", "Assert"))
     operand.put(exp.toJson)
 
@@ -4037,6 +4029,16 @@ case class StringLiteral(s: String) extends Literal {
     UtilSMT.statistics.STRINGLIT += 1
   }
   
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // s is already the unescaped value from the parser; re-escape for SMT-LIB
+    val escaped = s
+      .replace("\\", "\\\\")
+      .replace("\"", "\\\"")
+      .replace("\n", "\\n")
+      .replace("\t", "\\t")
+    "\"" + escaped + "\""
+  }
+
   override def toString = s
 
   override def toJson1 = {
@@ -4537,8 +4539,10 @@ case object RealType extends PrimitiveType {
 
 case object StringType extends PrimitiveType {
   override def statistics() {
-    UtilSMT.statistics.REALTYPE += 1
+    UtilSMT.statistics.STRINGTYPE += 1
   }
+
+  override def toSMT: String = "String"
 
   override def toScala: String = "String"
 
@@ -4884,7 +4888,8 @@ case class Multiplicity(exp1: Exp, exp2: Option[Exp]) extends HasChildren {
     val multiplicity = new JSONObject()
     multiplicity.put("type", "Multiplicity")
     multiplicity.put("exp1", exp1.toJson)
-    exp2 match { case Some(e) => multiplicity.put("exp2", e.toJson) case None => multiplicity }
+    exp2 match { case Some(e) => multiplicity.put("exp2", e.toJson) case None => }
+    multiplicity
   }
 
   // FIXME
