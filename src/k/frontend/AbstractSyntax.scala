@@ -563,10 +563,12 @@ class InstantiationGraph(model: Model) {
     strategy match {
       case 1 =>
         // classes not instantiated by other classes (the top level)
-        // problem: misses recursive classes
+        // Also exclude classes that extend other classes (child classes with parents)
+        // Keep only: classes with no properties referencing them AND classes with no parent classes
         val allClasses = graph.keySet
         val classesInstantiated = graph.values.flatMap(_.toSet)
-        allClasses -- classesInstantiated
+        val classesWithParents = allClasses.filter(c => TypeChecker.getDirectSubClasses(c).nonEmpty)
+        (allClasses -- classesInstantiated) -- classesWithParents
       case 2 =>
         // all classes
         // problem: creates perhaps too many instances
@@ -610,10 +612,13 @@ class HeapLayout(model: Model) {
     result
   }
 
-  private def getNrOfInstances(className: graph.ClassName): Int =
+  private def getNrOfInstances(className: graph.ClassName): Int = {
+    val hasChildren = TypeChecker.getDirectSubClasses(className).nonEmpty
+    val defaultInstances = if (hasChildren) 0 else ASTOptions.numberOfInstances
     instancesByAnnotation.getOrElse(className,
       instancesByComputation.getOrElse(className,
-        ASTOptions.numberOfInstances))
+        defaultInstances))
+  }
 
   private def dfs(node: graph.ClassName) {
     dfs(List(node))
@@ -662,7 +667,10 @@ class HeapLayout(model: Model) {
   updateInstancesByComputation(model)
   def updateInstancesByComputation(model: Model) {
     if (K2Z3.debug) println("\n--- dfs instance search:\n")
-    for (className <- graph.getClassesToChase(2))
+    // Use strategy 1: only classes not instantiated by others (top-level classes)
+    // This creates instances for declared top-level objects and their references,
+    // plus one instance of any class not reachable from top-level
+    for (className <- graph.getClassesToChase(1))
       dfs(className)
     //for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
     //  var m = pd.model
