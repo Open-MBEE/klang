@@ -227,21 +227,12 @@ object K2Z3 {
           }
       }.toList
 
-    // Format the value string, breaking into multiple lines if too long
+    // Format the value string on one line for proper ASCII table rendering
     val valueString = s"$className(" + printList.mkString(", ") + ")"
-    val maxLineWidth = 80
-
-    val formattedValue = if (valueString.length > maxLineWidth && printList.length > 3) {
-      // Multi-line format for objects with many properties
-      val props = printList.mkString(",\n  ")
-      s"$className(\n  $props\n)"
-    } else {
-      valueString
-    }
 
     var all =
-      if (name.startsWith("Ref")) List("", name, formattedValue)
-      else List(name, s"Ref $refNum", formattedValue)
+      if (name.startsWith("Ref")) List("", name, valueString)
+      else List(name, s"Ref $refNum", valueString)
 
     var result = toPrint.foldLeft((visited, List(all))) { (res, x) =>
       if (heap.contains(x)) {
