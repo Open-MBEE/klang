@@ -11,7 +11,6 @@ class StringOperationsTest {
   hasSuffix : Bool
   firstChar : String
   middlePart : String
-  upperText : String
 
   // Base constraints
   req text = "Hello World"
@@ -28,9 +27,6 @@ class StringOperationsTest {
   // Substring: str.substr
   req firstChar = text.substring(0, 1)
   req middlePart = text.substring(6, 11)
-
-  // Case conversion: str.to_upper (if supported)
-  // req upperText = text.toUpper
 
 }
 

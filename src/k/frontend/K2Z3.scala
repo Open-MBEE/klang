@@ -142,7 +142,35 @@ object K2Z3 {
     if (noInstancesForClass && !force) return (visited, Nil)
 
     val objectValuesString = value.subSequence(value.indexOf("mk-"), value.length - 2).toString
-    val objectValuesOrig = objectValuesString.split(' ').map(_.trim).filterNot { _.isEmpty }.drop(1)
+
+    // Parse object values, respecting quoted strings (which may contain spaces)
+    def parseValues(str: String): Array[String] = {
+      val result = scala.collection.mutable.ArrayBuffer[String]()
+      var current = new StringBuilder()
+      var inQuotes = false
+      var i = 0
+
+      while (i < str.length) {
+        val ch = str.charAt(i)
+        ch match {
+          case '"' =>
+            current.append(ch)
+            inQuotes = !inQuotes
+          case ' ' if !inQuotes =>
+            if (current.nonEmpty) {
+              result += current.toString.trim
+              current = new StringBuilder()
+            }
+          case _ =>
+            current.append(ch)
+        }
+        i += 1
+      }
+      if (current.nonEmpty) result += current.toString.trim
+      result.toArray
+    }
+
+    val objectValuesOrig = parseValues(objectValuesString).filterNot { _.isEmpty }.drop(1)
     var objectValues = List[String]()
     var printList = List[String]()
     var toPrint = List[String]()
@@ -176,6 +204,13 @@ object K2Z3 {
     if (className == "TopLevelDeclarations") return (visited, List(List(name, " - top level -")))
 
     val properties = classDecl.getAllPropertyDecls
+
+    if (debug) {
+      logDebug(s"Class: $className")
+      logDebug(s"Properties (${properties.length}): ${properties.map(_.name).mkString(", ")}")
+      logDebug(s"Values (${objectValues.length}): ${objectValues.mkString(", ")}")
+    }
+
     printList =
       (properties zip objectValues).map {
         x =>
@@ -192,9 +227,21 @@ object K2Z3 {
           }
       }.toList
 
+    // Format the value string, breaking into multiple lines if too long
+    val valueString = s"$className(" + printList.mkString(", ") + ")"
+    val maxLineWidth = 80
+
+    val formattedValue = if (valueString.length > maxLineWidth && printList.length > 3) {
+      // Multi-line format for objects with many properties
+      val props = printList.mkString(",\n  ")
+      s"$className(\n  $props\n)"
+    } else {
+      valueString
+    }
+
     var all =
-      if (name.startsWith("Ref")) List("", name, s"$className(" + printList.mkString(", ") + ")")
-      else List(name, s"Ref $refNum", s"$className(" + printList.mkString(", ") + ")")
+      if (name.startsWith("Ref")) List("", name, formattedValue)
+      else List(name, s"Ref $refNum", formattedValue)
 
     var result = toPrint.foldLeft((visited, List(all))) { (res, x) =>
       if (heap.contains(x)) {

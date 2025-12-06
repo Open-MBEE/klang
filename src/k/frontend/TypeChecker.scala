@@ -1151,11 +1151,15 @@ class TypeChecker(model: Model) {
                 return StringType
               case "toUpper" | "toLower" =>
                 // Case conversion methods take no arguments, return String
+                // Note: Requires Z3 4.12+ (current version may not support)
                 if (args.length != 0) error(s"$methodName takes no arguments")
+                log(s"Warning: $methodName requires Z3 4.12+, current Z3 version may not support it")
                 return StringType
               case "toInt" =>
                 // toInt() returns Int
+                // Note: Requires Z3 4.8+ (current version may not support)
                 if (args.length != 0) error(s"toInt takes no arguments")
+                log(s"Warning: toInt requires Z3 4.8+, current Z3 version may not support it")
                 return IntType
               case _ =>
                 // Fall through to regular function handling

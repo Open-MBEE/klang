@@ -220,6 +220,29 @@ req value = digits.toInt()   // value = 123
 
 Generates: `(str.to_int digits)`
 
+## Z3 Version Compatibility
+
+The project currently uses **Z3 4.4.0**. String operation support varies by Z3 version:
+
+### Supported in Z3 4.4.0+
+- ✅ `str.++` (concatenation)
+- ✅ `str.len` (length)
+- ✅ `str.substr` (substring)
+- ✅ `str.at` (character at index)
+- ✅ `str.contains` (contains substring)
+- ✅ `str.prefixof` (starts with)
+- ✅ `str.suffixof` (ends with)
+- ✅ `str.indexof` (index of substring)
+- ✅ `str.replace` (replace substring)
+
+### Requires Newer Z3 Versions
+- ❌ `str.to_upper`, `str.to_lower` - Requires Z3 4.12+
+- ❌ `str.to_int`, `int.to_str` - Requires Z3 4.8+
+
+**Current Implementation**: The type checker and SMT generation support all operations, but attempting to use `toUpper()`, `toLower()`, or `toInt()` will cause Z3 4.4.0 to fail with an unknown operator error.
+
+**To Upgrade Z3**: Replace the Z3 libraries in `lib/` with Z3 4.12+ versions to enable all string operations.
+
 ## Not Implemented
 
 ### lastIndexOf
