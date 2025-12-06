@@ -270,6 +270,7 @@ grep -A 1 "scala-maven-plugin" pom.xml | grep version
 
 ## Next Steps
 
+### If Using Maven (Recommended)
 1. **Update pom.xml**:
    - Change plugin version to 4.8.1
    - Add Scala 2.12/2.13 profiles
@@ -281,5 +282,17 @@ grep -A 1 "scala-maven-plugin" pom.xml | grep version
 
 4. **Upgrade to Scala 2.13** for 2-3x faster builds
 
-5. **Enjoy modern Scala tooling!**
+### If Using Ant (build.xml)
+1. **Update build.xml**:
+   - Regenerate from Eclipse with newer Scala plugin, OR
+   - Manually update all references from `[ 2.11.5 ]` to `[ 2.13 ]`
+   - Update jar paths in `export/lib/scalalib/`
+   - Remove scala-actors-2.11.0.jar references
+
+2. **Or switch to Maven** (it's better maintained)
+
+### Result
+- **Enjoy modern Scala tooling!**
+- **2-3x faster compilation**
+- **Modern standard library**
 
