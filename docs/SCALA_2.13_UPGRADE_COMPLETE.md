@@ -146,9 +146,41 @@ From `export/lib/scalalib/`:
 - **Tested**: Java 8 (OpenJDK 1.8.0_422)
 - **Compiled with**: Java 8 (class file version 52.0)
 
+### Cross-Platform Support ✅
+
+**All platforms remain fully supported** after the Scala 2.13 upgrade:
+
+#### Supported Platforms
+- ✅ **macOS** (x86_64 and ARM64/M1/M2)
+- ✅ **Linux** (x86_64)
+- ✅ **Windows** (via platform-specific Z3 libraries)
+
+#### Platform Independence
+- **Scala libraries**: Platform-independent JVM bytecode
+  - scala-library-2.13.12.jar works on all platforms
+  - scala-xml_2.13-2.1.0.jar works on all platforms
+  - scala-swing_2.13-3.0.0.jar works on all platforms
+  
+- **Z3 libraries**: Platform-specific natives maintained
+  - `lib/x86_64/` - macOS x86_64
+  - `lib/arm64/` - macOS ARM64 (M1/M2)
+  - `lib/linux/` - Linux x86_64
+  - `lib/windows/` - Windows
+  - Automatic selection via `select-z3-architecture.sh`
+
+#### Verification
+```bash
+# The build system automatically detects and uses correct Z3 libraries
+./compile.sh
+# Output: 🔍 Detected platform: macos (x86_64)
+#         ✅ Z3 libraries already match platform
+```
+
+**No changes needed** - the existing platform detection infrastructure works with Scala 2.13.
+
 ### Dependencies
 All dependencies updated to compatible versions:
-- Z3: com.microsoft.z3.jar (unchanged, compatible)
+- Z3: com.microsoft.z3.jar (unchanged, compatible with all platforms)
 - ANTLR: 4.7 (unchanged, compatible)
 - Elasticsearch: 1.5.0 (unchanged, compatible)
 

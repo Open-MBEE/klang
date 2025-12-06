@@ -24,12 +24,20 @@ Documentation about implemented features:
 - **[STRING_OPERATIONS.md](docs/features/STRING_OPERATIONS.md)** - String operations (length, substring, etc.)
 - **[STRING_IMPLEMENTATION_COMPLETE.md](docs/features/STRING_IMPLEMENTATION_COMPLETE.md)** - Complete string feature summary
 
-### Testing (`docs/`)
+### Testing & Compatibility (`docs/`)
 
-Test infrastructure and results:
+Test infrastructure, results, and platform support:
 
 - **[TEST_INFRASTRUCTURE.md](docs/TEST_INFRASTRUCTURE.md)** - How to run the test suite
 - **[TEST_RESULTS.md](docs/TEST_RESULTS.md)** - Current test results (52/54 passing - 96.3%)
+- **[CROSS_PLATFORM_COMPATIBILITY.md](docs/CROSS_PLATFORM_COMPATIBILITY.md)** - Platform support (macOS/Linux/Windows)
+
+### Scala 2.13 Upgrade (`docs/`)
+
+Documentation for the Scala 2.13 upgrade:
+
+- **[SCALA_2.13_UPGRADE_COMPLETE.md](docs/SCALA_2.13_UPGRADE_COMPLETE.md)** - Complete upgrade documentation with all changes
+- **[SCALA_2.13_EXAMPLES_TESTED.md](docs/SCALA_2.13_EXAMPLES_TESTED.md)** - Testing results and verification
 
 ### Investigations (`docs/investigations/`)
 
