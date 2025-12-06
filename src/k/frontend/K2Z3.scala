@@ -1,9 +1,10 @@
 package k.frontend
 
 import java.util.HashMap
-import com.microsoft.z3._
-import com.microsoft.z3.{ Symbol => Z3Symbol }
-import collection.JavaConversions._
+import com.microsoft.z3.{Context, Solver, Sort, Expr, BoolExpr, IntExpr, RealExpr, ArithExpr, ArrayExpr,
+  FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Pattern, Status, Quantifier, Optimize,
+  Constructor, DatatypeSort, StringSymbol, TupleSort, ArithSort, BoolSort}
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{ HashMap => MMap }
 import sys.process._
@@ -22,7 +23,7 @@ class DataTypes(ctx: Context) {
 
   private var datatypes: Map[Type, DataType] = Map()
 
-  def addDataType(ty: Type, datatype: DataType) {
+  def addDataType(ty: Type, datatype: DataType): Unit = {
     datatypes += (ty -> datatype)
   }
 
@@ -43,7 +44,7 @@ class DataTypes(ctx: Context) {
   //  z3.Constructor mkpair = ctx.mkConstructor("mkpair", "ispair", argnames, argsorts, null);
   //  z3.DatatypeSort pair = ctx.mkDatatypeSort("pair", new Array < z3.Constructor > (mkpair));
 
-  def addTupleType(fieldTypes: List[Type]) {
+  def addTupleType(fieldTypes: List[Type]): Unit = {
     val tupleSize: Int = fieldTypes.length
     val constructorSymbol: StringSymbol = ctx.mkSymbol(s"mkTuple")
     val fieldNames: Array[FieldName] = (for (i <- 1 to tupleSize) yield s"sel_$i").toArray
@@ -77,7 +78,7 @@ object K2Z3 {
     "model" -> "true",
     "auto-config" -> "true",
     "unsat_core" -> "true")
-  var ctx: Context = new Context(cfg)
+  var ctx: Context = new Context(cfg.asJava)
   var solver: Solver = ctx.mkSolver()
   var idents: MMap[String, (Expr[_], com.microsoft.z3.StringSymbol)] = MMap()
   var z3Model: com.microsoft.z3.Model = null
@@ -94,10 +95,10 @@ object K2Z3 {
   def logDebug(msg: String) = if (debug && !silent) Misc.log("K2Z3", s"DEBUG $msg")
   def warning(msg: String) = Misc.log("K2Z3", s"Warning $msg")
 
-  def reset() {
+  def reset(): Unit = {
     z3Model = null
     idents = new MMap
-    ctx = new Context(cfg)
+    ctx = new Context(cfg.asJava)
     params = ctx.mkParams
     params.add("unsat_core", true)
     solver = ctx.mkSolver
@@ -142,35 +143,7 @@ object K2Z3 {
     if (noInstancesForClass && !force) return (visited, Nil)
 
     val objectValuesString = value.subSequence(value.indexOf("mk-"), value.length - 2).toString
-
-    // Parse object values, respecting quoted strings (which may contain spaces)
-    def parseValues(str: String): Array[String] = {
-      val result = scala.collection.mutable.ArrayBuffer[String]()
-      var current = new StringBuilder()
-      var inQuotes = false
-      var i = 0
-
-      while (i < str.length) {
-        val ch = str.charAt(i)
-        ch match {
-          case '"' =>
-            current.append(ch)
-            inQuotes = !inQuotes
-          case ' ' if !inQuotes =>
-            if (current.nonEmpty) {
-              result += current.toString.trim
-              current = new StringBuilder()
-            }
-          case _ =>
-            current.append(ch)
-        }
-        i += 1
-      }
-      if (current.nonEmpty) result += current.toString.trim
-      result.toArray
-    }
-
-    val objectValuesOrig = parseValues(objectValuesString).filterNot { _.isEmpty }.drop(1)
+    val objectValuesOrig = objectValuesString.split(' ').map(_.trim).filterNot { _.isEmpty }.drop(1)
     var objectValues = List[String]()
     var printList = List[String]()
     var toPrint = List[String]()
@@ -204,13 +177,6 @@ object K2Z3 {
     if (className == "TopLevelDeclarations") return (visited, List(List(name, " - top level -")))
 
     val properties = classDecl.getAllPropertyDecls
-
-    if (debug) {
-      logDebug(s"Class: $className")
-      logDebug(s"Properties (${properties.length}): ${properties.map(_.name).mkString(", ")}")
-      logDebug(s"Values (${objectValues.length}): ${objectValues.mkString(", ")}")
-    }
-
     printList =
       (properties zip objectValues).map {
         x =>
@@ -227,7 +193,7 @@ object K2Z3 {
           }
       }.toList
 
-    // Format the value string on one line for proper ASCII table rendering
+    // Format the value string
     val valueString = s"$className(" + printList.mkString(", ") + ")"
 
     var all =
@@ -246,7 +212,7 @@ object K2Z3 {
     (result._1 + name, result._2)
   }
   
-  def PrintModel(model: Model) {
+  def PrintModel(model: Model): Unit = {
 
     if (z3Model != null) {
 
@@ -448,7 +414,7 @@ object K2Z3 {
     }
   }
   
-  def solveSMT(model: Model, smtModel: String, printModel: Boolean) {
+  def solveSMT(model: Model, smtModel: String, printModel: Boolean): Unit = {
     try {
       reset()
 
@@ -715,20 +681,20 @@ object K2Z3 {
                     val xSym = ctx.mkSymbol(x)
                     var ie = ctx.mkConst(xSym, ctx.getRealSort)
                     idents.put(x, (ie, xSym))
-                    names.add(xSym)
-                    ies.add(ie)
+                    names += xSym
+                    ies += ie
                     b.collection match {
                       case TypeCollection(ty) =>
                         ty match {
-                          case BoolType => qtypes.add(ctx.getBoolSort())
+                          case BoolType => qtypes += ctx.getBoolSort()
                           case IntType =>
-                            qtypes.add(ctx.getIntSort())
+                            qtypes += ctx.getIntSort()
                             val pattern = ctx.mkPattern(ie)
-                            patterns.add(ctx.mkPattern(ie)) // use pattern, but not used anyway
+                            patterns += ctx.mkPattern(ie) // use pattern, but not used anyway
                           case RealType =>
-                            qtypes.add(ctx.getRealSort())
+                            qtypes += ctx.getRealSort()
                             val pattern = ctx.mkPattern(ie)
-                            patterns.add(ctx.mkPattern(ie)) // use pattern, but not used anyway
+                            patterns += ctx.mkPattern(ie) // use pattern, but not used anyway
                           case _ =>
                             error("Only bool, int, and real primitive types are supported for quantified expressions in Z3." + expression)
                         }

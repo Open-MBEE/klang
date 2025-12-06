@@ -83,7 +83,7 @@ object Misc {
       })
   }
 
-  def wpTest2() {
+  def wpTest2(): Unit = {
     println("+++++++++++++++++++++++++++++++")
 
     val input = "x : Int y : Int fun test pre(x = 0) post(y = 42) post(y > 10) {x:= 4 if x = 0 then y := 2 else y := 42}"
@@ -127,7 +127,7 @@ object Misc {
     println("--------------------------------")
   }
 
-  def wpTest() {
+  def wpTest(): Unit = {
     K2Z3.reset()
     val e = Frontend.exp2KExpList("x := 4 if x = 0 then y := 42 else y := 2") // statement
     val p = Frontend.exp2KExp("y = 42") // postcondition
@@ -277,7 +277,7 @@ object Misc {
         if (hasPreds.isEmpty) done else sys.error(hasPreds.toString)
       } else {
         val found = noPreds.map { _._1 }
-        tsort(hasPreds.mapValues { _ -- found }, done ++ found)
+        tsort(hasPreds.map { case (k, v) => (k, v -- found) }.toMap, done ++ found)
       }
     }
 

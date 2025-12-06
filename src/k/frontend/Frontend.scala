@@ -165,7 +165,7 @@ object Frontend {
     combinedModel
   }
 
-  def scala_main(args: Array[String]) {
+  def scala_main(args: Array[String]): Unit = {
     val options = parseArgs(Map(), args.toList)
     var model: Model = null
     var filename: String = null
@@ -187,7 +187,7 @@ object Frontend {
       case Some(_) =>
         try {
           print("[main] Please enter the test case to run:")
-          val testCase = readLine.trim
+          val testCase = scala.io.StdIn.readLine().trim
           val fileName = testCase.asInstanceOf[String]
           val testsDir = new File(new File(new File("."), "src"), "tests")
           val file = new File(testsDir, fileName)
@@ -518,13 +518,14 @@ object Frontend {
     import scala.concurrent.Await
     import scala.concurrent.duration._
     //import scala.concurrent.Awaitable
-    import scala.concurrent.impl.Future
+    import scala.concurrent.{Future, ExecutionContext}
+    import ExecutionContext.Implicits.global
 
-    val x = Await.result(future(f), Duration.create(timeoutMs, "ms"))
+    val x = Await.result(Future(f), Duration.create(timeoutMs, "ms"))
     None
   }
 
-  def doTests(saveBaseline: Boolean) {
+  def doTests(saveBaseline: Boolean): Unit = {
 
     var resultRows: List[List[String]] = List(List("Name", "TypeChecksEq (TypeChecks)", "ModelEqual", "JSON1Equal", "JSON2Equal", "SMTEqual", "SMTModelEqual"))
     val testsDir = new File(new File(new File(".").getAbsolutePath, "src"), "tests")
@@ -580,7 +581,7 @@ object Frontend {
     println(s"\t$testsMatched/$testsRun tests matched the stored baseline.")
   }
 
-  def compareSingleResultDetail(bo: JSONObject, co: JSONObject, testDir: File) {
+  def compareSingleResultDetail(bo: JSONObject, co: JSONObject, testDir: File): Unit = {
     var resultRows: List[List[String]] = List(List("Name", "TypeChecksEq (TypeChecks)", "ModelEqual", "JSON1Equal", "JSON2Equal", "SMTEqual", "SMTModelEqual"))
     log()
     println(Tabulator.format((compareResult(bo, co)._2 :: resultRows).reverse))
@@ -1819,7 +1820,7 @@ object Frontend {
     }
   }
 
-  def printStats(m: Model) {
+  def printStats(m: Model): Unit = {
     println("Imports: " + m.imports.size)
     println("Entities: " + getDeclCount(m, classOf[EntityDecl]))
     println("Properties: " + getDeclCount(m, classOf[PropertyDecl]))
@@ -1829,7 +1830,7 @@ object Frontend {
     println("Constraints: " + getDeclCount(m, classOf[ConstraintDecl]))
   }
 
-  def analyze(m: Model) {
+  def analyze(m: Model): Unit = {
 
   }
 }

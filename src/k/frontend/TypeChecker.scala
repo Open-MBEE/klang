@@ -28,7 +28,7 @@ case object TypeChecker {
   var annotations = Map[String, AnnotationDecl]()
   var classes = Map[String, EntityDecl]()
 
-  def reset() {
+  def reset(): Unit = {
     globalTypeEnv = TypeEnv(null, Map())
     decl2TypeEnvi = Map()
     origTypeEnvironments = Map()
@@ -246,7 +246,7 @@ object ClassHierarchy {
   var parents = Map[EntityDecl, Set[Type]]()
   var children = Map[EntityDecl, Set[Type]]()
 
-  def buildHierarchy(model: Model) {
+  def buildHierarchy(model: Model): Unit = {
     // Track processed entity declarations to avoid duplicates from imports
     var processedEntities = Set[EntityDecl]()
     
@@ -906,7 +906,7 @@ class TypeChecker(model: Model) {
     newTe
   }
 
-  def processFunction(fd: FunDecl, entityTypeEnv: TypeEnv, owner: EntityDecl) {
+  def processFunction(fd: FunDecl, entityTypeEnv: TypeEnv, owner: EntityDecl): Unit = {
 
     // check if return type exists 
     if (!fd.ty.isEmpty) {

@@ -29,7 +29,7 @@ object UtilAST {
 
   def ??? : Nothing = ???("")
 
-  def debug(text: String) {
+  def debug(text: String): Unit = {
     if (ASTOptions.debug) println(s"[-- debug --: $text]")
   }
 
@@ -59,7 +59,7 @@ object UtilSMT {
     s"var_$variableCounter"
   }
 
-  def saveConstraintMapping(cPrint: String) {
+  def saveConstraintMapping(cPrint: String): Unit = {
     UtilSMT.constraintMessageMap = UtilSMT.constraintMessageMap + (s"_xkassert${UtilSMT.constraintCounter}" -> cPrint)
     UtilSMT.constraintCounter += 1
   }
@@ -152,7 +152,7 @@ object UtilSMT {
     val reduced: List[FunDecl] = eliminateDuplicates(funDecls)
     for (curFD @ FunDecl(ident, typeParams, params, ty, spec, body) <- reduced) yield {
       val relevant: List[FunDecl] = funDecls.filter(fd => fd.ident == ident && !fd.eq(curFD))
-      val superSpec: List[FunSpec] = relevant map (_.spec) flatten
+      val superSpec: List[FunSpec] = (relevant map (_.spec)).flatten
       val newSpec: List[FunSpec] = superSpec ++ spec
       FunDecl(ident, typeParams, params, ty, superSpec ++ spec, body)
     }
@@ -214,22 +214,22 @@ object UtilSMT {
 
   def constantsIsEmpty: Boolean = constantsToDeclare.isEmpty
 
-  def addGetter(getter: String) {
+  def addGetter(getter: String): Unit = {
     gettersToDeclare += getter
   }
 
   def getterIsUsed(getter: String): Boolean =
     gettersToDeclare.contains(getter)
 
-  def createLocals(locals: Set[String]) {
+  def createLocals(locals: Set[String]): Unit = {
     createdLocals ++= locals
   }
 
-  def removeCreatedLocals(locals: Set[String]) {
+  def removeCreatedLocals(locals: Set[String]): Unit = {
     createdLocals --= locals
   }
 
-  def clearCreatedLocals() {
+  def clearCreatedLocals(): Unit = {
     createdLocals = Set()
   }
 
@@ -443,18 +443,18 @@ class Statistics {
   val TABLE_WIDTH: Int = 30
   var result = ""
 
-  def data(str: String, count: Int) {
+  def data(str: String, count: Int): Unit = {
     if (count != 0) {
       val sep: String = " " * (TEXT_WIDTH - str.length)
       result += INDENT + str + sep + ":" + " " + count + "\n"
     }
   }
 
-  def text(str: String) {
+  def text(str: String): Unit = {
     result += INDENT + str + "\n"
   }
 
-  def headline(str: String) {
+  def headline(str: String): Unit = {
     val initStr = s"--- $str: "
     val remStr = "-" * (TABLE_WIDTH - initStr.length)
     text(initStr + remStr)
@@ -646,7 +646,7 @@ class HeapLayout(model: Model) {
 
   // update instancesByAnnotation:
   updateInstancesByAnnotation(model)
-  def updateInstancesByAnnotation(model: Model) {
+  def updateInstancesByAnnotation(model: Model): Unit = {
     for (ed <- model.decls.asInstanceOf[List[EntityDecl]]) {
       for (Annotation("instances", IntegerLiteral(size)) <- ed.annotations) {
         instancesByAnnotation += (ed.ident -> size.toInt)
@@ -660,7 +660,7 @@ class HeapLayout(model: Model) {
 
   // update instancesByComputation:
   updateInstancesByComputation(model)
-  def updateInstancesByComputation(model: Model) {
+  def updateInstancesByComputation(model: Model): Unit = {
     if (K2Z3.debug) println("\n--- dfs instance search:\n")
     for (className <- graph.getClassesToChase(2))
       dfs(className)
@@ -672,7 +672,7 @@ class HeapLayout(model: Model) {
 
   // update heapEntries:
   updateHeapEntries(model)
-  def updateHeapEntries(model: Model) {
+  def updateHeapEntries(model: Model): Unit = {
     heapEntries += ("TopLevelDeclarations" -> (0, 0))
     var nextFreeHeapCell: Int = 1
     for (className <- graph.getAllClasses if !className.equals("TopLevelDeclarations")) {
@@ -1010,7 +1010,7 @@ case class PackageDecl(name: QualifiedName, model: Model) extends HasChildren {/
 
   def children: List[Model] = List[Model](model)
 
-  def statistics() {
+  def statistics(): Unit = {
     UtilSMT.statistics.PACKAGE += 1
     model.statistics()
   }
@@ -1112,7 +1112,7 @@ case class ImportDecl(name: QualifiedName, star: Boolean) {
 }
 
 trait TopDecl extends HasChildren {
-  def statistics() {}
+  def statistics(): Unit = {}
   def toScala: String = ???
   def toJson: JSONObject = {
     if (ASTOptions.useJson1) toJson1
@@ -1690,7 +1690,7 @@ case class FunSpec(pre: Boolean, exp: Exp) extends HasChildren {
 
   def children: List[AnyRef] = List(exp)
 
-  def statistics() {
+  def statistics(): Unit = {
     if (pre)
       UtilSMT.statistics.PRECONDITION += 1
     else
@@ -1711,7 +1711,7 @@ case class FunSpec(pre: Boolean, exp: Exp) extends HasChildren {
 }
 
 case class Param(name: String, ty: Type) {
-  def statistics() {
+  def statistics(): Unit = {
     ty.statistics()
   }
 
@@ -1998,7 +1998,7 @@ case class ExpressionDecl(exp: Exp) extends MemberDecl {
 }
 
 trait Exp extends HasChildren {
-  def statistics() {}
+  def statistics(): Unit = {}
 
   def freeVariables: Set[String] = Set()
 
@@ -3710,7 +3710,7 @@ case class NamedArgument(ident: String, exp: Exp) extends Argument {
 }
 
 trait BinaryOp {
-  def statistics() {}
+  def statistics(): Unit = {}
 
   def toSMT: String = UtilSMT.error(this.toString)
   def toScala: String = ???
@@ -3979,7 +3979,7 @@ case object ASSIGN extends BinaryOp {
 }
 
 trait UnaryOp {
-  def statistics() {}
+  def statistics(): Unit = {}
 
   def toSMT: String = UtilSMT.error(this.toString)
 
@@ -4250,7 +4250,7 @@ case object ThisLiteral extends Literal {
 }
 
 trait Quantifier {
-  def statistics() {}
+  def statistics(): Unit = {}
 
   def toSMT: String
 
@@ -4308,7 +4308,7 @@ case object Exists extends Quantifier {
 trait Type extends HasChildren {
   def children: List[AnyRef] = List()
 
-  def statistics() {}
+  def statistics(): Unit = {}
   def toSMT: String = UtilSMT.error(this.toString)
   def toScala: String = ???
   def toString: String
@@ -4800,7 +4800,7 @@ case object DontCarePattern extends Pattern {
 case class RngBinding(patterns: List[Pattern], collection: Collection) extends HasChildren {
   override def children = patterns :+ collection
 
-  def statistics() {
+  def statistics(): Unit = {
     collection.statistics()
   }
 
@@ -4862,7 +4862,7 @@ case class RngBinding(patterns: List[Pattern], collection: Collection) extends H
 trait Collection extends HasChildren {
   def children: List[AnyRef] = List()
 
-  def statistics() {}
+  def statistics(): Unit = {}
 
   def toSMT: String = UtilSMT.error(this.toString)
 

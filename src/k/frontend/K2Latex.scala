@@ -5,7 +5,7 @@ import java.io._
 
 object K2Latex {
 
-  def convert(name: String, model: Model) {
+  def convert(name: String, model: Model): Unit = {
     val file = new FileWriter(name + ".tex", false)
     file.append("\\documentclass[12pt]{article}\\usepackage{amsmath}\\begin{document}\n")
     //file.append("")

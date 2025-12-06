@@ -15,17 +15,39 @@
 	</parent>
 
 
-	<!-- Maven profiles allow you to support both Scala 2.10 and Scala 2.11 
-		with the right dependencies for modules specified for each version separately -->
+	<!-- Maven profiles for Scala version selection -->
 	<profiles>
 		<profile>
-			<id>scala-2.11</id>
+			<id>scala-2.13</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
+				<scalaVersion>2.13.12</scalaVersion>
+				<scalaBinaryVersion>2.13</scalaBinaryVersion>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.scala-lang</groupId>
+					<artifactId>scala-library</artifactId>
+					<version>${scalaVersion}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.scala-lang.modules</groupId>
+					<artifactId>scala-xml_${scalaBinaryVersion}</artifactId>
+					<version>2.1.0</version>
+				</dependency>
+				<dependency>
+					<groupId>org.scala-lang.modules</groupId>
+					<artifactId>scala-swing_${scalaBinaryVersion}</artifactId>
+					<version>3.0.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>scala-2.11</id>
+			<properties>
 				<scalaVersion>2.11.8</scalaVersion>
-				<!-- change to "2.11" once Scala 2.11.0 final is out -->
 				<scalaBinaryVersion>2.11</scalaBinaryVersion>
 			</properties>
 			<dependencies>
@@ -34,26 +56,11 @@
 					<artifactId>scala-library</artifactId>
 					<version>${scalaVersion}</version>
 				</dependency>
-				<!-- scala-actors was removed in Scala 2.12+ and is not used in this project
-				<dependency>
-					<groupId>org.scala-lang</groupId>
-					<artifactId>scala-actors</artifactId>
-					<version>${scalaVersion}</version>
-				</dependency>
-				-->
 				<dependency>
 					<groupId>org.scala-lang.modules</groupId>
 					<artifactId>scala-xml_${scalaBinaryVersion}</artifactId>
 					<version>1.0.3</version>
 				</dependency>
-				<!-- scala-parser-combinators not used - project uses ANTLR for parsing
-				     Version 1.0.3 doesn't exist for Scala 2.12+, blocking upgrade
-				<dependency>
-					<groupId>org.scala-lang.modules</groupId>
-					<artifactId>scala-parser-combinators_${scalaBinaryVersion}</artifactId>
-					<version>1.0.3</version>
-				</dependency>
-				-->
 				<dependency>
 					<groupId>org.scala-lang.modules</groupId>
 					<artifactId>scala-swing_${scalaBinaryVersion}</artifactId>
@@ -110,14 +117,14 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
-				<version>3.1.6</version>
+				<version>4.8.1</version>
 				<executions>
 					<execution>
 						<id>scala-compile-first</id>
@@ -136,11 +143,10 @@
 					</execution>
 				</executions>
 				<configuration>
-				    <scalaCompatVersion>${scalaVersion}</scalaCompatVersion>
+				    <scalaVersion>${scalaVersion}</scalaVersion>
                     <sourceDir>src</sourceDir>
 					<args>
-						<!-- work-around for https://issues.scala-lang.org/browse/SI-8358 -->
-						<arg>-nobootcp</arg>
+						<!-- SI-8358 workaround no longer needed in Scala 2.13 -->
 					</args>
 					<jvmArgs>
 						<!-- Allocate more memory for faster compilation of large files -->

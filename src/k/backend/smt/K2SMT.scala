@@ -336,9 +336,9 @@ object Main {
     }
   }
 
-  def main(args: Array[String]) {
-    defineFunction("add", List("x" -> "Int", "y" -> "Int"), "Int", "(+ x y)") print
+  def main(args: Array[String]): Unit = {
+    defineFunction("add", List("x" -> "Int", "y" -> "Int"), "Int", "(+ x y)").print
 
-    declareFunction("add", List("Int", "Int"), "Int") print
+    declareFunction("add", List("Int", "Int"), "Int").print
   }
 }
