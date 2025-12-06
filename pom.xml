@@ -137,6 +137,11 @@
 						<!-- work-around for https://issues.scala-lang.org/browse/SI-8358 -->
 						<arg>-nobootcp</arg>
 					</args>
+					<jvmArgs>
+						<!-- Allocate more memory for faster compilation of large files -->
+						<jvmArg>-Xms512m</jvmArg>
+						<jvmArg>-Xmx1024m</jvmArg>
+					</jvmArgs>
 				</configuration>
 			</plugin>
 			
