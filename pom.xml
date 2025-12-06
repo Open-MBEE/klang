@@ -46,11 +46,14 @@
 					<artifactId>scala-xml_${scalaBinaryVersion}</artifactId>
 					<version>1.0.3</version>
 				</dependency>
+				<!-- scala-parser-combinators not used - project uses ANTLR for parsing
+				     Version 1.0.3 doesn't exist for Scala 2.12+, blocking upgrade
 				<dependency>
 					<groupId>org.scala-lang.modules</groupId>
 					<artifactId>scala-parser-combinators_${scalaBinaryVersion}</artifactId>
 					<version>1.0.3</version>
 				</dependency>
+				-->
 				<dependency>
 					<groupId>org.scala-lang.modules</groupId>
 					<artifactId>scala-swing_${scalaBinaryVersion}</artifactId>

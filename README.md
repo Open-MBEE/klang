@@ -30,6 +30,14 @@ In the future we plan on creating integration with other tools and
 solvers such as Mathematica, MiniZinc etc., and furthering our
 existing analyses and infrastructure.
 
+## 📖 Documentation
+
+- **[SETUP.md](SETUP.md)** - Setup instructions for building and running K
+- **[BUILD_STATUS.md](BUILD_STATUS.md)** - Current build status and known issues
+- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete documentation index
+
+For feature documentation, test information, and technical investigations, see [DOCUMENTATION.md](DOCUMENTATION.md).
+
 K is implemented using open source tools such as ANTLR, Java, Scala,
 and Z3.
 
