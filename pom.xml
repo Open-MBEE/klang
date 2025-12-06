@@ -34,11 +34,13 @@
 					<artifactId>scala-library</artifactId>
 					<version>${scalaVersion}</version>
 				</dependency>
+				<!-- scala-actors was removed in Scala 2.12+ and is not used in this project
 				<dependency>
 					<groupId>org.scala-lang</groupId>
 					<artifactId>scala-actors</artifactId>
 					<version>${scalaVersion}</version>
 				</dependency>
+				-->
 				<dependency>
 					<groupId>org.scala-lang.modules</groupId>
 					<artifactId>scala-xml_${scalaBinaryVersion}</artifactId>
