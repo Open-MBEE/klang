@@ -39,7 +39,15 @@ Based on the newer Z3 version capabilities, we identified these features to make
 - **`@bestEffort`** annotation - return partial solutions when full solving is hard
 - **`@timeout(ms)`** annotation - time-limited solving
 
-#### 5. Incremental Solving (Planned - High Interest)
+#### 5. Anytime Solving & Sampling (Implemented ✅)
+- **`K2Z3.interrupt()`** - Stop solving and return best result found
+- **`K2Z3.requestSample()`** - Snapshot current solution without stopping
+- **`K2Z3.requestPause()`** / **`K2Z3.resume()`** - Pause and resume solving
+- **`K2Z3.getSampleAsConstraints`** - Get solution as K constraints
+- **`K2Z3.exportSolutionAsK`** - Export solution as K code snippet
+- SIGINT (Ctrl+C) handler for CLI interruption
+
+#### 6. Incremental Solving (Planned - High Interest)
 - Push/pop assertion contexts
 - Efficient for exploring variations
 - Would enable "what-if" analysis scenarios
@@ -56,6 +64,26 @@ Based on the newer Z3 version capabilities, we identified these features to make
 - `solvingInProgress` flag to track when solver is active
 - `bestModelSoFar` to return partial results on interrupt
 - `iterationsCompleted` for progress reporting
+
+### B. Sample/Pause/Resume (Implemented ✅)
+**What was implemented:**
+- `K2Z3.requestSample()` - Get current best solution without stopping
+- `K2Z3.getSample` / `K2Z3.getSampleAsConstraints` - Access sampled solution
+- `K2Z3.requestPause()` - Pause solver, preserve state
+- `K2Z3.resume()` - Continue from paused state
+- `K2Z3.canResume` - Check if resume is possible
+
+### C. Solution as Constraints (Implemented ✅)
+**What was implemented:**
+- `K2Z3.modelToConstraints(model)` - Convert Z3 model to K constraints
+- `K2Z3.getBestModelAsConstraints` - Get best solution as constraints
+- `K2Z3.exportSolutionAsK` - Export as K code with metadata
+
+**Use cases:**
+1. Check consistency of partial solutions by adding constraints to original model
+2. Export solutions for reproducibility
+3. Create "fixed" versions of partial solutions
+4. Compare different solving runs
 
 **Behavior:**
 - During solving, Ctrl+C triggers interrupt() instead of exit
