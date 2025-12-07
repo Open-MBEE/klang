@@ -23,29 +23,24 @@ export/lib/
 
 ## Prerequisites
 
-### 1. Java 8 Installation
+### 1. Java 21 Installation
 
-**Current Requirement: Java 8**
+**Current Requirement: Java 21**
 
-The K language project currently requires Java 8 due to **Scala 2.11.8 compatibility**. The Z3 4.13.0 libraries themselves support newer Java versions, but the Scala code needs Java 8.
+The K language project requires Java 21 for **Scala 2.13 compatibility**. The Z3 4.13.0 libraries also support Java 21.
 
-**To use newer Java versions (11, 17, 21)**, you would need to:
-- Upgrade Scala to 2.12+ (for Java 11) or 2.13+ (for Java 17+)
-- Update the Maven compiler plugin source/target versions
-- Test for deprecated API usage
-
-You can install Java 8 using SDKMAN:
+You can install Java 21 using SDKMAN:
 
 ```bash
 # Install SDKMAN if not already installed
 curl -s "https://get.sdkman.io" | bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 
-# Install Java 8
-sdk install java 8.0.462-zulu
+# Install Java 21
+sdk install java 21.0.3-tem
 
-# Switch to Java 8 (this is done automatically by the build scripts)
-sdk use java 8.0.462-zulu
+# Switch to Java 21 (this is done automatically by the build scripts)
+sdk use java 21.0.3-tem
 ```
 
 ### 2. Verify Installation
@@ -55,7 +50,7 @@ Check that you have the required Java version available:
 ls -la ~/.sdkman/candidates/java/
 ```
 
-You should see `8.0.462-zulu` (or similar Java 8 version) in the list.
+You should see `21.0.3-tem` (or similar Java 21 version) in the list.
 
 ## Building and Running
 
@@ -73,7 +68,7 @@ Maven is the standard build tool and now properly handles all aspects of the bui
 Or manually:
 ```bash
 # Build with Maven
-export JAVA_HOME="$HOME/.sdkman/candidates/java/8.0.462-zulu"
+export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.3-tem"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn clean compile
 
