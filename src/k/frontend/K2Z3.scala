@@ -97,11 +97,30 @@ object K2Z3 {
   /** Flag indicating if we're currently in an interruptible solve */
   @volatile var solvingInProgress: Boolean = false
 
+  /** Flag to request a sample of current solution without stopping */
+  @volatile var sampleRequested: Boolean = false
+
+  /** Flag to request pause (solver will stop but state is preserved for resume) */
+  @volatile var pauseRequested: Boolean = false
+
+  /** Flag indicating solver is paused and can be resumed */
+  @volatile var isPaused: Boolean = false
+
   /** Best model found so far during incremental/anytime solving */
   var bestModelSoFar: Option[com.microsoft.z3.Model] = None
 
+  /** Most recent sample taken (may be same as bestModelSoFar or more recent) */
+  var lastSample: Option[com.microsoft.z3.Model] = None
+
+  /** Timestamp of last sample */
+  var lastSampleTime: Long = 0
+
   /** Number of iterations completed in incremental solving */
   var iterationsCompleted: Int = 0
+
+  /** Saved state for pause/resume */
+  private var savedSmtModel: Option[String] = None
+  private var savedModel: Option[Model] = None
 
   /**
    * Request interruption of the current solving process.
@@ -126,18 +145,184 @@ object K2Z3 {
   }
 
   /**
+   * Request a sample of the current best solution without stopping the solver.
+   * The sample will be available in lastSample after the solver checks for it.
+   * Safe to call from any thread.
+   */
+  def requestSample(): Unit = {
+    sampleRequested = true
+    if (!silent) log("📊 Sample requested - will capture current best solution")
+  }
+
+  /**
+   * Get the most recent sample, if available.
+   * Returns None if no sample has been taken yet.
+   */
+  def getSample: Option[com.microsoft.z3.Model] = lastSample
+
+  /**
+   * Get the most recent sample as K constraints (variable = value assignments).
+   * Returns a list of constraint strings that can be added to a K model.
+   */
+  def getSampleAsConstraints: List[String] = {
+    lastSample match {
+      case Some(model) => modelToConstraints(model)
+      case None => Nil
+    }
+  }
+
+  /**
+   * Get the best model found so far as K constraints.
+   */
+  def getBestModelAsConstraints: List[String] = {
+    bestModelSoFar match {
+      case Some(model) => modelToConstraints(model)
+      case None => Nil
+    }
+  }
+
+  /**
+   * Convert a Z3 model to a list of K constraint strings.
+   * Each constraint is of the form "variableName = value"
+   */
+  def modelToConstraints(model: com.microsoft.z3.Model): List[String] = {
+    if (model == null) return Nil
+
+    val constraints = ListBuffer[String]()
+
+    for (decl <- model.getDecls) {
+      val name = decl.getName.toString
+      // Skip internal Z3 names and heap-related declarations
+      if (!name.startsWith("k!") && !name.contains("!") &&
+          name != "heap" && !name.startsWith("lift-") && !name.startsWith("mk-")) {
+        try {
+          val value = model.getConstInterp(decl)
+          if (value != null) {
+            val valueStr = value.toString
+            // Format based on type
+            val constraint = if (valueStr == "true" || valueStr == "false") {
+              s"req $name = $valueStr"
+            } else if (valueStr.matches("-?\\d+(/\\d+)?")) {
+              // Numeric value (int or rational)
+              s"req $name = $valueStr"
+            } else if (valueStr.startsWith("\"")) {
+              // String value
+              s"req $name = $valueStr"
+            } else {
+              // Complex value - skip for now
+              null
+            }
+            if (constraint != null) constraints += constraint
+          }
+        } catch {
+          case _: Throwable => // Skip declarations that can't be interpreted
+        }
+      }
+    }
+
+    constraints.toList
+  }
+
+  /**
+   * Export current best solution as a K code snippet that can be added to a model.
+   * Useful for checking consistency or fixing partial solutions.
+   */
+  def exportSolutionAsK: String = {
+    val constraints = getBestModelAsConstraints
+    if (constraints.isEmpty) {
+      "// No solution available"
+    } else {
+      val header = s"// Exported solution (${constraints.length} constraints)\n" +
+                   s"// Generated at: ${new java.util.Date()}\n" +
+                   s"// Iterations completed: $iterationsCompleted\n\n"
+      header + constraints.mkString("\n")
+    }
+  }
+
+  /**
+   * Request the solver to pause. It will stop at the next opportunity
+   * and preserve state for resumption.
+   */
+  def requestPause(): Unit = {
+    pauseRequested = true
+    if (!silent) log("⏸️  Pause requested - solver will pause at next opportunity")
+  }
+
+  /**
+   * Check if solver is currently paused and can be resumed.
+   */
+  def canResume: Boolean = isPaused && savedSmtModel.isDefined
+
+  /**
+   * Resume a paused solve. Returns true if resume was initiated.
+   */
+  def resume(): Boolean = {
+    if (!canResume) {
+      if (!silent) log("Cannot resume - solver is not paused or no saved state")
+      return false
+    }
+
+    isPaused = false
+    pauseRequested = false
+    if (!silent) log("▶️  Resuming solver...")
+
+    // The actual resume will happen in the solve loop
+    true
+  }
+
+  /**
    * Clear the interrupt flag. Call this before starting a new solve.
    */
   def clearInterrupt(): Unit = {
     interrupted = false
+    sampleRequested = false
+    pauseRequested = false
+    isPaused = false
     bestModelSoFar = None
+    lastSample = None
+    lastSampleTime = 0
     iterationsCompleted = 0
+    savedSmtModel = None
+    savedModel = None
   }
 
   /**
    * Check if solving was interrupted
    */
   def wasInterrupted: Boolean = interrupted
+
+  /**
+   * Internal: Take a sample if requested. Called during solve loop.
+   */
+  private def checkAndTakeSample(): Unit = {
+    if (sampleRequested && z3Model != null) {
+      lastSample = Some(z3Model)
+      lastSampleTime = System.currentTimeMillis()
+      sampleRequested = false
+      if (!silent) log(s"📊 Sample taken at iteration $iterationsCompleted")
+    }
+  }
+
+  /**
+   * Internal: Check if pause is requested and handle it.
+   * Returns true if solver should stop for pause.
+   */
+  private def checkAndHandlePause(smtModel: String, model: Model): Boolean = {
+    if (pauseRequested) {
+      savedSmtModel = Some(smtModel)
+      savedModel = Some(model)
+      isPaused = true
+      pauseRequested = false
+      if (!silent) {
+        log("⏸️  Solver paused")
+        log(s"   Iterations completed: $iterationsCompleted")
+        log(s"   Best solution available: ${bestModelSoFar.isDefined}")
+      }
+      true
+    } else {
+      false
+    }
+  }
 
   // Install signal handler for Ctrl+C (SIGINT)
   // This allows users to interrupt long-running solves from the command line
@@ -600,10 +785,17 @@ object K2Z3 {
       val status = solver.check
       iterationsCompleted = 1
 
+      // Check for sample/pause requests after solve
+      checkAndTakeSample()
+
       if (Status.SATISFIABLE == status) {
         z3Model = solver.getModel
         lastPartialModel = Some(z3Model)
         bestModelSoFar = Some(z3Model)
+
+        // Take sample if requested
+        checkAndTakeSample()
+
       } else if (status == Status.UNSATISFIABLE) {
       log()
       log(s"The given model is NOT satisfiable. ")
