@@ -27,6 +27,7 @@ get_expected() {
         "lightswitch.k") echo "pass" ;;
         "scheduling.k") echo "pass" ;;
         "planning-simple.k") echo "pass" ;;
+        "StringDemo.k") echo "pass" ;;  # String operations demo
         "GravityScience.k") echo "exception" ;;  # Known issue with 'assoc' type
         "DSN_Pass.k") echo "exception" ;;  # Expected to throw exception
         *) echo "unknown" ;;
@@ -34,7 +35,7 @@ get_expected() {
 }
 
 # Web app examples from k.html lines 35-44
-WEBAPP_EXAMPLES="Shapes.k sm.k borges.k prepost.k Fruits.k lightswitch.k scheduling.k planning-simple.k GravityScience.k DSN_Pass.k"
+WEBAPP_EXAMPLES="Shapes.k sm.k borges.k prepost.k Fruits.k lightswitch.k scheduling.k planning-simple.k StringDemo.k GravityScience.k DSN_Pass.k"
 
 PASSED=0
 FAILED=0
