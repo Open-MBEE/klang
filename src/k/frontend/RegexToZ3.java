@@ -273,7 +273,7 @@ public class RegexToZ3 {
 
         if (c == '.') {
             consume();
-            return "(re.allchar)";
+            return "re.allchar";
         }
 
         if (c == '\\') {
@@ -333,7 +333,7 @@ public class RegexToZ3 {
             // (re.inter (re.* re.allchar) (re.comp result))
             // Simplified: just use re.allchar for now (imprecise but workable)
             // TODO: Proper negation support
-            result = "(re.allchar)";
+            result = "re.allchar";
         }
 
         return result;
@@ -389,15 +389,15 @@ public class RegexToZ3 {
             case 'd': // Digit [0-9]
                 return "(re.range \"0\" \"9\")";
             case 'D': // Non-digit
-                return "(re.allchar)"; // Approximation
+                return "re.allchar"; // Approximation
             case 'w': // Word char [a-zA-Z0-9_]
                 return "(re.union (re.range \"a\" \"z\") (re.union (re.range \"A\" \"Z\") (re.union (re.range \"0\" \"9\") (str.to_re \"_\"))))";
             case 'W': // Non-word
-                return "(re.allchar)"; // Approximation
+                return "re.allchar"; // Approximation
             case 's': // Whitespace
                 return "(re.union (str.to_re \" \") (re.union (str.to_re \"\\t\") (str.to_re \"\\n\")))";
             case 'S': // Non-whitespace
-                return "(re.allchar)"; // Approximation
+                return "re.allchar"; // Approximation
             case 'n':
                 return "(str.to_re \"\\n\")";
             case 't':
