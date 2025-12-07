@@ -24,4 +24,3 @@ class BestEffort1 {
 }
 
 main : BestEffort1
-

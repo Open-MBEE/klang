@@ -481,7 +481,6 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     else if (ctx.propertyDeclaration() != null) visit(ctx.propertyDeclaration())
     else if (ctx.functionDeclaration() != null) visit(ctx.functionDeclaration())
     else if (ctx.constraint() != null) visit(ctx.constraint())
-    else if (ctx.optimizeDeclaration() != null) visit(ctx.optimizeDeclaration())
     else if (ctx.expression() != null) ExpressionDecl(visit(ctx.expression()).asInstanceOf[Exp])
     else null
   }

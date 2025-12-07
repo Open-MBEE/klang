@@ -1,26 +1,28 @@
-// Test: String case - basic string comparisons
-// Note: toUpper/toLower require Z3 4.12+ which may not be fully supported
-// Expected: SAT with string equality constraints
+// Test: String case conversion - toUpper, toLower
+// Expected: SAT with correct case conversions
 
 class StringCase1 {
-  text1 : String
-  text2 : String
-  
-  req text1 = "Hello"
-  req text2 = "Hello"
-  
-  // Test equality
-  areEqual : Bool
-  req areEqual = (text1 = text2)
-  req areEqual = true
-  
-  // Different strings
-  text3 : String
-  req text3 = "World"
-  
-  areDifferent : Bool
-  req areDifferent = (text1 != text3)
-  req areDifferent = true
+  mixed : String
+  req mixed = "Hello World"
+
+  // Test toUpper
+  upper : String
+  req upper = mixed.toUpper()
+  req upper = "HELLO WORLD"
+
+  // Test toLower
+  lower : String
+  req lower = mixed.toLower()
+  req lower = "hello world"
+
+  // Test with already-converted string
+  allCaps : String
+  req allCaps = "ABC"
+
+  capsToLower : String
+  req capsToLower = allCaps.toLower()
+  req capsToLower = "abc"
 }
 
 main : StringCase1
+

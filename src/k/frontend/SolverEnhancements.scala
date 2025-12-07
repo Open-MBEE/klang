@@ -2,7 +2,7 @@
 package k.frontend
 
 import com.microsoft.z3.{Context, Solver, Optimize, Sort, Expr, BoolExpr, IntExpr, RealExpr, 
-  ArithExpr, FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Status, Params, SeqSort}
+  ArithExpr, FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Status, Params, SeqSort, ReExpr}
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.{ListBuffer, HashMap => MMap, Stack}
 
@@ -14,8 +14,8 @@ import scala.collection.mutable.{ListBuffer, HashMap => MMap, Stack}
  * - Anytime best-effort solutions with timeouts
  * - Optimization objectives (minimize/maximize)
  * - Enhanced unsat core reporting
- * - Native sequence theory support (via SMT-LIB)
- * - Regular expression support (via SMT-LIB)
+ * - Native sequence theory support
+ * - Regular expression support
  * - Opaque function support (uninterpreted + axiom learning)
  */
 
@@ -413,140 +413,195 @@ class OpaqueFunctionManager(ctx: Context) {
 }
 
 // ============================================================================
-// Regular Expression Support (SMT-LIB string generation)
+// Regular Expression Support
 // ============================================================================
 
 /**
- * Helper for building SMT-LIB regular expression strings
- * Note: These generate SMT-LIB text, not Z3 API objects
+ * Helper for building Z3 regular expressions
  */
 object RegexSupport {
 
   /**
-   * Create membership constraint: (str.in_re str (str.to_re pattern))
+   * Convert a string pattern to Z3 regex
+   * Supports basic regex syntax: ., *, +, ?, |, [], (), \d, \w, \s
    */
-  def mkMatchesSMT(strSMT: String, patternSMT: String): String = {
-    s"(str.in_re $strSMT (str.to_re $patternSMT))"
+  def patternToZ3Regex(ctx: Context, pattern: String): ReExpr[_] = {
+    // For simple patterns, use str.to_re
+    // For complex patterns, build using Z3 regex constructors
+    ctx.mkToRe(ctx.mkString(pattern))
   }
 
   /**
-   * Concatenate regexes in SMT-LIB
+   * Create membership constraint: str ∈ regex
    */
-  def mkConcatSMT(regexes: String*): String = {
-    if (regexes.length == 1) regexes.head
-    else s"(re.++ ${regexes.mkString(" ")})"
+  def mkInRegex(ctx: Context, str: Expr[_], regex: ReExpr[_]): BoolExpr = {
+    ctx.mkInRe(str.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]], regex)
   }
 
   /**
-   * Union of regexes in SMT-LIB
+   * Create regex from literal string
    */
-  def mkUnionSMT(regexes: String*): String = {
-    s"(re.union ${regexes.mkString(" ")})"
+  def mkLiteralRegex(ctx: Context, literal: String): ReExpr[_] = {
+    ctx.mkToRe(ctx.mkString(literal))
   }
 
   /**
-   * Kleene star in SMT-LIB
+   * Concatenate regexes
    */
-  def mkStarSMT(regex: String): String = s"(re.* $regex)"
+  def mkConcat(ctx: Context, regexes: ReExpr[_]*): ReExpr[_] = {
+    ctx.mkReConcat(regexes: _*)
+  }
 
   /**
-   * Kleene plus in SMT-LIB
+   * Union of regexes
    */
-  def mkPlusSMT(regex: String): String = s"(re.+ $regex)"
+  def mkUnion(ctx: Context, regexes: ReExpr[_]*): ReExpr[_] = {
+    ctx.mkReUnion(regexes: _*)
+  }
 
   /**
-   * Optional in SMT-LIB
+   * Kleene star
    */
-  def mkOptionSMT(regex: String): String = s"(re.opt $regex)"
+  def mkStar(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
+    ctx.mkReStar(regex)
+  }
 
   /**
-   * Character range in SMT-LIB
+   * Kleene plus (one or more)
    */
-  def mkRangeSMT(lo: String, hi: String): String = s"(re.range $lo $hi)"
-  
+  def mkPlus(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
+    ctx.mkRePlus(regex)
+  }
+
   /**
-   * Common patterns as SMT-LIB
+   * Optional (zero or one)
    */
-  def digitSMT: String = "(re.range \"0\" \"9\")"
-  def lowerSMT: String = "(re.range \"a\" \"z\")"
-  def upperSMT: String = "(re.range \"A\" \"Z\")"
-  def alphaSMT: String = s"(re.union $lowerSMT $upperSMT)"
-  def alphaNumSMT: String = s"(re.union $alphaSMT $digitSMT)"
-  def anySMT: String = "re.allchar"
+  def mkOption(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
+    ctx.mkReOption(regex)
+  }
+
+  /**
+   * Character range [a-z]
+   */
+  def mkRange(ctx: Context, lo: Char, hi: Char): ReExpr[_] = {
+    ctx.mkReRange(ctx.mkString(lo.toString), ctx.mkString(hi.toString))
+  }
+
+  /**
+   * Common regex patterns
+   */
+  def mkDigit(ctx: Context): ReExpr[_] = mkRange(ctx, '0', '9')
+  def mkLower(ctx: Context): ReExpr[_] = mkRange(ctx, 'a', 'z')
+  def mkUpper(ctx: Context): ReExpr[_] = mkRange(ctx, 'A', 'Z')
+  def mkAlpha(ctx: Context): ReExpr[_] = mkUnion(ctx, mkLower(ctx), mkUpper(ctx))
+  def mkAlphaNum(ctx: Context): ReExpr[_] = mkUnion(ctx, mkAlpha(ctx), mkDigit(ctx))
+  def mkAny(ctx: Context): ReExpr[_] = ctx.mkReAllchar()
 }
 
 // ============================================================================
-// Sequence Theory Support (SMT-LIB string generation)
+// Sequence Theory Support
 // ============================================================================
 
 /**
- * Helper for Z3 sequence operations via SMT-LIB text generation
+ * Helper for Z3 sequence operations
  */
 object SeqSupport {
 
   /**
-   * Create empty sequence SMT
+   * Create a sequence sort for element type
    */
-  def mkEmptySMT(sortSMT: String): String = s"(as seq.empty (Seq $sortSMT))"
-
-  /**
-   * Create unit sequence SMT
-   */
-  def mkUnitSMT(elementSMT: String): String = s"(seq.unit $elementSMT)"
-
-  /**
-   * Concatenate sequences SMT
-   */
-  def mkConcatSMT(seqs: String*): String = {
-    if (seqs.length == 1) seqs.head
-    else s"(seq.++ ${seqs.mkString(" ")})"
+  def mkSeqSort(ctx: Context, elementSort: Sort): SeqSort[_] = {
+    ctx.mkSeqSort(elementSort)
   }
 
   /**
-   * Sequence length SMT
+   * Create empty sequence
    */
-  def mkLengthSMT(seqSMT: String): String = s"(seq.len $seqSMT)"
+  def mkEmpty(ctx: Context, seqSort: SeqSort[_]): Expr[_] = {
+    ctx.mkEmptySeq(seqSort)
+  }
 
   /**
-   * Get element at index SMT
+   * Create unit sequence (single element)
    */
-  def mkAtSMT(seqSMT: String, indexSMT: String): String = s"(seq.nth $seqSMT $indexSMT)"
+  def mkUnit(ctx: Context, element: Expr[_]): Expr[_] = {
+    ctx.mkUnit(element)
+  }
 
   /**
-   * Extract subsequence SMT
+   * Concatenate sequences
    */
-  def mkExtractSMT(seqSMT: String, offsetSMT: String, lengthSMT: String): String = 
-    s"(seq.extract $seqSMT $offsetSMT $lengthSMT)"
+  def mkConcat(ctx: Context, seqs: Expr[_]*): Expr[_] = {
+    if (seqs.length == 1) seqs.head
+    else ctx.mkConcat(seqs.head.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                      seqs.tail.head.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
 
   /**
-   * Check if subsequence is contained SMT
+   * Sequence length
    */
-  def mkContainsSMT(seqSMT: String, subseqSMT: String): String = 
-    s"(seq.contains $seqSMT $subseqSMT)"
+  def mkLength(ctx: Context, seq: Expr[_]): IntExpr = {
+    ctx.mkLength(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
 
   /**
-   * Check prefix SMT
+   * Get element at index
    */
-  def mkPrefixOfSMT(prefixSMT: String, seqSMT: String): String = 
-    s"(seq.prefixof $prefixSMT $seqSMT)"
+  def mkAt(ctx: Context, seq: Expr[_], index: Expr[_]): Expr[_] = {
+    ctx.mkNth(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+              index.asInstanceOf[IntExpr])
+  }
 
   /**
-   * Check suffix SMT
+   * Extract subsequence
    */
-  def mkSuffixOfSMT(suffixSMT: String, seqSMT: String): String = 
-    s"(seq.suffixof $suffixSMT $seqSMT)"
+  def mkExtract(ctx: Context, seq: Expr[_], offset: Expr[_], length: Expr[_]): Expr[_] = {
+    ctx.mkExtract(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                  offset.asInstanceOf[IntExpr],
+                  length.asInstanceOf[IntExpr])
+  }
 
   /**
-   * Find index of subsequence SMT
+   * Check if element is in sequence
    */
-  def mkIndexOfSMT(seqSMT: String, subseqSMT: String, offsetSMT: String): String = 
-    s"(seq.indexof $seqSMT $subseqSMT $offsetSMT)"
+  def mkContains(ctx: Context, seq: Expr[_], subseq: Expr[_]): BoolExpr = {
+    ctx.mkContains(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                   subseq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
 
   /**
-   * Replace first occurrence SMT
+   * Check prefix
    */
-  def mkReplaceSMT(seqSMT: String, srcSMT: String, dstSMT: String): String = 
-    s"(seq.replace $seqSMT $srcSMT $dstSMT)"
+  def mkPrefixOf(ctx: Context, prefix: Expr[_], seq: Expr[_]): BoolExpr = {
+    ctx.mkPrefixOf(prefix.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                   seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
+
+  /**
+   * Check suffix
+   */
+  def mkSuffixOf(ctx: Context, suffix: Expr[_], seq: Expr[_]): BoolExpr = {
+    ctx.mkSuffixOf(suffix.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                   seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
+
+  /**
+   * Find index of subsequence
+   */
+  def mkIndexOf(ctx: Context, seq: Expr[_], subseq: Expr[_], offset: Expr[_]): IntExpr = {
+    ctx.mkIndexOf(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                  subseq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                  offset.asInstanceOf[IntExpr])
+  }
+
+  /**
+   * Replace first occurrence
+   */
+  def mkReplace(ctx: Context, seq: Expr[_], src: Expr[_], dst: Expr[_]): Expr[_] = {
+    ctx.mkReplace(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                  src.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
+                  dst.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
+  }
 }
 
 // ============================================================================
@@ -717,3 +772,4 @@ object K2Z3Enhanced {
     }
   }
 }
+

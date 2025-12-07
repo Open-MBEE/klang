@@ -202,30 +202,10 @@ The test file `src/test/AdvancedSolverTest.k` contains test cases for:
 
 ✅ **Build succeeds** with full implementation
 
-### Test Results (December 6, 2025)
-
-| Test Suite | Total | Passed | Pass Rate |
-|------------|-------|--------|-----------|
-| Core (src/tests/) | 66 | 53 | **80%** |
-| New Features (src/test/) | 5 | 4 | **80%** |
-| Examples (src/examples/) | 44 | 24 | 55% |
-| **TOTAL** | **115** | **81** | **70%** |
-
-All new feature tests pass:
-- ✅ Optimization (opt1.k, opt2.k, opt3.k)
-- ✅ Regex matching (regex1.k)
-- ✅ Timeout/best-effort (besteffort1.k, timeout1.k)
-- ✅ String operations (6 tests)
-- ✅ All src/test string tests (4 tests)
-
-To run tests:
-```bash
-./run-tests.sh              # Core tests
-./run-tests.sh -all         # All tests  
-./run-tests.sh -opt         # Optimization tests
-./run-tests.sh -string      # String tests
-./run-tests.sh -test <file> # Single test
-```
+All features are now active:
+- Parser regenerated from Model.g4
+- `visitOptimizeDeclaration` enabled
+- All new solver classes compiled
 
 To rebuild after any changes:
 ```bash

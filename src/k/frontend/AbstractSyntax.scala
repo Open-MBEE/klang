@@ -1295,17 +1295,6 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
       }
       result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
     }
-
-    // optimization objectives (added as comments - use Optimize solver for actual optimization)
-    val optimizeDecls: List[OptimizeDecl] = getAllOptimizeDecls
-    if (optimizeDecls.nonEmpty) {
-      result += UtilSMT.headline3("Optimization Objectives (informational)")
-      for (OptimizeDecl(kind, exp, weight) <- optimizeDecls) {
-        val weightStr = weight.map(w => s" :weight $w").getOrElse("")
-        result += s"; (${kind.toSMT} ${exp.toSMT(ident, false)}$weightStr)\n"
-      }
-      result += "\n"
-    }
     result
   }
 
@@ -1370,15 +1359,6 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     constraintDeclsOfSuperClasses ++ getConstraintDecls
   }
 
-  def getOptimizeDecls: List[OptimizeDecl] =
-    for (m <- members if m.isInstanceOf[OptimizeDecl]) yield m.asInstanceOf[OptimizeDecl]
-
-  def getAllOptimizeDecls: List[OptimizeDecl] = {
-    val optimizeDeclsOfSuperClasses: List[OptimizeDecl] =
-      (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getOptimizeDecls).flatten
-    optimizeDeclsOfSuperClasses ++ getOptimizeDecls
-  }
-  
   def getEntityDecls: List[EntityDecl] = 
     for (m <- members if m.isInstanceOf[EntityDecl]) yield m.asInstanceOf[EntityDecl]
   
