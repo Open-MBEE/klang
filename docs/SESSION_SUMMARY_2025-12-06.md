@@ -48,7 +48,29 @@ Based on the newer Z3 version capabilities, we identified these features to make
 
 ## Part 2: Features NOT Yet Implemented (Future Work)
 
-### A. Incremental Solving
+### A. Interrupt/Anytime Solving (Implemented ✅)
+**What was implemented:**
+- `K2Z3.interrupt()` function callable from any thread
+- `@volatile interrupted` flag for cooperative cancellation
+- SIGINT (Ctrl+C) signal handler for CLI interruption
+- `solvingInProgress` flag to track when solver is active
+- `bestModelSoFar` to return partial results on interrupt
+- `iterationsCompleted` for progress reporting
+
+**Behavior:**
+- During solving, Ctrl+C triggers interrupt() instead of exit
+- Web applications can call `K2Z3.interrupt()` via API
+- Best solution found so far is returned with warning
+- When not solving, Ctrl+C exits normally
+
+**API for web applications:**
+```scala
+K2Z3.interrupt()      // Request interruption  
+K2Z3.wasInterrupted   // Check if interrupted
+K2Z3.clearInterrupt() // Reset for new solve
+```
+
+### B. Incremental Solving (Future Work)
 **Why it's valuable:**
 - Efficiently solve related problems by reusing solver state
 - Push/pop assertion contexts
@@ -68,7 +90,7 @@ class Scenario {
 }
 ```
 
-### B. Opaque/Black-Box Function Support
+### C. Opaque/Black-Box Function Support
 **User's Goal:** Import JVM/Python libraries and constrain their behavior
 
 **Challenges:**
@@ -93,11 +115,11 @@ class MyAPI {
 }
 ```
 
-### C. Quantifiers (Partial Support Exists)
+### D. Quantifiers (Partial Support Exists)
 - `forall` and `exists` quantifiers
 - May need enhancement for better Z3 integration
 
-### D. Sequences and Arrays
+### E. Sequences and Arrays
 - Z3 has native sequence theory
 - Could complement existing Set/Bag support
 
