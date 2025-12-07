@@ -36,3 +36,7 @@ src/tests/test.k
 /target
 /.idea
 *.iml
+# IDE/build tool directories
+/.bloop
+/.metals
+/.vscode
