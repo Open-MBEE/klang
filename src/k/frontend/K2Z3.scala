@@ -216,6 +216,13 @@ object K2Z3 {
 
     if (z3Model != null) {
 
+      // Print warning if this is a partial/best-effort result
+      if (bestEffortMode && solverTimeout.isDefined) {
+        println()
+        println("\t⚠️  BEST-EFFORT RESULT - Solution may be incomplete or suboptimal")
+        println()
+      }
+
       logDebug(z3Model.toString)
 
       // log("<<++")
@@ -414,9 +421,53 @@ object K2Z3 {
     }
   }
   
+  // Configuration for solver behavior extracted from annotations
+  var solverTimeout: Option[Long] = None
+  var bestEffortMode: Boolean = false
+  var lastPartialModel: Option[com.microsoft.z3.Model] = None
+
+  /**
+   * Extract @timeout and @bestEffort annotations from model
+   */
+  def extractSolverConfig(model: Model): Unit = {
+    solverTimeout = None
+    bestEffortMode = false
+
+    if (model == null) return
+
+    // Check all entity declarations for annotations
+    for (decl <- model.decls) {
+      decl match {
+        case ed: EntityDecl =>
+          for (ann <- ed.annotations) {
+            ann match {
+              case Annotation("timeout", IntegerLiteral(ms)) =>
+                solverTimeout = Some(ms.toLong)
+                logDebug(s"Found @timeout(${ms}) annotation")
+              case Annotation("bestEffort", _) =>
+                bestEffortMode = true
+                logDebug("Found @bestEffort annotation")
+              case _ => // ignore other annotations
+            }
+          }
+        case _ => // ignore non-entity declarations
+      }
+    }
+  }
+
   def solveSMT(model: Model, smtModel: String, printModel: Boolean): Unit = {
     try {
       reset()
+
+      // Extract solver configuration from annotations
+      extractSolverConfig(model)
+
+      // Apply timeout to Z3 solver if specified
+      solverTimeout.foreach { ms =>
+        params.add("timeout", ms.toInt)
+        solver.setParameters(params)
+        logDebug(s"Z3 solver timeout set to ${ms}ms")
+      }
 
       // Write SMT model to temporary file to avoid string parsing issues
       val tempFile = new java.io.File("/tmp/k_debug.smt2")
@@ -465,6 +516,7 @@ object K2Z3 {
 
     if (Status.SATISFIABLE == status) {
       z3Model = solver.getModel
+      lastPartialModel = Some(z3Model)
     } else if (status == Status.UNSATISFIABLE) {
       log()
       log(s"The given model is NOT satisfiable. ")
@@ -501,11 +553,39 @@ object K2Z3 {
           log()
       }
     } else {
+      // Status is UNKNOWN - could be timeout or other reason
+      val reason = solver.getReasonUnknown
+      val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
+
       log()
-      log("Model could not be solved successfully.")
-      log("Reason: " + solver.getReasonUnknown)
+      if (isTimeout && bestEffortMode) {
+        log("⚠️  TIMEOUT - Returning best-effort result")
+        log(s"Solver timed out after ${solverTimeout.getOrElse("unknown")}ms")
+        // Try to get whatever model state we have
+        // Note: Z3 may not have a valid model on timeout, but we try anyway
+        try {
+          z3Model = solver.getModel
+          if (z3Model != null) {
+            lastPartialModel = Some(z3Model)
+            log("Partial model available - results may be incomplete or suboptimal")
+          } else {
+            log("No partial model available")
+          }
+        } catch {
+          case _: Throwable =>
+            log("Could not extract partial model")
+            z3Model = null
+        }
+      } else if (isTimeout) {
+        log(s"⛔ TIMEOUT after ${solverTimeout.getOrElse("unknown")}ms")
+        log("Solver did not complete. Use @bestEffort annotation to get partial results.")
+        z3Model = null
+      } else {
+        log("Model could not be solved successfully.")
+        log("Reason: " + reason)
+        z3Model = null
+      }
       log()
-      z3Model = null
     }
 
     z3Model
