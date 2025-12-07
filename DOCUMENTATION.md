@@ -49,7 +49,8 @@ Technical investigations and analysis (useful for understanding project history 
 - **[OTHER_K_REPOSITORY_INVESTIGATION.md](docs/investigations/OTHER_K_REPOSITORY_INVESTIGATION.md)** - Analysis of the parallel K repository
 - **[SCALA_ACTORS_CLARIFICATION.md](docs/investigations/SCALA_ACTORS_CLARIFICATION.md)** - scala-actors dependency clarification
 - **[PROCEDURE_SYNTAX_BLOCKER.md](docs/investigations/PROCEDURE_SYNTAX_BLOCKER.md)** - Procedure syntax deprecation analysis
-- **[WHY_SLOW_COMPILATION.md](docs/investigations/WHY_SLOW_COMPILATION.md)** - Compilation performance analysis
+- **[WHY_SLOW_COMPILATION.md](docs/investigations/WHY_SLOW_COMPILATION.md)** - Initial compilation performance analysis
+- **[COMPILATION_PERFORMANCE.md](docs/investigations/COMPILATION_PERFORMANCE.md)** - Complete compilation performance analysis and benchmarks
 - **[TEST_SCRIPT_CONSOLIDATION.md](docs/investigations/TEST_SCRIPT_CONSOLIDATION.md)** - Test runner consolidation notes
 
 ## 🔍 Quick Navigation
@@ -99,6 +100,7 @@ klang/
 │       ├── SCALA_ACTORS_CLARIFICATION.md
 │       ├── PROCEDURE_SYNTAX_BLOCKER.md
 │       ├── WHY_SLOW_COMPILATION.md
+│       ├── COMPILATION_PERFORMANCE.md
 │       └── TEST_SCRIPT_CONSOLIDATION.md
 │
 ├── src/                                # Source code
