@@ -10,32 +10,36 @@ echo "K Language Web Server (Maven build)"
 echo "Project root: $PROJECT_ROOT"
 echo ""
 
-# Function to check if Java 8 is available
-check_java8() {
-    if [ -d "$HOME/.sdkman/candidates/java/8.0.462-zulu" ]; then
-        export JAVA_HOME="$HOME/.sdkman/candidates/java/8.0.462-zulu"
+# Function to check if Java 21 is available
+check_java21() {
+    if [ -d "$HOME/.sdkman/candidates/java/21.0.8-tem" ]; then
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.8-tem"
         export PATH="$JAVA_HOME/bin:$PATH"
         return 0
-    elif [ -d "/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home" ]; then
-        export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home"
+    elif [ -d "$HOME/.sdkman/candidates/java/21.0.5-tem" ]; then
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.5-tem"
         export PATH="$JAVA_HOME/bin:$PATH"
         return 0
-    else
-        return 1
+    elif command -v java >/dev/null 2>&1; then
+        JAVA_VERSION=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
+        if [ "$JAVA_VERSION" -ge 21 ] 2>/dev/null; then
+            return 0
+        fi
     fi
+    return 1
 }
 
-# Check for Java 8
-if ! check_java8; then
-    echo "❌ Java 8 not found!"
-    echo "Please install Java 8 using SDKMAN:"
+# Check for Java 21
+if ! check_java21; then
+    echo "❌ Java 21 not found!"
+    echo "Please install Java 21 using SDKMAN:"
     echo "  curl -s 'https://get.sdkman.io' | bash"
     echo "  source \"\$HOME/.sdkman/bin/sdkman-init.sh\""
-    echo "  sdk install java 8.0.462-zulu"
+    echo "  sdk install java 21.0.5-tem"
     exit 1
 fi
 
-echo "✅ Java 8 found and configured"
+echo "✅ Java 21 found and configured"
 java -version
 
 # Select appropriate Z3 libraries for this Java architecture
