@@ -1,9 +1,9 @@
-
 -- Testing empty classes/constructors and string members, which should
 -- be ignored. Hence verifyEVR is an empty class from Z3's point
 -- of view.
+-- NOTE: Renamed Time to TimePoint because Time is now a primitive type keyword
 
-class Time {
+class TimePoint {
   t : Int
 }
 
@@ -15,4 +15,4 @@ class VerifyEVR {
 
 verify1 : VerifyEVR = VerifyEVR(cmd :: "CMD_NO_OP")
 
-time : Time
+timeVar : TimePoint

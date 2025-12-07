@@ -1,12 +1,11 @@
-
 ERROR : Int req ERROR < 0
 fun CHECK(b:Bool):Int {if b then 42 else ERROR}
 
-class Duration {
+class TimeSpan {
   t1 : Int
   t2 : Int
 
-  fun before(other: Duration): Bool {
+  fun before(other: TimeSpan): Bool {
     t2 < other.t1
   }
 
@@ -16,8 +15,8 @@ class Duration {
 }
 
 class Event {
-  duration : Duration
-  min: Int  
+  duration : TimeSpan
+  min: Int
 
   req duration.t2-duration.t1 >= min
 
