@@ -381,6 +381,7 @@ class Statistics {
   var PRECONDITION: Int = 0
   var POSTCONDITION: Int = 0
   var CONSTRAINT: Int = 0
+  var OPTIMIZE: Int = 0
   // --- Types: ---
   var REFTYPE: Int = 0
   var TUPLETYPE: Int = 0
@@ -1294,6 +1295,17 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
       }
       result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
     }
+
+    // optimization objectives (added as comments - use Optimize solver for actual optimization)
+    val optimizeDecls: List[OptimizeDecl] = getAllOptimizeDecls
+    if (optimizeDecls.nonEmpty) {
+      result += UtilSMT.headline3("Optimization Objectives (informational)")
+      for (OptimizeDecl(kind, exp, weight) <- optimizeDecls) {
+        val weightStr = weight.map(w => s" :weight $w").getOrElse("")
+        result += s"; (${kind.toSMT} ${exp.toSMT(ident, false)}$weightStr)\n"
+      }
+      result += "\n"
+    }
     result
   }
 
@@ -1356,6 +1368,15 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     val constraintDeclsOfSuperClasses: List[ConstraintDecl] =
       (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getConstraintDecls).flatten
     constraintDeclsOfSuperClasses ++ getConstraintDecls
+  }
+
+  def getOptimizeDecls: List[OptimizeDecl] =
+    for (m <- members if m.isInstanceOf[OptimizeDecl]) yield m.asInstanceOf[OptimizeDecl]
+
+  def getAllOptimizeDecls: List[OptimizeDecl] = {
+    val optimizeDeclsOfSuperClasses: List[OptimizeDecl] =
+      (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getOptimizeDecls).flatten
+    optimizeDeclsOfSuperClasses ++ getOptimizeDecls
   }
   
   def getEntityDecls: List[EntityDecl] = 
@@ -1977,6 +1998,64 @@ case class ConstraintDecl(name: Option[String], exp: Exp) extends MemberDecl {
   override def toJson2 = toJson1
 }
 
+/**
+ * Optimization declaration for minimize/maximize objectives
+ * @param kind Either Minimize or Maximize
+ * @param exp Expression to optimize (must be numeric)
+ * @param weight Optional weight for multi-objective optimization
+ */
+sealed trait OptimizeKind {
+  def toSMT: String
+}
+case object MinimizeKind extends OptimizeKind {
+  override def toString = "minimize"
+  def toSMT = "minimize"
+}
+case object MaximizeKind extends OptimizeKind {
+  override def toString = "maximize"
+  def toSMT = "maximize"
+}
+
+case class OptimizeDecl(kind: OptimizeKind, exp: Exp, weight: Option[Int] = None) extends MemberDecl {
+  override def children: List[AnyRef] = List(exp)
+
+  override def statistics() {
+    UtilSMT.statistics.OPTIMIZE += 1
+    exp.statistics()
+  }
+
+  override def toSMT(className: String): String = {
+    val expSMT = exp.toSMT(className, false)
+    weight match {
+      case Some(w) => s"(${kind.toSMT} $expSMT :weight $w)"
+      case None => s"(${kind.toSMT} $expSMT)"
+    }
+  }
+
+  override def toScala = {
+    s"// ${kind} ${exp.toScala}"
+  }
+
+  override def toString =
+    weight match {
+      case Some(w) => s"$kind $exp weight $w"
+      case None => s"$kind $exp"
+    }
+
+  override def toJson1 = {
+    val optimizedecl = new JSONObject
+    val theAnnotations = new JSONArray()
+    optimizedecl.put("type", "OptimizeDecl")
+    optimizedecl.put("kind", kind.toString)
+    optimizedecl.put("exp", exp.toJson)
+    weight.foreach(w => optimizedecl.put("weight", w))
+    for (annotation <- annotations) theAnnotations.put(annotation.toJson)
+    optimizedecl.put("annotations", theAnnotations)
+  }
+
+  override def toJson2 = toJson1
+}
+
 case class ExpressionDecl(exp: Exp) extends MemberDecl {
   override def children: List[AnyRef] = List(exp)
 
@@ -2382,6 +2461,14 @@ trait CallApplExp extends Exp {
             return s"(str.to_lower $strSMT)"
           case "toInt" =>
             return s"(str.to_int $strSMT)"
+          case "matches" =>
+            // Regular expression matching: str.in_re
+            val patternSMT = args(0).toSMT(className, subTyping)
+            return s"(str.in_re $strSMT (str.to_re $patternSMT))"
+          case "fromInt" =>
+            // Convert integer to string
+            val intSMT = args(0).toSMT(className, subTyping)
+            return s"(str.from_int $intSMT)"
           case _ =>
             // Fall through to regular function handling
         }

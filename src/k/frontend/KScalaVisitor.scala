@@ -155,6 +155,21 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     
   }
 
+  override def visitOptimizeDeclaration(ctx: ModelParser.OptimizeDeclarationContext): AnyRef = {
+    val exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
+    val weight: Option[Int] =
+      if (ctx.IntegerLiteral() != null) Some(ctx.IntegerLiteral().getText().toInt)
+      else None
+    val kind: OptimizeKind =
+      if (ctx.getText().startsWith("minimize")) MinimizeKind
+      else MaximizeKind
+    val o = OptimizeDecl(kind, exp, weight)
+    val line = ctx.getStart().getLine()
+    val char = ctx.getStart().getCharPositionInLine()
+    declToPosition += (o -> (line, char))
+    o
+  }
+
   override def visitParenExp(ctx: ModelParser.ParenExpContext): AnyRef = {
     ParenExp(visit(ctx.expression()).asInstanceOf[Exp])
   }
@@ -466,6 +481,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     else if (ctx.propertyDeclaration() != null) visit(ctx.propertyDeclaration())
     else if (ctx.functionDeclaration() != null) visit(ctx.functionDeclaration())
     else if (ctx.constraint() != null) visit(ctx.constraint())
+    else if (ctx.optimizeDeclaration() != null) visit(ctx.optimizeDeclaration())
     else if (ctx.expression() != null) ExpressionDecl(visit(ctx.expression()).asInstanceOf[Exp])
     else null
   }

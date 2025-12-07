@@ -78,8 +78,13 @@ memberDeclaration:
   | propertyDeclaration
   | functionDeclaration
   | constraint 
+  | optimizeDeclaration
   | expression
   ;
+
+optimizeDeclaration:
+  ('minimize' | 'maximize') expression ('weight' IntegerLiteral)?
+;
 
 typeDeclaration:
   'type' Identifier (typeParameters? '=' type )?

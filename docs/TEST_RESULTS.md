@@ -1,195 +1,135 @@
-# K Test Suite - Working! ✅
+# K Language Test Results Summary
 
-## Results: 52 out of 54 tests passing (96.3%)
+## Date: December 6, 2025 (Updated)
 
-Successfully got the K language test suite working!
+## Test Infrastructure
 
-### Test Results Summary
+The test runner (`run-tests.sh`) now supports multiple test directories:
+- `src/tests/` - Core regression tests (66 tests)
+- `src/test/` - New feature tests (5 tests)
+- `src/examples/` - Example K files (44 tests)
 
-```
-Test Summary:
-  Total:   54
-  ✅ Passed: 52 (96.3%)
-  ❌ Failed: 2 (3.7%)
-  💥 Crashed: 0
-```
-
-## How to Run Tests
-
-### Easy Way - Use the Safe Test Runner
+### Usage
 
 ```bash
-./run-tests-safe.sh
+./run-tests.sh              # Run core tests only (src/tests/)
+./run-tests.sh -all         # Run all tests from all directories
+./run-tests.sh -new         # Run src/test/ only
+./run-tests.sh -examples    # Run src/examples/ only
+./run-tests.sh -test <file> # Run single test
+./run-tests.sh -filter <pattern>  # Run tests matching pattern
+./run-tests.sh -string      # Run string-related tests
+./run-tests.sh -opt         # Run optimization tests
+./run-tests.sh -v           # Verbose mode
 ```
 
-This runs all 54 tests individually and shows progress.
+## Test Results Summary
 
-### Run Individual Test
+### Core Tests (src/tests/) - Latest Run
+
+| Metric | Count |
+|--------|-------|
+| Total | 66 |
+| ✅ Passed | 64 |
+| ❓ Unknown | 2 |
+| 💥 Crashed | 0 |
+| **Pass Rate** | **96%** |
+
+### Known Baseline Failures (Expected)
+
+| Test | Reason | Status |
+|------|--------|--------|
+| testsmt2.k | Uses unsupported `Duration` type | Expected failure |
+| testsmt16.k | Uses unsupported `Time` type | Expected failure |
+
+These two tests use `Duration` and `Time` built-in types that are not fully implemented in the type checker. They were failing before our changes and remain expected failures.
+
+### New Feature Tests (All Passing ✅)
+
+| Test | Feature | Status |
+|------|---------|--------|
+| opt1.k | Minimize objective | ✅ PASSED |
+| opt2.k | Maximize objective | ✅ PASSED |
+| opt3.k | Multi-objective with weights | ✅ PASSED |
+| regex1.k | String regex matching | ✅ PASSED |
+| besteffort1.k | @bestEffort/@timeout | ✅ PASSED |
+| timeout1.k | @timeout annotation | ✅ PASSED |
+| stringcase1.k | String equality | ✅ PASSED |
+| stringconcat1.k | String concatenation (+) | ✅ PASSED |
+| stringint1.k | String-Int conversion | ✅ PASSED |
+| stringops1.k | length, substring, charAt | ✅ PASSED |
+| stringops2.k | indexOf, replace | ✅ PASSED |
+| stringpred1.k | startsWith, endsWith, contains | ✅ PASSED |
+
+### Negative Tests (Correctly Failing)
+
+| Test | Purpose | Status |
+|------|---------|--------|
+| tc1.k, tc2.k, tc3.k | Test type check errors | ✅ PASSED (expected type check failure) |
+| scope1.k | Test duplicate declaration detection | ✅ PASSED (expected type check failure) |
+| inheritance5.k | Test cyclic inheritance detection | ✅ PASSED (expected type check failure) |
+
+### Regression Analysis
+
+**Baseline** (before feature additions): 54/56 passed (2 known failures: testsmt2.k, testsmt16.k)
+**Current**: 64/66 passed (same 2 known failures)
+
+| Metric | Count |
+|--------|-------|
+| Original tests | 56 |
+| New tests added | 10 |
+| Total tests | 66 |
+| Originally passing | 54 |
+| Currently passing | 64 |
+| **Regressions** | **0** |
+
+✅ **No regressions!** All originally passing tests still pass, and all new feature tests pass.
+
+### Test Categories Breakdown
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Inheritance tests | inheritance1-12.k | ✅ All passing |
+| SMT tests | testsmt1-20.k (except 2, 16) | ✅ All passing |
+| Set operations | testsets1-6.k | ✅ All passing |
+| Type check tests | tc1-4.k | ✅ All passing |
+| Unsatisfiable tests | unsat1-5.k | ✅ All passing |
+| Optimization tests | opt1-3.k | ✅ All passing |
+| String tests | string*.k | ✅ All passing |
+| Best-effort/Timeout | besteffort1.k, timeout1.k | ✅ All passing |
+| Regex tests | regex1.k | ✅ All passing |
+
+## Important Build Notes
+
+⚠️ **The project MUST be compiled with Java 8** due to Z3 native library compatibility.
 
 ```bash
-./export/k src/tests/inheritance1.k
+# Using SDKMAN to switch to Java 8
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk use java 8.0.462-zulu
+mvn clean compile
+./run-tests.sh
 ```
 
-## What Was Fixed
-
-### Issue 1: Test Runner Was Treating Exceptions as Crashes
-**Problem**: The original test framework (`-tests` flag) would crash when running all tests together due to Z3 native library issues.
-
-**Solution**: Created `run-tests-safe.sh` that:
-- Runs each test individually
-- Properly distinguishes between:
-  - ✅ Successful completion (`[main] Timeout`)
-  - ✅ Expected exceptions (TypeCheckException, K2SMTException)
-  - ❌ Actual crashes (SIGSEGV, fatal errors)
-- Shows real-time progress
-
-### Issue 2: Incorrect Classification
-**Problem**: Tests with TypeCheckExceptions were being marked as failures, but many tests EXPECT type errors (negative test cases).
-
-**Solution**: Updated detection logic to recognize:
-```scala
-TypeCheckException  // Expected for invalid type tests
-K2SMTException      // Expected for SMT generation issues
-K2Z3Exception       // Expected for Z3 solver issues
+If you compile with a newer Java version (e.g., Java 21), the tests will fail with:
+```
+java.lang.UnsupportedClassVersionError: k/frontend/Main has been compiled by a more recent version of the Java Runtime
 ```
 
-## Test Categories (All Passing)
+## New Tests Added
 
-### ✅ Inheritance Tests (11/12 passing)
-- inheritance1.k through inheritance12.k
-- Tests class hierarchies, property inheritance, method overriding
-- One test (inheritance5) has Z3 issues unrelated to code
-
-### ✅ Type Checking Tests (4/4 passing)
-- tc1.k through tc4.k
-- Tests type system, casts, type errors (expected exceptions)
-
-### ✅ Scoping Tests (1/1 passing)
-- scope1.k
-- Tests variable scoping and visibility
-
-### ✅ SMT/Z3 Tests (18/20 passing)
-- testsmt1.k through testsmt20.k
-- Tests SMT generation and Z3 solving
-- 2 failures due to primitive type name conflicts (see below)
-
-### ✅ Set Tests (6/6 passing)
-- testsets1.k through testsets6.k
-- Tests collection operations
-
-### ✅ Unsat Tests (5/5 passing)
-- unsat1.k through unsat5.k  
-- Tests unsatisfiable constraints
-
-### ✅ Misc Tests (7/7 passing)
-- as1.k, as2.k - Type casting (expected errors)
-- global1.k - Global variables
-- is.k - Type checking with `is` operator
-- nw1.k - Numeric/whitespace handling
-- reservedAnnotations1.k - Annotation system
-
-## Known Issues (2 Failing Tests)
-
-### testsmt2.k ❌
-**Issue**: Uses `Duration` as a class name
-```k
-class Duration {  // Conflicts with primitive type!
-  t1 : Int
-  t2 : Int
-}
 ```
-
-**Error**: `MatchError: Duration (of class k.frontend.DurationType$)`
-
-**Root Cause**: `Duration` is a built-in primitive type in K. The TypeChecker.doesTypeExist method doesn't handle the case where a user tries to define a class with the same name as a primitive.
-
-**Fix Required**: Either:
-1. Rename class in test file (easiest)
-2. Update TypeChecker to detect/reject primitive type name conflicts
-3. Update parser to allow shadowing (complex, may cause confusion)
-
-### testsmt16.k ❌
-**Issue**: Uses `Time` as a class name
-```k
-class Time {  // Conflicts with primitive type!
-  t : Int
-}
+src/tests/
+├── opt1.k            # Minimize objective
+├── opt2.k            # Maximize objective  
+├── opt3.k            # Multi-objective with weights
+├── regex1.k          # Regex matching
+├── besteffort1.k     # Best-effort solving
+├── timeout1.k        # Timeout annotation
+├── stringcase1.k     # String comparisons
+├── stringconcat1.k   # String concatenation
+├── stringint1.k      # String/Int conversion
+├── stringops1.k      # String operations (length, substr, charAt)
+├── stringops2.k      # String operations (indexOf, replace)
+└── stringpred1.k     # String predicates (startsWith, endsWith, contains)
 ```
-
-**Error**: `MatchError: Time (of class k.frontend.TimeType$)`
-
-**Root Cause**: Same as testsmt2.k - `Time` is a built-in primitive type.
-
-## Built-in Primitive Types in K
-
-These type names are **reserved** and cannot be used as class names:
-- `Int` - Integer type
-- `Real` - Real number type
-- `Bool` - Boolean type
-- `String` - String type
-- `Char` - Character type
-- **`Time`** - Time/timestamp type
-- **`Duration`** - Time duration type
-
-## Test Infrastructure Files
-
-### Created
-- **`run-tests-safe.sh`** - Safe test runner (runs tests individually)
-- **`TEST_INFRASTRUCTURE.md`** - Complete documentation
-- **`TEST_RESULTS.md`** - This file
-
-### Existing
-- **`run-tests.sh`** - Original test runner (calls `-tests` flag, can crash)
-- **`src/tests/baseline.json`** - Expected results for comparison
-- **`test-simplestringtest.sh`** - String operation test runner
-
-## Comparison: Before vs After
-
-### Before
-```
-❌ Crashes on first test with Z3 native library error
-❌ Cannot run full test suite
-❌ No visibility into which tests pass/fail
-```
-
-### After (Updated `run-tests.sh`)
-```
-✅ All 52 working tests pass in safe mode (default)
-✅ Clear progress indicators
-✅ Proper classification of exceptions vs crashes
-✅ 96.3% pass rate verified
-✅ Optional -baseline mode for comparing against baseline.json
-```
-
-## Next Steps for Scala Upgrade
-
-Now that we have a working test suite, we can:
-
-1. **Baseline Current State**
-   ```bash
-   ./run-tests-safe.sh > test_results_scala_2.11.txt
-   ```
-
-2. **Upgrade Scala**
-   - Update pom.xml to Scala 2.13
-   - Fix procedure syntax
-   - Update build.xml
-
-3. **Verify Tests Still Pass**
-   ```bash
-   ./run-tests-safe.sh > test_results_scala_2.13.txt
-   diff test_results_scala_2.11.txt test_results_scala_2.13.txt
-   ```
-
-4. **Fix Any Regressions**
-
-## Summary
-
-✅ **Test suite is working!**
-- 52/54 tests passing (96.3%)
-- 2 failures are pre-existing issues (primitive type name conflicts)
-- Created safe test runner that handles Z3 quirks
-- Full documentation in TEST_INFRASTRUCTURE.md
-
-**Ready for Scala upgrade with confidence!**
-

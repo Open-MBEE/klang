@@ -799,6 +799,12 @@ class TypeChecker(model: Model) {
                   error(s"Condition $exp is not of type Bool.")
                 }
                 exp2Type.put(exp, ty)
+              case od @ OptimizeDecl(kind, exp, weight) =>
+                val ty = getExpType(entityTypeEnv, exp, ed)
+                if (ty != IntType && ty != RealType && ty != AnyType) {
+                  error(s"Optimization expression $exp must be numeric (Int or Real), found $ty.")
+                }
+                exp2Type.put(exp, ty)
               case fd @ FunDecl(_, _, _, _, _, _) =>
                 processFunction(fd, entityTypeEnv, ed)
               case pd @ PropertyDecl(_, _, _, _, _, _) =>
@@ -1121,6 +1127,12 @@ class TypeChecker(model: Model) {
                 val argType = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
                 if (argType != StringType) error(s"$methodName argument must be String, got $argType")
                 return BoolType
+              case "matches" =>
+                // matches(pattern) returns Bool - regex matching
+                if (args.length != 1) error(s"matches requires exactly 1 argument (regex pattern)")
+                val argType = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
+                if (argType != StringType) error(s"matches argument must be String (regex pattern), got $argType")
+                return BoolType
               case "substring" =>
                 // substring(start, end) returns String
                 if (args.length != 2) error(s"substring requires exactly 2 arguments")
@@ -1339,7 +1351,17 @@ class TypeChecker(model: Model) {
         val newTe = bindings.foldLeft(te) { (res, bndg) =>
           bndg.patterns.foldLeft(res) { (res2, p) =>
             val collectionType = bndg.collection match {
-              case ExpCollection(collE)   => getExpType(te, collE, owner)
+              case ExpCollection(collE)   =>
+                // Handle case where primitive types are parsed as expressions
+                collE match {
+                  case IdentExp("Int") => IntType
+                  case IdentExp("Real") => RealType
+                  case IdentExp("Bool") => BoolType
+                  case IdentExp("String") => StringType
+                  case IdentExp("Char") => CharType
+                  case IdentExp("Unit") => UnitType
+                  case _ => getExpType(te, collE, owner)
+                }
               case TypeCollection(collTy) => collTy
             }
             val singleType = Misc.removeCollection(collectionType)

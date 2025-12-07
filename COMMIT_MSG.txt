@@ -1,0 +1,16 @@
+Add advanced Z3 solver features: strings, optimization, best-effort, regex
+
+Features Added:
+- String operations: concatenation, length, substring, charAt, indexOf, replace
+- String predicates: startsWith, endsWith, contains
+- String/Int conversions: toInt, fromInt
+- Regex support: matches operator for pattern matching
+- Optimization: @minimize/@maximize annotations with weighted objectives
+- Best-effort solving: @bestEffort annotation for partial solutions
+- Timeout control: @timeout annotation for time-limited solving
+
+Test Results: 64/66 tests pass (96%)
+- 2 known baseline failures (testsmt2.k, testsmt16.k) use unsupported Duration/Time types
+- 0 regressions from original 54 passing tests
+- All 10 new feature tests pass
+

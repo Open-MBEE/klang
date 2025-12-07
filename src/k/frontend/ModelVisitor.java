@@ -1,4 +1,4 @@
-// Generated from Model.g4 by ANTLR 4.7
+// Generated from /Users/bclement/git/klang/src/grammar/Model.g4 by ANTLR 4.7
 package k.frontend;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -106,6 +106,12 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMemberDeclaration(ModelParser.MemberDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#optimizeDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOptimizeDeclaration(ModelParser.OptimizeDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ModelParser#typeDeclaration}.
 	 * @param ctx the parse tree
