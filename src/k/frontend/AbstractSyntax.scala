@@ -1359,7 +1359,7 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     constraintDeclsOfSuperClasses ++ getConstraintDecls
   }
 
-  def getEntityDecls: List[EntityDecl] = 
+  def getEntityDecls: List[EntityDecl] =
     for (m <- members if m.isInstanceOf[EntityDecl]) yield m.asInstanceOf[EntityDecl]
   
   def getAllEntityDecls: List[EntityDecl] = {
@@ -2443,8 +2443,23 @@ trait CallApplExp extends Exp {
             return s"(str.to_int $strSMT)"
           case "matches" =>
             // Regular expression matching: str.in_re
-            val patternSMT = args(0).toSMT(className, subTyping)
-            return s"(str.in_re $strSMT (str.to_re $patternSMT))"
+            // Use RegexToZ3 to properly convert regex patterns to Z3's regex algebra
+            args(0) match {
+              case PositionalArgument(StringLiteral(patternWithQuotes)) =>
+                // StringLiteral.s contains quotes (e.g., "[0-9]"), strip them
+                val pattern = if (patternWithQuotes.startsWith("\"") && patternWithQuotes.endsWith("\"")) {
+                  patternWithQuotes.substring(1, patternWithQuotes.length - 1)
+                } else {
+                  patternWithQuotes
+                }
+                // Convert to proper Z3 regex
+                val z3Regex = RegexToZ3.convert(pattern)
+                return s"(str.in_re $strSMT $z3Regex)"
+              case _ =>
+                // For non-literal patterns, fall back to simple str.to_re
+                val patternSMT = args(0).toSMT(className, subTyping)
+                return s"(str.in_re $strSMT (str.to_re $patternSMT))"
+            }
           case "fromInt" =>
             // Convert integer to string
             val intSMT = args(0).toSMT(className, subTyping)
