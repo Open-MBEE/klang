@@ -36,6 +36,12 @@ export DYLD_LIBRARY_PATH=$DIR/lib:$DYLD_LIBRARY_PATH
 
 chmod +x lib/z3 2>/dev/null || true
 
+# Ensure correct Z3 libraries are selected for this platform
+# This should be run once per platform/architecture, but doesn't hurt to check
+if [ -f "$PROJECT_ROOT/select-z3-architecture.sh" ]; then
+    "$PROJECT_ROOT/select-z3-architecture.sh" >/dev/null 2>&1 || true
+fi
+
 # Build classpath with:
 # 1. Compiled classes from target/classes (Maven) or bin/ (custom build)
 # 2. ANTLR jar
