@@ -126,7 +126,7 @@ object UtilSMT {
     ty match {
       case CartesianType(types)          => types forall wellFormedType
       case ParenType(ty)                 => wellFormedType(ty)
-      case BoolType | IntType | RealType | StringType => true
+      case BoolType | IntType | RealType | StringType | TimeType | DurationType => true
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -4224,6 +4224,17 @@ case class DateLiteral(s: String) extends Literal {
     UtilSMT.statistics.DATELIT += 1
   }
 
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Convert ISO 8601 date/time to milliseconds since epoch
+    try {
+      val millis = TimeParser.parseDateTime(s)
+      millis.toString
+    } catch {
+      case e: Exception =>
+        UtilSMT.error(s"Invalid date/time literal: $s - ${e.getMessage}")
+    }
+  }
+
   override def toString = s
 
   override def toJavaString =
@@ -4246,6 +4257,17 @@ case class DurationLiteral(s: String) extends Literal {
 
   override def statistics() {
     UtilSMT.statistics.DURLIT += 1
+  }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Convert ISO 8601 or HH:MM:SS duration to milliseconds
+    try {
+      val millis = TimeParser.parseDuration(s)
+      millis.toString
+    } catch {
+      case e: Exception =>
+        UtilSMT.error(s"Invalid duration literal: $s - ${e.getMessage}")
+    }
   }
 
   override def toString = s
@@ -4737,7 +4759,8 @@ case object TimeType extends PrimitiveType {
     UtilSMT.statistics.TIMETYPE += 1
   }
 
-  //override def toSMT: String = "???"
+  // Time is represented as Int (milliseconds since epoch) in SMT
+  override def toSMT: String = "Int"
 
   override def toScala: String = "String"
 
@@ -4759,7 +4782,8 @@ case object DurationType extends PrimitiveType {
     UtilSMT.statistics.DURTYPE += 1
   }
 
-  //override def toSMT: String = "???"
+  // Duration is represented as Int (milliseconds) in SMT
+  override def toSMT: String = "Int"
 
   override def toScala: String = "String"
 
