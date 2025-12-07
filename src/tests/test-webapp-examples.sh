@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR/../.." || exit 1
 # Setup Java
 if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
     source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk use java 8.0.462-zulu > /dev/null 2>&1
+    sdk use java 21.0.3-tem > /dev/null 2>&1
 fi
 
 echo "======================================"

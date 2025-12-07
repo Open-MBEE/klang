@@ -10,10 +10,10 @@ echo "Testing RocketMachine with Debug Output"
 echo "========================================"
 echo ""
 
-# Ensure Java 8
+# Ensure Java 21
 if [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
     source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk use java 8.0.422-tem 2>/dev/null || true
+    sdk use java 21.0.3-tem 2>/dev/null || true
 fi
 
 echo "✅ Using Java:"

@@ -5,12 +5,12 @@
 
 set -e
 
-# Setup Java 8
+# Setup Java 21 (required for Scala 2.13 compiled classes)
 if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
     source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk use java 8.0.422-tem 2>/dev/null || \
-    sdk use java 8.0.462-zulu 2>/dev/null || \
-    sdk use java 8.0.472-zulu 2>/dev/null || true
+    sdk use java 21.0.3-tem 2>/dev/null || \
+    sdk use java 21.0.9-amzn 2>/dev/null || \
+    sdk use java 21.0.2-open 2>/dev/null || true
 fi
 
 cd "$(dirname "$0")"
