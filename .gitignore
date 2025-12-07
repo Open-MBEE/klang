@@ -5,7 +5,21 @@ RemoteSystemsTempFiles
 .DS_Store
 *~
 *.class
+# Z3 libraries copied by select-z3-architecture.sh - don't commit platform-specific versions
 lib/com.microsoft.z3.jar
+lib/libz3.dylib
+lib/libz3java.dylib
+lib/libz3.so
+lib/libz3java.so
+lib/libz3.dll
+lib/libz3java.dll
+export/lib/com.microsoft.z3.jar
+export/lib/libz3.dylib
+export/lib/libz3java.dylib
+export/lib/libz3.so
+export/lib/libz3java.so
+export/lib/libz3.dll
+export/lib/libz3java.dll
 src/tests/baseline.smt
 src/tests/current.smt
 src/tests/baseline.smt.model
