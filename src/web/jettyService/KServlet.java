@@ -56,6 +56,76 @@ public class KServlet extends AbstractHandler
             return;
         }
         
+        // Handle pause endpoint
+        if ("POST".equals(request.getMethod()) && path.equals("/k-service/pause")) {
+            response.setContentType("text/plain;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            try {
+                k.frontend.K2Z3.requestPause();
+                response.getWriter().println("Pause requested");
+            } catch (Exception e) {
+                response.getWriter().println("Pause failed: " + e.getMessage());
+            }
+            return;
+        }
+
+        // Handle resume endpoint
+        if ("POST".equals(request.getMethod()) && path.equals("/k-service/resume")) {
+            response.setContentType("text/plain;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            try {
+                boolean resumed = k.frontend.K2Z3.resume();
+                if (resumed) {
+                    response.getWriter().println("Resumed");
+                } else {
+                    response.getWriter().println("Cannot resume - not paused or no saved state");
+                }
+            } catch (Exception e) {
+                response.getWriter().println("Resume failed: " + e.getMessage());
+            }
+            return;
+        }
+
+        // Handle sample endpoint
+        if ("POST".equals(request.getMethod()) && path.equals("/k-service/sample")) {
+            response.setContentType("text/plain;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            try {
+                k.frontend.K2Z3.requestSample();
+                // Give the solver a moment to capture the sample
+                Thread.sleep(100);
+                String sample = k.frontend.K2Z3.exportSolutionAsK();
+                response.getWriter().println(sample);
+            } catch (Exception e) {
+                response.getWriter().println("Sample failed: " + e.getMessage());
+            }
+            return;
+        }
+
+        // Handle stop endpoint
+        if ("POST".equals(request.getMethod()) && path.equals("/k-service/stop")) {
+            response.setContentType("text/plain;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            try {
+                k.frontend.K2Z3.interrupt();
+                // Give the solver a moment to stop
+                Thread.sleep(100);
+                String result = k.frontend.K2Z3.exportSolutionAsK();
+                response.getWriter().println(result);
+            } catch (Exception e) {
+                response.getWriter().println("Stop failed: " + e.getMessage());
+            }
+            return;
+        }
+
         // For all other requests, don't handle - let ResourceHandler serve static files
         baseRequest.setHandled(false);
     }

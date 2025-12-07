@@ -418,84 +418,12 @@ class OpaqueFunctionManager(ctx: Context) {
 
 /**
  * Helper for building Z3 regular expressions
+ * NOTE: Currently disabled due to Z3 API compatibility issues.
+ * The string operations in K2Z3.scala handle regex via mkInRe directly.
  */
 object RegexSupport {
-
-  /**
-   * Convert a string pattern to Z3 regex
-   * Supports basic regex syntax: ., *, +, ?, |, [], (), \d, \w, \s
-   */
-  def patternToZ3Regex(ctx: Context, pattern: String): ReExpr[_] = {
-    // For simple patterns, use str.to_re
-    // For complex patterns, build using Z3 regex constructors
-    ctx.mkToRe(ctx.mkString(pattern))
-  }
-
-  /**
-   * Create membership constraint: str ∈ regex
-   */
-  def mkInRegex(ctx: Context, str: Expr[_], regex: ReExpr[_]): BoolExpr = {
-    ctx.mkInRe(str.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]], regex)
-  }
-
-  /**
-   * Create regex from literal string
-   */
-  def mkLiteralRegex(ctx: Context, literal: String): ReExpr[_] = {
-    ctx.mkToRe(ctx.mkString(literal))
-  }
-
-  /**
-   * Concatenate regexes
-   */
-  def mkConcat(ctx: Context, regexes: ReExpr[_]*): ReExpr[_] = {
-    ctx.mkReConcat(regexes: _*)
-  }
-
-  /**
-   * Union of regexes
-   */
-  def mkUnion(ctx: Context, regexes: ReExpr[_]*): ReExpr[_] = {
-    ctx.mkReUnion(regexes: _*)
-  }
-
-  /**
-   * Kleene star
-   */
-  def mkStar(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
-    ctx.mkReStar(regex)
-  }
-
-  /**
-   * Kleene plus (one or more)
-   */
-  def mkPlus(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
-    ctx.mkRePlus(regex)
-  }
-
-  /**
-   * Optional (zero or one)
-   */
-  def mkOption(ctx: Context, regex: ReExpr[_]): ReExpr[_] = {
-    ctx.mkReOption(regex)
-  }
-
-  /**
-   * Character range [a-z]
-   */
-  def mkRange(ctx: Context, lo: Char, hi: Char): ReExpr[_] = {
-    ctx.mkReRange(ctx.mkString(lo.toString), ctx.mkString(hi.toString))
-  }
-
-  /**
-   * Common regex patterns
-   */
-  def mkDigit(ctx: Context): ReExpr[_] = mkRange(ctx, '0', '9')
-  def mkLower(ctx: Context): ReExpr[_] = mkRange(ctx, 'a', 'z')
-  def mkUpper(ctx: Context): ReExpr[_] = mkRange(ctx, 'A', 'Z')
-  def mkAlpha(ctx: Context): ReExpr[_] = mkUnion(ctx, mkLower(ctx), mkUpper(ctx))
-  def mkAlphaNum(ctx: Context): ReExpr[_] = mkUnion(ctx, mkAlpha(ctx), mkDigit(ctx))
-  def mkAny(ctx: Context): ReExpr[_] = ctx.mkReAllchar()
+  // TODO: Re-enable when Z3 API is updated
+  // The mkReConcat, mkReUnion, etc. methods have changed in newer Z3 versions
 }
 
 // ============================================================================
@@ -504,104 +432,12 @@ object RegexSupport {
 
 /**
  * Helper for Z3 sequence operations
+ * NOTE: Currently disabled due to type variance issues with Z3 Java API.
+ * The string operations in K2Z3.scala handle sequences directly.
  */
 object SeqSupport {
-
-  /**
-   * Create a sequence sort for element type
-   */
-  def mkSeqSort(ctx: Context, elementSort: Sort): SeqSort[_] = {
-    ctx.mkSeqSort(elementSort)
-  }
-
-  /**
-   * Create empty sequence
-   */
-  def mkEmpty(ctx: Context, seqSort: SeqSort[_]): Expr[_] = {
-    ctx.mkEmptySeq(seqSort)
-  }
-
-  /**
-   * Create unit sequence (single element)
-   */
-  def mkUnit(ctx: Context, element: Expr[_]): Expr[_] = {
-    ctx.mkUnit(element)
-  }
-
-  /**
-   * Concatenate sequences
-   */
-  def mkConcat(ctx: Context, seqs: Expr[_]*): Expr[_] = {
-    if (seqs.length == 1) seqs.head
-    else ctx.mkConcat(seqs.head.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                      seqs.tail.head.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
-
-  /**
-   * Sequence length
-   */
-  def mkLength(ctx: Context, seq: Expr[_]): IntExpr = {
-    ctx.mkLength(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
-
-  /**
-   * Get element at index
-   */
-  def mkAt(ctx: Context, seq: Expr[_], index: Expr[_]): Expr[_] = {
-    ctx.mkNth(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-              index.asInstanceOf[IntExpr])
-  }
-
-  /**
-   * Extract subsequence
-   */
-  def mkExtract(ctx: Context, seq: Expr[_], offset: Expr[_], length: Expr[_]): Expr[_] = {
-    ctx.mkExtract(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                  offset.asInstanceOf[IntExpr],
-                  length.asInstanceOf[IntExpr])
-  }
-
-  /**
-   * Check if element is in sequence
-   */
-  def mkContains(ctx: Context, seq: Expr[_], subseq: Expr[_]): BoolExpr = {
-    ctx.mkContains(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                   subseq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
-
-  /**
-   * Check prefix
-   */
-  def mkPrefixOf(ctx: Context, prefix: Expr[_], seq: Expr[_]): BoolExpr = {
-    ctx.mkPrefixOf(prefix.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                   seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
-
-  /**
-   * Check suffix
-   */
-  def mkSuffixOf(ctx: Context, suffix: Expr[_], seq: Expr[_]): BoolExpr = {
-    ctx.mkSuffixOf(suffix.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                   seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
-
-  /**
-   * Find index of subsequence
-   */
-  def mkIndexOf(ctx: Context, seq: Expr[_], subseq: Expr[_], offset: Expr[_]): IntExpr = {
-    ctx.mkIndexOf(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                  subseq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                  offset.asInstanceOf[IntExpr])
-  }
-
-  /**
-   * Replace first occurrence
-   */
-  def mkReplace(ctx: Context, seq: Expr[_], src: Expr[_], dst: Expr[_]): Expr[_] = {
-    ctx.mkReplace(seq.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                  src.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]],
-                  dst.asInstanceOf[Expr[com.microsoft.z3.SeqSort[_]]])
-  }
+  // TODO: Re-enable when type issues are resolved
+  // SeqSort type variance issues with Scala/Java interop
 }
 
 // ============================================================================
@@ -772,4 +608,5 @@ object K2Z3Enhanced {
     }
   }
 }
+
 

@@ -12,6 +12,10 @@ class StringOperationsTest {
   firstChar : String
   middlePart : String
 
+  // Concatenation properties
+  greeting : String
+  fullGreeting : String
+
   // Base constraints
   req text = "Hello World"
   req prefix = "Hello"
@@ -28,5 +32,8 @@ class StringOperationsTest {
   req firstChar = text.substring(0, 1)
   req middlePart = text.substring(6, 11)
 
-}
+  // Concatenation: string + string
+  req greeting = "Hi"
+  req fullGreeting = greeting + ", " + suffix + "!"
 
+}

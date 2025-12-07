@@ -41,6 +41,10 @@
 		    <li><a href="#" onclick="loadExample('examples/scheduling.k')">scheduling.k</a></li>
 		    <li><a href="#" onclick="loadExample('examples/planning-simple.k')">planning-simple.k</a></li>
                     <li role="separator" class="divider"></li>
+                    <li class="dropdown-header">String Operations</li>
+                    <li><a href="#" onclick="loadExample('examples/StringDemo.k')">StringDemo.k</a></li>
+                    <li role="separator" class="divider"></li>
+                    <li class="dropdown-header">Advanced</li>
                     <li><a href="#" onclick="loadExample('examples/GravityScience.k')">GravityScience.k</a></li>
                     <li><a href="#" onclick="loadExample('examples/DSN_Pass.k')">DSN_Pass.k</a></li>
                     <!--<li role="separator" class="divider"></li>
@@ -95,7 +99,11 @@
 	    </div>
 	    <div class="col-lg-6">
   	      <div class="pull-right">   <canvas width="27" height="27" id="myCanvas"></canvas> </div>
-	      <a class="btn btn-warning pull-right" href="#" role="button" onclick="doWork()" >Analyze &raquo;</a>
+	      <a class="btn btn-warning pull-right" href="#" role="button" onclick="doWork()" id="analyzeBtn">Analyze &raquo;</a>
+	      <a class="btn btn-info pull-right" href="#" role="button" onclick="doPause()" id="pauseBtn" style="display:none; margin-right:5px;">Pause</a>
+	      <a class="btn btn-success pull-right" href="#" role="button" onclick="doResume()" id="resumeBtn" style="display:none; margin-right:5px;">Resume</a>
+	      <a class="btn btn-default pull-right" href="#" role="button" onclick="doSample()" id="sampleBtn" style="display:none; margin-right:5px;">Sample</a>
+	      <a class="btn btn-danger pull-right" href="#" role="button" onclick="doStop()" id="stopBtn" style="display:none; margin-right:5px;">Stop</a>
 	    </div>
 	  </div>
         </div>
@@ -194,12 +202,42 @@
       $('canvas').hide();
 
       var working = 0;
+      var paused = 0;
+      var currentRequest = null;
+
+      function showWorkingButtons() {
+        $('#pauseBtn').show();
+        $('#sampleBtn').show();
+        $('#stopBtn').show();
+        $('#analyzeBtn').hide();
+        $('#resumeBtn').hide();
+      }
+
+      function showPausedButtons() {
+        $('#pauseBtn').hide();
+        $('#sampleBtn').hide();
+        $('#resumeBtn').show();
+        $('#stopBtn').show();
+        $('#analyzeBtn').hide();
+      }
+
+      function showIdleButtons() {
+        $('#pauseBtn').hide();
+        $('#sampleBtn').hide();
+        $('#stopBtn').hide();
+        $('#resumeBtn').hide();
+        $('#analyzeBtn').show();
+      }
+
       function doWork() {
       if(working == 1) return;
       working = 1;
+      paused = 0;
       $('canvas').show();
-      results.setValue('');
-      $.ajax({
+      showWorkingButtons();
+      results.setValue('Analyzing...\n');
+
+      currentRequest = $.ajax({
       type: "post",
       data: editor.getValue(),
       url: "http://niks.jpl.nasa.gov/k-service",
@@ -207,14 +245,106 @@
       results.setValue(data);
       $('canvas').hide();
       working = 0;
+      showIdleButtons();
       },
       error: function(data, status, xhr) {
       $('canvas').hide();
-      alert("Error while executing. Please try again.");
+      if (xhr.statusText !== 'abort') {
+        alert("Error while executing. Please try again.");
+      }
       working = 0;
+      showIdleButtons();
       }
       });
       return false;
+      }
+
+      function doPause() {
+        if (working == 0 || paused == 1) return;
+        paused = 1;
+
+        // Send pause request to server
+        $.ajax({
+          type: "post",
+          url: "http://niks.jpl.nasa.gov/k-service/pause",
+          success: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n⏸️ Paused - click Resume to continue or Stop to cancel\n");
+            $('canvas').hide();
+            showPausedButtons();
+          },
+          error: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n⚠️ Pause request failed\n");
+          }
+        });
+        return false;
+      }
+
+      function doResume() {
+        if (paused == 0) return;
+        paused = 0;
+        $('canvas').show();
+        showWorkingButtons();
+        results.setValue(results.getValue() + "\n▶️ Resuming...\n");
+
+        // Send resume request to server
+        $.ajax({
+          type: "post",
+          url: "http://niks.jpl.nasa.gov/k-service/resume",
+          success: function(data, status, xhr) {
+            results.setValue(results.getValue() + data);
+            $('canvas').hide();
+            working = 0;
+            showIdleButtons();
+          },
+          error: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n⚠️ Resume request failed\n");
+            $('canvas').hide();
+            working = 0;
+            showIdleButtons();
+          }
+        });
+        return false;
+      }
+
+      function doSample() {
+        if (working == 0) return;
+
+        // Request a sample of current best solution
+        $.ajax({
+          type: "post",
+          url: "http://niks.jpl.nasa.gov/k-service/sample",
+          success: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n📊 Sample:\n" + data + "\n");
+          },
+          error: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n⚠️ Sample request failed\n");
+          }
+        });
+        return false;
+      }
+
+      function doStop() {
+        // Abort current request and stop solver
+        if (currentRequest) {
+          currentRequest.abort();
+        }
+
+        $.ajax({
+          type: "post",
+          url: "http://niks.jpl.nasa.gov/k-service/stop",
+          success: function(data, status, xhr) {
+            results.setValue(results.getValue() + "\n⛔ Stopped\n" + (data ? "\nBest result:\n" + data : ""));
+          },
+          error: function() {
+            // Stop request may fail if already stopped
+          }
+        });
+
+        $('canvas').hide();
+        working = 0;
+        paused = 0;
+        showIdleButtons();
+        return false;
       }
 
       loadExample("examples/sm.k");
