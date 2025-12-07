@@ -87,6 +87,80 @@ object K2Z3 {
   var params = ctx.mkParams
   params.add("unsat_core", true)
 
+  // ============================================================================
+  // Interrupt/Anytime Solving Support
+  // ============================================================================
+
+  /** Flag to signal that solving should be interrupted */
+  @volatile var interrupted: Boolean = false
+
+  /** Flag indicating if we're currently in an interruptible solve */
+  @volatile var solvingInProgress: Boolean = false
+
+  /** Best model found so far during incremental/anytime solving */
+  var bestModelSoFar: Option[com.microsoft.z3.Model] = None
+
+  /** Number of iterations completed in incremental solving */
+  var iterationsCompleted: Int = 0
+
+  /**
+   * Request interruption of the current solving process.
+   * Safe to call from any thread (e.g., signal handler, web API, UI thread).
+   *
+   * When called during solving:
+   * - Sets the interrupted flag
+   * - Attempts to interrupt Z3 directly
+   * - The solve loop will exit at the next iteration
+   * - Best solution found so far will be returned
+   */
+  def interrupt(): Unit = {
+    interrupted = true
+    if (solvingInProgress) {
+      try {
+        ctx.interrupt()  // Also tell Z3 to stop
+      } catch {
+        case _: Throwable => // Ignore errors during interrupt
+      }
+    }
+    if (!silent) log("⚠️  Interrupt requested - solver will stop at next opportunity")
+  }
+
+  /**
+   * Clear the interrupt flag. Call this before starting a new solve.
+   */
+  def clearInterrupt(): Unit = {
+    interrupted = false
+    bestModelSoFar = None
+    iterationsCompleted = 0
+  }
+
+  /**
+   * Check if solving was interrupted
+   */
+  def wasInterrupted: Boolean = interrupted
+
+  // Install signal handler for Ctrl+C (SIGINT)
+  // This allows users to interrupt long-running solves from the command line
+  private val signalHandlerInstalled: Boolean = {
+    try {
+      sun.misc.Signal.handle(new sun.misc.Signal("INT"), new sun.misc.SignalHandler {
+        def handle(sig: sun.misc.Signal): Unit = {
+          if (solvingInProgress) {
+            interrupt()
+          } else {
+            // If not solving, use default behavior (exit)
+            System.exit(130)  // 128 + SIGINT(2) = 130
+          }
+        }
+      })
+      true
+    } catch {
+      case _: Throwable =>
+        // Signal handling not available on this platform
+        false
+    }
+  }
+
   def error(msg: String) = {
     if (silent) Misc.silentErrorThrow("K2Z3", msg, K2Z3Exception)
     else Misc.errorThrow("K2Z3", msg, K2Z3Exception)
@@ -103,6 +177,7 @@ object K2Z3 {
     params.add("unsat_core", true)
     solver = ctx.mkSolver
     solver.setParameters(params)
+    clearInterrupt()  // Reset interrupt state for new solve
   }
 
   def getStringForSets(setValue: FuncDecl[_ <: Sort], ty: Type): String = {
@@ -216,8 +291,13 @@ object K2Z3 {
 
     if (z3Model != null) {
 
-      // Print warning if this is a partial/best-effort result
-      if (bestEffortMode && solverTimeout.isDefined) {
+      // Print warning if this is a partial/best-effort result or was interrupted
+      if (interrupted) {
+        println()
+        println("\t⚠️  INTERRUPTED - Showing best solution found before interruption")
+        println(s"\t   (Completed $iterationsCompleted iteration(s))")
+        println()
+      } else if (bestEffortMode && solverTimeout.isDefined) {
         println()
         println("\t⚠️  BEST-EFFORT RESULT - Solution may be incomplete or suboptimal")
         println()
@@ -510,14 +590,21 @@ object K2Z3 {
 
   def SolveExp(e: BoolExpr, smtModel: String): com.microsoft.z3.Model = {
 
-    solver.add(e)
+    // Mark that solving is in progress (for signal handler)
+    solvingInProgress = true
+    iterationsCompleted = 0
 
-    val status = solver.check
+    try {
+      solver.add(e)
 
-    if (Status.SATISFIABLE == status) {
-      z3Model = solver.getModel
-      lastPartialModel = Some(z3Model)
-    } else if (status == Status.UNSATISFIABLE) {
+      val status = solver.check
+      iterationsCompleted = 1
+
+      if (Status.SATISFIABLE == status) {
+        z3Model = solver.getModel
+        lastPartialModel = Some(z3Model)
+        bestModelSoFar = Some(z3Model)
+      } else if (status == Status.UNSATISFIABLE) {
       log()
       log(s"The given model is NOT satisfiable. ")
       // Try to get unsat core, but don't fail if it doesn't work
@@ -553,12 +640,25 @@ object K2Z3 {
           log()
       }
     } else {
-      // Status is UNKNOWN - could be timeout or other reason
+      // Status is UNKNOWN - could be timeout, interrupt, or other reason
       val reason = solver.getReasonUnknown
       val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
+      val wasUserInterrupted = interrupted
 
       log()
-      if (isTimeout && bestEffortMode) {
+      if (wasUserInterrupted) {
+        log("⚠️  INTERRUPTED by user")
+        log(s"Solver stopped after $iterationsCompleted iteration(s)")
+        // Return best model we found so far
+        bestModelSoFar match {
+          case Some(model) =>
+            z3Model = model
+            log("Returning best solution found before interruption")
+          case None =>
+            log("No solution was found before interruption")
+            z3Model = null
+        }
+      } else if (isTimeout && bestEffortMode) {
         log("⚠️  TIMEOUT - Returning best-effort result")
         log(s"Solver timed out after ${solverTimeout.getOrElse("unknown")}ms")
         // Try to get whatever model state we have
@@ -567,6 +667,7 @@ object K2Z3 {
           z3Model = solver.getModel
           if (z3Model != null) {
             lastPartialModel = Some(z3Model)
+            bestModelSoFar = Some(z3Model)
             log("Partial model available - results may be incomplete or suboptimal")
           } else {
             log("No partial model available")
@@ -589,6 +690,10 @@ object K2Z3 {
     }
 
     z3Model
+    } finally {
+      // Always mark solving as complete
+      solvingInProgress = false
+    }
   }
 
   def Expr2Z3(e: Exp): com.microsoft.z3.Expr[_ <: Sort] = {
