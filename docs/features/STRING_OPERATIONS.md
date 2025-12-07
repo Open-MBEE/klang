@@ -198,13 +198,14 @@ K supports both:
 
 Both generate the same SMT: `(str.at string index)`
 
-### Case Conversion
+### Case Conversion (Not Supported)
 
-Z3 4.13.0 added `str.to_upper` and `str.to_lower` operators, which are now available in K:
+**Note**: `toUpper()` and `toLower()` are parsed by the K compiler and generate `str.to_upper` and `str.to_lower` SMT operators, but these are **not part of the SMT-LIB string theory** and are not supported by Z3. Using these operations will cause Z3 to fail with "unknown constant" errors.
 
 ```k
-req upper = text.toUpper()   // "HELLO WORLD"
-req lower = text.toLower()   // "hello world"
+// WILL NOT WORK - Z3 does not support these operations:
+req upper = text.toUpper()   // ❌ Z3 error: unknown constant str.to_upper
+req lower = text.toLower()   // ❌ Z3 error: unknown constant str.to_lower
 ```
 
 ### String to Integer Conversion
@@ -222,9 +223,9 @@ Generates: `(str.to_int digits)`
 
 ## Z3 Version Compatibility
 
-The project currently uses **Z3 4.4.0**. String operation support varies by Z3 version:
+The project currently uses **Z3 4.13.0** with multi-platform support (macOS Intel/ARM64, Linux x64).
 
-### Supported in Z3 4.4.0+
+### Supported String Operations in Z3 4.13.0
 - ✅ `str.++` (concatenation)
 - ✅ `str.len` (length)
 - ✅ `str.substr` (substring)
@@ -234,14 +235,14 @@ The project currently uses **Z3 4.4.0**. String operation support varies by Z3 v
 - ✅ `str.suffixof` (ends with)
 - ✅ `str.indexof` (index of substring)
 - ✅ `str.replace` (replace substring)
+- ✅ `str.to_int`, `int.to_str` (conversion to/from integers, Z3 4.8+)
 
-### Requires Newer Z3 Versions
-- ❌ `str.to_upper`, `str.to_lower` - Requires Z3 4.12+
-- ❌ `str.to_int`, `int.to_str` - Requires Z3 4.8+
+### Not Supported by Z3's SMT-LIB String Theory
+- ❌ `str.to_upper`, `str.to_lower` - These operations are **not part of the SMT-LIB string theory** and are not supported by Z3, even in version 4.15.4. The parser will accept `toUpper()` and `toLower()` method calls and generate corresponding SMT, but Z3 will reject these as unknown constants.
 
-**Current Implementation**: The type checker and SMT generation support all operations, but attempting to use `toUpper()`, `toLower()`, or `toInt()` will cause Z3 4.4.0 to fail with an unknown operator error.
+**Current Implementation**: The type checker and SMT generation support most string operations. The runtime automatically selects the appropriate Z3 libraries (ARM64 or x86_64) based on your platform.
 
-**To Upgrade Z3**: Replace the Z3 libraries in `lib/` with Z3 4.12+ versions to enable all string operations.
+**Architecture Support**: See `Z3_UPGRADE_NOTES.md` for details on the upgrade from 4.3.2 to 4.13.0 and multi-platform support.
 
 ## Not Implemented
 
