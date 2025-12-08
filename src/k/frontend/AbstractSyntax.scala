@@ -4432,12 +4432,20 @@ case class DurationLiteral(s: String) extends Literal {
   }
 
   override def toSMT(className: String, subTyping: Boolean): String = {
-    // Convert ISO duration to milliseconds
+    // Convert duration to milliseconds using TimeParser
+    // Supports both ISO 8601 (PT5H30M) and HH:MM:SS formats
     try {
-      val duration = java.time.Duration.parse(s)
-      duration.toMillis.toString
+      val millis = TimeParser.parseDuration(s)
+      millis.toString
     } catch {
-      case _: Exception => s // fallback to string if parse fails
+      case _: Exception =>
+        // Fallback to java.time.Duration for ISO format
+        try {
+          val duration = java.time.Duration.parse(s)
+          duration.toMillis.toString
+        } catch {
+          case _: Exception => s // fallback to string if all parse fails
+        }
     }
   }
 }
