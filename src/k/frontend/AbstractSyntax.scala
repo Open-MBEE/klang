@@ -59,6 +59,47 @@ object UtilSMT {
     s"var_$variableCounter"
   }
 
+  /**
+   * Helper to substitute a variable in a lambda body with an SMT expression.
+   * Used for collect().sum() translation where we replace x with (seq.nth seq i).
+   */
+  def substituteInBody(body: Exp, varName: String, replacement: String,
+                        elemType: Type, className: String, subTyping: Boolean): String = {
+    body match {
+      case DotExp(IdentExp(name), prop) if name == varName =>
+        // x.prop -> (ClassName.prop (seq.nth seq i))
+        // For object references, we need to use the getter
+        elemType match {
+          case IdentType(QualifiedName(List(typeName)), _) if !Misc.isCollection(typeName) =>
+            // This is an object type, use the getter
+            val getter = s"$typeName!$prop"
+            addGetter(getter)
+            s"($getter $replacement)"
+          case _ =>
+            // Primitive or other - shouldn't happen in collect pattern
+            replacement
+        }
+      case IdentExp(name) if name == varName =>
+        replacement
+      case BinExp(e1, op, e2) =>
+        val e1SMT = substituteInBody(e1, varName, replacement, elemType, className, subTyping)
+        val e2SMT = substituteInBody(e2, varName, replacement, elemType, className, subTyping)
+        val opSMT = op match {
+          case ADD => "+"
+          case SUB => "-"
+          case MUL => "*"
+          case DIV => "div"
+          case _ => op.toString.toLowerCase
+        }
+        s"($opSMT $e1SMT $e2SMT)"
+      case IntegerLiteral(v) => v.toString
+      case RealLiteral(v) => v.toString
+      case _ =>
+        // Fallback: try regular toSMT (may not work for all cases)
+        body.toSMT(className, subTyping)
+    }
+  }
+
   def saveConstraintMapping(cPrint: String): Unit = {
     UtilSMT.constraintMessageMap = UtilSMT.constraintMessageMap + (s"_xkassert${UtilSMT.constraintCounter}" -> cPrint)
     UtilSMT.constraintCounter += 1
@@ -714,6 +755,29 @@ class HeapLayout(model: Model) {
     //}
   }
 
+  // Increase instances for classes used as element types in Seq[Class]
+  // This ensures we have enough objects to satisfy sequence constraints
+  increaseInstancesForSeqElementTypes(model)
+  def increaseInstancesForSeqElementTypes(model: Model): Unit = {
+    val maxSeqBound = 10  // Match the collect().sum() unrolling bound
+    for (ed <- model.decls if ed.isInstanceOf[EntityDecl]) {
+      val entityDecl = ed.asInstanceOf[EntityDecl]
+      for (pd @ PropertyDecl(_, _, _, _, _, _) <- entityDecl.members if pd.isInstanceOf[PropertyDecl]) {
+        pd.getType match {
+          case Some(IdentType(QualifiedName(List("Seq")), List(IdentType(QualifiedName(elemTypeName :: Nil), _))))
+            if !Misc.isCollection(elemTypeName) && graph.getAllClasses.contains(elemTypeName) =>
+            // This is Seq[SomeClass] - ensure we have at least maxSeqBound instances
+            val currentCount = instancesByComputation.getOrElse(elemTypeName, 1)
+            if (currentCount < maxSeqBound) {
+              instancesByComputation += (elemTypeName -> maxSeqBound)
+              if (K2Z3.debug) println(s"Increased instances of $elemTypeName to $maxSeqBound for Seq element type")
+            }
+          case _ => // Not a sequence of class objects
+        }
+      }
+    }
+  }
+
   // update heapEntries:
   updateHeapEntries(model)
   def updateHeapEntries(model: Model): Unit = {
@@ -1347,6 +1411,29 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
           val constraintSMT = s"(deref-isa-$typeName ($getter this))"
           result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
         case _ => // Ignore non-matching types
+      }
+    }
+
+    // constraints for sequences of objects: all elements must be valid refs of the element type
+    // and must satisfy that type's invariants
+    for (pd @ PropertyDecl(_, propertyName, _, _, _, _) <- propertyDecls) {
+      pd.getType match {
+        case Some(IdentType(QualifiedName(List("Seq")), List(IdentType(QualifiedName(elemTypeName :: Nil), _))))
+          if !Misc.isCollection(elemTypeName) && UtilSMT.objectGraph != null &&
+             UtilSMT.objectGraph.getHeapEntries(elemTypeName).nonEmpty =>
+          // This is Seq[SomeClass] - add constraints for sequence elements
+          val getter = s"$ident!$propertyName"
+          UtilSMT.addGetter(getter)
+          val elemHeapEntries = UtilSMT.objectGraph.getHeapEntries(elemTypeName)
+          val validRefs = elemHeapEntries.mkString(" ")
+          val maxBound = 10  // Same as collect().sum() bound
+
+          // For each potential index, if the sequence has that element, it must be a valid ref
+          for (i <- 0 until maxBound) {
+            val constraintSMT = s"(=> (> (seq.len ($getter this)) $i) (or ${elemHeapEntries.map(r => s"(= (seq.nth ($getter this) $i) $r)").mkString(" ")}))"
+            result += mkInvFunAndAssert(ident, constraintSMT, s"_k_ignore_seq_elem_${propertyName}_$i")
+          }
+        case _ => // Not a sequence of objects
       }
     }
 
@@ -2502,6 +2589,7 @@ case class FunApplExp(exp: Exp, arguments: List[Argument]) extends CallApplExp {
   override def exp1 = exp
   override def args = arguments
 }
+
 trait CallApplExp extends Exp {
   def exp1: Exp
   def args: List[Argument]
@@ -2531,6 +2619,46 @@ trait CallApplExp extends Exp {
   }
 
   override def toSMT(className: String, subTyping: Boolean): String = {
+    // Handle collect(...).sum() pattern specially
+    // This pattern: seq.collect(x -> x.prop).sum()
+    exp1 match {
+      case DotExp(FunApplExp(DotExp(seqExp, "collect"), collectArgs), "sum") =>
+        // This is seq.collect(lambda).sum()
+        collectArgs match {
+          case List(PositionalArgument(LambdaExp(IdentPattern(varName), body))) =>
+            // Generate sum over sequence elements
+            // For bounded sequences, we need to handle this carefully
+            // Use a recursive sum definition or unroll for small sequences
+            val seqSMT = seqExp.toSMT(className, subTyping)
+            val seqType = TypeChecker.exp2Type.get(seqExp)
+
+            // Get the element type (for Seq[A], we need to access A's properties)
+            val elemType = seqType match {
+              case IdentType(_, List(et)) => et
+              case _ => IntType
+            }
+
+            // For Seq[Ref] (sequences of objects), we need to translate the body
+            // with the element being (seq.nth seqSMT i) for each index
+            // For now, generate a bounded sum (assuming reasonable size)
+            val maxBound = 10  // Reasonable upper bound for unrolling
+
+            // Generate: (+ (ite (>= (seq.len seq) 1) body[seq.nth seq 0] 0)
+            //              (ite (>= (seq.len seq) 2) body[seq.nth seq 1] 0) ...)
+            val terms = (0 until maxBound).map { i =>
+              // Substitute varName with (seq.nth seqSMT i) in body
+              val elemAccess = s"(seq.nth $seqSMT $i)"
+              val bodyWithElem = UtilSMT.substituteInBody(body, varName, elemAccess, elemType, className, subTyping)
+              s"(ite (> (seq.len $seqSMT) $i) $bodyWithElem 0)"
+            }
+            return s"(+ ${terms.mkString(" ")})"
+          case _ =>
+            // Fall through
+        }
+      case _ =>
+        // Not a collect.sum pattern
+    }
+
     // Handle string method calls
     exp1 match {
       case DotExp(strExp, methodName) if TypeChecker.exp2Type.get(strExp) == StringType =>
@@ -2641,6 +2769,19 @@ trait CallApplExp extends Exp {
                 val srcSMT = args(0).toSMT(className, subTyping)
                 val dstSMT = args(1).toSMT(className, subTyping)
                 return s"(seq.replace $seqSMT (seq.unit $srcSMT) (seq.unit $dstSMT))"
+              case "sum" =>
+                // Sum all elements - unroll for bounded size
+                val maxBound = 10
+                val terms = (0 until maxBound).map { i =>
+                  s"(ite (> (seq.len $seqSMT) $i) (seq.nth $seqSMT $i) 0)"
+                }
+                return s"(+ ${terms.mkString(" ")})"
+              case "collect" =>
+                // collect with lambda - defer to caller (usually followed by .sum())
+                // For now, return a marker that will be handled by sum()
+                // Actually, collect alone doesn't make sense to convert to SMT
+                // It should be handled by the collect().sum() pattern above
+                UtilSMT.error(s"collect() must be followed by an aggregate like .sum()")
               case _ =>
                 // Fall through to regular function handling
             }
