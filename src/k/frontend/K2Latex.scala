@@ -43,7 +43,7 @@ object K2Latex {
       if (d.members.filter(_.isInstanceOf[PropertyDecl]).length > 0) {
         file.append("\\begin{itemize}\n")
         for (p @ PropertyDecl(_, _, _, _, _, _) <- d.members) {
-          file.append(s"\\item ${p.name.replace("_", "\\_")} of type ${p.ty}\n")
+          file.append(s"\\item ${p.name.replace("_", "\\_")} of type ${p.getType.getOrElse("(inferred)")}\n")
         }
         file.append("\\end{itemize}\n")
       }

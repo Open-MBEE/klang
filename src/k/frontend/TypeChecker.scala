@@ -52,16 +52,16 @@ case object TypeChecker {
   }
 
   def getPropertyDeclType(decl: PropertyDecl): Type = {
+    val baseType = decl.getTypeOrError
     if (!decl.multiplicity.isEmpty) {
       if (decl.modifiers.contains(Unique)) 
-        IdentType(QualifiedName(List("Set")), List(decl.ty))
-      else if (decl.modifiers.contains(Ordered)) 
-        IdentType(QualifiedName(List("Seq")), List(decl.ty))
+        IdentType(QualifiedName(List("Set")), List(baseType))
+      else if (decl.modifiers.contains(Ordered))
+        IdentType(QualifiedName(List("Seq")), List(baseType))
       else if (decl.modifiers.contains(Ordered) && decl.modifiers.contains(Unique))
-        IdentType(QualifiedName(List("OSet")), List(decl.ty))
-      else IdentType(QualifiedName(List("Bag")), List(decl.ty))
-    } else decl.ty
-
+        IdentType(QualifiedName(List("OSet")), List(baseType))
+      else IdentType(QualifiedName(List("Bag")), List(baseType))
+    } else baseType
   }
 
   def isPrimitiveType(t: Type): Boolean = {
@@ -240,7 +240,7 @@ case class ClassTypeInfo(decl: EntityDecl) extends TypeInfo {
 }
 case class PropertyTypeInfo(decl: PropertyDecl, global: Boolean, classMember: Boolean, owner: EntityDecl) extends TypeInfo {
   override def toString =
-    s"Property: ${decl.name} : ${decl.ty} $global $classMember ${if (owner != null) owner.ident}"
+    s"Property: ${decl.name} : ${decl.getType.getOrElse("(inferred)")} $global $classMember ${if (owner != null) owner.ident}"
 }
 case class TypeTypeInfo(decl: TypeDecl) extends TypeInfo
 case class ParamTypeInfo(p: Param) extends TypeInfo
@@ -453,13 +453,15 @@ class TypeChecker(model: Model) {
       
       // if property decl, make sure it is not an unsupported collection
       d match {
-        case p @ PropertyDecl(_, name, ty, _, _, _) =>
-          if(Misc.isCollection(ty)){
-            val collectionKind = Misc.getCollectionKind(ty)
-            if(collectionKind == BagKind || 
-                collectionKind == SeqKind || 
-                collectionKind == OSetKind){
-              error(s"Unsupported collection kind for SMT processing. Currently only Set is supported.")
+        case p @ PropertyDecl(_, name, _, _, _, _) =>
+          p.getType.foreach { ty =>
+            if(Misc.isCollection(ty)){
+              val collectionKind = Misc.getCollectionKind(ty)
+              if(collectionKind == BagKind ||
+                  collectionKind == SeqKind ||
+                  collectionKind == OSetKind){
+                error(s"Unsupported collection kind for SMT processing. Currently only Set is supported.")
+              }
             }
           }
         case _ => ()
@@ -620,24 +622,8 @@ class TypeChecker(model: Model) {
     // build inheritance model
     ClassHierarchy.buildHierarchy(model)
 
-    // pass: get property info on global level and check if types exist
-    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
-    model.decls.foreach { d =>
-      d match {
-        case p @ PropertyDecl(_, name, ty, _, _, _) =>
-          if ((p.modifiers.contains(Var) && p.modifiers.contains(Val)) ||
-            ((p.modifiers.contains(Var) || p.modifiers.contains(Val)) &&
-              (p.modifiers.contains(Ordered) || p.modifiers.contains(Unique) ||
-                p.modifiers.contains(Source) || p.modifiers.contains(Target))))
-            error(s"Property $name has conflicting modifiers: ${p.modifiers.mkString(",")}.")
-
-          if (!doesTypeExist(globalTypeEnv, ty)) error(s"Specified type $ty does not exist. Please check. Exiting.")
-          globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(p, true, false, null))
-        case _ => ()
-      }
-    }
-
-    // pass: process functions (not bodies of functions) at top level
+    // pass: process functions (not bodies of functions) at top level FIRST
+    // This must happen before property type inference so that function return types are available
     // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
     globalTypeEnv = model.decls.foldLeft(globalTypeEnv) { (res, d) =>
       d match {
@@ -655,9 +641,35 @@ class TypeChecker(model: Model) {
       }
     }
 
-    // pass: build information about properties/functions in classes
-    // store it in the global type env, but also one for each class
-    def processClassProperties(decls: List[TopDecl]): Unit = {
+    // pass: get property info on global level - FIRST PASS: only properties with explicit types
+    // This adds explicitly typed properties to globalTypeEnv before class processing
+    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
+    model.decls.foreach { d =>
+      d match {
+        case p @ PropertyDecl(_, name, tyOpt, _, _, _) =>
+          if ((p.modifiers.contains(Var) && p.modifiers.contains(Val)) ||
+            ((p.modifiers.contains(Var) || p.modifiers.contains(Val)) &&
+              (p.modifiers.contains(Ordered) || p.modifiers.contains(Unique) ||
+                p.modifiers.contains(Source) || p.modifiers.contains(Target))))
+            error(s"Property $name has conflicting modifiers: ${p.modifiers.mkString(",")}.")
+
+          // Only process properties with explicit types in this pass
+          tyOpt match {
+            case Some(ty) =>
+              if (!doesTypeExist(globalTypeEnv, ty)) error(s"Specified type $ty does not exist. Please check. Exiting.")
+              globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(p, true, false, null))
+            case None =>
+              // Will be handled in second pass after class type environments are built
+              ()
+          }
+        case _ => ()
+      }
+    }
+
+    // pass: build information about properties/functions in classes - FIRST PASS
+    // Build class type environments with explicitly typed properties only
+    // This must happen before function body processing so that class member types are available
+    def processClassPropertiesExplicit(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
           case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
@@ -666,8 +678,16 @@ class TypeChecker(model: Model) {
             ed.members.foreach { m =>
               m match {
                 case pd @ PropertyDecl(_, _, _, _, _, _) =>
-                  if (!doesTypeExist(classTypeEnv, pd.ty)) error(s"Specified type ${pd.ty} does not exist. Please check. Exiting.")
-                  classTypeEnv = classTypeEnv.overwrite(pd.name -> PropertyTypeInfo(pd, false, true, ed))
+                  // Only handle explicitly typed properties in this pass
+                  pd.ty match {
+                    case Some(explicitType) =>
+                      if (!doesTypeExist(classTypeEnv, explicitType))
+                        error(s"Specified type $explicitType does not exist. Please check. Exiting.")
+                      classTypeEnv = classTypeEnv.overwrite(pd.name -> PropertyTypeInfo(pd, false, true, ed))
+                    case None =>
+                      // Skip - will be handled in second pass after function bodies are processed
+                      ()
+                  }
                 case fd @ FunDecl(_, _, _, _, _, _) =>
                   classTypeEnv = classTypeEnv.union(fd.ident -> FunctionTypeInfo(fd, ed))
                 case _ => ()
@@ -691,7 +711,7 @@ class TypeChecker(model: Model) {
 
           // members must be of ident type that is a user defined class
           if (!(ed.members.forall { m =>
-            m.asInstanceOf[PropertyDecl].ty.isInstanceOf[IdentType]
+            m.asInstanceOf[PropertyDecl].getType.exists(_.isInstanceOf[IdentType])
           })) error(s"$ident association uses a non user defined type as source/target.")
           var classTypeEnv = TypeEnv(ed, globalTypeEnv.map + ("this" -> ClassTypeInfo(ed)))
           classTypeEnv = ed.members.foldLeft(classTypeEnv) {
@@ -711,7 +731,7 @@ class TypeChecker(model: Model) {
             decl2TypeEnvi.find(p =>
               p._1 match {
                 case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
-                  if (ed1.ident.equals(m1.ty.toString)) true
+                  if (ed1.ident.equals(m1.getTypeOrError.toString)) true
                   else false
                 case _ =>
                   false
@@ -721,7 +741,7 @@ class TypeChecker(model: Model) {
             decl2TypeEnvi.find(p =>
               p._1 match {
                 case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
-                  if (ed1.ident.equals(m2.ty.toString)) true
+                  if (ed1.ident.equals(m2.getTypeOrError.toString)) true
                   true
                 case _ =>
                   false
@@ -739,15 +759,96 @@ class TypeChecker(model: Model) {
       }
     }
     }
-    
-    def processModelClassProperties(m: Model): Unit = {
-      processClassProperties(m.decls)
+
+    def processModelClassPropertiesExplicit(m: Model): Unit = {
+      processClassPropertiesExplicit(m.decls)
       m.packages.foreach { pkg =>
-        processModelClassProperties(pkg.model)
+        processModelClassPropertiesExplicit(pkg.model)
+      }
+    }
+
+    processModelClassPropertiesExplicit(model)
+
+    // pass: process top-level function BODIES to infer return types
+    // This must happen after class type environments are built (so we can access class member types)
+    // but before property type inference (so that inferred return types are available)
+    model.decls.foreach { d =>
+      d match {
+        case fd @ FunDecl(_, _, _, _, _, _) =>
+          processFunction(fd, globalTypeEnv, null)
+        case _ => ()
+      }
+    }
+
+    // pass: build information about properties/functions in classes - SECOND PASS
+    // Now infer types for properties without explicit types (can use function return types)
+    def processClassPropertiesInferred(decls: List[TopDecl]): Unit = {
+      decls.foreach { d =>
+        d match {
+          case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
+            var classTypeEnv = decl2TypeEnvi(d)
+            ed.members.foreach { m =>
+              m match {
+                case pd @ PropertyDecl(_, _, _, _, _, _) =>
+                  pd.ty match {
+                    case Some(_) =>
+                      // Already handled in first pass
+                      ()
+                    case None =>
+                      // Infer type from initialization expression
+                      pd.expr match {
+                        case Some(e) =>
+                          val exprType = getExpType(classTypeEnv, e, ed)
+                          pd.inferredType = Some(exprType)
+                          logDebug(s"Type inference: inferred type $exprType for class property ${pd.name} in $ident")
+                          classTypeEnv = classTypeEnv.overwrite(pd.name -> PropertyTypeInfo(pd, false, true, ed))
+                        case None =>
+                          error(s"Cannot infer type for property '${pd.name}' in class '$ident': no type annotation and no initialization expression.")
+                      }
+                  }
+                case _ => ()
+              }
+            }
+            decl2TypeEnvi += (d -> classTypeEnv)
+            origTypeEnvironments += (d -> classTypeEnv)
+          case _ => ()
+        }
       }
     }
     
-    processModelClassProperties(model)
+    def processModelClassPropertiesInferred(m: Model): Unit = {
+      processClassPropertiesInferred(m.decls)
+      m.packages.foreach { pkg =>
+        processModelClassPropertiesInferred(pkg.model)
+      }
+    }
+    
+    processModelClassPropertiesInferred(model)
+
+    // pass: get property info on global level - SECOND PASS: properties requiring type inference
+    // Now that class type environments are built, we can infer types from expressions that reference class members
+    model.decls.foreach { d =>
+      d match {
+        case p @ PropertyDecl(_, name, tyOpt, _, _, _) =>
+          tyOpt match {
+            case Some(_) =>
+              // Already processed in first pass
+              ()
+            case None =>
+              // Infer type from initialization expression
+              p.expr match {
+                case Some(e) =>
+                  val exprType = getExpType(globalTypeEnv, e, null)
+                  p.inferredType = Some(exprType)
+                  logDebug(s"Type inference: inferred type $exprType for top-level property $name")
+                case None =>
+                  error(s"Cannot infer type for top-level property '$name': no type annotation and no initialization expression.")
+              }
+              globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(p, true, false, null))
+          }
+        case _ => ()
+      }
+    }
 
     logDebug(s"GlobalTE: $globalTypeEnv")
 
@@ -783,7 +884,60 @@ class TypeChecker(model: Model) {
 
     decl2TypeEnvi.foreach(kv => logDebug(s"${kv._2}"))
 
-    // pass: build the information for expressions 
+    // pass: infer types for undeclared variables from constraints
+    // This allows variables to be used without explicit type declarations
+    // when their type can be inferred from the constraints they appear in
+    def inferUndeclaredTypes(): Unit = {
+      import scala.collection.mutable
+
+      // Collect all expressions from constraints and top-level expressions
+      val allExpressions = mutable.ListBuffer[Exp]()
+      model.decls.foreach {
+        case ConstraintDecl(_, exp, _) => allExpressions += exp
+        case ExpressionDecl(exp) => allExpressions += exp
+        case _ => ()
+      }
+
+      // Find all identifiers used in expressions
+      val usedIdentifiers = allExpressions.flatMap(TypeConstraints.collectIdentifiers).toSet
+
+      // Find which identifiers are not declared
+      val declaredIdentifiers = globalTypeEnv.map.keySet
+      val undeclaredIdentifiers = usedIdentifiers -- declaredIdentifiers
+
+      if (undeclaredIdentifiers.nonEmpty) {
+        logDebug(s"Found undeclared identifiers: ${undeclaredIdentifiers.mkString(", ")}")
+
+        // Create type variables for undeclared identifiers
+        val typeVars = undeclaredIdentifiers.map(name => name -> TypeVar(name)).toMap
+
+        // Collect type constraints from all expressions
+        val constraints = allExpressions.flatMap(exp =>
+          TypeConstraints.collectConstraints(exp, typeVars)
+        ).toList
+
+        logDebug(s"Type constraints: ${constraints.mkString(", ")}")
+
+        // Solve constraints to infer types
+        TypeConstraints.solveConstraints(typeVars, constraints) match {
+          case Right(inferredTypes) =>
+            // Add inferred types to global type environment
+            inferredTypes.foreach { case (name, ty) =>
+              logDebug(s"Inferred type for $name: $ty")
+              // Create a synthetic property declaration for the inferred variable
+              val syntheticProp = PropertyDecl(List(), name, Some(ty), None, None, None)
+              syntheticProp.inferredType = Some(ty)
+              globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(syntheticProp, true, false, null))
+            }
+          case Left(errorMsg) =>
+            error(s"Type inference failed: $errorMsg")
+        }
+      }
+    }
+
+    inferUndeclaredTypes()
+
+    // pass: build the information for expressions
     // except expressions that are in functions (bodies)
     // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
     model.decls.foreach { d =>
@@ -845,8 +999,13 @@ class TypeChecker(model: Model) {
                 pd.expr match {
                   case Some(e) =>
                     val exprType = getExpType(entityTypeEnv, e, ed)
-                    if (!areTypesEqual(exprType, pd.ty, true)) {
-                      error(s"Type does not match: ${pd.name}. Expected ${pd.ty}, Found $exprType")
+                    // Only check type match if explicit type was provided (inference already set inferredType)
+                    pd.ty match {
+                      case Some(explicitType) =>
+                        if (!areTypesEqual(exprType, explicitType, true)) {
+                          error(s"Type does not match: ${pd.name}. Expected $explicitType, Found $exprType")
+                        }
+                      case None => // Type was inferred, already validated
                     }
                     exp2Type.put(e, exprType)
                   case None => ()
@@ -863,8 +1022,13 @@ class TypeChecker(model: Model) {
         case pd @ PropertyDecl(_, _, _, _, _, _) =>
           if (!pd.expr.isEmpty) {
             val exprType = getExpType(globalTypeEnv, pd.expr.get, null)
-            if (!areTypesEqual(exprType, pd.ty, true)) {
-              error(s"Type does not match: ${pd.name}. + Expected ${pd.ty}, Found $exprType")
+            // Only check type match if explicit type was provided
+            pd.ty match {
+              case Some(explicitType) =>
+                if (!areTypesEqual(exprType, explicitType, true)) {
+                  error(s"Type does not match: ${pd.name}. + Expected $explicitType, Found $exprType")
+                }
+              case None => // Type was inferred, already validated
             }
             exp2Type.put(pd.expr.get, exprType)
           }
@@ -904,8 +1068,34 @@ class TypeChecker(model: Model) {
     body.foreach { m =>
       m match {
         case pd @ PropertyDecl(_, _, _, _, _, _) =>
-          if (!doesTypeExist(newTe, pd.ty)) {
-            error(s"Type ${pd.ty} not found. Exiting.")
+          // Handle type inference for properties without explicit type
+          pd.ty match {
+            case Some(explicitType) =>
+              // Explicit type given - validate it exists
+              if (!doesTypeExist(newTe, explicitType)) {
+                error(s"Type $explicitType not found. Exiting.")
+              }
+              // Validate expression type matches if present
+              pd.expr match {
+                case Some(e) =>
+                  val exprType = getExpType(newTe, e, owner)
+                  if (!areTypesEqual(exprType, explicitType, true)) {
+                    error(s"Type does not match: ${pd.name}. Expected $explicitType, Found $exprType")
+                  }
+                  exp2Type.put(e, exprType)
+                case None => ()
+              }
+            case None =>
+              // No explicit type - infer from initialization expression
+              pd.expr match {
+                case Some(e) =>
+                  val exprType = getExpType(newTe, e, owner)
+                  pd.inferredType = Some(exprType)
+                  exp2Type.put(e, exprType)
+                  logDebug(s"Type inference: inferred type $exprType for property ${pd.name}")
+                case None =>
+                  error(s"Cannot infer type for '${pd.name}': no type annotation and no initialization expression.")
+              }
           }
           if (newTe.contains(pd.name)) {
             val typeInfo = newTe(pd.name)
@@ -914,15 +1104,6 @@ class TypeChecker(model: Model) {
               case ParamTypeInfo(_)                     => error(s"Redeclaring variable in block. ${pd.name}")
               case _                                    => ()
             }
-          }
-          pd.expr match {
-            case Some(e) =>
-              val exprType = getExpType(newTe, e, owner)
-              if (!areTypesEqual(exprType, pd.ty, true)) {
-                error(s"Type does not match: ${pd.name}. Expected ${pd.ty}, Found $exprType")
-              }
-              exp2Type.put(e, exprType)
-            case None => ()
           }
           newTe = newTe.overwrite(pd.name -> PropertyTypeInfo(pd, false, false, owner))
         case ExpressionDecl(exp @ IfExp(cond, tb, eb)) =>
@@ -1002,6 +1183,12 @@ class TypeChecker(model: Model) {
         error(s"Return type does not match body: ${fd.ident}. Expected ${fd.ty.get}, Found $lastT.")
       }
     }
+    
+    // Infer return type if not explicitly specified
+    if (fd.ty.isEmpty && lastT != null) {
+      fd.inferredType = Some(lastT)
+      logDebug(s"Type inference: inferred return type $lastT for function ${fd.ident}")
+    }
 
     decl2TypeEnvi = decl2TypeEnvi + (fd -> functionTypeEnv)
 
@@ -1073,10 +1260,7 @@ class TypeChecker(model: Model) {
             case pti @ PropertyTypeInfo(decl, _, _, _) => getPropertyDeclType(decl)
             case pti @ ParamTypeInfo(p)                => p.ty
             case pti @ FunctionTypeInfo(decl, _) =>
-              decl.ty match {
-                case Some(t) => t
-                case None    => UnitType
-              }
+              decl.getReturnTypeOrUnit
             case cti @ ClassTypeInfo(decl) =>
               //ClassType(QualifiedName(List(decl.ident)))
               IdentType(QualifiedName(List(decl.ident)), List())
@@ -1263,7 +1447,7 @@ class TypeChecker(model: Model) {
               val lhsType =
                 {
                   declTypeEnvironment(namedArg.ident) match {
-                    case PropertyTypeInfo(pd, _, _, _) => pd.ty
+                    case PropertyTypeInfo(pd, _, _, _) => pd.getTypeOrError
                     case _                             => error(s"Property ${namedArg.ident} could not be found for ${decl.asInstanceOf[EntityDecl].ident}")
                   }
                 }

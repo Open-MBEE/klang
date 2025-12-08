@@ -137,8 +137,8 @@ object UtilSMT {
 
   def ignoreMember(memberDecl: MemberDecl): Boolean = {
     memberDecl match {
-      case PropertyDecl(modifiers, name, ty, None, _, exp) =>
-        !wellFormedType(ty)
+      case pd @ PropertyDecl(modifiers, name, ty, None, _, exp) =>
+        !pd.getType.exists(wellFormedType)
     }
   }
 
@@ -177,9 +177,10 @@ object UtilSMT {
       case ExpressionDecl(exp) :: Nil =>
         val expSMT = exp.toSMT(className, subtyping)
         "  " + ("  " * level) + expSMT + (")" * level)
-      case pd @ PropertyDecl(modifiers, name, ty, None, _, exp) :: rest =>
+      case (pd @ PropertyDecl(modifiers, name, tyOpt, None, _, exp)) :: rest =>
         if (!modifiers.forall(_ == Val))
           UtilSMT.error(s"modifier in $pd")
+        val ty = pd.getTypeOrError
         if (!wellFormedType(ty))
           UtilSMT.error(s"$ty in local property declaration $pd")
         exp match {
@@ -1242,7 +1243,7 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
       var firstTime = true
       for (pd <- propertyDecls) {
         val field = pd.name
-        val tySMT = pd.ty.toSMT
+        val tySMT = pd.getTypeOrError.toSMT
         if (UtilSMT.getterIsUsed(s"$ident.$field") || UtilSMT.getterIsUsed(s"$ident!$field")) {
           if (firstTime) {
             result += UtilSMT.headline2(s"Getters for class $ident")
@@ -1324,7 +1325,8 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     // ------------------------------
 
     // constraints for property definitions of the form: x : T = e
-    for (PropertyDecl(_, propertyName, ty, _, _, Some(exp)) <- propertyDecls) {
+    for (pd @ PropertyDecl(_, propertyName, _, _, _, Some(exp)) <- propertyDecls) {
+      val ty = pd.getTypeOrError
       val getter = s"$ident!$propertyName"
       UtilSMT.addGetter(getter)
       var constraintSMT =
@@ -1337,11 +1339,15 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     }
 
     // constraints for embedded references/parts:
-    for (PropertyDecl(_, propertyName, IdentType(QualifiedName(typeName :: Nil), _), _, _, _) <- propertyDecls if !Misc.isCollection(typeName)) {
-      val getter = s"$ident!$propertyName"
-      UtilSMT.addGetter(getter)
-      val constraintSMT = s"(deref-isa-$typeName ($getter this))"
-      result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
+    for (pd @ PropertyDecl(_, propertyName, _, _, _, _) <- propertyDecls) {
+      pd.getType match {
+        case Some(IdentType(QualifiedName(typeName :: Nil), _)) if !Misc.isCollection(typeName) =>
+          val getter = s"$ident!$propertyName"
+          UtilSMT.addGetter(getter)
+          val constraintSMT = s"(deref-isa-$typeName ($getter this))"
+          result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
+        case _ => // Ignore non-matching types
+      }
     }
 
     // constraints for constraint decls:
@@ -1371,9 +1377,9 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
   def getCreatedObjects: List[String] = {
     // TODO: sets and multiplicities, expressions
     var result: List[String] = Nil
-    for (PropertyDecl(_, _, ty, multiplicity, _, _) <- members) {
-      ty match {
-        case IdentType(QualifiedName(name :: Nil), _) if !Misc.isCollection(name) =>
+    for (pd @ PropertyDecl(_, _, _, multiplicity, _, _) <- members) {
+      pd.getType match {
+        case Some(IdentType(QualifiedName(name :: Nil), _)) if !Misc.isCollection(name) =>
           result ::= name
         case _ =>
       }
@@ -1627,16 +1633,27 @@ object ListIt {
 
 case class PropertyDecl(modifiers: List[PropertyModifier],
                         name: String,
-                        ty: Type,
+                        ty: Option[Type],
                         multiplicity: Option[Multiplicity],
                         assignment: Option[Boolean],
                         expr: Option[Exp]) extends MemberDecl {
 
-  override def children: List[AnyRef] = List(ty) ::: ListIt.m(multiplicity) ::: ListIt.m(expr)
+  // Inferred type - set by type inference when ty is None
+  var inferredType: Option[Type] = None
+
+  // Get the effective type (explicit or inferred)
+  def getType: Option[Type] = ty.orElse(inferredType)
+
+  // Get the type, throwing an error if not available
+  def getTypeOrError: Type = getType.getOrElse {
+    throw new RuntimeException(s"Type not available for property '$name'. Either specify a type or provide an initialization expression.")
+  }
+
+  override def children: List[AnyRef] = ty.toList ::: ListIt.m(multiplicity) ::: ListIt.m(expr)
 
   override def statistics() {
     UtilSMT.statistics.PROPERTY += 1
-    ty.statistics()
+    getType.foreach(_.statistics())
     expr match {
       case None =>
       case Some(e) =>
@@ -1645,16 +1662,17 @@ case class PropertyDecl(modifiers: List[PropertyModifier],
     }
   }
 
-  def toSMT: String = s"($name ${ty.toSMT})"
+  def toSMT: String = s"($name ${getTypeOrError.toSMT})"
 
   override def toScala = {
     val modifierScala: String = if (modifiers.contains(Val)) "val" else "var"
-    val tyScala: String = ty.toScala
+    val effectiveType = getTypeOrError
+    val tyScala: String = effectiveType.toScala
     val exprScala: String =
       expr match {
         case Some(e) => e.toScala
         case None =>
-          ty match {
+          effectiveType match {
             case IntType | RealType => "0"
             case BoolType           => "false"
             case _                  => null
@@ -1670,7 +1688,10 @@ case class PropertyDecl(modifiers: List[PropertyModifier],
       result += modifiers.mkString(" ") + " "
     }
     result += name
-    result += ":" + ty
+    getType match {
+      case Some(t) => result += ":" + t
+      case None => // No type annotation and not yet inferred
+    }
     if (multiplicity.nonEmpty) result += multiplicity.get
     if (expr.nonEmpty) {
       if (assignment.nonEmpty) result += (if (assignment.get) " := " else " = ") + expr.get
@@ -1694,7 +1715,7 @@ case class PropertyDecl(modifiers: List[PropertyModifier],
     propertydecl.put("modifiers", theModifiers)
     propertydecl.put("annotations", theAnnotations)
     propertydecl.put("name", name)
-    propertydecl.put("ty", ty.toJson)
+    getType.foreach(t => propertydecl.put("ty", t.toJson))
     multiplicity match { case Some(m) => propertydecl.put("multiplicity", m.toJson) case None => }
     assignment match { case Some(b) => propertydecl.put("assignment", b) case None => }
     expr match { case Some(e) => propertydecl.put("expr", e.toJson) case None => }
@@ -1819,6 +1840,15 @@ case class FunDecl(ident: String,
                    ty: Option[Type],
                    spec: List[FunSpec],
                    body: List[MemberDecl]) extends MemberDecl {
+
+  // Inferred return type - set by type inference when ty is None
+  var inferredType: Option[Type] = None
+
+  // Get the effective return type (explicit or inferred)
+  def getReturnType: Option[Type] = ty.orElse(inferredType)
+
+  // Get the return type, defaulting to UnitType if not available
+  def getReturnTypeOrUnit: Type = getReturnType.getOrElse(UnitType)
 
   override def children: List[AnyRef] = body
 
@@ -2609,7 +2639,7 @@ trait CallApplExp extends Exp {
         s"(lift-$ident mk-$ident)"
       else {
         val argsSMTList: List[String] =
-          for (PropertyDecl(_, id, ty, _, _, _) <- propertyDecls) yield if (argMap contains id) argMap(id).toSMT(className, subTyping) else UtilSMT.getNewConstant(ty)
+          for (pd @ PropertyDecl(_, id, _, _, _, _) <- propertyDecls) yield if (argMap contains id) argMap(id).toSMT(className, subTyping) else UtilSMT.getNewConstant(pd.getTypeOrError)
         val argsSMT = argsSMTList.mkString(" ")
         s"(lift-$ident (mk-$ident $argsSMT))"
       }

@@ -220,7 +220,7 @@ object UnifiedSolver {
       decl match {
         case pd: PropertyDecl =>
           pd.ty match {
-            case IdentType(QualifiedName(List(className)), _) =>
+            case Some(IdentType(QualifiedName(List(className)), _)) =>
               // Direct instantiation: a : A
               objectBounds.get(className).foreach { current =>
                 objectBounds(className) = math.max(current, 1)
@@ -236,7 +236,7 @@ object UnifiedSolver {
       decl match {
         case pd: PropertyDecl =>
           pd.ty match {
-            case IdentType(QualifiedName(List("Seq" | "Set" | "List")), List(innerType)) =>
+            case Some(IdentType(QualifiedName(List("Seq" | "Set" | "List")), List(innerType))) =>
               innerType match {
                 case IdentType(QualifiedName(List(className)), _) =>
                   dynamicClasses += className

@@ -93,7 +93,7 @@ object Misc {
     val globals =
       model.decls.foldLeft(List[(String, Type)]())((r, d) =>
         d match {
-          case PropertyDecl(_, name, t, _, _, _) => (name, t) :: r
+          case pd @ PropertyDecl(_, name, _, _, _, _) => (name, pd.getTypeOrError) :: r
           case _                                 => r
         })
 
