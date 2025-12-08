@@ -1024,23 +1024,29 @@ class TypeChecker(model: Model) {
       case ResultExp   => AnyType //TODO
       case ParenExp(e) => getExpType(te, e, owner)
       case IdentExp(i) =>
-        if (!te.contains(i)) {
+        // Check for known Java package roots first
+        val javaPackageRoots = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
+        if (javaPackageRoots.contains(i)) {
+          // This is a Java package root - return a special external type
+          ExternalType(i)
+        } else if (!te.contains(i)) {
           error(s"$i not found in scope.")
-        }
-        te(i) match {
-          case pti @ PropertyTypeInfo(decl, _, _, _) => getPropertyDeclType(decl)
-          case pti @ ParamTypeInfo(p)                => p.ty
-          case pti @ FunctionTypeInfo(decl, _) =>
-            decl.ty match {
-              case Some(t) => t
-              case None    => UnitType
-            }
-          case cti @ ClassTypeInfo(decl) =>
-            //ClassType(QualifiedName(List(decl.ident)))
-            IdentType(QualifiedName(List(decl.ident)), List())
-          case pti @ PatternTypeInfo(p, t) => t
-          case tt @ _ =>
-            error(s"Type could not be found for $exp." + tt.getClass)
+        } else {
+          te(i) match {
+            case pti @ PropertyTypeInfo(decl, _, _, _) => getPropertyDeclType(decl)
+            case pti @ ParamTypeInfo(p)                => p.ty
+            case pti @ FunctionTypeInfo(decl, _) =>
+              decl.ty match {
+                case Some(t) => t
+                case None    => UnitType
+              }
+            case cti @ ClassTypeInfo(decl) =>
+              //ClassType(QualifiedName(List(decl.ident)))
+              IdentType(QualifiedName(List(decl.ident)), List())
+            case pti @ PatternTypeInfo(p, t) => t
+            case tt @ _ =>
+              error(s"Type could not be found for $exp." + tt.getClass)
+          }
         }
       case DotExp(e, i) =>
         val ti = getExpType(te, e, owner)
@@ -1078,6 +1084,9 @@ class TypeChecker(model: Model) {
             if (i == "length") IntType
             else if (i == "toString") StringType
             else error(s"Unknown string property: $i")
+          case ExternalType(qname) =>
+            // Extending external type path - e.g., java.lang -> java.lang.Math
+            ExternalType(qname + "." + i)
           case tt @ _ =>
             if (i == "collect") CollectType(List(tt))
             else if (i == "size") SumType(List(tt))
@@ -1178,6 +1187,25 @@ class TypeChecker(model: Model) {
             }
           case _ =>
             // Not a string method, continue with regular handling
+        }
+
+        // Check for external Java function calls (e.g., java.lang.Math.sqrt)
+        val fexpType = getExpType(te, fexp, owner)
+        fexpType match {
+          case ExternalType(qname) =>
+            // This is an external Java function call
+            // Type check arguments (all should be valid expressions)
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            // Return Real by default for external functions
+            // TODO: Could use reflection to determine actual return type
+            return RealType
+          case _ =>
+            // Not an external call, continue with regular handling
         }
 
         val callToConstructor = isConstructorCall(te, fexp)

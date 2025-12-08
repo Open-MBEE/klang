@@ -40,3 +40,4 @@ src/tests/test.k
 /.bloop
 /.metals
 /.vscode
+.tmp/

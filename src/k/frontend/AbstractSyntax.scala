@@ -103,6 +103,8 @@ object UtilSMT {
     constantsToDeclare = Nil
     constantCounter = 0
     heapInitializerConstants = Nil
+    externalFuncDecls = Set()
+    ExternalFunctions.reset()
   }
 
   def error(msg: String) = {
@@ -220,6 +222,46 @@ object UtilSMT {
 
   def getterIsUsed(getter: String): Boolean =
     gettersToDeclare.contains(getter)
+
+  /**
+   * Extract a qualified name from a DotExp chain.
+   * E.g., DotExp(DotExp(DotExp(IdentExp("java"), "lang"), "Math"), "sqrt")
+   * returns Some("java.lang.Math.sqrt")
+   */
+  def extractQualifiedName(exp: Exp): Option[String] = {
+    exp match {
+      case IdentExp(ident) => Some(ident)
+      case DotExp(inner, ident) =>
+        extractQualifiedName(inner).map(_ + "." + ident)
+      case _ => None
+    }
+  }
+
+  /**
+   * Check if an expression represents an external (Java) function call
+   */
+  def isExternalCall(exp: Exp): Boolean = {
+    extractQualifiedName(exp) match {
+      case Some(qname) => ExternalFunctions.isExternalReference(qname)
+      case None => false
+    }
+  }
+
+  /** Set of external function declarations for SMT */
+  var externalFuncDecls: Set[String] = Set()
+
+  /** Add an external function declaration */
+  def addExternalFuncDecl(decl: String): Unit = {
+    externalFuncDecls += decl
+  }
+
+  /** Get all external function declarations */
+  def getExternalFuncDecls: Set[String] = externalFuncDecls
+
+  /** Clear external function declarations (for reset) */
+  def clearExternalFuncDecls(): Unit = {
+    externalFuncDecls = Set()
+  }
 
   def createLocals(locals: Set[String]): Unit = {
     createdLocals ++= locals
@@ -822,6 +864,9 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     }
     result1 += "\n"
 
+    // External (Java) function declarations will be added later after toSMT processing
+    // The declarations are collected during expression translation
+
     // Generate heap:
 
     result1 += UtilSMT.headline1("Heap")
@@ -927,8 +972,20 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // --- Combine results. ---
     // ------------------------
 
+    // Generate external function declarations (collected during expression translation)
+    var externalDecls: String = ""
+    val extFuncDecls = UtilSMT.getExternalFuncDecls
+    if (extFuncDecls.nonEmpty) {
+      externalDecls += UtilSMT.headline1("External Function Declarations")
+      externalDecls += "; Uninterpreted functions for external (Java) calls\n"
+      for (decl <- extFuncDecls) {
+        externalDecls += decl + "\n"
+      }
+      externalDecls += "\n"
+    }
+
     // Correct result:
-    result1 + getters + constants + result2
+    result1 + externalDecls + getters + constants + result2
 
     // Testing:
     // val max = UtilSMT.objectGraph.getCounter
@@ -2474,6 +2531,66 @@ trait CallApplExp extends Exp {
         }
       case _ =>
         // Not a string method, continue with regular handling
+    }
+
+    // Check for external (Java) function calls
+    UtilSMT.extractQualifiedName(exp1) match {
+      case Some(qualifiedName) if ExternalFunctions.isExternalReference(qualifiedName) =>
+        // This is an external Java function call
+        // Try to evaluate concretely if all arguments are literals
+        val concreteArgs = args.flatMap {
+          case PositionalArgument(IntegerLiteral(v)) => Some(v.toInt)
+          case PositionalArgument(RealLiteral(v)) => Some(v.doubleValue())  // java.math.BigDecimal
+          case PositionalArgument(StringLiteral(v)) => Some(v)
+          case PositionalArgument(BooleanLiteral(v)) => Some(v)
+          case _ => None
+        }
+
+        if (concreteArgs.length == args.length) {
+          // All arguments are concrete - try to evaluate
+          ExternalFunctions.tryEvaluate(qualifiedName, concreteArgs) match {
+            case Some(result: Int) => return result.toString
+            case Some(result: Long) => return result.toString
+            case Some(result: Double) =>
+              // Format as real literal for SMT
+              if (result == result.toLong) return s"${result.toLong}.0"
+              else return result.toString
+            case Some(result: Float) => return result.toString
+            case Some(result: Boolean) => return result.toString
+            case Some(result: String) => return s""""$result""""
+            case Some(result) =>
+              // Unknown result type - use as-is
+              return result.toString
+            case None =>
+              // Evaluation failed - fall through to uninterpreted function
+          }
+        }
+
+        // Use uninterpreted function for external call
+        // Generate a sanitized function name for SMT
+        val smtFuncName = qualifiedName.replace(".", "_")
+
+        // Determine argument and return sorts (use Real as default)
+        val argSorts = args.map(_ => "Real").mkString(" ")
+        val returnSort = "Real"  // TODO: infer from type checker
+
+        // Declare the uninterpreted function if not already declared
+        val declStr = if (args.isEmpty) {
+          s"(declare-const $smtFuncName $returnSort)"
+        } else {
+          s"(declare-fun $smtFuncName ($argSorts) $returnSort)"
+        }
+        UtilSMT.addExternalFuncDecl(declStr)
+
+        // Generate function application
+        val argsSMT = args.map(_.toSMT(className, subTyping)).mkString(" ")
+        if (args.isEmpty) {
+          return smtFuncName
+        } else {
+          return s"($smtFuncName $argsSMT)"
+        }
+      case _ =>
+        // Not an external call, continue with regular handling
     }
 
     if (isConstructor(exp1)) {
@@ -4427,6 +4544,21 @@ case class SumType(ty: List[Type]) extends PrimitiveType {
 case object AnyType extends Type {
   override def toJson1 = null
   override def toJson2 = null
+}
+
+/**
+ * Represents an external (Java) type for package paths like "java.lang.Math"
+ * Used during type checking to track external references.
+ */
+case class ExternalType(qualifiedName: String) extends Type {
+  override def toSMT: String = "Real"  // External functions return Real by default
+  override def toString = s"External($qualifiedName)"
+  override def toJson1 = {
+    new JSONObject().put("type", "ExternalType").put("qualifiedName", qualifiedName)
+  }
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", qualifiedName)
+  }
 }
 
 case class ClassType(ident: QualifiedName) extends Type {
