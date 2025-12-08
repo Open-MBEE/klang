@@ -10,14 +10,14 @@ echo "K Language Web Server Setup"
 echo "Project root: $PROJECT_ROOT"
 echo ""
 
-# Function to check if Java 8 is available
-check_java8() {
-    if [ -d "$HOME/.sdkman/candidates/java/8.0.462-zulu" ]; then
-        export JAVA_HOME="$HOME/.sdkman/candidates/java/8.0.462-zulu"
+# Function to check if Java 21 is available
+check_java21() {
+    if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
         export PATH="$JAVA_HOME/bin:$PATH"
         return 0
-    elif [ -d "/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home" ]; then
-        export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home"
+    elif [ -d "$HOME/.sdkman/candidates/java/21.0.2-open" ]; then
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
         export PATH="$JAVA_HOME/bin:$PATH"
         return 0
     else
@@ -25,10 +25,10 @@ check_java8() {
     fi
 }
 
-# Check for Java 8
-if ! check_java8; then
-    echo "❌ Java 8 not found!"
-    echo "Please install Java 8 using SDKMAN:"
+# Check for Java 21
+if ! check_java21; then
+    echo "❌ Java 21 not found!"
+    echo "Please install Java 21 using SDKMAN:"
     echo "  curl -s 'https://get.sdkman.io' | bash"
     echo "  source \"\$HOME/.sdkman/bin/sdkman-init.sh\""
     echo "  sdk install java 8.0.462-zulu"

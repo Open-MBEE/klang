@@ -128,7 +128,7 @@ object UtilSMT {
     ty match {
       case CartesianType(types)          => types forall wellFormedType
       case ParenType(ty)                 => wellFormedType(ty)
-      case BoolType | IntType | RealType | StringType => true
+      case BoolType | IntType | RealType | StringType | TimeType | DurationType => true
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -4365,6 +4365,15 @@ case class DateLiteral(s: String) extends Literal {
     val value = new JSONObject()
     value.put("type", "LiteralString").put("string", toString.replaceAll("\"", ""))
   }
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Convert ISO timestamp to milliseconds since epoch
+    try {
+      val instant = java.time.Instant.parse(s)
+      instant.toEpochMilli.toString
+    } catch {
+      case _: Exception => s // fallback to string if parse fails
+    }
+  }
 }
 
 case class DurationLiteral(s: String) extends Literal {
@@ -4389,6 +4398,16 @@ case class DurationLiteral(s: String) extends Literal {
     val value = new JSONObject()
     value.put("type", "LiteralString").put("string", toString.replaceAll("\"", ""))
   }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Convert ISO duration to milliseconds
+    try {
+      val duration = java.time.Duration.parse(s)
+      duration.toMillis.toString
+    } catch {
+      case _: Exception => s // fallback to string if parse fails
+    }
+  }
 }
 
 case class BooleanLiteral(b: Boolean) extends Literal {
@@ -4397,7 +4416,7 @@ case class BooleanLiteral(b: Boolean) extends Literal {
   override def statistics() {
     UtilSMT.statistics.BOOLLIT += 1
   }
-  
+
   override def toSMT(className: String, subTyping: Boolean): String = b.toString
 
   override def toString = b.toString
@@ -4878,7 +4897,7 @@ case object TimeType extends PrimitiveType {
     UtilSMT.statistics.TIMETYPE += 1
   }
 
-  //override def toSMT: String = "???"
+  override def toSMT: String = "Int"
 
   override def toScala: String = "String"
 
@@ -4900,7 +4919,7 @@ case object DurationType extends PrimitiveType {
     UtilSMT.statistics.DURTYPE += 1
   }
 
-  //override def toSMT: String = "???"
+  override def toSMT: String = "Int"
 
   override def toScala: String = "String"
 

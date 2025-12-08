@@ -5,12 +5,16 @@
 
 set -e
 
-# Setup Java 8
-if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
-    source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk use java 8.0.422-tem 2>/dev/null || \
-    sdk use java 8.0.462-zulu 2>/dev/null || \
-    sdk use java 8.0.472-zulu 2>/dev/null || true
+# Setup Java 21
+if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
+    export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+    export PATH="$JAVA_HOME/bin:$PATH"
+elif [ -d "$HOME/.sdkman/candidates/java/21.0.8-tem" ]; then
+    export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.8-tem"
+    export PATH="$JAVA_HOME/bin:$PATH"
+elif [ -d "$HOME/.sdkman/candidates/java/21.0.2-open" ]; then
+    export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
+    export PATH="$JAVA_HOME/bin:$PATH"
 fi
 
 cd "$(dirname "$0")"
