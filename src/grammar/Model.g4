@@ -356,7 +356,6 @@ DurationLiteral:
     | 'P' [0-9]+ 'D' TDur?
     | 'P' TDur
     | 'P' SimpleDateLiteral
-    | [0-9]+ ':' [0-5] [0-9] ':' [0-5] [0-9] ('.' [0-9] [0-9] [0-9])?  // HH:MM:SS or HH:MM:SS.mmm
     ;
 
 fragment

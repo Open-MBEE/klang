@@ -385,14 +385,12 @@ class TypeChecker(model: Model) {
         return doesTypeExist(te, pt.ty)
       case st @ SubType(_, _, _) =>
         return te.contains(st.ident.toString)
-      case BoolType     => return true
-      case IntType      => return true
-      case CharType     => return true
-      case StringType   => return true
-      case UnitType     => return true
-      case RealType     => return true
-      case TimeType     => return true
-      case DurationType => return true
+      case BoolType   => return true
+      case IntType    => return true
+      case CharType   => return true
+      case StringType => return true
+      case UnitType   => return true
+      case RealType   => return true
     }
     return false
   }
@@ -1385,8 +1383,6 @@ class TypeChecker(model: Model) {
       case CharacterLiteral(_) => CharType
       case StringLiteral(_)    => StringType
       case RealLiteral(_)      => RealType
-      case DateLiteral(_)      => TimeType
-      case DurationLiteral(_)  => DurationType
       case ThisLiteral =>
         type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](te("this").asInstanceOf[ClassTypeInfo].decl)
       case _ => error(s"Type checking for ${exp.getClass} not implemented yet!")

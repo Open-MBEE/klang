@@ -5,12 +5,12 @@
 
 set -e
 
-# Setup Java 21 (required for Scala 2.13 compiled classes)
+# Setup Java 8
 if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
     source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk use java 21.0.3-tem 2>/dev/null || \
-    sdk use java 21.0.9-amzn 2>/dev/null || \
-    sdk use java 21.0.2-open 2>/dev/null || true
+    sdk use java 8.0.422-tem 2>/dev/null || \
+    sdk use java 8.0.462-zulu 2>/dev/null || \
+    sdk use java 8.0.472-zulu 2>/dev/null || true
 fi
 
 cd "$(dirname "$0")"
@@ -47,7 +47,6 @@ show_help() {
     echo "  -tests        Run core tests only (src/tests/)"
     echo "  -new          Run new feature tests only (src/test/)"
     echo "  -examples     Run example files (src/examples/)"
-    echo "  -webapp       Run web application examples (test-webapp-examples.sh)"
     echo "  -test <file>  Run a single test file"
     echo "  -filter <pat> Run only tests matching pattern"
     echo "  -v, --verbose Show full output for each test"
@@ -62,7 +61,6 @@ show_help() {
     echo "  ./run-tests.sh              # Run core tests"
     echo "  ./run-tests.sh -all         # Run all tests"
     echo "  ./run-tests.sh -new         # Run new feature tests"
-    echo "  ./run-tests.sh -webapp      # Run web app examples"
     echo "  ./run-tests.sh -test opt1.k # Run single test"
     echo "  ./run-tests.sh -filter opt  # Run tests matching 'opt'"
     echo "  ./run-tests.sh -string      # Run string tests"
@@ -88,10 +86,6 @@ while [[ $# -gt 0 ]]; do
         -examples)
             TEST_DIRS="src/examples"
             shift
-            ;;
-        -webapp)
-            echo "Running web application examples test suite..."
-            exec ./src/tests/test-webapp-examples.sh
             ;;
         -test)
             RUN_SINGLE_TEST=true

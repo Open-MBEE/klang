@@ -1,5 +1,5 @@
 // Test: String regex matching with matches()
-// Expected: SAT - strings match their regex patterns
+// Expected: SAT - strings match their patterns
 
 class RegexTest1 {
   // Simple digit pattern

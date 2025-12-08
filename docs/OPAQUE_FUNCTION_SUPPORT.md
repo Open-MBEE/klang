@@ -430,6 +430,291 @@ class TurnOn extends Activity {
 
 ---
 
+## IR-Centric Architecture (from Research Session)
+
+Based on the ChatGPT research session (see `docs/declarative_language_research_session.txt`), the recommended architecture is **IR-first**:
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Layer 1: Front-ends                          │
+│  ┌─────────┐  ┌─────────────────┐  ┌──────────────────┐         │
+│  │ K (klang│  │ Java+Annotations│  │ Python DSL       │         │
+│  │ parser) │  │ (future)        │  │ (future)         │         │
+│  └────┬────┘  └────────┬────────┘  └────────┬─────────┘         │
+│       │                │                    │                    │
+│       └────────────────┼────────────────────┘                    │
+│                        ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │              Layer 2: K AST → IR Compilation                ││
+│  │         (symbols, constraints, activities, TVMs)            ││
+│  └─────────────────────────┬───────────────────────────────────┘│
+│                            ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │        Layer 3: Core Symbolic Engine ("new BAE")            ││
+│  │  - Symbolic state (SymbolId → Term/Value)                   ││
+│  │  - Constraint store with domain tags                        ││
+│  │  - BAE-style search (guess + backtrack)                     ││
+│  │  - Planning/scheduling primitives                           ││
+│  └─────────────────────────┬───────────────────────────────────┘│
+│                            ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │            Layer 4: Solver Adapters                         ││
+│  │  ┌───────────┐  ┌───────────────┐  ┌──────────────┐         ││
+│  │  │ Z3 (SMT)  │  │ CP/MiniZinc   │  │ BAE Heuristic│         ││
+│  │  │ (primary) │  │ (future)      │  │ (fallback)   │         ││
+│  │  └───────────┘  └───────────────┘  └──────────────┘         ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why IR-First (Not Deep EDSL Java)
+
+The old BAE approach: `K → deep EDSL Java → heavy reflection → custom solver`
+
+Problems:
+1. Execution and representation entangled
+2. Hard to add new host languages
+3. Hard to swap solver backends
+4. Difficult to test core logic in isolation
+
+New approach: `K/Java/Python → AST → IR → engine → solvers`
+
+Benefits:
+1. Core engine operates only on IR (language-agnostic)
+2. Easy to add new front-ends
+3. Pluggable solver backends
+4. Unit-testable with synthetic IR programs
+5. Less reflection, more compile-time verification
+
+---
+
+## IR Design Sketch
+
+### Sorts (Types in the IR)
+
+```
+Sort =
+  Bool | Int | Real | String | Time
+  | Object(ClassId)          // heap object
+  | ActivityType(ClassId)    // activity instance
+  | TVM(Sort valueSort)      // TimeVaryingMap<valueSort>
+  | Array(Sort index, Sort elem)
+  | Map(Sort key, Sort value)
+  | Set(Sort elem)
+  | Tuple(List<Sort>)
+  | Uninterpreted(String name)  // for opaque domains
+```
+
+### Symbols
+
+```
+Symbol = {
+  id: SymbolId,
+  name: String,
+  sort: Sort,
+  origin: SymbolOrigin,  // ProgramVar | FreshFromSolver | Parameter
+  mutable: Boolean
+}
+```
+
+### Terms
+
+```
+Term =
+  | Var(SymbolId)
+  | Const(Sort, LiteralValue)
+  | App(Operator, List<Term>)     // operator application
+  | FieldAccess(Term obj, FieldId)
+  | TVMRead(Term tvm, Term time)  // tvm.getValue(time)
+  | ActivityField(Term activity, FieldId)
+  | OpaqueCall(CallId, List<Term> args, Option<LiteralValue> cached)
+```
+
+### Operators
+
+```
+Operator =
+  // Boolean
+  And | Or | Not | Implies | Iff
+  // Comparison
+  | Eq | Neq | Lt | Le | Gt | Ge
+  // Arithmetic
+  | Add | Sub | Mul | Div | Mod | Neg
+  // Strings (map to Z3 str theory)
+  | StrConcat | StrLen | StrAt | StrSubstr
+  | StrContains | StrPrefixOf | StrSuffixOf
+  | StrReplace | StrToInt | IntToStr
+  | StrInRe  // regex match
+  // Collections
+  | SetUnion | SetInter | SetDiff | SetMember
+  | MapSelect | MapStore
+  // Temporal
+  | Before | After | Overlaps | Meets
+```
+
+### Constraints
+
+```
+Constraint = {
+  id: ConstraintId,
+  expr: Term,           // must be Bool-typed
+  tags: Set<Tag>,       // Domain_Arith, Domain_String, Solver_Friendly, etc.
+  soft: Boolean,        // soft constraint for optimization
+  weight: Double,       // weight if soft
+  source: SourceLocation
+}
+
+Tag = Domain_Arith | Domain_Bool | Domain_String | Domain_Time
+    | Domain_TVM | Domain_Scheduling | Domain_Heap | Domain_Opaque
+    | Solver_Friendly | Solver_Avoid | UserTag(String)
+```
+
+### Activities and TimeVaryingMaps
+
+```
+ActivityInstance = {
+  id: ActivityId,
+  classId: ClassId,
+  fields: Map<FieldId, SymbolId>,  // includes start, end, duration
+  localConstraints: List<ConstraintId>
+}
+
+TVMInstance = {
+  id: TVMId,
+  valueSort: Sort,
+  symbol: SymbolId,
+  piecewiseConstant: Boolean,
+  monotoneTime: Boolean
+}
+```
+
+### Opaque Calls
+
+```
+OpaqueCallDescriptor = {
+  id: OpaqueCallId,
+  name: String,           // e.g., "java.lang.Math.sqrt"
+  argSorts: List<Sort>,
+  resultSort: Sort,
+  semantics: OpaqueSemantics
+}
+
+OpaqueSemantics =
+  | BlackBox            // no SMT encoding; evaluate concretely
+  | HasSMTEncoding(Id)  // known encoding to SMT
+  | HasInverseImage     // can backwards-compute (BAE-style)
+  | Hybrid              // try SMT, fall back to concrete
+```
+
+### Solver Interface
+
+```
+SolverQuery = {
+  symbols: List<SymbolId>,      // unknowns to solve for
+  constraints: List<ConstraintId>,  // subset to send
+  objective: Option<Objective>,
+  timeoutMs: Int
+}
+
+SolverResult = Sat(Model) | Unsat | Unknown | Timeout
+
+Model = {
+  assignments: Map<SymbolId, LiteralValue>,
+  partialOk: Boolean,   // true if incomplete but usable
+  unchecked: List<ConstraintId>  // constraints not verified
+}
+```
+
+---
+
+## How klang Fits
+
+**klang as the K front-end**:
+- Keep klang for: parsing, AST representation, type checking
+- Add: K AST → IR compilation (a new backend alongside the existing Z3 encoder)
+
+**New core module** (could be in klang or separate):
+- IR types as above
+- Symbolic engine with BAE-style search
+- Solver adapters (Z3 first, others later)
+
+This means:
+- K syntax and static semantics owned by klang
+- New runtime semantics (hybrid solver, partial solutions, planning) in new IR-based core
+- Existing klang Z3 backend preserved as legacy/comparison mode
+
+---
+
+## Python Front-end Option
+
+For a future Python front-end:
+
+```python
+from kpy import constraint_block, activity, TimeVaryingMap, Symbol, IntSort
+
+x = Symbol("x", IntSort)
+
+@constraint_block
+def model():
+    return (x > 0) & (x < 10)
+
+@activity
+class HeatUp:
+    start: Time
+    end: Time
+    
+    @constraint_block
+    def constraints(self):
+        return self.end - self.start >= Duration("PT1H")
+```
+
+Implementation: Use Python's built-in `ast` module to:
+1. Find decorated functions/classes
+2. Translate Boolean expressions to IR Terms
+3. Build Constraints from returned expressions
+
+MyPy could be added later for richer type inference, but `ast` is sufficient to start.
+
+---
+
+## Hybrid Solving Strategy
+
+The key insight from BAE that must be preserved:
+
+**"The programmer controls complexity"** - They decide how hard a problem to create for the solver.
+
+### Solving Flow
+
+1. **Collect constraints** from IR with tags
+2. **Partition** into solver-friendly vs. opaque
+3. **Send solver-friendly subset to Z3**:
+   - Get `Sat(model)` → integrate assignments
+   - Get `Unsat` → prune search branch
+   - Get `Unknown/Timeout` → mark unchecked, continue with heuristics
+4. **For opaque calls in solution**:
+   - If inputs are concrete: evaluate concretely, add result as constraint
+   - If has inverse image: use it to backwards-compute valid inputs
+   - Otherwise: treat result as fresh symbolic with minimal constraints
+5. **BAE-style search** for remaining unknowns:
+   - Guess values at choice points
+   - Re-run constraint propagation
+   - Backtrack on contradiction
+6. **Return partial solution** if @bestEffort, otherwise continue until complete
+
+### Interaction with @timeout and @bestEffort
+
+Already implemented in klang:
+- `@timeout(N)` - solver gets N ms time budget per query
+- `@bestEffort` - return partial solution on timeout instead of failing
+
+These annotations naturally integrate with the hybrid solving:
+- Timeout causes `Unknown` from Z3, triggering heuristic fallback
+- BestEffort allows returning whatever partial solution exists
+
+---
+
 ## References
 
 - CEGAR: Clarke et al., "Counterexample-Guided Abstraction Refinement"
@@ -438,6 +723,9 @@ class TurnOn extends Activity {
 - CLP(FD): Jaffar & Maher, "Constraint Logic Programming: A Survey"
 - BAE Paper: "Towards Integrating Constraint Solving and Programming" (~/git/aiProgrammingPaper)
 - K Language: Havelund, "K: A Language for K" (MODELSWARD 2016)
+- Rosette: Torlak & Bodik, "Growing Solver-Aided Languages with Rosette"
+- Leon: Kneuss et al., "Synthesis Modulo Recursive Functions"
+- Dafny: Leino, "Dafny: An Automatic Program Verifier"
 
 ---
 
@@ -452,9 +740,26 @@ class TurnOn extends Activity {
 
 ---
 
+## Research Session Reference
+
+The ChatGPT research session that informed this design is preserved in:
+- `docs/declarative_language_research_session.txt` (plain text conversion)
+- `docs/declarative language research chatgpt session.docx` (original)
+
+Key insights from that session:
+1. K is very close to the "solver-aided language" vision but focused on SysML modeling
+2. BAE's inverse image interface is the key innovation for opaque function support
+3. An IR-first architecture with pluggable solver backends is recommended
+4. Z3's modern string/sequence theories make reimplementation viable
+5. Python's `ast` module is sufficient for a Python front-end
+6. Preserve BAE's "partial solution" and "programmer controls complexity" properties
+
+---
+
 ## Notes
 
 - Created: December 7, 2025
+- Updated: December 7, 2025 - Added IR design from research session
 - Status: Draft - gathering requirements and exploring alternatives
 - The inverse image approach is the key innovation in BAE that allows reasoning about opaque functions
 - TimeVaryingMap and Activity are critical for planning applications (Europa Clipper mission)

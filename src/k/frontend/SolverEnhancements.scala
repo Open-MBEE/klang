@@ -2,20 +2,20 @@
 package k.frontend
 
 import com.microsoft.z3.{Context, Solver, Optimize, Sort, Expr, BoolExpr, IntExpr, RealExpr, 
-  ArithExpr, FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Status, Params, SeqSort, ReExpr}
+  ArithExpr, FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Status, Params, SeqSort}
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.{ListBuffer, HashMap => MMap, Stack}
 
 /**
  * Advanced Z3 Solver Enhancements for K Language
- * 
+ *
  * Features:
  * - Incremental solving with push/pop scopes
  * - Anytime best-effort solutions with timeouts
  * - Optimization objectives (minimize/maximize)
  * - Enhanced unsat core reporting
- * - Native sequence theory support
- * - Regular expression support
+ * - Native sequence theory support (via SMT-LIB)
+ * - Regular expression support (via SMT-LIB)
  * - Opaque function support (uninterpreted + axiom learning)
  */
 
@@ -413,31 +413,140 @@ class OpaqueFunctionManager(ctx: Context) {
 }
 
 // ============================================================================
-// Regular Expression Support
+// Regular Expression Support (SMT-LIB string generation)
 // ============================================================================
 
 /**
- * Helper for building Z3 regular expressions
- * NOTE: Currently disabled due to Z3 API compatibility issues.
- * The string operations in K2Z3.scala handle regex via mkInRe directly.
+ * Helper for building SMT-LIB regular expression strings
+ * Note: These generate SMT-LIB text, not Z3 API objects
  */
 object RegexSupport {
-  // TODO: Re-enable when Z3 API is updated
-  // The mkReConcat, mkReUnion, etc. methods have changed in newer Z3 versions
+
+  /**
+   * Create membership constraint: (str.in_re str (str.to_re pattern))
+   */
+  def mkMatchesSMT(strSMT: String, patternSMT: String): String = {
+    s"(str.in_re $strSMT (str.to_re $patternSMT))"
+  }
+
+  /**
+   * Concatenate regexes in SMT-LIB
+   */
+  def mkConcatSMT(regexes: String*): String = {
+    if (regexes.length == 1) regexes.head
+    else s"(re.++ ${regexes.mkString(" ")})"
+  }
+
+  /**
+   * Union of regexes in SMT-LIB
+   */
+  def mkUnionSMT(regexes: String*): String = {
+    s"(re.union ${regexes.mkString(" ")})"
+  }
+
+  /**
+   * Kleene star in SMT-LIB
+   */
+  def mkStarSMT(regex: String): String = s"(re.* $regex)"
+
+  /**
+   * Kleene plus in SMT-LIB
+   */
+  def mkPlusSMT(regex: String): String = s"(re.+ $regex)"
+
+  /**
+   * Optional in SMT-LIB
+   */
+  def mkOptionSMT(regex: String): String = s"(re.opt $regex)"
+
+  /**
+   * Character range in SMT-LIB
+   */
+  def mkRangeSMT(lo: String, hi: String): String = s"(re.range $lo $hi)"
+
+  /**
+   * Common patterns as SMT-LIB
+   */
+  def digitSMT: String = "(re.range \"0\" \"9\")"
+  def lowerSMT: String = "(re.range \"a\" \"z\")"
+  def upperSMT: String = "(re.range \"A\" \"Z\")"
+  def alphaSMT: String = s"(re.union $lowerSMT $upperSMT)"
+  def alphaNumSMT: String = s"(re.union $alphaSMT $digitSMT)"
+  def anySMT: String = "re.allchar"
 }
 
 // ============================================================================
-// Sequence Theory Support
+// Sequence Theory Support (SMT-LIB string generation)
 // ============================================================================
 
 /**
- * Helper for Z3 sequence operations
- * NOTE: Currently disabled due to type variance issues with Z3 Java API.
- * The string operations in K2Z3.scala handle sequences directly.
+ * Helper for Z3 sequence operations via SMT-LIB text generation
  */
 object SeqSupport {
-  // TODO: Re-enable when type issues are resolved
-  // SeqSort type variance issues with Scala/Java interop
+
+  /**
+   * Create empty sequence SMT
+   */
+  def mkEmptySMT(sortSMT: String): String = s"(as seq.empty (Seq $sortSMT))"
+
+  /**
+   * Create unit sequence SMT
+   */
+  def mkUnitSMT(elementSMT: String): String = s"(seq.unit $elementSMT)"
+
+  /**
+   * Concatenate sequences SMT
+   */
+  def mkConcatSMT(seqs: String*): String = {
+    if (seqs.length == 1) seqs.head
+    else s"(seq.++ ${seqs.mkString(" ")})"
+  }
+
+  /**
+   * Sequence length SMT
+   */
+  def mkLengthSMT(seqSMT: String): String = s"(seq.len $seqSMT)"
+
+  /**
+   * Get element at index SMT
+   */
+  def mkAtSMT(seqSMT: String, indexSMT: String): String = s"(seq.nth $seqSMT $indexSMT)"
+
+  /**
+   * Extract subsequence SMT
+   */
+  def mkExtractSMT(seqSMT: String, offsetSMT: String, lengthSMT: String): String =
+    s"(seq.extract $seqSMT $offsetSMT $lengthSMT)"
+
+  /**
+   * Check if subsequence is contained SMT
+   */
+  def mkContainsSMT(seqSMT: String, subseqSMT: String): String =
+    s"(seq.contains $seqSMT $subseqSMT)"
+
+  /**
+   * Check prefix SMT
+   */
+  def mkPrefixOfSMT(prefixSMT: String, seqSMT: String): String =
+    s"(seq.prefixof $prefixSMT $seqSMT)"
+
+  /**
+   * Check suffix SMT
+   */
+  def mkSuffixOfSMT(suffixSMT: String, seqSMT: String): String =
+    s"(seq.suffixof $suffixSMT $seqSMT)"
+
+  /**
+   * Find index of subsequence SMT
+   */
+  def mkIndexOfSMT(seqSMT: String, subseqSMT: String, offsetSMT: String): String =
+    s"(seq.indexof $seqSMT $subseqSMT $offsetSMT)"
+
+  /**
+   * Replace first occurrence SMT
+   */
+  def mkReplaceSMT(seqSMT: String, srcSMT: String, dstSMT: String): String =
+    s"(seq.replace $seqSMT $srcSMT $dstSMT)"
 }
 
 // ============================================================================
@@ -608,5 +717,3 @@ object K2Z3Enhanced {
     }
   }
 }
-
-

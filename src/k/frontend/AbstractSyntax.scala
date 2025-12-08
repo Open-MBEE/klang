@@ -126,7 +126,7 @@ object UtilSMT {
     ty match {
       case CartesianType(types)          => types forall wellFormedType
       case ParenType(ty)                 => wellFormedType(ty)
-      case BoolType | IntType | RealType | StringType | TimeType | DurationType => true
+      case BoolType | IntType | RealType | StringType => true
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -1295,6 +1295,17 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
       }
       result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
     }
+
+    // optimization objectives (added as comments - use Optimize solver for actual optimization)
+    val optimizeDecls: List[OptimizeDecl] = getAllOptimizeDecls
+    if (optimizeDecls.nonEmpty) {
+      result += UtilSMT.headline3("Optimization Objectives (informational)")
+      for (OptimizeDecl(kind, exp, weight) <- optimizeDecls) {
+        val weightStr = weight.map(w => s" :weight $w").getOrElse("")
+        result += s"; (${kind.toSMT} ${exp.toSMT(ident, false)}$weightStr)\n"
+      }
+      result += "\n"
+    }
     result
   }
 
@@ -1357,6 +1368,15 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     val constraintDeclsOfSuperClasses: List[ConstraintDecl] =
       (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getConstraintDecls).flatten
     constraintDeclsOfSuperClasses ++ getConstraintDecls
+  }
+
+  def getOptimizeDecls: List[OptimizeDecl] =
+    for (m <- members if m.isInstanceOf[OptimizeDecl]) yield m.asInstanceOf[OptimizeDecl]
+
+  def getAllOptimizeDecls: List[OptimizeDecl] = {
+    val optimizeDeclsOfSuperClasses: List[OptimizeDecl] =
+      (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getOptimizeDecls).flatten
+    optimizeDeclsOfSuperClasses ++ getOptimizeDecls
   }
 
   def getEntityDecls: List[EntityDecl] =
@@ -2443,23 +2463,8 @@ trait CallApplExp extends Exp {
             return s"(str.to_int $strSMT)"
           case "matches" =>
             // Regular expression matching: str.in_re
-            // Use RegexToZ3 to properly convert regex patterns to Z3's regex algebra
-            args(0) match {
-              case PositionalArgument(StringLiteral(patternWithQuotes)) =>
-                // StringLiteral.s contains quotes (e.g., "[0-9]"), strip them
-                val pattern = if (patternWithQuotes.startsWith("\"") && patternWithQuotes.endsWith("\"")) {
-                  patternWithQuotes.substring(1, patternWithQuotes.length - 1)
-                } else {
-                  patternWithQuotes
-                }
-                // Convert to proper Z3 regex
-                val z3Regex = RegexToZ3.convert(pattern)
-                return s"(str.in_re $strSMT $z3Regex)"
-              case _ =>
-                // For non-literal patterns, fall back to simple str.to_re
-                val patternSMT = args(0).toSMT(className, subTyping)
-                return s"(str.in_re $strSMT (str.to_re $patternSMT))"
-            }
+            val patternSMT = args(0).toSMT(className, subTyping)
+            return s"(str.in_re $strSMT (str.to_re $patternSMT))"
           case "fromInt" =>
             // Convert integer to string
             val intSMT = args(0).toSMT(className, subTyping)
@@ -4224,17 +4229,6 @@ case class DateLiteral(s: String) extends Literal {
     UtilSMT.statistics.DATELIT += 1
   }
 
-  override def toSMT(className: String, subTyping: Boolean): String = {
-    // Convert ISO 8601 date/time to milliseconds since epoch
-    try {
-      val millis = TimeParser.parseDateTime(s)
-      millis.toString
-    } catch {
-      case e: Exception =>
-        UtilSMT.error(s"Invalid date/time literal: $s - ${e.getMessage}")
-    }
-  }
-
   override def toString = s
 
   override def toJavaString =
@@ -4257,17 +4251,6 @@ case class DurationLiteral(s: String) extends Literal {
 
   override def statistics() {
     UtilSMT.statistics.DURLIT += 1
-  }
-
-  override def toSMT(className: String, subTyping: Boolean): String = {
-    // Convert ISO 8601 or HH:MM:SS duration to milliseconds
-    try {
-      val millis = TimeParser.parseDuration(s)
-      millis.toString
-    } catch {
-      case e: Exception =>
-        UtilSMT.error(s"Invalid duration literal: $s - ${e.getMessage}")
-    }
   }
 
   override def toString = s
@@ -4759,8 +4742,7 @@ case object TimeType extends PrimitiveType {
     UtilSMT.statistics.TIMETYPE += 1
   }
 
-  // Time is represented as Int (milliseconds since epoch) in SMT
-  override def toSMT: String = "Int"
+  //override def toSMT: String = "???"
 
   override def toScala: String = "String"
 
@@ -4782,8 +4764,7 @@ case object DurationType extends PrimitiveType {
     UtilSMT.statistics.DURTYPE += 1
   }
 
-  // Duration is represented as Int (milliseconds) in SMT
-  override def toSMT: String = "Int"
+  //override def toSMT: String = "???"
 
   override def toScala: String = "String"
 
