@@ -352,31 +352,68 @@ Port the key concepts from BAE to klang:
 
 This klang effort is a rewrite of kservices/bae with Z3/SMT as the primary solving engine.
 
-### Phase 1: CEGAR-style External Function Calls (Current Priority)
+### Phase 1: CEGAR-style External Function Calls ✅ IMPLEMENTED
 
-Add support for calling JVM functions with CEGAR-style refinement:
+External JVM functions can be called with CEGAR-style refinement:
 
 ```k
-// Syntax option 1: Annotation
-@external("java.lang.Math.sqrt")
-fun sqrt(x: Real): Real
-
-// Syntax option 2: Direct qualified name (kservices style)
+// Direct qualified name (kservices style) - IMPLEMENTED
 req y < java.lang.Math.sqrt(100.0)
 
-// Syntax option 3: Import + simple name
+// Import + simple name - IMPLEMENTED
 import java.lang.Math
 req y < Math.sqrt(100.0)
 ```
 
-**Implementation**:
+**Implementation** (in K2Z3.scala and ExternalFunctions.scala):
 1. Parse external function calls
 2. During SMT generation, use uninterpreted function
 3. After Z3 finds candidate solution, evaluate actual JVM call
 4. If mismatch, add constraint `f(concrete_inputs) = concrete_output` and re-solve
 5. Repeat until consistent or max iterations
 
-### Phase 2: Compile-Time Evaluation
+### Key Insight: No Annotations Needed!
+
+In a declarative language like K, we don't need special `@requires`/`@ensures` annotations.
+Regular K constraints serve the same purpose more naturally:
+
+```k
+-- Underspecified function with constraints (no annotations!)
+fun sqrt(x: Real): Real {
+  result : Real
+  req x >= 0           -- precondition as constraint
+  req result >= 0      -- postcondition as constraint
+  return result
+}
+
+-- Or bind to external function with forall:
+fun sqrt(x: Real): Real
+req forall(x : Real) . sqrt(x) = java.lang.Math.sqrt(x)
+```
+
+**Why this is better than annotations:**
+- Underspecification is a feature, not a bug
+- No special syntax to learn
+- Constraints are composable and can be added anywhere
+- Z3 can synthesize function definitions from partial specifications
+
+### Function Synthesis Demo
+
+Z3 can synthesize uninterpreted function specifications! See `examples/FunctionSynthesis.k`:
+
+```k
+fun mystery(x: Int): Int
+
+-- Partial specification
+req mystery(0) = 0
+req mystery(1) = 1  
+req mystery(2) = 4
+req mystery(3) = 9
+
+-- Z3 synthesizes consistent values for mystery(4), mystery(5), etc.
+```
+
+### Phase 2: Compile-Time Evaluation ✅ IMPLEMENTED
 
 For deterministic expressions with concrete inputs, evaluate at compile time:
 - `java.lang.Math.sqrt(100.0)` → `10.0` (constant folding)
@@ -441,8 +478,7 @@ Based on the ChatGPT research session (see `docs/declarative_language_research_s
 │                    Layer 1: Front-ends                          │
 │  ┌─────────┐  ┌─────────────────┐  ┌──────────────────┐         │
 │  │ K (klang│  │ Java+Annotations│  │ Python DSL       │         │
-│  │ parser) │  │ (future)        │  │ (future)         │         │
-│  └────┬────┘  └────────┬────────┘  └────────┬─────────┘         │
+│  │ parser) │  └────────┬────────┘  └────────┬─────────┘         │
 │       │                │                    │                    │
 │       └────────────────┼────────────────────┘                    │
 │                        ▼                                         │
