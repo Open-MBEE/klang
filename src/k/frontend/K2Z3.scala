@@ -493,6 +493,24 @@ object K2Z3 {
 
       // log("<<++")
 
+      /**
+       * Format a Z3 sequence value for display
+       * Converts (seq.++ (seq.unit 1) (seq.unit 2)) to [1, 2]
+       */
+      def formatSequenceValue(seqStr: String): String = {
+        // Handle seq.unit pattern: (seq.unit X)
+        val unitPattern = """\(seq\.unit\s+(-?\d+)\)""".r
+        val elements = unitPattern.findAllMatchIn(seqStr).map(_.group(1)).toList
+        if (elements.nonEmpty) {
+          "[" + elements.mkString(", ") + "]"
+        } else if (seqStr.contains("seq.empty")) {
+          "[]"
+        } else {
+          // Return raw value if we can't parse it
+          seqStr
+        }
+      }
+
       var rows: List[List[String]] = List(List("Variable", "Ref", "Value"))
       var extraRows: List[List[String]] = List(List("Variable", "Ref", "Value"))
       var heapDecl = z3Model.getDecls.find { _.getName.toString.equals("heap") }
@@ -506,7 +524,7 @@ object K2Z3 {
       var heapMap = Map[String, String]()
       
       val modelStr = z3Model.toString
-      
+
       // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-...))
       // Normalize whitespace to make regex easier
       val normalizedStr = modelStr.replaceAll("\\s+", " ")
@@ -549,7 +567,47 @@ object K2Z3 {
           if (debug) logDebug(s"Extracted ref $ref (const-init): $className = $value")
         }
       }
-      
+
+      // Pattern 1c: Z3 4.13+ with let-expressions using a!N for sequence values
+      // (store ((as const (Array Int Any)) null) 0 a!1))) where a!1 is defined above
+      // First find the let definition for a!1
+      val letPattern = """\(let\s+\(\(a!1\s+\(lift-(\w+)\s+\((mk-\w+)\s+([^)]+\))\)\)\)""".r
+      for (m <- letPattern.findAllMatchIn(normalizedStr)) {
+        if (!heapMap.contains("0")) {
+          val className = m.group(1)
+          val constructor = m.group(2)
+          val seqValue = m.group(3)
+          heapMap += ("0" -> s"(lift-$className ($constructor $seqValue)")
+          if (debug) logDebug(s"Extracted ref 0 (let): $className = $constructor $seqValue")
+        }
+      }
+
+      // Pattern 1d: Direct extraction of sequence from mk-TopLevelDeclarations
+      // Need to handle nested parentheses in seq.++ (seq.unit N) (seq.unit M)
+      val mkTopLevelIdx = normalizedStr.indexOf("mk-TopLevelDeclarations")
+      if (mkTopLevelIdx >= 0 && !heapMap.contains("0")) {
+        // Find the sequence value by matching balanced parentheses
+        val afterMk = normalizedStr.substring(mkTopLevelIdx + "mk-TopLevelDeclarations".length).trim
+        if (afterMk.startsWith("(seq.")) {
+          // Extract balanced parentheses expression
+          var depth = 0
+          var endIdx = 0
+          var foundStart = false
+          for (i <- 0 until afterMk.length if endIdx == 0) {
+            afterMk(i) match {
+              case '(' => depth += 1; foundStart = true
+              case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = i + 1
+              case _ =>
+            }
+          }
+          if (endIdx > 0) {
+            val seqValue = afterMk.substring(0, endIdx)
+            heapMap += ("0" -> s"(lift-TopLevelDeclarations (mk-TopLevelDeclarations $seqValue))")
+            if (debug) logDebug(s"Extracted ref 0 (seq-balanced): TopLevelDeclarations = $seqValue")
+          }
+        }
+      }
+
       // Pattern 2: Continuation patterns (part of outer store after nested store closes)
       // These appear as: ))) <ref> (lift-ClassName (mk-...)) or )) <ref> (lift-...)
       val contPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
@@ -612,10 +670,15 @@ object K2Z3 {
             className == "TopLevelDeclarations" match {
               case true =>
                 // Recursively collect top-level properties from model and all packages
-                def collectTopLevelProperties(m: Model): List[(String, Boolean)] = {
-                  val localProps = m.decls.foldLeft(List[(String, Boolean)]()) { (res, d) =>
+                // Returns (name, isPrimitive, isCollection)
+                def collectTopLevelProperties(m: Model): List[(String, Boolean, Boolean)] = {
+                  val localProps = m.decls.foldLeft(List[(String, Boolean, Boolean)]()) { (res, d) =>
                     d match {
-                      case pd @ PropertyDecl(_, _, _, _, _, _) => (new Tuple2(pd.name, TypeChecker.isPrimitiveType(pd.getTypeOrError))) :: res
+                      case pd @ PropertyDecl(_, _, _, _, _, _) =>
+                        val ty = pd.getTypeOrError
+                        val isPrim = TypeChecker.isPrimitiveType(ty)
+                        val isColl = Misc.isCollection(ty)
+                        (pd.name, isPrim, isColl) :: res
                       case _                                   => res
                     }
                   }
@@ -626,10 +689,35 @@ object K2Z3 {
                 var topLevelVariables = collectTopLevelProperties(model)
                 var i = 1
                 topLevelVariables.reverse.foreach { k =>
-                  if (k._2) {
-                    rows = (List(k._1, "-", objectValues(i))) :: rows
+                  val (name, isPrim, isColl) = k
+                  if (isPrim) {
+                    rows = (List(name, "-", objectValues(i))) :: rows
+                  } else if (isColl) {
+                    // For collections, extract the sequence value directly from the raw value string
+                    // Look for (seq.XXX ...) pattern
+                    val seqStartIdx = value.indexOf("(seq.")
+                    if (seqStartIdx >= 0) {
+                      // Extract balanced parens from seqStartIdx
+                      var depth = 0
+                      var endIdx = seqStartIdx
+                      var foundStart = false
+                      for (j <- seqStartIdx until value.length if endIdx == seqStartIdx) {
+                        value(j) match {
+                          case '(' => depth += 1; foundStart = true
+                          case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = j + 1
+                          case _ =>
+                        }
+                      }
+                      val seqValue = if (endIdx > seqStartIdx) value.substring(seqStartIdx, endIdx) else value
+                      val formattedSeq = formatSequenceValue(seqValue)
+                      rows = (List(name, "-", formattedSeq)) :: rows
+                    } else {
+                      // No sequence found, try objectValues
+                      val seqValue = formatSequenceValue(objectValues(i))
+                      rows = (List(name, "-", seqValue)) :: rows
+                    }
                   } else {
-                    val res = printObjectValue(k._1, heapMap, heapMap.getOrElse(objectValues(i), heapMap("else")), visited, objectValues(i), false)
+                    val res = printObjectValue(name, heapMap, heapMap.getOrElse(objectValues(i), heapMap("else")), visited, objectValues(i), false)
                     rows = res._2 ++ rows
                     visited = res._1 + ("Ref " + objectValues(i))
                   }

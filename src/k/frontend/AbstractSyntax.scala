@@ -2383,6 +2383,27 @@ case class DotExp(exp: Exp, ident: String) extends Exp {
       }
     }
 
+    // Handle sequence operations
+    expType match {
+      case IdentType(QualifiedName(List("Seq")), _) =>
+        ident match {
+          case "size" | "length" =>
+            return s"(seq.len $expSMT)"
+          case "isEmpty" =>
+            return s"(= (seq.len $expSMT) 0)"
+          case "head" | "first" =>
+            return s"(seq.nth $expSMT 0)"
+          case "tail" =>
+            return s"(seq.extract $expSMT 1 (- (seq.len $expSMT) 1))"
+          case "last" =>
+            return s"(seq.nth $expSMT (- (seq.len $expSMT) 1))"
+          case _ =>
+            // Fall through to regular property handling
+        }
+      case _ =>
+        // Not a sequence, continue below
+    }
+
     val classNameOfExp = expType.toString
     val getter = s"$classNameOfExp.$ident"
     UtilSMT.addGetter(getter)
@@ -2563,6 +2584,71 @@ trait CallApplExp extends Exp {
         }
       case _ =>
         // Not a string method, continue with regular handling
+    }
+
+    // Handle sequence method calls
+    exp1 match {
+      case DotExp(seqExp, methodName) =>
+        val seqType = TypeChecker.exp2Type.get(seqExp)
+        seqType match {
+          case IdentType(QualifiedName(List("Seq")), _) =>
+            val seqSMT = seqExp.toSMT(className, subTyping)
+            methodName match {
+              case "at" | "get" | "apply" =>
+                // Get element at index: seq.nth
+                val indexSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.nth $seqSMT $indexSMT)"
+              case "contains" =>
+                // Check if element exists in sequence
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.contains $seqSMT (seq.unit $elemSMT))"
+              case "indexOf" =>
+                // Find index of element
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.indexof $seqSMT (seq.unit $elemSMT) 0)"
+              case "subseq" | "slice" | "subList" =>
+                // Extract subsequence
+                val startSMT = args(0).toSMT(className, subTyping)
+                val lengthSMT = if (args.length > 1) {
+                  val endSMT = args(1).toSMT(className, subTyping)
+                  s"(- $endSMT $startSMT)"
+                } else {
+                  s"(- (seq.len $seqSMT) $startSMT)"
+                }
+                return s"(seq.extract $seqSMT $startSMT $lengthSMT)"
+              case "append" | "add" =>
+                // Append element to sequence
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.++ $seqSMT (seq.unit $elemSMT))"
+              case "prepend" =>
+                // Prepend element to sequence
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.++ (seq.unit $elemSMT) $seqSMT)"
+              case "concat" | "++" =>
+                // Concatenate sequences
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.++ $seqSMT $otherSMT)"
+              case "prefixOf" =>
+                // Check if this is prefix of other
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.prefixof $seqSMT $otherSMT)"
+              case "suffixOf" =>
+                // Check if this is suffix of other
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"(seq.suffixof $seqSMT $otherSMT)"
+              case "replace" =>
+                // Replace first occurrence
+                val srcSMT = args(0).toSMT(className, subTyping)
+                val dstSMT = args(1).toSMT(className, subTyping)
+                return s"(seq.replace $seqSMT (seq.unit $srcSMT) (seq.unit $dstSMT))"
+              case _ =>
+                // Fall through to regular function handling
+            }
+          case _ =>
+            // Not a sequence type
+        }
+      case _ =>
+        // Not a dot expression
     }
 
     // Check for external (Java) function calls
@@ -3434,6 +3520,24 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
           result = s"(store $result $expSMT true)"
         }
         result
+      case SeqKind =>
+        // Use Z3 sequence theory: seq.empty, seq.unit, seq.++
+        val ty = exp2Type.get(this)
+        val tySMT = ty match {
+          case IdentType(_, elemType :: _) => elemType.toSMT
+          case _ => "Int" // fallback
+        }
+        if (exps.isEmpty) {
+          s"(as seq.empty (Seq $tySMT))"
+        } else {
+          // Build sequence by concatenating unit sequences
+          val units = exps.map { exp =>
+            val expSMT = exp.toSMT(className, subTyping)
+            s"(seq.unit $expSMT)"
+          }
+          if (units.length == 1) units.head
+          else s"(seq.++ ${units.mkString(" ")})"
+        }
       case _ => UtilSMT.error(this.toString)
     }
   }

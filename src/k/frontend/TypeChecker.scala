@@ -457,10 +457,11 @@ class TypeChecker(model: Model) {
           p.getType.foreach { ty =>
             if(Misc.isCollection(ty)){
               val collectionKind = Misc.getCollectionKind(ty)
+              // Seq is now supported via Z3 sequence theory
+              // Set is supported via Z3 array/set theory
               if(collectionKind == BagKind ||
-                  collectionKind == SeqKind ||
                   collectionKind == OSetKind){
-                error(s"Unsupported collection kind for SMT processing. Currently only Set is supported.")
+                error(s"Unsupported collection kind for SMT processing. Currently Set and Seq are supported.")
               }
             }
           }
@@ -1274,16 +1275,21 @@ class TypeChecker(model: Model) {
         ti match {
           case it @ IdentType(_, _) =>
             if (Misc.isCollection(it)) {
-              // TODO
+              // Collection operations
               if (i == "collect") CollectType(it.args)
-              else if (i == "size") SumType(it.args)
+              else if (i == "size" || i == "length") IntType  // size returns Int
+              else if (i == "isEmpty") BoolType  // isEmpty returns Bool
               else if (i == "sum") SumType(it.args)
-              else if (i == "at") SumType(it.args)
+              else if (i == "at" || i == "head" || i == "first" || i == "last" || i == "get" || i == "apply") {
+                // Element access returns the element type
+                if (it.args.nonEmpty) it.args.head else IntType
+              }
+              else if (i == "tail") it  // tail returns same collection type
               else if (i == "subList") CollectType(it.args)
               else error(s"getExpType: error, type could not be discovered for $exp.")
             } else {
               if (i == "collect") CollectType(List(it))
-              else if (i == "size") SumType(it.args)
+              else if (i == "size" || i == "length") IntType  // size returns Int
               else if (i == "sum") SumType(it.args)
               else if (i == "at") SumType(it.args)
               else if (i == "toString") StringType
