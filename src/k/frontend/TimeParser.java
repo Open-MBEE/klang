@@ -4,55 +4,65 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Utility class for parsing Time and Duration literals to milliseconds.
+ * Utility class for parsing Time and Duration literals to microseconds.
  *
  * Supported Time formats (ISO 8601):
  * - 2025-12-07 (date only, midnight)
  * - 2025-12-07T10:30:00 (date and time)
- * - 2025-12-07T10:30:00.123 (with milliseconds)
+ * - 2025-12-07T10:30:00.123456 (with microseconds)
  * - 2025-12-07T10:30:00Z (with timezone)
  * - 2025-12-07T10:30:00+05:00 (with timezone offset)
  *
  * Supported Duration formats:
- * - ISO 8601: P1Y, P2M, P3D, PT5H, PT30M, PT45S, P1Y2M3DT4H5M6S
- * - Time format: 1:05:02 (H:MM:SS), 1:05:02.123 (with millis)
+ * - ISO 8601: P1Y, P2M, P3D, PT5H, PT30M, PT45S, PT45.123456S
+ * - Time format: 1:05:02 (H:MM:SS), 1:05:02.123456 (with microseconds)
  *
- * All values are converted to milliseconds for SMT solving.
+ * All values are converted to MICROSECONDS for SMT solving.
+ * This provides microsecond precision while staying within Long range.
  */
 public class TimeParser {
 
-    // ISO 8601 Date/Time pattern
+    // ISO 8601 Date/Time pattern - now captures up to 9 digits for sub-second
     private static final Pattern DATE_TIME_PATTERN = Pattern.compile(
         "(\\d{2,4})-(\\d{1,3}|\\d{1,2}-\\d{1,2})" +  // Year and day-of-year or month-day
-        "(?:T(\\d{1,2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?)?" +  // Optional time
+        "(?:T(\\d{1,2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,9}))?)?" +  // Optional time with up to nanoseconds
         "([Zz]|[+-]\\d{1,2}:\\d{2}|[A-Za-z]{3})?"  // Optional timezone
     );
 
-    // ISO 8601 Duration pattern
+    // ISO 8601 Duration pattern - seconds can have decimal
     private static final Pattern DURATION_ISO_PATTERN = Pattern.compile(
         "P(?:(\\d+)Y)?(?:(\\d+)M)?(?:(\\d+)W)?(?:(\\d+)D)?" +
         "(?:T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+(?:\\.\\d+)?)S)?)?"
     );
 
-    // HH:MM:SS.mmm format
+    // HH:MM:SS.ffffff format - now captures up to 9 digits
     private static final Pattern DURATION_HMS_PATTERN = Pattern.compile(
-        "(\\d+):(\\d{1,2}):(\\d{1,2})(?:\\.(\\d{1,3}))?"
+        "(\\d+):(\\d{1,2}):(\\d{1,2})(?:\\.(\\d{1,9}))?"
     );
 
-    // Constants for time conversions (in milliseconds)
+    // Constants for time conversions (in MICROSECONDS)
+    private static final long US_PER_NANOSECOND = 1L;  // We truncate nanoseconds to microseconds
+    private static final long US_PER_MICROSECOND = 1L;
+    private static final long US_PER_MILLISECOND = 1000L;
+    private static final long US_PER_SECOND = 1000_000L;
+    private static final long US_PER_MINUTE = 60 * US_PER_SECOND;
+    private static final long US_PER_HOUR = 60 * US_PER_MINUTE;
+    private static final long US_PER_DAY = 24 * US_PER_HOUR;
+    private static final long US_PER_WEEK = 7 * US_PER_DAY;
+    // Approximations for months and years (use average)
+    private static final long US_PER_MONTH = 30 * US_PER_DAY;  // ~30 days
+    private static final long US_PER_YEAR = 365 * US_PER_DAY;  // ~365 days
+
+    // Legacy millisecond constants (for backward compatibility)
     private static final long MS_PER_SECOND = 1000L;
     private static final long MS_PER_MINUTE = 60 * MS_PER_SECOND;
     private static final long MS_PER_HOUR = 60 * MS_PER_MINUTE;
     private static final long MS_PER_DAY = 24 * MS_PER_HOUR;
-    private static final long MS_PER_WEEK = 7 * MS_PER_DAY;
-    // Approximations for months and years (use average)
-    private static final long MS_PER_MONTH = 30 * MS_PER_DAY;  // ~30 days
-    private static final long MS_PER_YEAR = 365 * MS_PER_DAY;  // ~365 days
 
     /**
-     * Parse a date/time literal to milliseconds since Unix epoch.
-     * @param literal The date/time string (e.g., "2025-12-07T10:30:00")
-     * @return Milliseconds since 1970-01-01 00:00:00 UTC
+     * Parse a date/time literal to microseconds since Unix epoch.
+     * @param literal The date/time string (e.g., "2025-12-07T10:30:00.123456")
+     * @return Microseconds since 1970-01-01 00:00:00 UTC
      */
     public static long parseDateTime(String literal) {
         // Remove surrounding quotes if present
@@ -86,50 +96,61 @@ public class TimeParser {
             dayOfMonth = remaining;
         }
 
-        int hour = 0, minute = 0, second = 0, millis = 0;
+        int hour = 0, minute = 0, second = 0;
+        long micros = 0;
         if (m.group(3) != null) {
             hour = Integer.parseInt(m.group(3));
             minute = Integer.parseInt(m.group(4));
             second = Integer.parseInt(m.group(5));
             if (m.group(6) != null) {
-                String ms = m.group(6);
-                // Pad to 3 digits
-                while (ms.length() < 3) ms = ms + "0";
-                millis = Integer.parseInt(ms.substring(0, 3));
+                micros = parseSubSecondToMicros(m.group(6));
             }
         }
 
-        // Calculate milliseconds since epoch (simplified, ignoring timezone for now)
+        // Calculate microseconds since epoch (simplified, ignoring timezone for now)
         long result = 0;
 
         // Years since 1970
         for (int y = 1970; y < year; y++) {
-            result += isLeapYear(y) ? 366 * MS_PER_DAY : 365 * MS_PER_DAY;
+            result += isLeapYear(y) ? 366 * US_PER_DAY : 365 * US_PER_DAY;
         }
 
         // Days in months before current month
         int[] daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         if (isLeapYear(year)) daysInMonth[1] = 29;
         for (int m2 = 1; m2 < month; m2++) {
-            result += daysInMonth[m2 - 1] * MS_PER_DAY;
+            result += daysInMonth[m2 - 1] * US_PER_DAY;
         }
 
         // Days in current month
-        result += (dayOfMonth - 1) * MS_PER_DAY;
+        result += (dayOfMonth - 1) * US_PER_DAY;
 
         // Time
-        result += hour * MS_PER_HOUR;
-        result += minute * MS_PER_MINUTE;
-        result += second * MS_PER_SECOND;
-        result += millis;
+        result += hour * US_PER_HOUR;
+        result += minute * US_PER_MINUTE;
+        result += second * US_PER_SECOND;
+        result += micros;
 
         return result;
     }
 
     /**
-     * Parse a duration literal to milliseconds.
-     * @param literal The duration string (e.g., "P1DT2H30M" or "1:30:00")
-     * @return Duration in milliseconds
+     * Parse sub-second string to microseconds.
+     * Handles 1-9 digit strings, padding/truncating to 6 digits (microseconds).
+     * @param subSecond The sub-second string (e.g., "123", "123456", "123456789")
+     * @return Microseconds
+     */
+    private static long parseSubSecondToMicros(String subSecond) {
+        // Pad to at least 6 digits, then take first 6
+        String padded = subSecond;
+        while (padded.length() < 6) padded = padded + "0";
+        return Long.parseLong(padded.substring(0, 6));
+    }
+
+    /**
+     * Parse a duration literal to microseconds.
+     * @param literal The duration string (e.g., "P1DT2H30M" or "1:30:00.123456")
+     * @return Duration in microseconds
      */
     public static long parseDuration(String literal) {
         String s = stripQuotes(literal);
@@ -145,21 +166,19 @@ public class TimeParser {
             long hours = Long.parseLong(m.group(1));
             long minutes = Long.parseLong(m.group(2));
             long seconds = Long.parseLong(m.group(3));
-            long millis = 0;
+            long micros = 0;
             if (m.group(4) != null) {
-                String ms = m.group(4);
-                while (ms.length() < 3) ms = ms + "0";
-                millis = Long.parseLong(ms.substring(0, 3));
+                micros = parseSubSecondToMicros(m.group(4));
             }
-            return hours * MS_PER_HOUR + minutes * MS_PER_MINUTE +
-                   seconds * MS_PER_SECOND + millis;
+            return hours * US_PER_HOUR + minutes * US_PER_MINUTE +
+                   seconds * US_PER_SECOND + micros;
         }
 
         throw new IllegalArgumentException("Invalid duration literal: " + literal);
     }
 
     /**
-     * Parse ISO 8601 duration format.
+     * Parse ISO 8601 duration format to microseconds.
      */
     private static long parseDurationISO(String s) {
         Matcher m = DURATION_ISO_PATTERN.matcher(s);
@@ -169,15 +188,15 @@ public class TimeParser {
 
         long result = 0;
 
-        if (m.group(1) != null) result += Long.parseLong(m.group(1)) * MS_PER_YEAR;
-        if (m.group(2) != null) result += Long.parseLong(m.group(2)) * MS_PER_MONTH;
-        if (m.group(3) != null) result += Long.parseLong(m.group(3)) * MS_PER_WEEK;
-        if (m.group(4) != null) result += Long.parseLong(m.group(4)) * MS_PER_DAY;
-        if (m.group(5) != null) result += Long.parseLong(m.group(5)) * MS_PER_HOUR;
-        if (m.group(6) != null) result += Long.parseLong(m.group(6)) * MS_PER_MINUTE;
+        if (m.group(1) != null) result += Long.parseLong(m.group(1)) * US_PER_YEAR;
+        if (m.group(2) != null) result += Long.parseLong(m.group(2)) * US_PER_MONTH;
+        if (m.group(3) != null) result += Long.parseLong(m.group(3)) * US_PER_WEEK;
+        if (m.group(4) != null) result += Long.parseLong(m.group(4)) * US_PER_DAY;
+        if (m.group(5) != null) result += Long.parseLong(m.group(5)) * US_PER_HOUR;
+        if (m.group(6) != null) result += Long.parseLong(m.group(6)) * US_PER_MINUTE;
         if (m.group(7) != null) {
             double secs = Double.parseDouble(m.group(7));
-            result += (long)(secs * MS_PER_SECOND);
+            result += (long)(secs * US_PER_SECOND);
         }
 
         return result;

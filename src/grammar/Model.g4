@@ -360,8 +360,8 @@ DurationLiteral:
     | HMSDuration
     ;
 
-// HH:MM:SS or HH:MM:SS.mmm format for durations
-// Examples: 0:00:00, 1:30:00, 0:05:30, 0:00:15.250
+// HH:MM:SS or HH:MM:SS.ffffff format for durations (microsecond precision)
+// Examples: 0:00:00, 1:30:00, 0:05:30, 0:00:15.250, 0:00:00.000001
 fragment
 HMSDuration:
       [0-9]+ ':' [0-5] [0-9] ':' [0-5] [0-9] ('.' [0-9]+)?
