@@ -1099,9 +1099,10 @@ object K2Z3 {
         // Evaluate the actual function
         ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
           case Some(actualResult) =>
-            println(s"[CEGAR]   Actual result: $actualResult")
-            // Check what Z3 computed for this function call
+            println(s"[CEGAR] RECOMPILED Actual result: $actualResult")
+            println("XYZZY_MARKER_12345_BEFORE_EXTRACT")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
+            println("XYZZY_MARKER_12345_AFTER_EXTRACT")
             println(s"[CEGAR]   Z3 result: $z3Result")
 
             z3Result match {
@@ -1185,34 +1186,49 @@ object K2Z3 {
    * Extract the result of an uninterpreted function application from Z3 model
    */
   def extractFunctionResult(model: com.microsoft.z3.Model, funcName: String, args: List[Any]): Option[Any] = {
+    println(s"[CEGAR] extractFunctionResult ENTRY: funcName=$funcName, args=$args")
     try {
-      for (decl <- model.getFuncDecls) {
-        if (decl.getName.toString == funcName) {
-          val funcInterp = model.getFuncInterp(decl)
-          if (funcInterp != null) {
-            // Check if we have an entry for these specific arguments
-            val entries = funcInterp.getEntries
-            for (i <- 0 until entries.length) {
-              val entry = entries(i)
-              val entryArgs = entry.getArgs.map(z3ValueToScala).toList
-              if (argsMatch(entryArgs, args.map(Some(_)))) {
-                return z3ValueToScala(entry.getValue)
-              }
+      // Debug: print available function declarations
+      val funcNames = model.getFuncDecls.map(_.getName.toString).toList
+      println(s"[CEGAR] Available functions (${funcNames.length}): ${funcNames.take(20).mkString(", ")}...")
+
+      // Find the function declaration
+      val funcDecl = model.getFuncDecls.find(_.getName.toString == funcName)
+
+      funcDecl match {
+        case Some(decl) =>
+          println(s"[CEGAR] Found function declaration: ${decl.getName}")
+          // Build Z3 arguments from our Scala args
+          val z3Args = args.map { arg =>
+            arg match {
+              case d: Double => ctx.mkReal(d.toString)
+              case l: Long => ctx.mkInt(l)
+              case i: Int => ctx.mkInt(i)
+              case s: String => ctx.mkString(s)
+              case b: Boolean => ctx.mkBool(b)
+              case _ => ctx.mkReal(arg.toString)
             }
-            // Use default/else value
-            return z3ValueToScala(funcInterp.getElse)
-          }
-        }
+          }.toArray
+
+          // Create function application
+          val app = ctx.mkApp(decl, z3Args: _*)
+
+          // Evaluate in the model
+          val result = model.eval(app, true)
+          println(s"[CEGAR] Evaluated $funcName(${args.mkString(", ")}) = $result")
+          z3ValueToScala(result)
+
+        case None =>
+          println(s"[CEGAR] Could not find function $funcName in model")
+          None
       }
-      // For constants (0-arity functions)
-      for (decl <- model.getDecls) {
-        if (decl.getName.toString == funcName) {
-          return z3ValueToScala(model.getConstInterp(decl))
-        }
-      }
-      None
     } catch {
-      case _: Throwable => None
+      case e: scala.runtime.NonLocalReturnControl[_] =>
+        e.value.asInstanceOf[Option[Any]]
+      case e: Throwable =>
+        println(s"[CEGAR] Error extracting function result: ${e.getClass.getName}: ${e.getMessage}")
+        e.printStackTrace()
+        None
     }
   }
 
