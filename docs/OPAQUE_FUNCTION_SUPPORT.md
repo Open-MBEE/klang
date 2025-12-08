@@ -4,12 +4,37 @@
 
 This document captures design alternatives and research for supporting opaque (black-box) functions in K, enabling integration with JVM libraries, Python libraries, and other external code.
 
+**This effort is effectively a rewrite of kservices/bae**, learning from what worked while avoiding the problems.
+
 ## Goals
 
 1. **A. Anytime best-effort solution** - Don't wait forever for an answer
 2. **B. Support for opaque (black box) functions/APIs** - Import JVM/Python libraries, create objects, call functions, have constraints on them
 3. **Incremental solving** - Make progress iteratively
 4. **Automated planning support** - TimeVaryingMap, Activity, temporal reasoning
+
+---
+
+## Why Not Build on BAE Directly
+
+The existing BAE implementation has several issues that make it unsuitable as a foundation:
+
+1. **Arc consistency is weaker than SMT constraint solving** - Z3 can handle problems that arc consistency cannot (e.g., polynomials, complex arithmetic)
+
+2. **Based on old Java patterns** - Heavy use of reflection; modern Java has easier approaches (records, sealed classes, pattern matching, better type inference)
+
+3. **Maintenance burden** - Complex codebase that's hard to understand and modify
+
+4. **Performance concerns** - Large K programs had performance issues, possibly due to bloat from K→Java translation
+
+5. **Two codebases** - Having separate klang (SMT-based) and kservices (BAE-based) creates confusion and duplicate effort
+
+**Decision**: This klang effort is a **rewrite** that:
+- Keeps Z3/SMT as the primary solving engine (stronger than arc consistency)
+- Adds opaque function support via CEGAR-style refinement
+- Eventually adds TimeVaryingMap/Activity concepts natively
+- Uses modern Java/Scala patterns
+- Single codebase, single language implementation
 
 ---
 
@@ -323,24 +348,85 @@ Port the key concepts from BAE to klang:
 
 ---
 
-## Recommended Approach
+## Recommended Approach: Z3-First Rewrite
 
-Given the existing implementation in kservices/bae, several paths are possible:
+This klang effort is a rewrite of kservices/bae with Z3/SMT as the primary solving engine.
 
-### Short Term: Integration
-- Use klang for what it does well (SMT-based solving, simple models)
-- Use kservices/bae for JVM integration, planning, TimeVaryingMap
-- Define clear interface between them
+### Phase 1: CEGAR-style External Function Calls (Current Priority)
 
-### Medium Term: Port Key Features
-- Port the inverse image interface concept to klang
-- Implement arc consistency as preprocessing
-- Add external function call syntax
+Add support for calling JVM functions with CEGAR-style refinement:
 
-### Long Term: Unified Solver
-- Hybrid solver combining Z3 strength with inverse image flexibility
-- Single language, single implementation
-- Full JVM integration with TimeVaryingMap/Activity support
+```k
+// Syntax option 1: Annotation
+@external("java.lang.Math.sqrt")
+fun sqrt(x: Real): Real
+
+// Syntax option 2: Direct qualified name (kservices style)
+req y < java.lang.Math.sqrt(100.0)
+
+// Syntax option 3: Import + simple name
+import java.lang.Math
+req y < Math.sqrt(100.0)
+```
+
+**Implementation**:
+1. Parse external function calls
+2. During SMT generation, use uninterpreted function
+3. After Z3 finds candidate solution, evaluate actual JVM call
+4. If mismatch, add constraint `f(concrete_inputs) = concrete_output` and re-solve
+5. Repeat until consistent or max iterations
+
+### Phase 2: Compile-Time Evaluation
+
+For deterministic expressions with concrete inputs, evaluate at compile time:
+- `java.lang.Math.sqrt(100.0)` → `10.0` (constant folding)
+- Only use uninterpreted functions when inputs are symbolic
+
+### Phase 3: TimeVaryingMap as Native Type
+
+Add TimeVaryingMap as a built-in K type with SMT support:
+
+```k
+class Battery {
+    power : TimeVaryingMap[Real]
+    
+    // Constraint: power is always non-negative
+    req forall t: Time . power.getValue(t) >= 0
+    
+    // Integration could be special-cased
+    energy : TimeVaryingMap[Real] = power.integrate()
+}
+```
+
+**SMT Encoding Ideas**:
+- TimeVaryingMap as Z3 Array: `(Array Int Real)` where Int is time in ms
+- Or as uninterpreted function with piecewise constraints
+- Leverage our new Time/Duration types
+
+### Phase 4: Activity/DurativeEvent for Planning
+
+Add planning primitives:
+
+```k
+class TurnOn extends Activity {
+    duration : Duration
+    req duration >= PT20S
+    req duration <= PT30S
+    
+    effect { target.state = ON }
+    precondition { target.state = OFF }
+}
+```
+
+**Approach**: Encode as constraints on time intervals with Z3's arithmetic.
+
+### Key Principles
+
+1. **Z3 is the solver** - Don't reimplement constraint solving
+2. **CEGAR for opaque functions** - Use Z3's strength, verify with actual calls
+3. **Compile what you can** - Constant fold deterministic expressions
+4. **Modern patterns** - Use Java 21+, avoid heavy reflection
+5. **Single codebase** - Everything in klang, deprecate kservices over time
 
 ---
 
