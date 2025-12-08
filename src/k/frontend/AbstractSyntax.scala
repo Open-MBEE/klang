@@ -1443,9 +1443,27 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
         case None      => ""
         case Some(str) => s" [$str]"
       }
-      // TODO: handle soft constraints differently in SMT (use Optimize solver)
-      val softPrefix = if (soft) "; SOFT: " else ""
-      result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), softPrefix + exp.toString + name)
+      if (soft) {
+        // Soft constraint - use assert-soft for Z3 Optimize solver
+        invFunctionCount += 1
+        val functionName = s"$ident.soft$invFunctionCount"
+        val constraintSMT = exp.toSMT(ident, false)
+        result += UtilSMT.headline3(s"Soft Constraint $invFunctionCount")
+        result += s"(define-fun $functionName ((this Ref)) Bool\n"
+        result += s"  $constraintSMT\n"
+        result += s")\n"
+        result += "\n"
+        for (index <- heapEntries) {
+          val assertName = s"_xksoft${UtilSMT.constraintCounter}"
+          // Use assert-soft with weight 1 (can be made configurable)
+          result += s"(assert-soft ($functionName $index) :weight 1 :id $assertName)\n"
+          UtilSMT.saveConstraintMapping(s"soft: ${exp.toString}$name")
+        }
+        result += "\n"
+      } else {
+        // Hard constraint - use regular assert
+        result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
+      }
     }
 
     // optimization objectives (added as comments - use Optimize solver for actual optimization)

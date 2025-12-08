@@ -80,6 +80,8 @@ object K2Z3 {
     "unsat_core" -> "true")
   var ctx: Context = new Context(cfg.asJava)
   var solver: Solver = ctx.mkSolver()
+  var optimize: Optimize = ctx.mkOptimize()  // Optimize solver for soft constraints
+  var hasSoftConstraints: Boolean = false     // Flag indicating if model has soft constraints
   var idents: MMap[String, (Expr[_], com.microsoft.z3.StringSymbol)] = MMap()
   var z3Model: com.microsoft.z3.Model = null
   val tc: TypeChecker = new TypeChecker(null)
@@ -801,14 +803,16 @@ object K2Z3 {
 
   /**
    * Extract @timeout and @bestEffort annotations from model
+   * Also detect soft constraints
    */
   def extractSolverConfig(model: Model): Unit = {
     solverTimeout = None
     bestEffortMode = false
+    hasSoftConstraints = false
 
     if (model == null) return
 
-    // Check all entity declarations for annotations
+    // Check all entity declarations for annotations and soft constraints
     for (decl <- model.decls) {
       decl match {
         case ed: EntityDecl =>
@@ -823,8 +827,21 @@ object K2Z3 {
               case _ => // ignore other annotations
             }
           }
+          // Check for soft constraints in members
+          for (member <- ed.members) {
+            member match {
+              case ConstraintDecl(_, _, soft) if soft =>
+                hasSoftConstraints = true
+                logDebug("Found soft constraint")
+              case _ =>
+            }
+          }
         case _ => // ignore non-entity declarations
       }
+    }
+
+    if (hasSoftConstraints) {
+      logDebug("Model has soft constraints - will use Optimize solver")
     }
   }
 
@@ -848,7 +865,10 @@ object K2Z3 {
       // Check if we have external functions that need CEGAR refinement
       val hasExternalCalls = ExternalFunctions.getExternalCalls.nonEmpty
 
-      if (hasExternalCalls) {
+      if (hasSoftConstraints) {
+        // Use Optimize solver for soft constraints
+        solveSMTWithOptimize(model, smtModel, printModel)
+      } else if (hasExternalCalls) {
         // Use CEGAR loop for models with external function calls
         solveSMTWithCEGAR(model, smtModel, printModel)
       } else {
@@ -858,6 +878,90 @@ object K2Z3 {
     } catch {
       case e: Throwable =>
         if (debug) e.printStackTrace()
+        throw K2Z3Exception
+    }
+  }
+
+  /**
+   * Solve with Z3 Optimize solver for soft constraints.
+   * This maximizes the number of satisfied soft constraints.
+   */
+  def solveSMTWithOptimize(model: Model, smtModel: String, printModel: Boolean): Unit = {
+    try {
+      logDebug("[Optimize] Using Optimize solver for soft constraints")
+
+      // Create fresh Optimize solver
+      optimize = ctx.mkOptimize()
+
+      // Apply timeout if specified
+      solverTimeout.foreach { ms =>
+        val optParams = ctx.mkParams()
+        optParams.add("timeout", ms.toInt)
+        optimize.setParameters(optParams)
+        logDebug(s"[Optimize] Timeout set to ${ms}ms")
+      }
+
+      // Write SMT to temp file (Optimize solver can parse SMT-LIB2 with assert-soft)
+      val tempFile = new java.io.File(".tmp/k_opt_solve.smt2")
+      val writer = new java.io.PrintWriter(tempFile)
+      writer.write(smtModel)
+      writer.close()
+
+      logDebug(s"[Optimize] Parsing SMT model from ${tempFile.getAbsolutePath}")
+
+      // Parse and add assertions
+      val boolExps = ctx.parseSMTLIB2File(
+        tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+
+      // Add all assertions to optimizer
+      for (expr <- boolExps) {
+        optimize.Add(expr.asInstanceOf[BoolExpr])
+      }
+
+      logDebug(s"[Optimize] Checking satisfiability...")
+
+      // Check
+      val status = optimize.Check()
+
+      status match {
+        case Status.SATISFIABLE =>
+          logDebug("[Optimize] SAT - found optimal solution")
+          z3Model = optimize.getModel
+          if (printModel) PrintModel(model)
+
+        case Status.UNSATISFIABLE =>
+          logDebug("[Optimize] UNSAT - constraints are unsatisfiable")
+          z3Model = null
+          if (!silent) log("Constraints are unsatisfiable (even with soft constraints relaxed)")
+
+        case Status.UNKNOWN =>
+          val reason = optimize.getReasonUnknown
+          logDebug(s"[Optimize] UNKNOWN: $reason")
+
+          if (bestEffortMode) {
+            // Try to get partial model
+            try {
+              z3Model = optimize.getModel
+              if (z3Model != null) {
+                logDebug("[Optimize] Got partial model in best-effort mode")
+                if (printModel) PrintModel(model)
+              }
+            } catch {
+              case _: Throwable =>
+                logDebug("[Optimize] Could not get partial model")
+            }
+          }
+
+          if (z3Model == null && !silent) {
+            log(s"Solve result unknown: $reason")
+          }
+      }
+    } catch {
+      case e: Throwable =>
+        if (debug) {
+          log(s"[Optimize] Error: ${e.getMessage}")
+          e.printStackTrace()
+        }
         throw K2Z3Exception
     }
   }
