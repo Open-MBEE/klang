@@ -142,17 +142,37 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     ctx.Identifier().asScala.map(_.toString())
   }
 
-  override def visitConstraint(ctx: ModelParser.ConstraintContext): AnyRef = {
+  // Note: visitConstraint no longer exists in base visitor after grammar change
+  // The grammar now generates HardConstraintContext and SoftConstraintContext directly
+  def visitConstraint(ctx: ModelParser.ConstraintContext): AnyRef = {
+    // This method may not be called directly now - see visitHardConstraint and visitSoftConstraint
+    // Keep as fallback
+    null
+  }
+
+  override def visitHardConstraint(ctx: ModelParser.HardConstraintContext): AnyRef = {
     val ident: Option[String] =
       if (ctx.Identifier() != null) Some(ctx.Identifier().getText())
       else None
     val exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
-    val c = ConstraintDecl(ident, exp)
+    val c = ConstraintDecl(ident, exp, soft = false)
     val line = ctx.getStart().getLine()
     val char = ctx.getStart().getCharPositionInLine()
     declToPosition += (c -> (line, char))
     c
-    
+  }
+
+  override def visitSoftConstraint(ctx: ModelParser.SoftConstraintContext): AnyRef = {
+    val ident: Option[String] =
+      if (ctx.Identifier() != null) Some(ctx.Identifier().getText())
+      else None
+    val exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
+    val c = ConstraintDecl(ident, exp, soft = true)
+    val line = ctx.getStart().getLine()
+    val char = ctx.getStart().getCharPositionInLine()
+    declToPosition += (c -> (line, char))
+    c
+
   }
 
   override def visitOptimizeDeclaration(ctx: ModelParser.OptimizeDeclarationContext): AnyRef = {

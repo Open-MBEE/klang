@@ -155,11 +155,19 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFunctionSpecification(ModelParser.FunctionSpecificationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link ModelParser#constraint}.
+	 * Visit a parse tree produced by the {@code HardConstraint}
+	 * labeled alternative in {@link ModelParser#constraint}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitConstraint(ModelParser.ConstraintContext ctx);
+	T visitHardConstraint(ModelParser.HardConstraintContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code SoftConstraint}
+	 * labeled alternative in {@link ModelParser#constraint}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSoftConstraint(ModelParser.SoftConstraintContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ModelParser#multiplicity}.
 	 * @param ctx the parse tree

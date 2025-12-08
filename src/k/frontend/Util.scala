@@ -77,7 +77,7 @@ object Misc {
   def functionBodyWp(b: List[MemberDecl], pred: Exp): Exp = {
     b.foldLeft(pred)((r, d) =>
       d match {
-        case ConstraintDecl(name, exp) => BinExp(r, AND, exp)
+        case ConstraintDecl(name, exp, _) => BinExp(r, AND, exp)
         case ExpressionDecl(exp)       => wp(List(exp), r)
         case _                         => r
       })

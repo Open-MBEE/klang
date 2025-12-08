@@ -1345,12 +1345,14 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
     }
 
     // constraints for constraint decls:
-    for (ConstraintDecl(n, exp) <- constraintDecls) {
+    for (ConstraintDecl(n, exp, soft) <- constraintDecls) {
       val name = n match {
         case None      => ""
         case Some(str) => s" [$str]"
       }
-      result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
+      // TODO: handle soft constraints differently in SMT (use Optimize solver)
+      val softPrefix = if (soft) "; SOFT: " else ""
+      result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), softPrefix + exp.toString + name)
     }
 
     // optimization objectives (added as comments - use Optimize solver for actual optimization)
@@ -2015,7 +2017,7 @@ case class FunDecl(ident: String,
   override def toJson2 = toJson1
 }
 
-case class ConstraintDecl(name: Option[String], exp: Exp) extends MemberDecl {
+case class ConstraintDecl(name: Option[String], exp: Exp, soft: Boolean = false) extends MemberDecl {
   override def children: List[AnyRef] = List(exp)
 
   override def statistics() {
@@ -2033,9 +2035,9 @@ case class ConstraintDecl(name: Option[String], exp: Exp) extends MemberDecl {
   override def toString =
     name match {
       case None =>
-        s"req $exp"
+        if (soft) s"soft req $exp" else s"req $exp"
       case Some(n) =>
-        s"req $n: $exp"
+        if (soft) s"soft req $n: $exp" else s"req $n: $exp"
     }
 
   override def toJson1 = {

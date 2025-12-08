@@ -70,7 +70,7 @@ object K2Latex {
 
       // constraints
       if (d.members.filter(_.isInstanceOf[ConstraintDecl]).length > 0) {
-        for (c @ ConstraintDecl(_, _) <- d.members) {
+        for (c @ ConstraintDecl(_, _, _) <- d.members) {
           file.append(s"\\subsubsection{Constraint: ${c.name.getOrElse("Unnamed").replace("_", "\\_")}}\n")
           if (c.annotations.length > 0) file.append("\\begin{description}\n")
           for (a <- c.annotations)

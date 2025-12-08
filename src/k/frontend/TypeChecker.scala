@@ -576,7 +576,7 @@ class TypeChecker(model: Model) {
     // get class information - recursively process all declarations including those in packages
     // Track processed entity names to avoid duplicates from imports
     var processedEntityNames = Set[String]()
-    
+
     def processDecls(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
@@ -796,7 +796,7 @@ class TypeChecker(model: Model) {
               case _                   => ()
             }
           }
-        case cd @ ConstraintDecl(name, exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
+        case cd @ ConstraintDecl(name, exp, _) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
         case _                              => ()
       }
     }
@@ -805,7 +805,7 @@ class TypeChecker(model: Model) {
     // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
     model.decls.foreach { d =>
       d match {
-        case cd @ ConstraintDecl(name, exp) =>
+        case cd @ ConstraintDecl(name, exp, _) =>
           val ty = getExpType(globalTypeEnv, exp, null)
           if (ty != BoolType) {
             error(s"Condition $exp is not of type Bool.")
@@ -827,7 +827,7 @@ class TypeChecker(model: Model) {
 
           ed.members.foreach { m =>
             m match {
-              case cd @ ConstraintDecl(name, exp) =>
+              case cd @ ConstraintDecl(name, exp, _) =>
                 val ty = getExpType(entityTypeEnv, exp, ed)
                 if (ty != BoolType && ty != AnyType) {
                   error(s"Condition $exp is not of type Bool.")

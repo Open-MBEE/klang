@@ -124,7 +124,8 @@ functionSpecification:
 ;
 
 constraint:
-  'req' (Identifier ':')?  expression
+  'req' (Identifier ':')?  expression         # HardConstraint
+| 'soft' 'req' (Identifier ':')?  expression  # SoftConstraint
 ;
 
 multiplicity:
