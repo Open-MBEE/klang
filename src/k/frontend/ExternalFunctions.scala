@@ -49,7 +49,14 @@ object ExternalFunctions {
 
     // Check for known Java packages
     val knownPackages = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
-    knownPackages.contains(parts.head) || {
+
+    // First part might be a known package OR an imported class name
+    if (knownPackages.contains(parts.head)) {
+      true
+    } else if (importMap.contains(parts.head)) {
+      // The first part is an imported class name (e.g., "Math" from "import java.lang.Math")
+      true
+    } else {
       // Try to load the class
       try {
         val className = parts.dropRight(1).mkString(".")
@@ -93,6 +100,23 @@ object ExternalFunctions {
       val simpleName = qualifiedName.split("\\.").last
       importMap += (simpleName -> qualifiedName)
       if (logCalls) println(s"[ExternalFunctions] Registered import: $simpleName -> $qualifiedName")
+    }
+  }
+
+  /**
+   * Resolve a qualified name by expanding imported class names.
+   * E.g., "Math.sqrt" -> "java.lang.Math.sqrt" if Math was imported from java.lang.Math
+   */
+  def resolveQualifiedName(qualifiedName: String): String = {
+    val parts = qualifiedName.split("\\.")
+    if (parts.length < 1) return qualifiedName
+
+    importMap.get(parts.head) match {
+      case Some(fullClassName) =>
+        // Replace the short class name with the full qualified name
+        (fullClassName +: parts.tail).mkString(".")
+      case None =>
+        qualifiedName
     }
   }
 
@@ -202,13 +226,16 @@ object ExternalFunctions {
    * Try to evaluate an external call, returning either a concrete result or None
    */
   def tryEvaluate(qualifiedName: String, args: List[Any]): Option[Any] = {
+    // Resolve imported class names to full qualified names
+    val resolvedName = resolveQualifiedName(qualifiedName)
+
     // Check cache first
-    evaluationCache.get((qualifiedName, args)) match {
+    evaluationCache.get((resolvedName, args)) match {
       case Some(result) => return Some(result)
       case None => // continue
     }
 
-    parseQualifiedName(qualifiedName) match {
+    parseQualifiedName(resolvedName) match {
       case Some((className, methodName)) =>
         if (methodName.isEmpty) {
           // Constructor call

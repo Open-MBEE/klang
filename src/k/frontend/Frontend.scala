@@ -428,21 +428,31 @@ object Frontend {
     if (newProcessed == null) {
       newProcessed = Set()
     }
+    // Known Java package roots - imports starting with these are Java imports, not K imports
+    val javaPackageRoots = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
+
     for (i <- model.imports) {
-      val iFile = getImportFileLocationFromClassPath((i.name.toPath + ".k").toString)
-      if (iFile == null) {
-        errorExit(s"Import ${i.name} could not be found!")
-      }
-      if (!newProcessed.contains(iFile)) {
-        log(s"Processing import $iFile")
-        val iModel = getModelFromFile(iFile)
-        newProcessed += iFile
-        val (importImports, iProcessed) = processImports(iModel, newProcessed)
-        newProcessed = newProcessed ++ iProcessed
-        // TypeChecker will be called on the fully combined model later
-        models = iModel :: (models ++ importImports)
+      val firstPart = i.name.names.headOption.getOrElse("")
+
+      // Skip Java imports - they are handled by the TypeChecker
+      if (javaPackageRoots.contains(firstPart)) {
+        log(s"Skipping Java import ${i.name} (handled by type checker)")
       } else {
-        log(s"Skipping $iFile (already processed).")
+        val iFile = getImportFileLocationFromClassPath((i.name.toPath + ".k").toString)
+        if (iFile == null) {
+          errorExit(s"Import ${i.name} could not be found!")
+        }
+        if (!newProcessed.contains(iFile)) {
+          log(s"Processing import $iFile")
+          val iModel = getModelFromFile(iFile)
+          newProcessed += iFile
+          val (importImports, iProcessed) = processImports(iModel, newProcessed)
+          newProcessed = newProcessed ++ iProcessed
+          // TypeChecker will be called on the fully combined model later
+          models = iModel :: (models ++ importImports)
+        } else {
+          log(s"Skipping $iFile (already processed).")
+        }
       }
     }
     return (models, newProcessed)

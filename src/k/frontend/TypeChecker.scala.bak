@@ -28,9 +28,6 @@ case object TypeChecker {
   var annotations = Map[String, AnnotationDecl]()
   var classes = Map[String, EntityDecl]()
 
-  /** Map from simple name to fully qualified Java class name (for imports) */
-  var javaImports: Map[String, String] = Map()
-
   def reset(): Unit = {
     globalTypeEnv = TypeEnv(null, Map())
     decl2TypeEnvi = Map()
@@ -41,7 +38,6 @@ case object TypeChecker {
     type2Decl = Map[Type, TopDecl]()
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
-    javaImports = Map[String, String]()
     ClassHierarchy.parents = Map[EntityDecl, Set[Type]]()
     ClassHierarchy.children = Map[EntityDecl, Set[Type]]()
   }
@@ -543,34 +539,6 @@ class TypeChecker(model: Model) {
       annotations += (ad.name -> ad)
     }
 
-    // Process Java imports - register simple name -> qualified name mappings
-    def processJavaImports(m: Model): Unit = {
-      m.imports.foreach { imp =>
-        val qualifiedName = imp.name.toString
-        // Check if this looks like a Java import (starts with known package)
-        val javaPackageRoots = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
-        val firstPart = imp.name.names.headOption.getOrElse("")
-        if (javaPackageRoots.contains(firstPart)) {
-          if (imp.star) {
-            // Wildcard import - we can't resolve these statically without classpath scanning
-            logDebug(s"Wildcard Java import not fully supported: $qualifiedName.*")
-          } else {
-            // Single class import - register the simple name
-            val simpleName = imp.name.names.lastOption.getOrElse("")
-            if (simpleName.nonEmpty) {
-              TypeChecker.javaImports += (simpleName -> qualifiedName)
-              logDebug(s"Registered Java import: $simpleName -> $qualifiedName")
-              // Also register in ExternalFunctions
-              ExternalFunctions.registerImport(qualifiedName, imp.star)
-            }
-          }
-        }
-      }
-      // Recursively process package imports
-      m.packages.foreach { pkg => processJavaImports(pkg.model) }
-    }
-    processJavaImports(model)
-
     // get class information - recursively process all declarations including those in packages
     // Track processed entity names to avoid duplicates from imports
     var processedEntityNames = Set[String]()
@@ -1061,9 +1029,6 @@ class TypeChecker(model: Model) {
         if (javaPackageRoots.contains(i)) {
           // This is a Java package root - return a special external type
           ExternalType(i)
-        } else if (TypeChecker.javaImports.contains(i)) {
-          // This is an imported Java class - return ExternalType with full qualified name
-          ExternalType(TypeChecker.javaImports(i))
         } else if (!te.contains(i)) {
           error(s"$i not found in scope.")
         } else {

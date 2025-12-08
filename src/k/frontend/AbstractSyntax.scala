@@ -2534,8 +2534,12 @@ trait CallApplExp extends Exp {
     }
 
     // Check for external (Java) function calls
-    UtilSMT.extractQualifiedName(exp1) match {
+    val extractedName = UtilSMT.extractQualifiedName(exp1)
+    extractedName match {
       case Some(qualifiedName) if ExternalFunctions.isExternalReference(qualifiedName) =>
+        // Resolve imported class names to full qualified names
+        val resolvedName = ExternalFunctions.resolveQualifiedName(qualifiedName)
+
         // This is an external Java function call
         // Try to evaluate concretely if all arguments are literals
         val concreteArgs = args.flatMap {
@@ -2548,7 +2552,7 @@ trait CallApplExp extends Exp {
 
         if (concreteArgs.length == args.length) {
           // All arguments are concrete - try to evaluate
-          ExternalFunctions.tryEvaluate(qualifiedName, concreteArgs) match {
+          ExternalFunctions.tryEvaluate(resolvedName, concreteArgs) match {
             case Some(result: Int) => return result.toString
             case Some(result: Long) => return result.toString
             case Some(result: Double) =>
@@ -2567,8 +2571,8 @@ trait CallApplExp extends Exp {
         }
 
         // Use uninterpreted function for external call
-        // Generate a sanitized function name for SMT
-        val smtFuncName = qualifiedName.replace(".", "_")
+        // Generate a sanitized function name for SMT using the resolved name
+        val smtFuncName = resolvedName.replace(".", "_")
 
         // Determine argument and return sorts (use Real as default)
         val argSorts = args.map(_ => "Real").mkString(" ")
