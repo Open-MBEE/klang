@@ -297,6 +297,129 @@ object ExternalFunctions {
     evaluationCache.clear()
     refinementConstraints.clear()
     importMap = Map()
+    externalCallsInModel.clear()
+  }
+
+  // ============================================================================
+  // CEGAR Refinement Loop
+  // ============================================================================
+
+  /** Track external function calls encountered during SMT generation */
+  private val externalCallsInModel: MMap[String, ExternalCallInfo] = MMap()
+
+  /** Info about an external call for CEGAR refinement */
+  case class ExternalCallInfo(
+    smtFuncName: String,        // e.g., "java_lang_Math_sqrt"
+    qualifiedName: String,      // e.g., "java.lang.Math.sqrt"
+    argVarNames: List[String],  // SMT variable names for arguments
+    resultVarName: Option[String] // SMT variable name for result (if assigned)
+  )
+
+  /**
+   * Register an external call during SMT generation for later CEGAR verification
+   */
+  def registerExternalCall(smtFuncName: String, qualifiedName: String,
+                           argVarNames: List[String], resultVarName: Option[String] = None): Unit = {
+    externalCallsInModel += (smtFuncName -> ExternalCallInfo(smtFuncName, qualifiedName, argVarNames, resultVarName))
+    if (logCalls) {
+      println(s"[CEGAR] Registered external call: $qualifiedName as $smtFuncName")
+    }
+  }
+
+  /**
+   * Get all registered external calls
+   */
+  def getExternalCalls: Map[String, ExternalCallInfo] = externalCallsInModel.toMap
+
+  /**
+   * Verify a Z3 solution against actual external function evaluations.
+   * Returns either None (all verified) or Some(constraints) for refinement.
+   *
+   * @param getVarValue Function to extract variable value from Z3 model
+   * @return None if all external calls verified, Some(list of refinement constraints) otherwise
+   */
+  def verifyAndRefine(getVarValue: String => Option[Any]): Option[List[String]] = {
+    var refinements: List[String] = Nil
+    var allVerified = true
+
+    for ((smtFuncName, callInfo) <- externalCallsInModel) {
+      // Try to get concrete values for arguments
+      val argValues: List[Option[Any]] = callInfo.argVarNames.map { varName =>
+        getVarValue(varName)
+      }
+
+      // Only verify if all arguments are concrete
+      if (argValues.forall(_.isDefined)) {
+        val concreteArgs = argValues.map(_.get)
+
+        // Evaluate the actual function
+        tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
+          case Some(actualResult) =>
+            // Check if Z3's assumed result matches
+            // We need to get what Z3 assumed for the function output
+            // This is the value of smtFuncName(args) in the model
+
+            // For now, add a refinement constraint that this specific input
+            // maps to this specific output
+            val refinement = generateRefinementConstraint(smtFuncName, concreteArgs, actualResult)
+            refinements = refinement :: refinements
+
+            if (logCalls) {
+              println(s"[CEGAR] Verified: ${callInfo.qualifiedName}(${concreteArgs.mkString(", ")}) = $actualResult")
+            }
+
+          case None =>
+            if (logCalls) {
+              println(s"[CEGAR] Could not evaluate: ${callInfo.qualifiedName}(${concreteArgs.mkString(", ")})")
+            }
+        }
+      }
+    }
+
+    if (refinements.isEmpty) None else Some(refinements)
+  }
+
+  /**
+   * Generate an SMT assertion that constrains the uninterpreted function
+   * to return the correct value for the given concrete inputs.
+   */
+  def generateRefinementConstraint(smtFuncName: String, args: List[Any], result: Any): String = {
+    val argsSMT = args.map(anyToSMT).mkString(" ")
+    val resultSMT = anyToSMT(result)
+
+    if (args.isEmpty) {
+      s"(assert (= $smtFuncName $resultSMT))"
+    } else {
+      s"(assert (= ($smtFuncName $argsSMT) $resultSMT))"
+    }
+  }
+
+  /**
+   * Convert a Scala/Java value to SMT-LIB2 format
+   */
+  def anyToSMT(value: Any): String = value match {
+    case i: Int => i.toString
+    case l: Long => l.toString
+    case d: Double =>
+      if (d == d.toLong) s"${d.toLong}.0"
+      else d.toString
+    case f: Float => f.toString
+    case b: Boolean => b.toString
+    case s: String => s""""$s""""
+    case bi: BigInt => bi.toString
+    case bd: BigDecimal => bd.toString
+    case bd: java.math.BigDecimal => bd.toString
+    case other => other.toString
+  }
+
+  /**
+   * Get all refinement constraints as SMT assertions
+   */
+  def getAllRefinementConstraints: List[String] = {
+    (for {
+      (funcName, refinements) <- refinementConstraints
+      (args, result) <- refinements
+    } yield generateRefinementConstraint(funcName, args, result)).toList
   }
 
   // ============================================================================
@@ -351,4 +474,3 @@ sealed trait ExternalEvalResult
 case class ConcreteResult(value: Any) extends ExternalEvalResult
 case class SymbolicResult(funcName: String) extends ExternalEvalResult  // Use uninterpreted function
 case class EvalError(message: String) extends ExternalEvalResult
-

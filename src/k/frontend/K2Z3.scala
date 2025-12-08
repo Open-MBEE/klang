@@ -506,7 +506,7 @@ object K2Z3 {
       
       val modelStr = z3Model.toString
       
-      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-ClassName ...))
+      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-...))
       // Normalize whitespace to make regex easier
       val normalizedStr = modelStr.replaceAll("\\s+", " ")
       if (debug) {
@@ -724,6 +724,9 @@ object K2Z3 {
     try {
       reset()
 
+      // Reset external function tracking for CEGAR
+      ExternalFunctions.reset()
+
       // Extract solver configuration from annotations
       extractSolverConfig(model)
 
@@ -734,37 +737,288 @@ object K2Z3 {
         logDebug(s"Z3 solver timeout set to ${ms}ms")
       }
 
-      // Write SMT model to temporary file to avoid string parsing issues
-      val tempFile = new java.io.File("/tmp/k_debug.smt2")
-      val writer = new java.io.PrintWriter(tempFile)
-      writer.write(smtModel)
-      writer.close()
-      
-      logDebug(s"SMT model written to ${tempFile.getAbsolutePath}")
-      
-      // Parse SMT-LIB2 file - returns array of assertions in modern Z3
-      val boolExps = ctx.parseSMTLIB2File(tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
-      // Combine all assertions into single expression
-      val boolExp = if (boolExps.length == 1) boolExps(0) else ctx.mkAnd(boolExps: _*)
-      z3Model = SolveExp(boolExp, smtModel)
-      
-      if (debugRawModel) {
-        // Write raw model to log file instead of console
-        try {
-          val logFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_z3_debug.log", true))
-          logFile.println("\n=== Z3 Raw Model (" + new java.util.Date() + ") ===")
-          logFile.println(z3Model)
-          logFile.println("=== End Raw Model ===\n")
-          logFile.close()
-        } catch { case _: Throwable => }
+      // Check if we have external functions that need CEGAR refinement
+      val hasExternalCalls = ExternalFunctions.getExternalCalls.nonEmpty
+
+      if (hasExternalCalls) {
+        // Use CEGAR loop for models with external function calls
+        solveSMTWithCEGAR(model, smtModel, printModel)
+      } else {
+        // Standard solving without CEGAR
+        solveSMTDirect(model, smtModel, printModel)
       }
-            
-      if (printModel) PrintModel(model)
     } catch {
       case e: Throwable =>
         if (debug) e.printStackTrace()
         throw K2Z3Exception
     }
+  }
+
+  /**
+   * CEGAR-style solving for models with external function calls.
+   *
+   * Algorithm:
+   * 1. Solve the SMT model (external calls as uninterpreted functions)
+   * 2. Extract concrete values for external function arguments from solution
+   * 3. Evaluate actual external functions with those arguments
+   * 4. If Z3's result matches actual result, done
+   * 5. Otherwise, add refinement constraint and re-solve
+   * 6. Repeat until max iterations or all consistent
+   */
+  def solveSMTWithCEGAR(model: Model, smtModel: String, printModel: Boolean): Unit = {
+    var currentSMT = smtModel
+    var iteration = 0
+    var solved = false
+
+    while (iteration < ExternalFunctions.maxRefinements && !solved && !interrupted) {
+      iteration += 1
+      if (debug || ExternalFunctions.logCalls) {
+        log(s"[CEGAR] Iteration $iteration")
+      }
+
+      // Add any accumulated refinement constraints to the SMT model
+      val refinements = ExternalFunctions.getAllRefinementConstraints
+      if (refinements.nonEmpty) {
+        val refinementSMT = refinements.mkString("\n")
+        // Insert refinements before (check-sat) if present, or at end
+        if (currentSMT.contains("(check-sat)")) {
+          currentSMT = currentSMT.replace("(check-sat)", refinementSMT + "\n(check-sat)")
+        } else {
+          currentSMT = currentSMT + "\n" + refinementSMT
+        }
+      }
+
+      // Try to solve
+      solveSMTDirect(model, currentSMT, false)  // Don't print yet
+
+      if (z3Model == null) {
+        // UNSAT or error - can't refine further
+        if (debug) log("[CEGAR] No solution found")
+        solved = true
+      } else {
+        // Got a solution - verify external function calls
+        val verificationResult = verifyExternalCalls(z3Model)
+
+        if (verificationResult.allVerified) {
+          // All external calls verified - we have a consistent solution
+          solved = true
+          if (debug || ExternalFunctions.logCalls) {
+            log(s"[CEGAR] Solution verified after $iteration iteration(s)")
+          }
+        } else {
+          // Some mismatches - add refinements and re-solve
+          for ((funcName, args, actualResult) <- verificationResult.mismatches) {
+            ExternalFunctions.addRefinement(funcName, args, actualResult)
+            if (debug || ExternalFunctions.logCalls) {
+              log(s"[CEGAR] Refinement: $funcName(${args.mkString(", ")}) = $actualResult")
+            }
+          }
+
+          // Reset solver for next iteration
+          solver = ctx.mkSolver()
+          z3Model = null
+        }
+      }
+    }
+
+    if (!solved && iteration >= ExternalFunctions.maxRefinements) {
+      log(s"[CEGAR] Max refinement iterations ($iteration) reached without convergence")
+    }
+
+    if (printModel && z3Model != null) {
+      PrintModel(model)
+    }
+  }
+
+  /**
+   * Result of verifying external function calls against a Z3 model
+   */
+  case class CEGARVerificationResult(
+    allVerified: Boolean,
+    mismatches: List[(String, List[Any], Any)]  // (funcName, args, actualResult)
+  )
+
+  /**
+   * Verify that external function calls in the model are consistent
+   * with actual function evaluations.
+   */
+  def verifyExternalCalls(model: com.microsoft.z3.Model): CEGARVerificationResult = {
+    if (model == null) return CEGARVerificationResult(true, Nil)
+
+    val mismatches = ListBuffer[(String, List[Any], Any)]()
+
+    for ((smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls) {
+      // Try to extract argument values from the Z3 model
+      val argValues: List[Option[Any]] = callInfo.argVarNames.map { varName =>
+        extractValueFromModel(model, varName)
+      }
+
+      if (argValues.forall(_.isDefined)) {
+        val concreteArgs = argValues.map(_.get)
+
+        // Evaluate the actual function
+        ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
+          case Some(actualResult) =>
+            // Check what Z3 computed for this function call
+            val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
+
+            z3Result match {
+              case Some(z3Value) if !valuesMatch(z3Value, actualResult) =>
+                // Mismatch! Need refinement
+                mismatches += ((smtFuncName, concreteArgs, actualResult))
+                if (debug || ExternalFunctions.logCalls) {
+                  log(s"[CEGAR] Mismatch: $smtFuncName(${concreteArgs.mkString(", ")}) = $z3Value (Z3) vs $actualResult (actual)")
+                }
+              case _ =>
+                // Match or couldn't extract Z3's result
+                if (debug && ExternalFunctions.logCalls) {
+                  log(s"[CEGAR] Verified: ${callInfo.qualifiedName}(${concreteArgs.mkString(", ")}) = $actualResult")
+                }
+            }
+          case None =>
+            // Couldn't evaluate - skip verification for this call
+            if (debug) {
+              log(s"[CEGAR] Could not evaluate: ${callInfo.qualifiedName}")
+            }
+        }
+      }
+    }
+
+    CEGARVerificationResult(mismatches.isEmpty, mismatches.toList)
+  }
+
+  /**
+   * Extract a value from the Z3 model for a given variable name
+   */
+  def extractValueFromModel(model: com.microsoft.z3.Model, varName: String): Option[Any] = {
+    try {
+      for (decl <- model.getDecls) {
+        if (decl.getName.toString == varName) {
+          val value = model.getConstInterp(decl)
+          return z3ValueToScala(value)
+        }
+      }
+      None
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  /**
+   * Extract the result of an uninterpreted function application from Z3 model
+   */
+  def extractFunctionResult(model: com.microsoft.z3.Model, funcName: String, args: List[Any]): Option[Any] = {
+    try {
+      for (decl <- model.getFuncDecls) {
+        if (decl.getName.toString == funcName) {
+          val funcInterp = model.getFuncInterp(decl)
+          if (funcInterp != null) {
+            // Check if we have an entry for these specific arguments
+            val entries = funcInterp.getEntries
+            for (i <- 0 until entries.length) {
+              val entry = entries(i)
+              val entryArgs = entry.getArgs.map(z3ValueToScala).toList
+              if (argsMatch(entryArgs, args.map(Some(_)))) {
+                return z3ValueToScala(entry.getValue)
+              }
+            }
+            // Use default/else value
+            return z3ValueToScala(funcInterp.getElse)
+          }
+        }
+      }
+      // For constants (0-arity functions)
+      for (decl <- model.getDecls) {
+        if (decl.getName.toString == funcName) {
+          return z3ValueToScala(model.getConstInterp(decl))
+        }
+      }
+      None
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  /**
+   * Convert a Z3 value to a Scala value
+   */
+  def z3ValueToScala(value: com.microsoft.z3.Expr[_]): Option[Any] = {
+    if (value == null) return None
+    try {
+      value match {
+        case v: com.microsoft.z3.IntNum => Some(v.getInt64)
+        case v: com.microsoft.z3.RatNum => Some(v.getNumerator.getInt64.toDouble / v.getDenominator.getInt64)
+        case v: com.microsoft.z3.BoolExpr => Some(v.isTrue)
+        case v: com.microsoft.z3.SeqExpr[_] => Some(v.getString)
+        case _ =>
+          // Try to parse string representation
+          val str = value.toString
+          if (str.matches("-?\\d+")) Some(str.toLong)
+          else if (str.matches("-?\\d+\\.\\d+")) Some(str.toDouble)
+          else if (str == "true") Some(true)
+          else if (str == "false") Some(false)
+          else Some(str)
+      }
+    } catch {
+      case _: Throwable => Some(value.toString)
+    }
+  }
+
+  /**
+   * Check if argument lists match
+   */
+  def argsMatch(z3Args: List[Option[Any]], actualArgs: List[Option[Any]]): Boolean = {
+    if (z3Args.length != actualArgs.length) return false
+    (z3Args zip actualArgs).forall { case (z3, actual) =>
+      (z3, actual) match {
+        case (Some(a), Some(b)) => valuesMatch(a, b)
+        case _ => false
+      }
+    }
+  }
+
+  /**
+   * Check if two values are approximately equal (for floating point)
+   */
+  def valuesMatch(a: Any, b: Any): Boolean = {
+    (a, b) match {
+      case (d1: Double, d2: Double) => Math.abs(d1 - d2) < 1e-9
+      case (d1: Double, l2: Long) => Math.abs(d1 - l2.toDouble) < 1e-9
+      case (l1: Long, d2: Double) => Math.abs(l1.toDouble - d2) < 1e-9
+      case _ => a == b
+    }
+  }
+
+  /**
+   * Standard SMT solving without CEGAR refinement
+   */
+  def solveSMTDirect(model: Model, smtModel: String, printModel: Boolean): Unit = {
+    // Write SMT model to temporary file to avoid string parsing issues
+    val tempFile = new java.io.File("/tmp/k_debug.smt2")
+    val writer = new java.io.PrintWriter(tempFile)
+    writer.write(smtModel)
+    writer.close()
+
+    logDebug(s"SMT model written to ${tempFile.getAbsolutePath}")
+
+    // Parse SMT-LIB2 file - returns array of assertions in modern Z3
+    val boolExps = ctx.parseSMTLIB2File(tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+    // Combine all assertions into single expression
+    val boolExp = if (boolExps.length == 1) boolExps(0) else ctx.mkAnd(boolExps: _*)
+    z3Model = SolveExp(boolExp, smtModel)
+
+    if (debugRawModel) {
+      // Write raw model to log file instead of console
+      try {
+        val logFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_z3_debug.log", true))
+        logFile.println("\n=== Z3 Raw Model (" + new java.util.Date() + ") ===")
+        logFile.println(z3Model)
+        logFile.println("=== End Raw Model ===\n")
+        logFile.close()
+      } catch { case _: Throwable => }
+    }
+
+    if (printModel) PrintModel(model)
   }
 
   def SolveExp(e: Exp): com.microsoft.z3.Model = {
