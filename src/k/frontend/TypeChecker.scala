@@ -852,7 +852,60 @@ class TypeChecker(model: Model) {
 
     decl2TypeEnvi.foreach(kv => logDebug(s"${kv._2}"))
 
-    // pass: build the information for expressions 
+    // pass: infer types for undeclared variables from constraints
+    // This allows variables to be used without explicit type declarations
+    // when their type can be inferred from the constraints they appear in
+    def inferUndeclaredTypes(): Unit = {
+      import scala.collection.mutable
+
+      // Collect all expressions from constraints and top-level expressions
+      val allExpressions = mutable.ListBuffer[Exp]()
+      model.decls.foreach {
+        case ConstraintDecl(_, exp) => allExpressions += exp
+        case ExpressionDecl(exp) => allExpressions += exp
+        case _ => ()
+      }
+
+      // Find all identifiers used in expressions
+      val usedIdentifiers = allExpressions.flatMap(TypeConstraints.collectIdentifiers).toSet
+
+      // Find which identifiers are not declared
+      val declaredIdentifiers = globalTypeEnv.map.keySet
+      val undeclaredIdentifiers = usedIdentifiers -- declaredIdentifiers
+
+      if (undeclaredIdentifiers.nonEmpty) {
+        logDebug(s"Found undeclared identifiers: ${undeclaredIdentifiers.mkString(", ")}")
+
+        // Create type variables for undeclared identifiers
+        val typeVars = undeclaredIdentifiers.map(name => name -> TypeVar(name)).toMap
+
+        // Collect type constraints from all expressions
+        val constraints = allExpressions.flatMap(exp =>
+          TypeConstraints.collectConstraints(exp, typeVars)
+        ).toList
+
+        logDebug(s"Type constraints: ${constraints.mkString(", ")}")
+
+        // Solve constraints to infer types
+        TypeConstraints.solveConstraints(typeVars, constraints) match {
+          case Right(inferredTypes) =>
+            // Add inferred types to global type environment
+            inferredTypes.foreach { case (name, ty) =>
+              logDebug(s"Inferred type for $name: $ty")
+              // Create a synthetic property declaration for the inferred variable
+              val syntheticProp = PropertyDecl(List(), name, Some(ty), None, None, None)
+              syntheticProp.inferredType = Some(ty)
+              globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(syntheticProp, true, false, null))
+            }
+          case Left(errorMsg) =>
+            error(s"Type inference failed: $errorMsg")
+        }
+      }
+    }
+
+    inferUndeclaredTypes()
+
+    // pass: build the information for expressions
     // except expressions that are in functions (bodies)
     // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
     model.decls.foreach { d =>
