@@ -601,7 +601,9 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     val modifiers: List[PropertyModifier] =
       ctx.propertyModifier().asScala.toList.map(visit(_)).asInstanceOf[List[PropertyModifier]]
     val name: String = ctx.Identifier().getText()
-    val t: Type = visit(ctx.`type`()).asInstanceOf[Type]
+    val t: Option[Type] = 
+      if (ctx.`type`() != null) Some(visit(ctx.`type`()).asInstanceOf[Type])
+      else None
     val multiplicity: Option[Multiplicity] =
       if (ctx.multiplicity() != null)
         Some(visit(ctx.multiplicity()).asInstanceOf[Multiplicity])

@@ -520,9 +520,7 @@ object Frontend {
     //import scala.concurrent.Awaitable
     import scala.concurrent.{Future, ExecutionContext}
     import ExecutionContext.Implicits.global
-
-    val x = Await.result(Future(f), Duration.create(timeoutMs, "ms"))
-    None
+    Some(Await.result(Future(f), Duration.create(timeoutMs, "ms")))
   }
 
   def doTests(saveBaseline: Boolean): Unit = {
@@ -762,7 +760,7 @@ object Frontend {
                     val typeDecl = id2Decl(specializationObject.getString("propertyType")).asInstanceOf[EntityDecl]
                     IdentType(QualifiedName(List(typeDecl.ident)), List())
                   }
-                val property = PropertyDecl(Nil, obj.getString("name").replace(" ", "_"), propertyType, None, None, None)
+                val property = PropertyDecl(Nil, obj.getString("name").replace(" ", "_"), Some(propertyType), None, None, None)
                 val newDecl = EntityDecl(owningDecl.annotations, owningDecl.entityToken, owningDecl.keyword, owningDecl.ident, null, owningDecl.typeParams, owningDecl.extending, property :: owningDecl.members)
                 mdecls = mdecls.diff(List(owningDecl))
                 mdecls = newDecl :: mdecls
@@ -1057,7 +1055,9 @@ object Frontend {
         var modifiers =
           visitJsonArray(obj.get("modifiers"), getModifier).asInstanceOf[List[PropertyModifier]]
         var name = obj.getString("name")
-        var ty = visitJsonObject(obj.get("ty")).asInstanceOf[Type]
+        var ty: Option[Type] = 
+          if (obj.keySet.contains("ty")) Some(visitJsonObject(obj.get("ty")).asInstanceOf[Type])
+          else None
         var multiplicity =
           if (obj.keySet.contains("multiplicity")) Some(visitJsonObject(obj.get("multiplicity")).asInstanceOf[Multiplicity])
           else None
@@ -1559,7 +1559,9 @@ object Frontend {
         var modifiers =
           visitJsonArray(obj.get("modifiers"), getModifier).asInstanceOf[List[PropertyModifier]]
         var name = obj.getString("name")
-        var ty = visitJsonObject2(obj.get("ty")).asInstanceOf[Type]
+        var ty: Option[Type] = 
+          if (obj.keySet.contains("ty")) Some(visitJsonObject2(obj.get("ty")).asInstanceOf[Type])
+          else None
         var multiplicity =
           if (obj.keySet.contains("multiplicity")) Some(visitJsonObject2(obj.get("multiplicity")).asInstanceOf[Multiplicity])
           else None

@@ -440,12 +440,13 @@ object K2Z3 {
     printList =
       (properties zip objectValues).map {
         x =>
-          if (Misc.isCollection(x._1.ty)) {
+          val propType = x._1.getTypeOrError
+          if (Misc.isCollection(propType)) {
             val setName = x._2.split("!").last.replace(")", "")
             val setValue = z3Model.getFuncDecls.find { x => x.getName.toString == setName }
             if (setValue.isEmpty) x._1.name + ":: [Empty Seq]"
-            else x._1.name + ":: " + getStringForSets(setValue.get, x._1.ty)
-          } else if (!TypeChecker.isPrimitiveType(x._1.ty)) {
+            else x._1.name + ":: " + getStringForSets(setValue.get, propType)
+          } else if (!TypeChecker.isPrimitiveType(propType)) {
             toPrint = x._2 :: toPrint
             (x._1.name + ":: Ref " + x._2)
           } else {
@@ -506,7 +507,7 @@ object K2Z3 {
       
       val modelStr = z3Model.toString
       
-      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-ClassName ...))
+      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-...))
       // Normalize whitespace to make regex easier
       val normalizedStr = modelStr.replaceAll("\\s+", " ")
       if (debug) {
@@ -614,7 +615,7 @@ object K2Z3 {
                 def collectTopLevelProperties(m: Model): List[(String, Boolean)] = {
                   val localProps = m.decls.foldLeft(List[(String, Boolean)]()) { (res, d) =>
                     d match {
-                      case pd @ PropertyDecl(_, _, _, _, _, _) => (new Tuple2(pd.name, TypeChecker.isPrimitiveType(pd.ty))) :: res
+                      case pd @ PropertyDecl(_, _, _, _, _, _) => (new Tuple2(pd.name, TypeChecker.isPrimitiveType(pd.getTypeOrError))) :: res
                       case _                                   => res
                     }
                   }

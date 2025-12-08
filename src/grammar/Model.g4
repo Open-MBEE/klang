@@ -91,7 +91,7 @@ typeDeclaration:
 ;
 
 propertyDeclaration:
-  propertyModifier* Identifier ':' type multiplicity? (('='|':=') expression)?
+  propertyModifier* Identifier (':' type)? multiplicity? (('='|':=') expression)?
 ;
 
 propertyModifier:
