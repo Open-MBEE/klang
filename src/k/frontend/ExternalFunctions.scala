@@ -28,8 +28,8 @@ object ExternalFunctions {
   /** Maximum number of CEGAR refinement iterations */
   var maxRefinements: Int = 100
 
-  /** Whether to log external function calls */
-  var logCalls: Boolean = false
+  /** Whether to log external function calls (follows K2Z3.debug) */
+  def logCalls: Boolean = K2Z3.debug
 
   /** Cache of evaluated function calls: (qualifiedName, args) -> result */
   private val evaluationCache: MMap[(String, List[Any]), Any] = MMap()
