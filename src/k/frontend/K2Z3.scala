@@ -1137,35 +1137,46 @@ object K2Z3 {
   def extractValueFromModel(model: com.microsoft.z3.Model, varName: String): Option[Any] = {
     try {
       // First try direct constant lookup
-      for (decl <- model.getDecls) {
-        val name = decl.getName.toString
-        if (name == varName) {
-          val value = model.getConstInterp(decl)
-          return z3ValueToScala(value)
+      val directMatch = model.getDecls.find(_.getName.toString == varName)
+      if (directMatch.isDefined) {
+        val value = model.getConstInterp(directMatch.get)
+        val result = z3ValueToScala(value)
+        if (result.isDefined) {
+          println(s"[CEGAR] Found direct constant $varName = ${result.get}")
+          return result
         }
       }
 
       // For K variables, we need to evaluate the getter function at ref 0
       // Build the expression: (TopLevelDeclarations!varName 0)
       val getterName = s"TopLevelDeclarations!$varName"
-      for (decl <- model.getFuncDecls) {
-        val name = decl.getName.toString
-        if (name == getterName) {
-          // Create an application of the getter to ref 0
-          val refZero = ctx.mkInt(0)
-          val app = ctx.mkApp(decl, refZero)
+      val getterMatch = model.getFuncDecls.find(_.getName.toString == getterName)
 
-          // Evaluate in the model
-          val result = model.eval(app, true)  // true = model_completion
-          println(s"[CEGAR] Evaluated $getterName(0) = $result")
-          return z3ValueToScala(result)
+      if (getterMatch.isDefined) {
+        val decl = getterMatch.get
+        // Create an application of the getter to ref 0
+        val refZero = ctx.mkInt(0)
+        val app = ctx.mkApp(decl, refZero)
+
+        // Evaluate in the model
+        val evalResult = model.eval(app, true)  // true = model_completion
+        println(s"[CEGAR] Evaluated $getterName(0) = $evalResult")
+
+        if (evalResult != null) {
+          val scalaVal = z3ValueToScala(evalResult)
+          println(s"[CEGAR] Converted to Scala: $scalaVal")
+          return scalaVal
         }
       }
 
+      println(s"[CEGAR] Could not find variable $varName")
       None
     } catch {
+      case e: scala.runtime.NonLocalReturnControl[_] =>
+        // This is actually a successful return from inside the try block
+        e.value.asInstanceOf[Option[Any]]
       case e: Throwable =>
-        println(s"[CEGAR] Error extracting $varName: ${e.getMessage}")
+        println(s"[CEGAR] Error extracting $varName: ${e.getClass.getName}: ${e.getMessage}")
         None
     }
   }
