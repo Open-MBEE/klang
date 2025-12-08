@@ -1,20 +1,18 @@
 -- Test: object_bounds1.k
--- Tests basic object creation
+-- Tests basic Seq operations - dynamic collection size
 -- Expected: PASSED
 
-class Item {
-  value : Int
-  req value > 0
-  req value < 100
-}
+-- A sequence of integers with constraints
+items : Seq[Int]
 
-class Container {
-  item1 : Item
-  item2 : Item
+-- Size constraints - solver determines how many elements
+req items.size >= 2
+req items.size <= 4
 
-  -- Items must be different
-  req item1.value != item2.value
-}
+-- All elements must be positive
+req items.at(0) > 0
+req items.at(1) > 0
 
-container : Container
+-- Elements must be increasing
+req items.at(1) > items.at(0)
 

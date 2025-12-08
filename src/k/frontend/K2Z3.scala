@@ -582,28 +582,29 @@ object K2Z3 {
         }
       }
 
-      // Pattern 1d: Direct extraction of sequence from mk-TopLevelDeclarations
-      // Need to handle nested parentheses in seq.++ (seq.unit N) (seq.unit M)
+      // Pattern 1d: Direct extraction from mk-TopLevelDeclarations
+      // Need to capture ALL content (potentially multiple sequences)
       val mkTopLevelIdx = normalizedStr.indexOf("mk-TopLevelDeclarations")
       if (mkTopLevelIdx >= 0 && !heapMap.contains("0")) {
-        // Find the sequence value by matching balanced parentheses
-        val afterMk = normalizedStr.substring(mkTopLevelIdx + "mk-TopLevelDeclarations".length).trim
-        if (afterMk.startsWith("(seq.")) {
-          // Extract balanced parentheses expression
+        // Find the full constructor call by matching from mk- to the closing paren
+        // The format is: (mk-TopLevelDeclarations content1 content2 ... contentN)
+        // We need to find the matching close paren for the opening paren before mk-
+        val mkStart = normalizedStr.lastIndexOf("(", mkTopLevelIdx)
+        if (mkStart >= 0) {
           var depth = 0
-          var endIdx = 0
+          var endIdx = mkStart
           var foundStart = false
-          for (i <- 0 until afterMk.length if endIdx == 0) {
-            afterMk(i) match {
+          for (i <- mkStart until normalizedStr.length if endIdx == mkStart) {
+            normalizedStr(i) match {
               case '(' => depth += 1; foundStart = true
               case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = i + 1
               case _ =>
             }
           }
-          if (endIdx > 0) {
-            val seqValue = afterMk.substring(0, endIdx)
-            heapMap += ("0" -> s"(lift-TopLevelDeclarations (mk-TopLevelDeclarations $seqValue))")
-            if (debug) logDebug(s"Extracted ref 0 (seq-balanced): TopLevelDeclarations = $seqValue")
+          if (endIdx > mkStart) {
+            val fullMk = normalizedStr.substring(mkStart, endIdx)
+            heapMap += ("0" -> s"(lift-TopLevelDeclarations $fullMk)")
+            if (debug) logDebug(s"Extracted ref 0 (full-mk): TopLevelDeclarations = $fullMk")
           }
         }
       }
@@ -686,42 +687,60 @@ object K2Z3 {
                   localProps ++ packageProps
                 }
                 
-                var topLevelVariables = collectTopLevelProperties(model)
-                var i = 1
-                topLevelVariables.reverse.foreach { k =>
-                  val (name, isPrim, isColl) = k
-                  if (isPrim) {
-                    rows = (List(name, "-", objectValues(i))) :: rows
-                  } else if (isColl) {
-                    // For collections, extract the sequence value directly from the raw value string
-                    // Look for (seq.XXX ...) pattern
-                    val seqStartIdx = value.indexOf("(seq.")
-                    if (seqStartIdx >= 0) {
-                      // Extract balanced parens from seqStartIdx
+                // Extract all sequence values from the value string for collections
+                // There might be multiple (seq.XXX ...) expressions
+                def extractAllSequenceValues(s: String): List[String] = {
+                  var seqs = List[String]()
+                  var pos = 0
+                  while (pos < s.length) {
+                    val seqIdx = s.indexOf("(seq.", pos)
+                    if (seqIdx >= 0) {
+                      // Extract balanced parens
                       var depth = 0
-                      var endIdx = seqStartIdx
+                      var endIdx = seqIdx
                       var foundStart = false
-                      for (j <- seqStartIdx until value.length if endIdx == seqStartIdx) {
-                        value(j) match {
+                      for (j <- seqIdx until s.length if endIdx == seqIdx) {
+                        s(j) match {
                           case '(' => depth += 1; foundStart = true
                           case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = j + 1
                           case _ =>
                         }
                       }
-                      val seqValue = if (endIdx > seqStartIdx) value.substring(seqStartIdx, endIdx) else value
-                      val formattedSeq = formatSequenceValue(seqValue)
+                      if (endIdx > seqIdx) {
+                        seqs = seqs :+ s.substring(seqIdx, endIdx)
+                        pos = endIdx
+                      } else {
+                        pos = seqIdx + 1
+                      }
+                    } else {
+                      pos = s.length  // No more sequences
+                    }
+                  }
+                  seqs
+                }
+
+                val allSeqValues = extractAllSequenceValues(value)
+                var seqIndex = 0
+
+                var topLevelVariables = collectTopLevelProperties(model)
+                topLevelVariables.reverse.foreach { k =>
+                  val (name, isPrim, isColl) = k
+                  if (isPrim) {
+                    rows = (List(name, "-", objectValues(seqIndex + 1))) :: rows
+                  } else if (isColl) {
+                    // Use the next sequence value from our extracted list
+                    if (seqIndex < allSeqValues.length) {
+                      val formattedSeq = formatSequenceValue(allSeqValues(seqIndex))
                       rows = (List(name, "-", formattedSeq)) :: rows
                     } else {
-                      // No sequence found, try objectValues
-                      val seqValue = formatSequenceValue(objectValues(i))
-                      rows = (List(name, "-", seqValue)) :: rows
+                      rows = (List(name, "-", "[]")) :: rows
                     }
                   } else {
-                    val res = printObjectValue(name, heapMap, heapMap.getOrElse(objectValues(i), heapMap("else")), visited, objectValues(i), false)
+                    val res = printObjectValue(name, heapMap, heapMap.getOrElse(objectValues(seqIndex + 1), heapMap("else")), visited, objectValues(seqIndex + 1), false)
                     rows = res._2 ++ rows
-                    visited = res._1 + ("Ref " + objectValues(i))
+                    visited = res._1 + ("Ref " + objectValues(seqIndex + 1))
                   }
-                  i = i + 1
+                  seqIndex = seqIndex + 1
                 }
               case _ => ()
             }
@@ -1083,7 +1102,7 @@ object K2Z3 {
    */
   def solveSMTDirect(model: Model, smtModel: String, printModel: Boolean): Unit = {
     // Write SMT model to temporary file to avoid string parsing issues
-    val tempFile = new java.io.File("/tmp/k_debug.smt2")
+    val tempFile = new java.io.File(".tmp/k_debug.smt2")
     val writer = new java.io.PrintWriter(tempFile)
     writer.write(smtModel)
     writer.close()
@@ -1099,7 +1118,7 @@ object K2Z3 {
     if (debugRawModel) {
       // Write raw model to log file instead of console
       try {
-        val logFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_z3_debug.log", true))
+        val logFile = new java.io.PrintWriter(new java.io.FileOutputStream(".tmp/k_z3_debug.log", true))
         logFile.println("\n=== Z3 Raw Model (" + new java.util.Date() + ") ===")
         logFile.println(z3Model)
         logFile.println("=== End Raw Model ===\n")

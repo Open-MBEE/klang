@@ -669,7 +669,7 @@ object K2Z3Enhanced {
     
     // Parse and add constraints
     try {
-      val tempFile = new java.io.File("/tmp/k_timeout_solve.smt2")
+      val tempFile = new java.io.File(".tmp/k_timeout_solve.smt2")
       val writer = new java.io.PrintWriter(tempFile)
       writer.write(smtModel)
       writer.close()
@@ -698,7 +698,7 @@ object K2Z3Enhanced {
     val solver = new AnytimeSolver(ctx, config)
     
     try {
-      val tempFile = new java.io.File("/tmp/k_opt_solve.smt2")
+      val tempFile = new java.io.File(".tmp/k_opt_solve.smt2")
       val writer = new java.io.PrintWriter(tempFile)
       writer.write(smtModel)
       writer.close()

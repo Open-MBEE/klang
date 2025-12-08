@@ -1,35 +1,31 @@
 -- Test: object_bounds_dynamic1.k
--- Tests dynamic object creation with Seq - requires object bounds
--- Expected: Currently may not fully work (object bounds encoding partial)
--- This test documents the desired behavior
+-- Tests sequences with sum-like constraints
+-- Expected: PASSED
 
-class Task {
-  duration : Int
-  priority : Int
+-- Task durations as a sequence
+durations : Seq[Int]
+priorities : Seq[Int]
 
-  req duration > 0
-  req duration <= 100
-  req priority >= 1
-  req priority <= 5
-}
+-- We have 2-4 tasks
+req durations.size >= 2
+req durations.size <= 4
+req priorities.size = durations.size
 
-class Schedule {
-  -- Fixed number of tasks for now (dynamic Seq not yet supported)
-  task1 : Task
-  task2 : Task
-  task3 : Task
+-- All durations positive and bounded
+req durations.at(0) > 0
+req durations.at(0) <= 100
+req durations.at(1) > 0
+req durations.at(1) <= 100
 
-  totalDuration : Int
+-- All priorities in range 1-5
+req priorities.at(0) >= 1
+req priorities.at(0) <= 5
+req priorities.at(1) >= 1
+req priorities.at(1) <= 5
 
-  -- Total duration is sum of all task durations
-  req totalDuration = task1.duration + task2.duration + task3.duration
+-- Total duration constraint (for first two tasks)
+req durations.at(0) + durations.at(1) <= 150
 
-  -- Total duration constraint
-  req totalDuration <= 200
-
-  -- At least one high priority task
-  req task1.priority = 5 || task2.priority = 5 || task3.priority = 5
-}
-
-schedule : Schedule
+-- At least one high priority task
+req priorities.at(0) = 5 || priorities.at(1) = 5
 

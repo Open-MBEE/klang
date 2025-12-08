@@ -488,7 +488,7 @@ object UnifiedSolver {
       }
 
       // Write SMT to temp file
-      val tempFile = new java.io.File("/tmp/k_unified.smt2")
+      val tempFile = new java.io.File(".tmp/k_unified.smt2")
       val writer = new java.io.PrintWriter(tempFile)
       writer.write(smtModel)
       writer.close()

@@ -306,11 +306,11 @@ object Frontend {
       if (K2Z3.debug) {
         // Write SMT model to log file for debugging
         try {
-          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_smt_model.log", false))
+          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream(".tmp/k_smt_model.log", false))
           smtLogFile.println("=== SMT Model Generated (" + new java.util.Date() + ") ===")
           smtLogFile.println(smtModel)
           smtLogFile.close()
-          println("[SMT model written to /tmp/k_smt_model.log]")
+          println("[SMT model written to .tmp/k_smt_model.log]")
         } catch { case _: Throwable => }
       }
       println(UtilSMT.statistics)
@@ -333,11 +333,11 @@ object Frontend {
       if (K2Z3.debug) {
         // Write raw SMT to log file
         try {
-          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream("/tmp/k_smt_raw.log", false))
+          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream(".tmp/k_smt_raw.log", false))
           smtLogFile.println("=== Raw SMT (" + new java.util.Date() + ") ===")
           smtLogFile.println(rawSMT)
           smtLogFile.close()
-          println("[Raw SMT written to /tmp/k_smt_raw.log]")
+          println("[Raw SMT written to .tmp/k_smt_raw.log]")
         } catch { case _: Throwable => }
       }
       try {
