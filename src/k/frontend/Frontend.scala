@@ -88,9 +88,17 @@ object Frontend {
       case "-jsonToExpression" :: value :: tail =>
         parseArgs(map ++ Map('json -> value), tail)
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
+      case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
+      case "-debug" :: tail =>
+        K2Z3.debug = true
+        UnifiedSolver.debug = true
+        parseArgs(map ++ Map('debug -> true), tail)
+      case value :: tail if !value.startsWith("-") =>
+        // Non-switch argument is a model file
+        parseArgs(map ++ Map('modelFile -> value), tail)
       case option :: tail =>
-        println("Unknown option " + option).asInstanceOf[Nothing]
-      //System.exit(1).asInstanceOf[Nothing]
+        println("Unknown option " + option)
+        parseArgs(map, tail)  // Continue with remaining args
     }
   }
 
@@ -315,10 +323,26 @@ object Frontend {
       }
       println(UtilSMT.statistics)
       try {
-        val res = runWithTimeout(timeoutValue) {
-          K2Z3.solveSMT(combinedModel, smtModel, true)
+        val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
+        if (useUnified) {
+          log("Using UnifiedSolver")
+          val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true)
+          result match {
+            case UnifiedSolver.SolveResult.Sat(model) =>
+              log("UnifiedSolver: SAT")
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("UnifiedSolver: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("UnifiedSolver: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"UnifiedSolver: UNKNOWN ($reason)")
+          }
+        } else {
+          val res = runWithTimeout(timeoutValue) {
+            K2Z3.solveSMT(combinedModel, smtModel, true)
+          }
+          if (res.isEmpty) log("Timeout")
         }
-        if (res.isEmpty) log("Timeout")
       } catch {
         case TypeCheckException => errorExit("Type Checking exception.")
         case K2SMTException => errorExit("K2SMT Exception during SMT solving.")
