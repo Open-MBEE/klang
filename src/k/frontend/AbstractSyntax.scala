@@ -2863,6 +2863,18 @@ trait CallApplExp extends Exp {
         }
         UtilSMT.addExternalFuncDecl(declStr)
 
+        // Register for CEGAR verification
+        val argVarNames = args.zipWithIndex.map { case (arg, i) =>
+          arg match {
+            case PositionalArgument(IdentExp(name)) => name
+            case _ => s"_arg_${smtFuncName}_$i"  // Generate name for complex expressions
+          }
+        }
+        ExternalFunctions.registerExternalCall(smtFuncName, resolvedName, argVarNames)
+        if (K2Z3.debug) {
+          println(s"[DEBUG] Registered external call: $resolvedName as $smtFuncName with args: ${argVarNames.mkString(", ")}")
+        }
+
         // Generate function application
         val argsSMT = args.map(_.toSMT(className, subTyping)).mkString(" ")
         if (args.isEmpty) {

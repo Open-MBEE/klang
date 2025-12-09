@@ -28,8 +28,8 @@ object ExternalFunctions {
   /** Maximum number of CEGAR refinement iterations */
   var maxRefinements: Int = 100
 
-  /** Whether to log external function calls */
-  var logCalls: Boolean = false
+  /** Whether to log external function calls (follows K2Z3.debug) */
+  def logCalls: Boolean = K2Z3.debug
 
   /** Cache of evaluated function calls: (qualifiedName, args) -> result */
   private val evaluationCache: MMap[(String, List[Any]), Any] = MMap()
@@ -277,10 +277,17 @@ object ExternalFunctions {
 
   /**
    * Add a refinement constraint: given these inputs, the output must be this value
+   * Avoids adding duplicate constraints.
    */
   def addRefinement(funcName: String, args: List[Any], result: Any): Unit = {
     val existing = refinementConstraints.getOrElse(funcName, Nil)
-    refinementConstraints += (funcName -> ((args, result) :: existing))
+    // Check if this exact refinement already exists
+    val isDuplicate = existing.exists { case (existingArgs, existingResult) =>
+      existingArgs == args && existingResult == result
+    }
+    if (!isDuplicate) {
+      refinementConstraints += (funcName -> ((args, result) :: existing))
+    }
   }
 
   /**
@@ -288,6 +295,13 @@ object ExternalFunctions {
    */
   def getRefinements(funcName: String): List[(List[Any], Any)] = {
     refinementConstraints.getOrElse(funcName, Nil)
+  }
+
+  /**
+   * Clear refinement constraints only (preserves external call registrations)
+   */
+  def clearRefinementConstraints(): Unit = {
+    refinementConstraints.clear()
   }
 
   /**
@@ -380,18 +394,97 @@ object ExternalFunctions {
   }
 
   /**
-   * Generate an SMT assertion that constrains the uninterpreted function
+   * Generate SMT assertion(s) that constrain the uninterpreted function
    * to return the correct value for the given concrete inputs.
+   *
+   * For known invertible functions, also adds inverse constraints to help
+   * Z3 find the correct input value.
    */
   def generateRefinementConstraint(smtFuncName: String, args: List[Any], result: Any): String = {
     val argsSMT = args.map(anyToSMT).mkString(" ")
     val resultSMT = anyToSMT(result)
 
-    if (args.isEmpty) {
+    // Basic point constraint: f(args) = result
+    val pointConstraint = if (args.isEmpty) {
       s"(assert (= $smtFuncName $resultSMT))"
     } else {
       s"(assert (= ($smtFuncName $argsSMT) $resultSMT))"
     }
+
+    pointConstraint
+  }
+
+  /**
+   * Generate an inverse constraint for known mathematical functions.
+   * This helps CEGAR converge faster by directly constraining the input
+   * variable when we know the required output.
+   *
+   * For example: if we need sqrt(x) = 5 and y is bound to 5, we add x = 25.
+   *
+   * @param smtFuncName The SMT function name (e.g., java_lang_Math_sqrt)
+   * @param qualifiedName The qualified Java name (e.g., java.lang.Math.sqrt)
+   * @param argVarName The SMT variable name for the argument (e.g., "x")
+   * @param requiredOutput The value the function output must equal
+   * @return Optional SMT constraint, or None if no inverse is known
+   */
+  def generateInverseConstraint(smtFuncName: String, qualifiedName: String,
+                                argVarName: String, requiredOutput: Any): Option[String] = {
+    (qualifiedName, requiredOutput) match {
+      case ("java.lang.Math.sqrt", y: Double) if y >= 0 =>
+        // If sqrt(x) = y, then x = y^2
+        val xRequired = y * y
+        Some(s"; Inverse constraint for sqrt: if sqrt($argVarName) = $y, then $argVarName = $xRequired\n" +
+             s"(assert (= (TopLevelDeclarations!$argVarName 0) ${anyToSMT(xRequired)}))")
+
+      case ("java.lang.Math.exp", y: Double) if y > 0 =>
+        // If exp(x) = y, then x = ln(y)
+        val xRequired = Math.log(y)
+        Some(s"; Inverse constraint for exp: if exp($argVarName) = $y, then $argVarName = $xRequired\n" +
+             s"(assert (= (TopLevelDeclarations!$argVarName 0) ${anyToSMT(xRequired)}))")
+
+      case ("java.lang.Math.log", y: Double) =>
+        // If log(x) = y, then x = e^y
+        val xRequired = Math.exp(y)
+        Some(s"; Inverse constraint for log: if log($argVarName) = $y, then $argVarName = $xRequired\n" +
+             s"(assert (= (TopLevelDeclarations!$argVarName 0) ${anyToSMT(xRequired)}))")
+
+      case _ => None
+    }
+  }
+
+  /**
+   * Generate targeted mathematical constraints for known functions.
+   * Instead of universal quantifiers (which Z3 struggles with),
+   * we generate specific constraints based on the required output value.
+   *
+   * For example: if we need sqrt(x) = 5, we add constraint x = 25.
+   */
+  def generateTargetedConstraints(smtFuncName: String, qualifiedName: String,
+                                   requiredOutput: Option[Double]): List[String] = {
+    (qualifiedName, requiredOutput) match {
+      case ("java.lang.Math.sqrt", Some(y)) if y >= 0 =>
+        // If sqrt(x) = y, then x = y^2
+        val xRequired = y * y
+        List(
+          s"; sqrt constraint: if sqrt(x) = $y, then x = $xRequired",
+          s"; Note: This is a soft hint, actual verification via CEGAR"
+        )
+      case ("java.lang.Math.abs", Some(y)) if y >= 0 =>
+        List(
+          s"; abs constraint: if abs(x) = $y, then x = $y or x = ${-y}"
+        )
+      case _ => Nil
+    }
+  }
+
+  /**
+   * Generate global mathematical axioms for known functions.
+   * NOTE: Universal quantifiers can cause Z3 to fail on some problems.
+   * Use generateTargetedConstraints for specific values instead when possible.
+   */
+  def generateMathematicalAxioms(smtFuncName: String, qualifiedName: String): List[String] = {
+    // Disabled quantified axioms as they cause Z3 incompleteness
+    Nil
   }
 
   /**

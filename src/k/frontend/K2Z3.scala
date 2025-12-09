@@ -846,11 +846,32 @@ object K2Z3 {
   }
 
   def solveSMT(model: Model, smtModel: String, printModel: Boolean): Unit = {
+    // Always print this to verify solveSMT is called
+    println(s"[K2Z3.solveSMT] ENTRY - debug=$debug, external calls=${ExternalFunctions.getExternalCalls.size}")
+
     try {
       reset()
 
-      // Reset external function tracking for CEGAR
-      ExternalFunctions.reset()
+      // NOTE: Do NOT reset ExternalFunctions here - external calls are registered
+      // during model.toSMT() which happens BEFORE solveSMT is called
+
+      // Check if we have external functions that need CEGAR refinement
+      // This must be checked AFTER toSMT has been called (which registered the calls)
+      val hasExternalCalls = ExternalFunctions.getExternalCalls.nonEmpty
+
+      // Debug output for external calls
+      if (debug) {
+        println(s"[K2Z3] DEBUG: External calls count = ${ExternalFunctions.getExternalCalls.size}")
+        if (hasExternalCalls) {
+          logDebug(s"[CEGAR] Found ${ExternalFunctions.getExternalCalls.size} external function calls")
+          for ((name, info) <- ExternalFunctions.getExternalCalls) {
+            logDebug(s"  - $name -> ${info.qualifiedName}(${info.argVarNames.mkString(", ")})")
+          }
+        }
+      }
+
+      // Extract solver configuration from annotations
+      extractSolverConfig(model)
 
       // Extract solver configuration from annotations
       extractSolverConfig(model)
@@ -862,17 +883,17 @@ object K2Z3 {
         logDebug(s"Z3 solver timeout set to ${ms}ms")
       }
 
-      // Check if we have external functions that need CEGAR refinement
-      val hasExternalCalls = ExternalFunctions.getExternalCalls.nonEmpty
-
       if (hasSoftConstraints) {
         // Use Optimize solver for soft constraints
+        println(s"[K2Z3] Using Optimize solver (soft constraints)")
         solveSMTWithOptimize(model, smtModel, printModel)
       } else if (hasExternalCalls) {
         // Use CEGAR loop for models with external function calls
+        println(s"[K2Z3] Using CEGAR loop (external calls)")
         solveSMTWithCEGAR(model, smtModel, printModel)
       } else {
         // Standard solving without CEGAR
+        println(s"[K2Z3] Using direct solver")
         solveSMTDirect(model, smtModel, printModel)
       }
     } catch {
@@ -978,9 +999,41 @@ object K2Z3 {
    * 6. Repeat until max iterations or all consistent
    */
   def solveSMTWithCEGAR(model: Model, smtModel: String, printModel: Boolean): Unit = {
-    var currentSMT = smtModel
+    val originalSMT = smtModel  // Keep original to rebuild each iteration
+    var currentSMT = originalSMT
     var iteration = 0
     var solved = false
+
+    // Clear any previous refinements from other runs
+    // Note: Don't call full reset() as that clears external call registrations
+    // Just clear refinement constraints
+    ExternalFunctions.clearRefinementConstraints()
+
+    // Add mathematical axioms for known external functions
+    // This helps Z3 understand relationships like sqrt(x)^2 = x
+    val axioms = (for {
+      (smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls
+      axiom <- ExternalFunctions.generateMathematicalAxioms(smtFuncName, callInfo.qualifiedName)
+    } yield axiom).toList
+
+    if (axioms.nonEmpty) {
+      val axiomsSMT = axioms.mkString("\n")
+      // Insert axioms after function declarations but before assertions
+      // Look for the first assert statement
+      val assertIdx = originalSMT.indexOf("(assert")
+      if (assertIdx > 0) {
+        currentSMT = originalSMT.substring(0, assertIdx) +
+                     "\n; Mathematical axioms for external functions\n" +
+                     axiomsSMT + "\n\n" +
+                     originalSMT.substring(assertIdx)
+      } else {
+        currentSMT = originalSMT + "\n" + axiomsSMT
+      }
+      if (debug) log(s"[CEGAR] Added ${axioms.length} mathematical axioms")
+    }
+
+    // Store the base SMT (with axioms if any) to rebuild from each iteration
+    val baseSMT = currentSMT
 
     while (iteration < ExternalFunctions.maxRefinements && !solved && !interrupted) {
       iteration += 1
@@ -988,16 +1041,13 @@ object K2Z3 {
         log(s"[CEGAR] Iteration $iteration")
       }
 
-      // Add any accumulated refinement constraints to the SMT model
+      // Rebuild currentSMT from base + all refinements accumulated so far
       val refinements = ExternalFunctions.getAllRefinementConstraints
       if (refinements.nonEmpty) {
         val refinementSMT = refinements.mkString("\n")
-        // Insert refinements before (check-sat) if present, or at end
-        if (currentSMT.contains("(check-sat)")) {
-          currentSMT = currentSMT.replace("(check-sat)", refinementSMT + "\n(check-sat)")
-        } else {
-          currentSMT = currentSMT + "\n" + refinementSMT
-        }
+        currentSMT = baseSMT + "\n" + refinementSMT
+      } else {
+        currentSMT = baseSMT
       }
 
       // Try to solve
@@ -1026,6 +1076,19 @@ object K2Z3 {
             }
           }
 
+          // Add inverse constraints to help convergence
+          if (verificationResult.inverseConstraints.nonEmpty) {
+            val inversesSMT = verificationResult.inverseConstraints.mkString("\n")
+            if (currentSMT.contains("(check-sat)")) {
+              currentSMT = currentSMT.replace("(check-sat)", inversesSMT + "\n(check-sat)")
+            } else {
+              currentSMT = currentSMT + "\n" + inversesSMT
+            }
+            if (debug || ExternalFunctions.logCalls) {
+              log(s"[CEGAR] Added ${verificationResult.inverseConstraints.length} inverse constraint(s)")
+            }
+          }
+
           // Reset solver for next iteration
           solver = ctx.mkSolver()
           z3Model = null
@@ -1047,7 +1110,8 @@ object K2Z3 {
    */
   case class CEGARVerificationResult(
     allVerified: Boolean,
-    mismatches: List[(String, List[Any], Any)]  // (funcName, args, actualResult)
+    mismatches: List[(String, List[Any], Any)],  // (funcName, args, actualResult)
+    inverseConstraints: List[String] = Nil       // Additional constraints to help convergence
   )
 
   /**
@@ -1055,24 +1119,33 @@ object K2Z3 {
    * with actual function evaluations.
    */
   def verifyExternalCalls(model: com.microsoft.z3.Model): CEGARVerificationResult = {
-    if (model == null) return CEGARVerificationResult(true, Nil)
+    if (model == null) return CEGARVerificationResult(true, Nil, Nil)
 
+    println(s"[CEGAR] Verifying ${ExternalFunctions.getExternalCalls.size} external calls")
     val mismatches = ListBuffer[(String, List[Any], Any)]()
+    val inverseConstraints = ListBuffer[String]()
 
     for ((smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls) {
+      println(s"[CEGAR] Checking: $smtFuncName -> ${callInfo.qualifiedName}")
+      println(s"[CEGAR]   Arg var names: ${callInfo.argVarNames.mkString(", ")}")
+
       // Try to extract argument values from the Z3 model
       val argValues: List[Option[Any]] = callInfo.argVarNames.map { varName =>
-        extractValueFromModel(model, varName)
+        val v = extractValueFromModel(model, varName)
+        println(s"[CEGAR]   $varName -> $v")
+        v
       }
 
       if (argValues.forall(_.isDefined)) {
         val concreteArgs = argValues.map(_.get)
+        println(s"[CEGAR]   Concrete args: ${concreteArgs.mkString(", ")}")
 
         // Evaluate the actual function
         ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
           case Some(actualResult) =>
-            // Check what Z3 computed for this function call
+            println(s"[CEGAR]   Actual result: $actualResult")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
+            println(s"[CEGAR]   Z3 result: $z3Result")
 
             z3Result match {
               case Some(z3Value) if !valuesMatch(z3Value, actualResult) =>
@@ -1081,6 +1154,13 @@ object K2Z3 {
                 if (debug || ExternalFunctions.logCalls) {
                   log(s"[CEGAR] Mismatch: $smtFuncName(${concreteArgs.mkString(", ")}) = $z3Value (Z3) vs $actualResult (actual)")
                 }
+
+                // NOTE: We intentionally do NOT add inverse constraints here.
+                // The CEGAR loop should converge through refinement alone.
+                // If you need faster convergence, define the function explicitly in K
+                // with constraints (e.g., fun sqrt(x: Real): Real { y: Real; req y >= 0; req y * y = x; return y })
+                // and equate it to the external function.
+
               case _ =>
                 // Match or couldn't extract Z3's result
                 if (debug && ExternalFunctions.logCalls) {
@@ -1096,23 +1176,58 @@ object K2Z3 {
       }
     }
 
-    CEGARVerificationResult(mismatches.isEmpty, mismatches.toList)
+    CEGARVerificationResult(mismatches.isEmpty, mismatches.toList, inverseConstraints.toList)
   }
 
   /**
-   * Extract a value from the Z3 model for a given variable name
+   * Extract a value from the Z3 model for a given variable name.
+   * Variables in K are stored in the TopLevelDeclarations datatype in the heap,
+   * so we need to evaluate getter expressions.
    */
   def extractValueFromModel(model: com.microsoft.z3.Model, varName: String): Option[Any] = {
     try {
-      for (decl <- model.getDecls) {
-        if (decl.getName.toString == varName) {
-          val value = model.getConstInterp(decl)
-          return z3ValueToScala(value)
+      // First try direct constant lookup
+      val directMatch = model.getDecls.find(_.getName.toString == varName)
+      if (directMatch.isDefined) {
+        val value = model.getConstInterp(directMatch.get)
+        val result = z3ValueToScala(value)
+        if (result.isDefined) {
+          println(s"[CEGAR] Found direct constant $varName = ${result.get}")
+          return result
         }
       }
+
+      // For K variables, we need to evaluate the getter function at ref 0
+      // Build the expression: (TopLevelDeclarations!varName 0)
+      val getterName = s"TopLevelDeclarations!$varName"
+      val getterMatch = model.getFuncDecls.find(_.getName.toString == getterName)
+
+      if (getterMatch.isDefined) {
+        val decl = getterMatch.get
+        // Create an application of the getter to ref 0
+        val refZero = ctx.mkInt(0)
+        val app = ctx.mkApp(decl, refZero)
+
+        // Evaluate in the model
+        val evalResult = model.eval(app, true)  // true = model_completion
+        println(s"[CEGAR] Evaluated $getterName(0) = $evalResult")
+
+        if (evalResult != null) {
+          val scalaVal = z3ValueToScala(evalResult)
+          println(s"[CEGAR] Converted to Scala: $scalaVal")
+          return scalaVal
+        }
+      }
+
+      println(s"[CEGAR] Could not find variable $varName")
       None
     } catch {
-      case _: Throwable => None
+      case e: scala.runtime.NonLocalReturnControl[_] =>
+        // This is actually a successful return from inside the try block
+        e.value.asInstanceOf[Option[Any]]
+      case e: Throwable =>
+        println(s"[CEGAR] Error extracting $varName: ${e.getClass.getName}: ${e.getMessage}")
+        None
     }
   }
 
@@ -1121,33 +1236,40 @@ object K2Z3 {
    */
   def extractFunctionResult(model: com.microsoft.z3.Model, funcName: String, args: List[Any]): Option[Any] = {
     try {
-      for (decl <- model.getFuncDecls) {
-        if (decl.getName.toString == funcName) {
-          val funcInterp = model.getFuncInterp(decl)
-          if (funcInterp != null) {
-            // Check if we have an entry for these specific arguments
-            val entries = funcInterp.getEntries
-            for (i <- 0 until entries.length) {
-              val entry = entries(i)
-              val entryArgs = entry.getArgs.map(z3ValueToScala).toList
-              if (argsMatch(entryArgs, args.map(Some(_)))) {
-                return z3ValueToScala(entry.getValue)
-              }
+      // Find the function declaration
+      val funcDecl = model.getFuncDecls.find(_.getName.toString == funcName)
+
+      funcDecl match {
+        case Some(decl) =>
+          // Build Z3 arguments from our Scala args
+          val z3Args = args.map { arg =>
+            arg match {
+              case d: Double => ctx.mkReal(d.toString)
+              case l: Long => ctx.mkInt(l)
+              case i: Int => ctx.mkInt(i)
+              case s: String => ctx.mkString(s)
+              case b: Boolean => ctx.mkBool(b)
+              case _ => ctx.mkReal(arg.toString)
             }
-            // Use default/else value
-            return z3ValueToScala(funcInterp.getElse)
-          }
-        }
+          }.toArray
+
+          // Create function application
+          val app = ctx.mkApp(decl, z3Args: _*)
+
+          // Evaluate in the model
+          val result = model.eval(app, true)
+          z3ValueToScala(result)
+
+        case None =>
+          if (debug) println(s"[CEGAR] Could not find function $funcName in model")
+          None
       }
-      // For constants (0-arity functions)
-      for (decl <- model.getDecls) {
-        if (decl.getName.toString == funcName) {
-          return z3ValueToScala(model.getConstInterp(decl))
-        }
-      }
-      None
     } catch {
-      case _: Throwable => None
+      case e: scala.runtime.NonLocalReturnControl[_] =>
+        e.value.asInstanceOf[Option[Any]]
+      case e: Throwable =>
+        if (debug) println(s"[CEGAR] Error extracting function result: ${e.getClass.getName}: ${e.getMessage}")
+        None
     }
   }
 
