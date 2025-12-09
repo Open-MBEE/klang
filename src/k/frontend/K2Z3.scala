@@ -999,9 +999,41 @@ object K2Z3 {
    * 6. Repeat until max iterations or all consistent
    */
   def solveSMTWithCEGAR(model: Model, smtModel: String, printModel: Boolean): Unit = {
-    var currentSMT = smtModel
+    val originalSMT = smtModel  // Keep original to rebuild each iteration
+    var currentSMT = originalSMT
     var iteration = 0
     var solved = false
+
+    // Clear any previous refinements from other runs
+    // Note: Don't call full reset() as that clears external call registrations
+    // Just clear refinement constraints
+    ExternalFunctions.clearRefinementConstraints()
+
+    // Add mathematical axioms for known external functions
+    // This helps Z3 understand relationships like sqrt(x)^2 = x
+    val axioms = (for {
+      (smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls
+      axiom <- ExternalFunctions.generateMathematicalAxioms(smtFuncName, callInfo.qualifiedName)
+    } yield axiom).toList
+
+    if (axioms.nonEmpty) {
+      val axiomsSMT = axioms.mkString("\n")
+      // Insert axioms after function declarations but before assertions
+      // Look for the first assert statement
+      val assertIdx = originalSMT.indexOf("(assert")
+      if (assertIdx > 0) {
+        currentSMT = originalSMT.substring(0, assertIdx) +
+                     "\n; Mathematical axioms for external functions\n" +
+                     axiomsSMT + "\n\n" +
+                     originalSMT.substring(assertIdx)
+      } else {
+        currentSMT = originalSMT + "\n" + axiomsSMT
+      }
+      if (debug) log(s"[CEGAR] Added ${axioms.length} mathematical axioms")
+    }
+
+    // Store the base SMT (with axioms if any) to rebuild from each iteration
+    val baseSMT = currentSMT
 
     while (iteration < ExternalFunctions.maxRefinements && !solved && !interrupted) {
       iteration += 1
@@ -1009,16 +1041,13 @@ object K2Z3 {
         log(s"[CEGAR] Iteration $iteration")
       }
 
-      // Add any accumulated refinement constraints to the SMT model
+      // Rebuild currentSMT from base + all refinements accumulated so far
       val refinements = ExternalFunctions.getAllRefinementConstraints
       if (refinements.nonEmpty) {
         val refinementSMT = refinements.mkString("\n")
-        // Insert refinements before (check-sat) if present, or at end
-        if (currentSMT.contains("(check-sat)")) {
-          currentSMT = currentSMT.replace("(check-sat)", refinementSMT + "\n(check-sat)")
-        } else {
-          currentSMT = currentSMT + "\n" + refinementSMT
-        }
+        currentSMT = baseSMT + "\n" + refinementSMT
+      } else {
+        currentSMT = baseSMT
       }
 
       // Try to solve
@@ -1047,6 +1076,19 @@ object K2Z3 {
             }
           }
 
+          // Add inverse constraints to help convergence
+          if (verificationResult.inverseConstraints.nonEmpty) {
+            val inversesSMT = verificationResult.inverseConstraints.mkString("\n")
+            if (currentSMT.contains("(check-sat)")) {
+              currentSMT = currentSMT.replace("(check-sat)", inversesSMT + "\n(check-sat)")
+            } else {
+              currentSMT = currentSMT + "\n" + inversesSMT
+            }
+            if (debug || ExternalFunctions.logCalls) {
+              log(s"[CEGAR] Added ${verificationResult.inverseConstraints.length} inverse constraint(s)")
+            }
+          }
+
           // Reset solver for next iteration
           solver = ctx.mkSolver()
           z3Model = null
@@ -1068,7 +1110,8 @@ object K2Z3 {
    */
   case class CEGARVerificationResult(
     allVerified: Boolean,
-    mismatches: List[(String, List[Any], Any)]  // (funcName, args, actualResult)
+    mismatches: List[(String, List[Any], Any)],  // (funcName, args, actualResult)
+    inverseConstraints: List[String] = Nil       // Additional constraints to help convergence
   )
 
   /**
@@ -1076,10 +1119,11 @@ object K2Z3 {
    * with actual function evaluations.
    */
   def verifyExternalCalls(model: com.microsoft.z3.Model): CEGARVerificationResult = {
-    if (model == null) return CEGARVerificationResult(true, Nil)
+    if (model == null) return CEGARVerificationResult(true, Nil, Nil)
 
     println(s"[CEGAR] Verifying ${ExternalFunctions.getExternalCalls.size} external calls")
     val mismatches = ListBuffer[(String, List[Any], Any)]()
+    val inverseConstraints = ListBuffer[String]()
 
     for ((smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls) {
       println(s"[CEGAR] Checking: $smtFuncName -> ${callInfo.qualifiedName}")
@@ -1099,10 +1143,8 @@ object K2Z3 {
         // Evaluate the actual function
         ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
           case Some(actualResult) =>
-            println(s"[CEGAR] RECOMPILED Actual result: $actualResult")
-            println("XYZZY_MARKER_12345_BEFORE_EXTRACT")
+            println(s"[CEGAR]   Actual result: $actualResult")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
-            println("XYZZY_MARKER_12345_AFTER_EXTRACT")
             println(s"[CEGAR]   Z3 result: $z3Result")
 
             z3Result match {
@@ -1112,6 +1154,13 @@ object K2Z3 {
                 if (debug || ExternalFunctions.logCalls) {
                   log(s"[CEGAR] Mismatch: $smtFuncName(${concreteArgs.mkString(", ")}) = $z3Value (Z3) vs $actualResult (actual)")
                 }
+
+                // NOTE: We intentionally do NOT add inverse constraints here.
+                // The CEGAR loop should converge through refinement alone.
+                // If you need faster convergence, define the function explicitly in K
+                // with constraints (e.g., fun sqrt(x: Real): Real { y: Real; req y >= 0; req y * y = x; return y })
+                // and equate it to the external function.
+
               case _ =>
                 // Match or couldn't extract Z3's result
                 if (debug && ExternalFunctions.logCalls) {
@@ -1127,7 +1176,7 @@ object K2Z3 {
       }
     }
 
-    CEGARVerificationResult(mismatches.isEmpty, mismatches.toList)
+    CEGARVerificationResult(mismatches.isEmpty, mismatches.toList, inverseConstraints.toList)
   }
 
   /**
@@ -1186,18 +1235,12 @@ object K2Z3 {
    * Extract the result of an uninterpreted function application from Z3 model
    */
   def extractFunctionResult(model: com.microsoft.z3.Model, funcName: String, args: List[Any]): Option[Any] = {
-    println(s"[CEGAR] extractFunctionResult ENTRY: funcName=$funcName, args=$args")
     try {
-      // Debug: print available function declarations
-      val funcNames = model.getFuncDecls.map(_.getName.toString).toList
-      println(s"[CEGAR] Available functions (${funcNames.length}): ${funcNames.take(20).mkString(", ")}...")
-
       // Find the function declaration
       val funcDecl = model.getFuncDecls.find(_.getName.toString == funcName)
 
       funcDecl match {
         case Some(decl) =>
-          println(s"[CEGAR] Found function declaration: ${decl.getName}")
           // Build Z3 arguments from our Scala args
           val z3Args = args.map { arg =>
             arg match {
@@ -1215,19 +1258,17 @@ object K2Z3 {
 
           // Evaluate in the model
           val result = model.eval(app, true)
-          println(s"[CEGAR] Evaluated $funcName(${args.mkString(", ")}) = $result")
           z3ValueToScala(result)
 
         case None =>
-          println(s"[CEGAR] Could not find function $funcName in model")
+          if (debug) println(s"[CEGAR] Could not find function $funcName in model")
           None
       }
     } catch {
       case e: scala.runtime.NonLocalReturnControl[_] =>
         e.value.asInstanceOf[Option[Any]]
       case e: Throwable =>
-        println(s"[CEGAR] Error extracting function result: ${e.getClass.getName}: ${e.getMessage}")
-        e.printStackTrace()
+        if (debug) println(s"[CEGAR] Error extracting function result: ${e.getClass.getName}: ${e.getMessage}")
         None
     }
   }
