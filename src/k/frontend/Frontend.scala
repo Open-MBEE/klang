@@ -18,6 +18,7 @@ import java.nio.file.Path
 
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.atn.PredictionMode
 import org.json.JSONArray
 import org.json.JSONObject
 import k.frontend.ModelParser.ModelContext
@@ -45,6 +46,16 @@ object Frontend {
 
   var lastParsedModel: Model = null
   var lastVisitor: KScalaVisitor = null
+
+  // Parse cache: maps (filePath, lastModified) -> parsed Model
+  // Disabled by default; enable with -cache flag for batch testing
+  var parseCache: scala.collection.mutable.Map[(String, Long), Model] =
+    scala.collection.mutable.Map()
+  var parseCacheEnabled: Boolean = false
+
+  def clearParseCache(): Unit = {
+    parseCache.clear()
+  }
 
 
   type OptionMap = Map[Symbol, Any]
@@ -1802,6 +1813,10 @@ object Frontend {
     var tokens: CommonTokenStream = new CommonTokenStream(lexer)
     var parser: ModelParser = new ModelParser(tokens)
     parser.setBuildParseTree(true)
+
+    // Use SLL prediction mode for faster parsing (falls back to LL if needed)
+    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+
     var tree = parser.model()
     var treeString = tree.toStringTree(parser);
     println("PARSE TREE:\n" + treeString)
@@ -1815,10 +1830,31 @@ object Frontend {
     if (!Files.exists(path)) {
       errorExit(s"Given path does not exist: $f")
     }
+
+    // Check cache if enabled
+    if (parseCacheEnabled) {
+      val lastModified = Files.getLastModifiedTime(path).toMillis
+      val cacheKey = (f, lastModified)
+      parseCache.get(cacheKey) match {
+        case Some(cachedModel) =>
+          lastParsedModel = cachedModel
+          return cachedModel
+        case None => // Continue to parse
+      }
+    }
+
     var bytes: Array[Byte] = Files.readAllBytes(path)
     var fileContents: String = new String(bytes, "UTF-8")
     val (ksv: KScalaVisitor, tree: ModelContext) = getVisitor(fileContents)
     lastParsedModel = ksv.visit(tree).asInstanceOf[Model]
+
+    // Store in cache if enabled
+    if (parseCacheEnabled) {
+      val lastModified = Files.getLastModifiedTime(path).toMillis
+      val cacheKey = (f, lastModified)
+      parseCache.put(cacheKey, lastParsedModel)
+    }
+
     lastParsedModel
   }
 
