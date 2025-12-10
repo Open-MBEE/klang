@@ -1,91 +1,74 @@
 # K Language Support for VS Code
 
-Syntax highlighting and language support for the K constraint programming language.
+This extension provides language support for the K constraint programming language.
 
 ## Features
 
 - **Syntax Highlighting**: Full syntax highlighting for K language constructs
-  - Keywords: `class`, `req`, `fun`, `forall`, `exists`, etc.
-  - Types: `Int`, `Real`, `Bool`, `String`, `Set`, `Seq`, etc.
-  - Constraints: `req`, `soft req`, `minimize`, `maximize`
-  - Annotations: `@timeout`, `@bestEffort`, `@opaque`, etc.
-  - Operators: `=>`, `<=>`, `isin`, `union`, `inter`, etc.
-
+- **Go to Definition** (F12 / Ctrl+Click): Navigate to symbol definitions
+- **Find All References** (Shift+F12): Find all usages of a symbol
+- **Hover Documentation**: See documentation for symbols on hover
+- **Document Outline** (Ctrl+Shift+O): Navigate symbols within a file
+- **Workspace Symbol Search** (Ctrl+T): Search for symbols across all K files
+- **Code Comments**: Toggle comments with Ctrl+/
+- **Bracket Matching**: Automatic matching of (), {}, []
 - **Code Folding**: Fold class and function definitions
-
-- **Bracket Matching**: Auto-closing and matching for `{}`, `[]`, `()`
-
-- **Comment Support**: Line comments (`--`) and block comments (`==...==`)
 
 ## Installation
 
-### From VSIX (Local)
+### From VSIX (Local Install)
 
-1. Build the extension:
+1. Build the extension (requires Node.js 20+):
    ```bash
    cd ide/vscode
    npm install
-   npx vsce package
+   npm run compile
+   npm run package
    ```
 
-2. Install the `.vsix` file:
+2. Install the generated `.vsix` file:
    - Open VS Code
-   - Go to Extensions (Ctrl+Shift+X)
-   - Click "..." menu → "Install from VSIX..."
-   - Select the generated `.vsix` file
+   - Go to Extensions view (Ctrl+Shift+X)
+   - Click the "..." menu at the top
+   - Select "Install from VSIX..."
+   - Navigate to the generated `k-language-0.1.0.vsix` file
 
 ### Development Mode
 
-1. Open this folder in VS Code
-2. Press F5 to launch Extension Development Host
-3. Open a `.k` file to see syntax highlighting
+1. Open the `ide/vscode` folder in VS Code
+2. Run `npm install` to install dependencies
+3. Press F5 to launch the extension in development mode
 
-## Example
+## Supported K Language Features
 
-```k
-class Spacecraft {
-  name : String
-  weight : Real
-  maxWeight : Real = 1000
+### Keywords
+- Declaration: `class`, `assoc`, `package`, `import`, `extends`, `type`
+- Functions: `fun`, `pre`, `post`
+- Constraints: `req`, `soft req`
+- Modifiers: `part`, `var`, `val`, `ordered`, `unique`
+- Control flow: `if`, `then`, `else`, `match`, `case`
 
-  -- Hard constraint
-  req notTooHeavy: weight <= maxWeight
+### Built-in Types
+- Primitives: `Bool`, `Char`, `Int`, `Real`, `String`, `Unit`, `Time`, `Duration`
+- Collections: `Set`, `OSet`, `Bag`, `Seq`, `Class`, `Tuple`
 
-  -- Soft constraint with optimization
-  soft req preferLight: weight <= 500
-  minimize weight
+### Comments
+- Line comments: `--` or `//`
+- Block comments: `/* ... */`
+- Documentation blocks: `/** ... */` or `====== ... ======`
 
-  fun totalWeight : Real {
-    instrument.collect(i -> i.weight).sum()
-  }
-}
-```
+## Usage Examples
 
-## Roadmap
+### Go to Definition
+Click on a class name while holding Ctrl (or Cmd on Mac) to jump to its definition.
 
-See [IDE_DESIGN_VISION.md](../../docs/IDE_DESIGN_VISION.md) for the full vision.
+### Find References
+Right-click on a symbol and select "Find All References" to see everywhere it's used.
 
-### Phase 1 (Current)
-- [x] Syntax highlighting
-- [x] Bracket matching
-- [x] Code folding
-
-### Phase 2 (Planned)
-- [ ] Language Server Protocol (LSP) support
-- [ ] Go-to-definition
-- [ ] Find references
-- [ ] Code completion
-
-### Phase 3 (Planned)
-- [ ] Solver integration
-- [ ] Solution visualization
-- [ ] UNSAT diagnostics
+### Outline View
+Open the Outline panel in the Explorer sidebar to see the structure of your K file.
 
 ## Contributing
 
-Contributions are welcome! Please see the main repository README for guidelines.
-
-## License
-
-[Same as klang repository]
+See the main repository README for contribution guidelines.
 
