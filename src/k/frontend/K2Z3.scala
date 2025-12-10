@@ -80,13 +80,13 @@ object K2Z3 {
     "unsat_core" -> "true")
   var ctx: Context = new Context(cfg.asJava)
   var solver: Solver = ctx.mkSolver()
-  var optimize: Optimize = ctx.mkOptimize()  // Optimize solver for soft constraints
+  var optimize: Optimize = _  // Initialized lazily - mkOptimize can crash with mismatched Z3 versions
   var hasSoftConstraints: Boolean = false     // Flag indicating if model has soft constraints
   var idents: MMap[String, (Expr[_], com.microsoft.z3.StringSymbol)] = MMap()
   var z3Model: com.microsoft.z3.Model = null
   val tc: TypeChecker = new TypeChecker(null)
   var datatypes: DataTypes = null
-  var params = ctx.mkParams
+  var params: com.microsoft.z3.Params = ctx.mkParams
   params.add("unsat_core", true)
 
   // ============================================================================
@@ -359,12 +359,24 @@ object K2Z3 {
   def reset(): Unit = {
     z3Model = null
     idents = new MMap
+    datatypes = null
+    hasSoftConstraints = false
+    optimize = null  // Will be created lazily if needed via getOptimize()
+    // Create fresh Z3 context and solvers
     ctx = new Context(cfg.asJava)
     params = ctx.mkParams
     params.add("unsat_core", true)
     solver = ctx.mkSolver
     solver.setParameters(params)
     clearInterrupt()  // Reset interrupt state for new solve
+  }
+
+  /** Get the Optimize solver, creating it lazily if needed */
+  def getOptimize(): Optimize = {
+    if (optimize == null) {
+      optimize = ctx.mkOptimize()
+    }
+    optimize
   }
 
   def getStringForSets(setValue: FuncDecl[_ <: Sort], ty: Type): String = {
@@ -846,8 +858,10 @@ object K2Z3 {
   }
 
   def solveSMT(model: Model, smtModel: String, printModel: Boolean): Unit = {
-    // Always print this to verify solveSMT is called
-    println(s"[K2Z3.solveSMT] ENTRY - debug=$debug, external calls=${ExternalFunctions.getExternalCalls.size}")
+    // Only print debug entry if debug mode is enabled
+    if (debug) {
+      println(s"[K2Z3.solveSMT] ENTRY - debug=$debug, external calls=${ExternalFunctions.getExternalCalls.size}")
+    }
 
     try {
       reset()
@@ -885,15 +899,15 @@ object K2Z3 {
 
       if (hasSoftConstraints) {
         // Use Optimize solver for soft constraints
-        println(s"[K2Z3] Using Optimize solver (soft constraints)")
+        if (debug) println(s"[K2Z3] Using Optimize solver (soft constraints)")
         solveSMTWithOptimize(model, smtModel, printModel)
       } else if (hasExternalCalls) {
         // Use CEGAR loop for models with external function calls
-        println(s"[K2Z3] Using CEGAR loop (external calls)")
+        if (debug) println(s"[K2Z3] Using CEGAR loop (external calls)")
         solveSMTWithCEGAR(model, smtModel, printModel)
       } else {
         // Standard solving without CEGAR
-        println(s"[K2Z3] Using direct solver")
+        if (debug) println(s"[K2Z3] Using direct solver")
         solveSMTDirect(model, smtModel, printModel)
       }
     } catch {
@@ -911,14 +925,14 @@ object K2Z3 {
     try {
       logDebug("[Optimize] Using Optimize solver for soft constraints")
 
-      // Create fresh Optimize solver
-      optimize = ctx.mkOptimize()
+      // Get or create Optimize solver (lazy init)
+      val opt = getOptimize()
 
       // Apply timeout if specified
       solverTimeout.foreach { ms =>
         val optParams = ctx.mkParams()
         optParams.add("timeout", ms.toInt)
-        optimize.setParameters(optParams)
+        opt.setParameters(optParams)
         logDebug(s"[Optimize] Timeout set to ${ms}ms")
       }
 
@@ -936,18 +950,18 @@ object K2Z3 {
 
       // Add all assertions to optimizer
       for (expr <- boolExps) {
-        optimize.Add(expr.asInstanceOf[BoolExpr])
+        opt.Add(expr.asInstanceOf[BoolExpr])
       }
 
       logDebug(s"[Optimize] Checking satisfiability...")
 
       // Check
-      val status = optimize.Check()
+      val status = opt.Check()
 
       status match {
         case Status.SATISFIABLE =>
           logDebug("[Optimize] SAT - found optimal solution")
-          z3Model = optimize.getModel
+          z3Model = opt.getModel
           if (printModel) PrintModel(model)
 
         case Status.UNSATISFIABLE =>
@@ -956,13 +970,13 @@ object K2Z3 {
           if (!silent) log("Constraints are unsatisfiable (even with soft constraints relaxed)")
 
         case Status.UNKNOWN =>
-          val reason = optimize.getReasonUnknown
+          val reason = opt.getReasonUnknown
           logDebug(s"[Optimize] UNKNOWN: $reason")
 
           if (bestEffortMode) {
             // Try to get partial model
             try {
-              z3Model = optimize.getModel
+              z3Model = opt.getModel
               if (z3Model != null) {
                 logDebug("[Optimize] Got partial model in best-effort mode")
                 if (printModel) PrintModel(model)
@@ -1121,31 +1135,31 @@ object K2Z3 {
   def verifyExternalCalls(model: com.microsoft.z3.Model): CEGARVerificationResult = {
     if (model == null) return CEGARVerificationResult(true, Nil, Nil)
 
-    println(s"[CEGAR] Verifying ${ExternalFunctions.getExternalCalls.size} external calls")
+    if (debug) println(s"[CEGAR] Verifying ${ExternalFunctions.getExternalCalls.size} external calls")
     val mismatches = ListBuffer[(String, List[Any], Any)]()
     val inverseConstraints = ListBuffer[String]()
 
     for ((smtFuncName, callInfo) <- ExternalFunctions.getExternalCalls) {
-      println(s"[CEGAR] Checking: $smtFuncName -> ${callInfo.qualifiedName}")
-      println(s"[CEGAR]   Arg var names: ${callInfo.argVarNames.mkString(", ")}")
+      if (debug) println(s"[CEGAR] Checking: $smtFuncName -> ${callInfo.qualifiedName}")
+      if (debug) println(s"[CEGAR]   Arg var names: ${callInfo.argVarNames.mkString(", ")}")
 
       // Try to extract argument values from the Z3 model
       val argValues: List[Option[Any]] = callInfo.argVarNames.map { varName =>
         val v = extractValueFromModel(model, varName)
-        println(s"[CEGAR]   $varName -> $v")
+        if (debug) println(s"[CEGAR]   $varName -> $v")
         v
       }
 
       if (argValues.forall(_.isDefined)) {
         val concreteArgs = argValues.map(_.get)
-        println(s"[CEGAR]   Concrete args: ${concreteArgs.mkString(", ")}")
+        if (debug) println(s"[CEGAR]   Concrete args: ${concreteArgs.mkString(", ")}")
 
         // Evaluate the actual function
         ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
           case Some(actualResult) =>
-            println(s"[CEGAR]   Actual result: $actualResult")
+            if (debug) println(s"[CEGAR]   Actual result: $actualResult")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
-            println(s"[CEGAR]   Z3 result: $z3Result")
+            if (debug) println(s"[CEGAR]   Z3 result: $z3Result")
 
             z3Result match {
               case Some(z3Value) if !valuesMatch(z3Value, actualResult) =>

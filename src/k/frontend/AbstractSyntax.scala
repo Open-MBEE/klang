@@ -140,10 +140,16 @@ object UtilSMT {
   var createdLocals: Set[String] = Set() // locals not detected by type checker
 
   def reset {
+    constraintCounter = 0
+    constraintMessageMap = Map()
+    objectGraph = null
+    statistics = null
+    variableCounter = 0
+    heapInitializerConstants = Nil
     subClassMap = Map()
     constantsToDeclare = Nil
-    constantCounter = 0
-    heapInitializerConstants = Nil
+    gettersToDeclare = Set()
+    createdLocals = Set()
     externalFuncDecls = Set()
     ExternalFunctions.reset()
   }
