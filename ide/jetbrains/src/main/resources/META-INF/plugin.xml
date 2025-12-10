@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>nasa.jpl.klang.ide</id>
     <name>K Language</name>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <vendor email="klang@jpl.nasa.gov" url="https://github.com/nasa-jpl/klang">NASA JPL</vendor>
 
     <description><![CDATA[
@@ -10,6 +10,7 @@
     <h2>Features</h2>
     <ul>
         <li>Syntax highlighting for K files (.k)</li>
+        <li>Run K files (right-click → Run, or create Run Configuration)</li>
         <li>Go to Definition (Ctrl+Click / Ctrl+B)</li>
         <li>Find Usages (Alt+F7)</li>
         <li>Structure View (Alt+7) - navigate classes, functions, properties</li>
@@ -25,6 +26,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>0.3.0</h3>
+    <ul>
+        <li>Run K files directly from the IDE</li>
+        <li>Auto-detect K installation and SDKMAN Java</li>
+        <li>Run configuration with customizable settings</li>
+    </ul>
     <h3>0.2.0</h3>
     <ul>
         <li>Go to Definition support</li>
@@ -99,6 +106,13 @@
         <psi.referenceContributor
             language="K"
             implementation="nasa.jpl.klang.ide.psi.KReferenceContributor"/>
+
+        <!-- Run Configuration -->
+        <configurationType
+            implementation="nasa.jpl.klang.ide.run.KRunConfigurationType"/>
+
+        <runConfigurationProducer
+            implementation="nasa.jpl.klang.ide.run.KRunConfigurationProducer"/>
     </extensions>
 </idea-plugin>
 
