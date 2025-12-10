@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.9.21"
-    id("org.jetbrains.intellij") version "1.16.1"
+    id("org.jetbrains.intellij") version "1.17.2"
 }
 
 group = "nasa.jpl.klang"
@@ -13,8 +13,8 @@ repositories {
 
 // Configure Gradle IntelliJ Plugin
 intellij {
-    version.set("2024.3")
-    type.set("IC") // Target IDE Platform (IC = IntelliJ IDEA Community)
+    version.set("2024.3.1")
+    type.set("IU") // Target IDE Platform (IU = IntelliJ IDEA Ultimate, for broader compatibility)
 
     plugins.set(listOf(
         "com.intellij.java"  // For Java integration
@@ -33,7 +33,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("243")
-        untilBuild.set("254.*")
+        untilBuild.set("") // Empty = no upper bound, compatible with all future versions
     }
 
     signPlugin {

@@ -126,12 +126,21 @@ class KLexer : LexerBase() {
             return
         }
 
-        // Block comment: == ... ==
-        if (c == '=' && tokenStart + 1 < bufferEnd && buffer[tokenStart + 1] == '=') {
+        // Line comment: //
+        if (c == '/' && tokenStart + 1 < bufferEnd && buffer[tokenStart + 1] == '/') {
             tokenEnd = tokenStart + 2
-            // Find closing ==
+            while (tokenEnd < bufferEnd && buffer[tokenEnd] != '\n') {
+                tokenEnd++
+            }
+            currentToken = KTokenTypes.LINE_COMMENT
+            return
+        }
+
+        // Block comment: /* ... */
+        if (c == '/' && tokenStart + 1 < bufferEnd && buffer[tokenStart + 1] == '*') {
+            tokenEnd = tokenStart + 2
             while (tokenEnd < bufferEnd - 1) {
-                if (buffer[tokenEnd] == '=' && buffer[tokenEnd + 1] == '=') {
+                if (buffer[tokenEnd] == '*' && buffer[tokenEnd + 1] == '/') {
                     tokenEnd += 2
                     break
                 }
@@ -140,6 +149,54 @@ class KLexer : LexerBase() {
             if (tokenEnd >= bufferEnd - 1) tokenEnd = bufferEnd
             currentToken = KTokenTypes.BLOCK_COMMENT
             return
+        }
+
+        // Documentation block: ===== (2+ equals at start of line through matching line)
+        // This handles lines like: ==============================
+        if (c == '=' && tokenStart + 1 < bufferEnd && buffer[tokenStart + 1] == '=') {
+            // Check if we're at the start of a line (or start of file)
+            val atLineStart = tokenStart == 0 || buffer[tokenStart - 1] == '\n'
+            if (atLineStart) {
+                // Consume the opening === line
+                tokenEnd = tokenStart
+                while (tokenEnd < bufferEnd && buffer[tokenEnd] == '=') {
+                    tokenEnd++
+                }
+                // Skip to end of line
+                while (tokenEnd < bufferEnd && buffer[tokenEnd] != '\n') {
+                    tokenEnd++
+                }
+                if (tokenEnd < bufferEnd) tokenEnd++ // consume newline
+
+                // Now consume content until we find another line starting with ==
+                while (tokenEnd < bufferEnd) {
+                    // Check if this line starts with ==
+                    if (buffer[tokenEnd] == '=') {
+                        var eqCount = 0
+                        var checkPos = tokenEnd
+                        while (checkPos < bufferEnd && buffer[checkPos] == '=') {
+                            eqCount++
+                            checkPos++
+                        }
+                        if (eqCount >= 2) {
+                            // Found closing line, consume it
+                            tokenEnd = checkPos
+                            while (tokenEnd < bufferEnd && buffer[tokenEnd] != '\n') {
+                                tokenEnd++
+                            }
+                            if (tokenEnd < bufferEnd) tokenEnd++ // consume newline
+                            break
+                        }
+                    }
+                    // Skip to next line
+                    while (tokenEnd < bufferEnd && buffer[tokenEnd] != '\n') {
+                        tokenEnd++
+                    }
+                    if (tokenEnd < bufferEnd) tokenEnd++ // consume newline
+                }
+                currentToken = KTokenTypes.BLOCK_COMMENT
+                return
+            }
         }
 
         // String literal
