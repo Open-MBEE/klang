@@ -4,6 +4,7 @@ import { KReferenceProvider } from './providers/referenceProvider';
 import { KHoverProvider } from './providers/hoverProvider';
 import { KDocumentSymbolProvider } from './providers/documentSymbolProvider';
 import { KWorkspaceSymbolProvider } from './providers/workspaceSymbolProvider';
+import { runKFile, runKFileWithArgs } from './runner';
 
 const K_MODE: vscode.DocumentFilter = { language: 'k', scheme: 'file' };
 
@@ -33,6 +34,15 @@ export function activate(context: vscode.ExtensionContext) {
     // Register Workspace Symbol Provider (Ctrl+T to search symbols across workspace)
     context.subscriptions.push(
         vscode.languages.registerWorkspaceSymbolProvider(new KWorkspaceSymbolProvider())
+    );
+
+    // Register Run Commands
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.runFile', runKFile)
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.runFileWithArgs', runKFileWithArgs)
     );
 }
 

@@ -33,7 +33,71 @@
         "scopeName": "source.k",
         "path": "./syntaxes/k.tmLanguage.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "k.runFile",
+        "title": "Run K File",
+        "category": "K",
+        "icon": "$(play)"
+      },
+      {
+        "command": "k.runFileWithArgs",
+        "title": "Run K File with Arguments...",
+        "category": "K"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "k.runFile",
+          "when": "resourceExtname == .k",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "k.runFile",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "resourceLangId == k"
+      }
+    ],
+    "configuration": {
+      "title": "K Language",
+      "properties": {
+        "k.installation.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the K language installation directory (containing the 'export/k' script or 'k' executable)"
+        },
+        "k.java.home": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Java installation (Java 8 or 21 required). Leave empty to use system default or JAVA_HOME."
+        },
+        "k.run.showOutput": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show output panel when running K files"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
