@@ -1,0 +1,8 @@
+# JetBrains IDE plugin build artifacts
+.gradle/
+build/
+META-INF/
+# VS Code extension build artifacts
+*.vsix
+node_modules/
+out/

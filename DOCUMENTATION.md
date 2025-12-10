@@ -53,12 +53,25 @@ Technical investigations and analysis (useful for understanding project history 
 - **[COMPILATION_PERFORMANCE.md](docs/investigations/COMPILATION_PERFORMANCE.md)** - Complete compilation performance analysis and benchmarks
 - **[TEST_SCRIPT_CONSOLIDATION.md](docs/investigations/TEST_SCRIPT_CONSOLIDATION.md)** - Test runner consolidation notes
 
+### IDE Support (`ide/`)
+
+IDE plugins and extensions for K language development:
+
+- **[IDE_DESIGN_VISION.md](docs/IDE_DESIGN_VISION.md)** - Complete IDE design vision and roadmap
+- **[ide/README.md](ide/README.md)** - IDE plugin overview
+- **[ide/vscode/](ide/vscode/)** - VS Code extension with syntax highlighting
+- **[ide/jetbrains/](ide/jetbrains/)** - JetBrains/IntelliJ plugin
+
 ## 🔍 Quick Navigation
 
 **New to K?** Start here:
 1. [README.md](README.md) - Overview
 2. [SETUP.md](SETUP.md) - Get it running
 3. [TEST_INFRASTRUCTURE.md](docs/TEST_INFRASTRUCTURE.md) - Run tests
+
+**Want IDE support?** Check:
+- [ide/README.md](ide/README.md) - IDE plugins overview
+- [docs/IDE_DESIGN_VISION.md](docs/IDE_DESIGN_VISION.md) - Design vision
 
 **Working on features?** Check:
 - [docs/features/](docs/features/) - Feature documentation

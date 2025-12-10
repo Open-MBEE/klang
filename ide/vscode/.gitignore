@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+
+# Package files
+*.vsix
+
+# Lock files (optional, can be committed)
+package-lock.json
+

@@ -21,6 +21,10 @@ class Angle {
   req value >= 0 && value <= 360
 }
 
+
+/**
+  TAngle is awesome!  It is a an angle of a triangle!
+*/
 class TAngle extends Angle {
   req value < 180
 }
