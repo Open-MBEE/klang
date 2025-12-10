@@ -225,20 +225,36 @@ object UtilSMT {
         val expSMT = exp.toSMT(className, subtyping)
         "  " + ("  " * level) + expSMT + (")" * level)
       case (pd @ PropertyDecl(modifiers, name, tyOpt, None, _, exp)) :: rest =>
-        if (!modifiers.forall(_ == Val))
-          UtilSMT.error(s"modifier in $pd")
-        val ty = pd.getTypeOrError
-        if (!wellFormedType(ty))
-          UtilSMT.error(s"$ty in local property declaration $pd")
-        exp match {
-          case Some(e) =>
-            if (UtilSMT.isConstructorAppl(e))
-              UtilSMT.error(s"constructor application $e not allowed in block")
-            val expSMT = e.toSMT(className, subtyping)
-            "  " + ("  " * level) + s"(let (($name $expSMT))\n" +
-              memberList2SMT(rest, className, subtyping, level + 1)
-          case None =>
-            UtilSMT.error(s"expression is missing in local property declaration $pd")
+        // Check if this PropertyDecl was converted to an equality constraint by the type checker
+        if (TypeChecker.propertyAsConstraint.containsKey(pd)) {
+          val equalityExp = TypeChecker.propertyAsConstraint.get(pd)
+          // For the last element, just return the equality expression
+          if (rest.isEmpty) {
+            val expSMT = equalityExp.toSMT(className, subtyping)
+            "  " + ("  " * level) + expSMT + (")" * level)
+          } else {
+            // For non-last elements, we need to combine with rest using "and"
+            val expSMT = equalityExp.toSMT(className, subtyping)
+            val restSMT = memberList2SMT(rest, className, subtyping, level)
+            s"(and $expSMT\n$restSMT)"
+          }
+        } else {
+          // Normal property declaration - create let binding
+          if (!modifiers.forall(_ == Val))
+            UtilSMT.error(s"modifier in $pd")
+          val ty = pd.getTypeOrError
+          if (!wellFormedType(ty))
+            UtilSMT.error(s"$ty in local property declaration $pd")
+          exp match {
+            case Some(e) =>
+              if (UtilSMT.isConstructorAppl(e))
+                UtilSMT.error(s"constructor application $e not allowed in block")
+              val expSMT = e.toSMT(className, subtyping)
+              "  " + ("  " * level) + s"(let (($name $expSMT))\n" +
+                memberList2SMT(rest, className, subtyping, level + 1)
+            case None =>
+              UtilSMT.error(s"expression is missing in local property declaration $pd")
+          }
         }
       case _ =>
         UtilSMT.error(s"body of function\n${members.mkString("\n")}")

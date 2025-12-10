@@ -31,6 +31,14 @@ case object TypeChecker {
   /** Map from simple name to fully qualified Java class name (for imports) */
   var javaImports: Map[String, String] = Map()
 
+  /**
+   * PropertyDecls that should be interpreted as equality expressions (constraints).
+   * This happens when a PropertyDecl has no explicit type but the name is already
+   * declared in an enclosing scope. In this case, `name = expr` is interpreted as
+   * `name == expr` (equality/constraint) rather than a new property declaration.
+   */
+  var propertyAsConstraint: IMap[PropertyDecl, BinExp] = new IMap()
+
   def reset(): Unit = {
     globalTypeEnv = TypeEnv(null, Map())
     decl2TypeEnvi = Map()
@@ -42,6 +50,7 @@ case object TypeChecker {
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
     javaImports = Map[String, String]()
+    propertyAsConstraint = new IMap()
     ClassHierarchy.parents = Map[EntityDecl, Set[Type]]()
     ClassHierarchy.children = Map[EntityDecl, Set[Type]]()
   }
@@ -1069,44 +1078,88 @@ class TypeChecker(model: Model) {
     body.foreach { m =>
       m match {
         case pd @ PropertyDecl(_, _, _, _, _, _) =>
-          // Handle type inference for properties without explicit type
-          pd.ty match {
-            case Some(explicitType) =>
-              // Explicit type given - validate it exists
-              if (!doesTypeExist(newTe, explicitType)) {
-                error(s"Type $explicitType not found. Exiting.")
-              }
-              // Validate expression type matches if present
-              pd.expr match {
-                case Some(e) =>
-                  val exprType = getExpType(newTe, e, owner)
-                  if (!areTypesEqual(exprType, explicitType, true)) {
-                    error(s"Type does not match: ${pd.name}. Expected $explicitType, Found $exprType")
-                  }
-                  exp2Type.put(e, exprType)
-                case None => ()
-              }
-            case None =>
-              // No explicit type - infer from initialization expression
-              pd.expr match {
-                case Some(e) =>
-                  val exprType = getExpType(newTe, e, owner)
-                  pd.inferredType = Some(exprType)
-                  exp2Type.put(e, exprType)
-                  logDebug(s"Type inference: inferred type $exprType for property ${pd.name}")
-                case None =>
-                  error(s"Cannot infer type for '${pd.name}': no type annotation and no initialization expression.")
-              }
-          }
-          if (newTe.contains(pd.name)) {
-            val typeInfo = newTe(pd.name)
-            typeInfo match {
-              case PropertyTypeInfo(_, false, false, _) => error(s"Redeclaring variable in block. ${pd.name}")
-              case ParamTypeInfo(_)                     => error(s"Redeclaring variable in block. ${pd.name}")
-              case _                                    => ()
+          // Check if this PropertyDecl should be interpreted as an equality constraint
+          // This happens when:
+          // 1. No explicit type is given (pd.ty.isEmpty)
+          // 2. The name is already declared in scope (newTe.contains(pd.name))
+          // 3. There is an initialization expression (pd.expr.isDefined)
+          // In this case, `name = expr` means `name == expr` (equality/constraint), not property declaration
+          val shouldBeConstraint = pd.ty.isEmpty && pd.expr.isDefined && newTe.contains(pd.name)
+
+          if (shouldBeConstraint) {
+            // Convert to equality expression: name = expr becomes name == expr (BoolType)
+            val identExp = IdentExp(pd.name)
+            var equalityExp: BinExp = BinExp(identExp, EQ, pd.expr.get)
+
+            // Handle grammar ambiguity BEFORE type checking:
+            // When PropertyDecl captures "t1 = e.t1 && t2 = e.t2", the parser produces:
+            //   PropertyDecl("t1", expr = BinExp(e.t1, AND, BinExp(t2, EQ, e.t2)))
+            // We need to restructure to: BinExp(BinExp(t1, EQ, e.t1), AND, BinExp(t2, EQ, e.t2))
+            // Check the pattern first to avoid type errors from evaluating "Real && Bool"
+            pd.expr.get match {
+              case BinExp(lhs, op, rhs) if op == AND || op == OR =>
+                // Check if lhs has a type compatible with the variable (not Bool from &&/||)
+                val varType = getExpType(newTe, identExp, owner)
+                val lhsType = getExpType(newTe, lhs, owner)
+                if (areTypesEqual(varType, lhsType, true) && lhsType != BoolType) {
+                  // Restructure: name = (a && b) becomes (name = a) && b
+                  val innerEquality = BinExp(identExp, EQ, lhs)
+                  equalityExp = BinExp(innerEquality, op, rhs)
+                  logDebug(s"Restructured '${pd.name} = $lhs $op $rhs' to '(${pd.name} = $lhs) $op $rhs'")
+                }
+              case _ => // No restructuring needed
             }
+
+            // Store the conversion for later use
+            propertyAsConstraint.put(pd, equalityExp)
+            // Type check the (possibly restructured) equality expression
+            val eqType = getExpType(newTe, equalityExp, owner)
+            if (eqType != BoolType) {
+              error(s"Equality constraint '${pd.name} = ${pd.expr.get}' does not type check to Bool, got $eqType")
+            }
+            exp2Type.put(equalityExp, BoolType)
+            logDebug(s"PropertyDecl '${pd.name} = ...' interpreted as equality constraint (name already in scope)")
+            // Don't add to type environment - it's a constraint, not a new declaration
+          } else {
+            // Normal property declaration handling
+            pd.ty match {
+              case Some(explicitType) =>
+                // Explicit type given - validate it exists
+                if (!doesTypeExist(newTe, explicitType)) {
+                  error(s"Type $explicitType not found. Exiting.")
+                }
+                // Validate expression type matches if present
+                pd.expr match {
+                  case Some(e) =>
+                    val exprType = getExpType(newTe, e, owner)
+                    if (!areTypesEqual(exprType, explicitType, true)) {
+                      error(s"Type does not match: ${pd.name}. Expected $explicitType, Found $exprType")
+                    }
+                    exp2Type.put(e, exprType)
+                  case None => ()
+                }
+              case None =>
+                // No explicit type - infer from initialization expression
+                pd.expr match {
+                  case Some(e) =>
+                    val exprType = getExpType(newTe, e, owner)
+                    pd.inferredType = Some(exprType)
+                    exp2Type.put(e, exprType)
+                    logDebug(s"Type inference: inferred type $exprType for property ${pd.name}")
+                  case None =>
+                    error(s"Cannot infer type for '${pd.name}': no type annotation and no initialization expression.")
+                }
+            }
+            if (newTe.contains(pd.name)) {
+              val typeInfo = newTe(pd.name)
+              typeInfo match {
+                case PropertyTypeInfo(_, false, false, _) => error(s"Redeclaring variable in block. ${pd.name}")
+                case ParamTypeInfo(_)                     => error(s"Redeclaring variable in block. ${pd.name}")
+                case _                                    => ()
+              }
+            }
+            newTe = newTe.overwrite(pd.name -> PropertyTypeInfo(pd, false, false, owner))
           }
-          newTe = newTe.overwrite(pd.name -> PropertyTypeInfo(pd, false, false, owner))
         case ExpressionDecl(exp @ IfExp(cond, tb, eb)) =>
           if (tb.isInstanceOf[BlockExp]) {
             exp2TypeEnv.put(tb, processBody(tb.asInstanceOf[BlockExp].body, newTe, owner))
@@ -1167,6 +1220,10 @@ class TypeChecker(model: Model) {
             }
             exp2Type.put(exp, lastT)
             lastT
+          case pd: PropertyDecl if propertyAsConstraint.containsKey(pd) =>
+            // This PropertyDecl was interpreted as an equality constraint
+            lastT = BoolType
+            BoolType
           case _ => UnitType
         }
       }

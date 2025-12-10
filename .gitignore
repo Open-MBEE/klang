@@ -20,6 +20,10 @@ export/lib/libz3.so
 export/lib/libz3java.so
 export/lib/libz3.dll
 export/lib/libz3java.dll
+# Don't commit built JAR to export/ - it's built to target/ and export/k uses target/classes
+export/klang-*.jar
+# User-specific run script with hardcoded paths
+runk.sh
 src/tests/baseline.smt
 src/tests/current.smt
 src/tests/baseline.smt.model
