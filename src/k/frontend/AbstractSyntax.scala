@@ -140,10 +140,16 @@ object UtilSMT {
   var createdLocals: Set[String] = Set() // locals not detected by type checker
 
   def reset {
+    constraintCounter = 0
+    constraintMessageMap = Map()
+    objectGraph = null
+    statistics = null
+    variableCounter = 0
+    heapInitializerConstants = Nil
     subClassMap = Map()
     constantsToDeclare = Nil
-    constantCounter = 0
-    heapInitializerConstants = Nil
+    gettersToDeclare = Set()
+    createdLocals = Set()
     externalFuncDecls = Set()
     ExternalFunctions.reset()
   }
@@ -3682,8 +3688,11 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
   override def toSMT(className: String, subTyping: Boolean): String = {
     kind match {
       case SetKind =>
-        val ty = exp2Type.get(this) // not used, see below.
-        val tySMT = "Int" // TODO: use ty instead
+        val ty = exp2Type.get(this)
+        val tySMT = ty match {
+          case IdentType(_, elemType :: _) => elemType.toSMT
+          case _ => "Int" // fallback
+        }
         val emptySMT = s"((as const (Set $tySMT)) false)"
         var result = emptySMT
         for (exp <- exps) {
@@ -4378,7 +4387,7 @@ case object SETINTER extends BinaryOp {
     UtilSMT.statistics.SETOP += 1
   }
 
-  override def toSMT = "intersect"
+  override def toSMT = "intersection"
 
   override def toString = "inter"
 
@@ -4389,6 +4398,8 @@ case object SETDIFF extends BinaryOp {
   override def statistics() {
     UtilSMT.statistics.SETOP += 1
   }
+
+  override def toSMT = "setminus"
 
   override def toString = "\\"
 
@@ -4678,7 +4689,15 @@ case class DateLiteral(s: String) extends Literal {
       val instant = java.time.Instant.parse(s)
       instant.toEpochMilli.toString
     } catch {
-      case _: Exception => s // fallback to string if parse fails
+      case _: Exception =>
+        // Try parsing as LocalDateTime (without timezone) and assume UTC
+        try {
+          val ldt = java.time.LocalDateTime.parse(s)
+          val instant = ldt.toInstant(java.time.ZoneOffset.UTC)
+          instant.toEpochMilli.toString
+        } catch {
+          case _: Exception => s // fallback to string if all parse fails
+        }
     }
   }
 }
