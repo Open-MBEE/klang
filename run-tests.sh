@@ -34,7 +34,7 @@ VERBOSE=false
 FILTER=""
 TEST_FILE=""
 PARALLEL_JOBS=1  # Default: sequential
-BATCH_MODE=false  # Single JVM mode (fastest)
+BATCH_MODE=true   # Single JVM mode (fastest) - now default
 TIMING_MODE=false  # Show detailed timing breakdown
 
 show_help() {
@@ -58,7 +58,8 @@ show_help() {
     echo "  -examples     Run example files (src/examples/)"
     echo "  -test <file>  Run a single test file"
     echo "  -filter <pat> Run only tests matching pattern"
-    echo "  -batch        Run all tests in single JVM (fastest)"
+    echo "  -batch        Run all tests in single JVM (default, fastest)"
+    echo "  -seq          Run tests sequentially, one JVM per test"
     echo "  -timing       Show detailed timing breakdown (with -batch)"
     echo "  -v, --verbose Show full output for each test"
     echo "  -h, --help    Show this help"
@@ -69,10 +70,10 @@ show_help() {
     echo "  -regex        Run regex tests (regex*.k)"
     echo ""
     echo "Examples:"
-    echo "  ./run-tests.sh              # Run core tests"
+    echo "  ./run-tests.sh              # Run core tests (batch mode)"
     echo "  ./run-tests.sh -all         # Run all tests"
-    echo "  ./run-tests.sh -batch       # Run in single JVM (fastest)"
-    echo "  ./run-tests.sh -batch -timing  # With detailed timing"
+    echo "  ./run-tests.sh -seq         # Run sequentially (one JVM per test)"
+    echo "  ./run-tests.sh -timing      # With detailed timing breakdown"
     echo "  ./run-tests.sh -j 4         # Run with 4 parallel jobs"
     echo "  ./run-tests.sh -j auto      # Auto-detect parallelism"
     echo "  ./run-tests.sh -new         # Run new feature tests"
@@ -131,6 +132,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -batch)
             BATCH_MODE=true
+            shift
+            ;;
+        -seq|-sequential)
+            BATCH_MODE=false
             shift
             ;;
         -timing)
