@@ -186,24 +186,61 @@ Use %help for available magic commands.
                         continue
                     if line.strip().startswith('+'):
                         continue
-                    if line.strip() and '|' not in line and not line.strip().startswith('+'):
-                        in_table = False
-                        in_extra = False
-                    if '|' in line or (line.strip() and not line.strip().startswith('+')):
-                        # Try to parse as table row
-                        # Format: "variable  Ref N  Value" or with | separators
-                        parts = [p.strip() for p in line.replace('|', ' ').split() if p.strip()]
+                    if line.strip() == '' or (line.strip().startswith('-') and not any(c.isalnum() for c in line)):
+                        continue
+
+                    # K output has pipe-separated columns: |Variable|Ref|Value|
+                    # First, check if line contains pipes
+                    line_stripped = line.strip()
+                    if not line_stripped or line_stripped.startswith('+'):
+                        continue
+
+                    if '|' in line_stripped:
+                        # Parse as pipe-separated
+                        cols = [c.strip() for c in line_stripped.split('|') if c.strip()]
+                        if len(cols) >= 1:
+                            var_name = cols[0]
+                            # Skip header-like rows
+                            if var_name in ['Variable', '+', '-', '', 'VariableRefValue']:
+                                continue
+                            # cols[1] is Ref (either "-" for primitives or "Ref N" for objects)
+                            # cols[2] or last is the Value
+                            if len(cols) >= 3:
+                                ref_col = cols[1]
+                                value = cols[2]
+                                if ref_col != '-' and ref_col.startswith('Ref'):
+                                    value = f"{ref_col} {value}"
+                            elif len(cols) == 2:
+                                value = cols[1]
+                            else:
+                                value = ''
+
+                            if var_name and value:
+                                target_list.append({
+                                    'variable': var_name,
+                                    'value': value
+                                })
+                    else:
+                        # Fallback: space-separated parsing
+                        parts = line_stripped.split()
                         if len(parts) >= 2:
                             var_name = parts[0]
-                            # Skip header-like rows
-                            if var_name in ['Variable', '+', '-', '']:
+                            if var_name in ['Variable', '+', '-', '', '|', 'VariableRefValue']:
                                 continue
-                            # Find value - typically last part or after "Ref N"
-                            value = ' '.join(parts[1:])
-                            target_list.append({
-                                'variable': var_name,
-                                'value': value
-                            })
+                            rest = parts[1:]
+                            if rest[0] == '-':
+                                value = ' '.join(rest[1:]) if len(rest) > 1 else ''
+                            elif rest[0] == 'Ref' and len(rest) >= 2:
+                                ref_num = rest[1]
+                                value = f"Ref {ref_num} " + ' '.join(rest[2:]) if len(rest) > 2 else f"Ref {ref_num}"
+                            else:
+                                value = ' '.join(rest)
+
+                            if var_name and value:
+                                target_list.append({
+                                    'variable': var_name,
+                                    'value': value
+                                })
 
         # Check for UNSAT
         if 'unsatisfiable' in output.lower() or 'UNSAT' in output:
