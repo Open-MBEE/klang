@@ -156,8 +156,22 @@ java -version
 
 ### Running Tests
 
+Unit tests (fast, no browser):
 ```bash
-python -m pytest tests/
+cd jupyter/tests
+./run_tests.sh
+# or
+pytest test_k_kernel.py -v
+```
+
+UI tests with Playwright (requires browser):
+```bash
+# Install Playwright if needed
+pip install playwright pytest-playwright
+playwright install chromium
+
+# Run with visible browser
+pytest test_k_kernel_ui.py -v --headed
 ```
 
 ### Debugging
