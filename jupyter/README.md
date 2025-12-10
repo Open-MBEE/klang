@@ -5,7 +5,9 @@ Interactive constraint programming with K in Jupyter notebooks.
 ## Features
 
 - **Incremental Model Building**: Define K models cell by cell
-- **Rich Output**: Solutions displayed as formatted tables
+- **Rich Output**: Solutions displayed as formatted HTML tables
+- **Clean by Default**: Verbose output (parse trees, etc.) hidden unless requested
+- **SMT Inspection**: View generated SMT-LIB2 code with `%smt`
 - **Magic Commands**: Control the kernel with special commands
 - **Code Completion**: Basic completion for K keywords
 - **Load/Save**: Load existing K files or save your work
@@ -66,8 +68,12 @@ Then create a new notebook and select the "K" kernel.
 | Command | Description |
 |---------|-------------|
 | `%reset` | Clear the current K model |
-| `%solve` | Solve the current model |
-| `%show` | Display the current K model |
+| `%solve` | Explicitly solve the current model |
+| `%show` | Display the accumulated K code |
+| `%verbose [on/off]` | Toggle verbose output (parse trees, statistics) |
+| `%smt` | Show generated SMT-LIB2 code |
+| `%stats` | Show model statistics |
+| `%raw` | Show raw K output |
 | `%timeout N` | Set solver timeout to N seconds |
 | `%load file` | Load a K file |
 | `%save file` | Save current model to file |
@@ -188,13 +194,12 @@ jupyter console --kernel k --debug
 
 ## Future Enhancements
 
-- [ ] Syntax highlighting in notebooks
+- [ ] Syntax highlighting in notebooks (CodeMirror mode)
 - [ ] Constraint visualization
 - [ ] Solution exploration (multiple solutions)
 - [ ] UNSAT core display
-- [ ] SMT-LIB2 output view
-- [ ] Variable inspection
-- [ ] Inline documentation
+- [ ] Variable inspection on hover
+- [ ] Inline documentation for K constructs
 
 ## License
 

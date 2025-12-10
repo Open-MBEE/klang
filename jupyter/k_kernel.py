@@ -50,6 +50,9 @@ Use %help for available magic commands.
         super().__init__(**kwargs)
         self.k_code = []  # Accumulated K code blocks
         self.timeout = 30  # Default timeout in seconds
+        self.verbose = False  # Show raw K output (parse tree, etc.)
+        self.last_smt = None  # Store last generated SMT-LIB2
+        self.last_result = None  # Store last result for inspection
 
         # Find the K installation directory
         self.k_dir = self._find_k_dir()
@@ -125,32 +128,82 @@ Use %help for available magic commands.
             'status': 'ok' if returncode == 0 else 'error',
             'raw_output': output,
             'solutions': [],
+            'extra_objects': [],
             'statistics': {},
-            'smt': None
+            'smt': None,
+            'parse_tree': None
         }
+
+        lines = output.split('\n')
+
+        # Extract parse tree (for verbose mode)
+        for i, line in enumerate(lines):
+            if line.startswith('PARSE TREE:'):
+                if i + 1 < len(lines):
+                    result['parse_tree'] = lines[i + 1]
+                break
+
+        # Extract statistics
+        in_stats = False
+        for line in lines:
+            if 'STATISTICS:' in line:
+                in_stats = True
+                continue
+            if in_stats and '---' in line:
+                continue
+            if in_stats and ':' in line and not line.strip().startswith('-'):
+                parts = line.split(':')
+                if len(parts) == 2:
+                    key = parts[0].strip()
+                    val = parts[1].strip()
+                    if val.isdigit():
+                        result['statistics'][key] = int(val)
+            if in_stats and line.strip() == '':
+                in_stats = False
 
         # Extract solution table if present
         if 'Top level objects created:' in output:
             result['has_solution'] = True
-            # Parse the solution table
-            lines = output.split('\n')
             in_table = False
+            in_extra = False
             for line in lines:
-                if 'Variable' in line and 'Value' in line:
+                if 'Top level objects created:' in line:
                     in_table = True
+                    in_extra = False
                     continue
-                if in_table and line.strip().startswith('+'):
-                    continue
-                if in_table and line.strip() and '|' not in line:
+                if 'Extra objects created' in line:
                     in_table = False
-                if in_table and '|' in line:
-                    # Parse table row
-                    parts = [p.strip() for p in line.split('|') if p.strip()]
-                    if len(parts) >= 2:
-                        result['solutions'].append({
-                            'variable': parts[0],
-                            'value': parts[-1] if len(parts) > 2 else parts[1]
-                        })
+                    in_extra = True
+                    continue
+                if 'No extra objects' in line:
+                    in_extra = False
+                    continue
+
+                # Parse table rows
+                target_list = result['solutions'] if in_table else result['extra_objects'] if in_extra else None
+                if target_list is not None:
+                    if 'Variable' in line and ('Value' in line or 'Ref' in line):
+                        continue
+                    if line.strip().startswith('+'):
+                        continue
+                    if line.strip() and '|' not in line and not line.strip().startswith('+'):
+                        in_table = False
+                        in_extra = False
+                    if '|' in line or (line.strip() and not line.strip().startswith('+')):
+                        # Try to parse as table row
+                        # Format: "variable  Ref N  Value" or with | separators
+                        parts = [p.strip() for p in line.replace('|', ' ').split() if p.strip()]
+                        if len(parts) >= 2:
+                            var_name = parts[0]
+                            # Skip header-like rows
+                            if var_name in ['Variable', '+', '-', '']:
+                                continue
+                            # Find value - typically last part or after "Ref N"
+                            value = ' '.join(parts[1:])
+                            target_list.append({
+                                'variable': var_name,
+                                'value': value
+                            })
 
         # Check for UNSAT
         if 'unsatisfiable' in output.lower() or 'UNSAT' in output:
@@ -160,6 +213,13 @@ Use %help for available magic commands.
         # Check for type errors (must have Exception, not just "Type checking")
         if 'TypeCheckException' in output:
             result['status'] = 'type_error'
+            # Extract error message
+            for line in lines:
+                if '[TypeChecker]' in line:
+                    result['error_message'] = line.split('[TypeChecker]')[-1].strip()
+                    break
+        elif 'K2Z3Exception' in output or 'K2SMTException' in output:
+            result['status'] = 'smt_error'
         elif 'Exception' in output and result['status'] != 'unsat':
             result['status'] = 'error'
 
@@ -168,49 +228,125 @@ Use %help for available magic commands.
     def _format_result(self, result):
         """Format the result for display in Jupyter."""
         if result['status'] == 'error':
-            return f"❌ Error: {result.get('error', 'Unknown error')}\n\n{result.get('raw_output', '')}"
+            error_msg = result.get('error', result.get('error_message', 'Unknown error'))
+            if self.verbose:
+                return f"❌ **Error:** {error_msg}\n\n```\n{result.get('raw_output', '')}\n```"
+            return f"❌ **Error:** {error_msg}"
 
         if result['status'] == 'timeout':
-            return f"⏱️ {result['error']}"
+            return f"⏱️ {result.get('error', 'Solver timed out')}"
 
         if result['status'] == 'type_error':
-            return f"❌ Type Error\n\n{result.get('raw_output', '')}"
+            error_msg = result.get('error_message', 'Type checking failed')
+            if self.verbose:
+                return f"❌ **Type Error:** {error_msg}\n\n```\n{result.get('raw_output', '')}\n```"
+            return f"❌ **Type Error:** {error_msg}"
+
+        if result['status'] == 'smt_error':
+            if self.verbose:
+                return f"❌ **SMT Error**\n\n```\n{result.get('raw_output', '')}\n```"
+            return "❌ **SMT Error:** Could not generate or solve SMT constraints"
 
         if result['status'] == 'unsat':
-            return "❌ UNSATISFIABLE\n\nThe constraints cannot be satisfied simultaneously."
+            return "❌ **UNSATISFIABLE**\n\nThe constraints cannot be satisfied simultaneously."
 
-        if result.get('has_solution') and result['solutions']:
-            # Format as a nice table
+        if result.get('has_solution'):
             output = "✅ **SAT** - Solution found:\n\n"
-            output += "| Variable | Value |\n"
-            output += "|----------|-------|\n"
-            for sol in result['solutions']:
-                output += f"| `{sol['variable']}` | `{sol['value']}` |\n"
+
+            if result['solutions']:
+                output += "| Variable | Value |\n"
+                output += "|----------|-------|\n"
+                for sol in result['solutions']:
+                    output += f"| `{sol['variable']}` | `{sol['value']}` |\n"
+
+            if result.get('extra_objects'):
+                output += "\n**Additional objects:**\n\n"
+                output += "| Object | Value |\n"
+                output += "|--------|-------|\n"
+                for obj in result['extra_objects']:
+                    output += f"| `{obj['variable']}` | `{obj['value']}` |\n"
+
+            if self.verbose and result.get('statistics'):
+                output += "\n**Statistics:**\n"
+                for key, val in result['statistics'].items():
+                    output += f"- {key}: {val}\n"
+
             return output
 
-        # Default: return raw output
-        return result.get('raw_output', 'No output')
+        # Default: return raw output if verbose, otherwise minimal
+        if self.verbose:
+            return f"```\n{result.get('raw_output', 'No output')}\n```"
+        return "✅ Model processed successfully"
 
     def _format_html_result(self, result):
         """Format result as HTML for richer display."""
         if result['status'] == 'error':
-            return f'<div style="color: red; font-family: monospace;"><b>Error:</b><br><pre>{result.get("raw_output", "")}</pre></div>'
+            error_msg = result.get('error', result.get('error_message', 'Unknown error'))
+            html = f'<div style="color: #c0392b;"><b>❌ Error:</b> {error_msg}</div>'
+            if self.verbose:
+                html += f'<pre style="background: #fdf2f2; padding: 10px; border-radius: 4px; overflow-x: auto;">{result.get("raw_output", "")}</pre>'
+            return html
 
-        if result.get('has_solution') and result['solutions']:
-            html = '<div style="font-family: sans-serif;">'
-            html += '<h4 style="color: green;">✅ SAT - Solution Found</h4>'
-            html += '<table style="border-collapse: collapse; margin: 10px 0;">'
-            html += '<tr style="background: #f0f0f0;"><th style="padding: 8px; border: 1px solid #ddd;">Variable</th><th style="padding: 8px; border: 1px solid #ddd;">Value</th></tr>'
-            for sol in result['solutions']:
-                html += f'<tr><td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">{sol["variable"]}</td>'
-                html += f'<td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">{sol["value"]}</td></tr>'
-            html += '</table></div>'
+        if result['status'] == 'type_error':
+            error_msg = result.get('error_message', 'Type checking failed')
+            html = f'<div style="color: #c0392b;"><b>❌ Type Error:</b> {error_msg}</div>'
+            if self.verbose:
+                html += f'<pre style="background: #fdf2f2; padding: 10px; border-radius: 4px; overflow-x: auto;">{result.get("raw_output", "")}</pre>'
             return html
 
         if result['status'] == 'unsat':
-            return '<div style="color: red;"><h4>❌ UNSATISFIABLE</h4><p>The constraints cannot be satisfied simultaneously.</p></div>'
+            return '''<div style="color: #c0392b;">
+                <h4 style="margin: 0;">❌ UNSATISFIABLE</h4>
+                <p style="margin: 5px 0 0 0;">The constraints cannot be satisfied simultaneously.</p>
+            </div>'''
 
-        return f'<pre>{result.get("raw_output", "")}</pre>'
+        if result.get('has_solution'):
+            html = '<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif;">'
+            html += '<h4 style="color: #27ae60; margin: 0 0 10px 0;">✅ SAT - Solution Found</h4>'
+
+            if result['solutions']:
+                html += '''<table style="border-collapse: collapse; margin: 10px 0; width: auto;">
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 8px 16px; border: 1px solid #dee2e6; text-align: left;">Variable</th>
+                        <th style="padding: 8px 16px; border: 1px solid #dee2e6; text-align: left;">Value</th>
+                    </tr>'''
+                for sol in result['solutions']:
+                    html += f'''<tr>
+                        <td style="padding: 8px 16px; border: 1px solid #dee2e6; font-family: monospace; background: #fff;">{sol["variable"]}</td>
+                        <td style="padding: 8px 16px; border: 1px solid #dee2e6; font-family: monospace; background: #fff;">{sol["value"]}</td>
+                    </tr>'''
+                html += '</table>'
+
+            if result.get('extra_objects'):
+                html += '<h5 style="margin: 15px 0 5px 0; color: #666;">Additional Objects:</h5>'
+                html += '''<table style="border-collapse: collapse; margin: 5px 0; width: auto;">
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 6px 12px; border: 1px solid #dee2e6; text-align: left; font-size: 0.9em;">Object</th>
+                        <th style="padding: 6px 12px; border: 1px solid #dee2e6; text-align: left; font-size: 0.9em;">Value</th>
+                    </tr>'''
+                for obj in result['extra_objects']:
+                    html += f'''<tr>
+                        <td style="padding: 6px 12px; border: 1px solid #dee2e6; font-family: monospace; font-size: 0.9em;">{obj["variable"]}</td>
+                        <td style="padding: 6px 12px; border: 1px solid #dee2e6; font-family: monospace; font-size: 0.9em;">{obj["value"]}</td>
+                    </tr>'''
+                html += '</table>'
+
+            if self.verbose and result.get('statistics'):
+                html += '<details style="margin-top: 10px;"><summary style="cursor: pointer; color: #666;">Statistics</summary>'
+                html += '<ul style="margin: 5px 0; padding-left: 20px;">'
+                for key, val in result['statistics'].items():
+                    html += f'<li><code>{key}</code>: {val}</li>'
+                html += '</ul></details>'
+
+            html += '</div>'
+            return html
+
+        if result['status'] == 'unsat':
+            return '<div style="color: #c0392b;"><h4>❌ UNSATISFIABLE</h4><p>The constraints cannot be satisfied simultaneously.</p></div>'
+
+        if self.verbose:
+            return f'<pre style="background: #f8f9fa; padding: 10px; border-radius: 4px;">{result.get("raw_output", "")}</pre>'
+        return '<div style="color: #27ae60;">✅ Model processed successfully</div>'
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute K code or magic command."""
@@ -232,6 +368,7 @@ Use %help for available magic commands.
         # Combine all K code and run
         full_code = '\n\n'.join(self.k_code)
         result = self._run_k(full_code)
+        self.last_result = result  # Store for %smt, %stats, %raw commands
 
         if not silent:
             # Send both plain text and HTML
@@ -262,10 +399,12 @@ Use %help for available magic commands.
 
         if magic == '%reset':
             self.k_code = []
+            self.last_result = None
+            self.last_smt = None
             if not silent:
                 self.send_response(self.iopub_socket, 'stream', {
                     'name': 'stdout',
-                    'text': '🔄 K model reset. Start fresh!\n'
+                    'text': '🔄 Model reset. Start fresh!\n'
                 })
 
         elif magic == '%solve':
@@ -278,6 +417,7 @@ Use %help for available magic commands.
             else:
                 full_code = '\n\n'.join(self.k_code)
                 result = self._run_k(full_code)
+                self.last_result = result
                 if not silent:
                     self.send_response(self.iopub_socket, 'display_data', {
                         'data': {
@@ -287,12 +427,100 @@ Use %help for available magic commands.
                         'metadata': {}
                     })
 
-        elif magic == '%smt':
+        elif magic == '%verbose':
+            arg = args.strip().lower()
+            if arg in ['on', 'true', '1', 'yes']:
+                self.verbose = True
+                msg = '🔍 Verbose mode ON - showing full K output\n'
+            elif arg in ['off', 'false', '0', 'no']:
+                self.verbose = False
+                msg = '🔇 Verbose mode OFF - showing clean output\n'
+            else:
+                self.verbose = not self.verbose
+                msg = f'🔍 Verbose mode {"ON" if self.verbose else "OFF"}\n'
             if not silent:
                 self.send_response(self.iopub_socket, 'stream', {
                     'name': 'stdout',
-                    'text': 'SMT output display not yet implemented\n'
+                    'text': msg
                 })
+
+        elif magic == '%smt':
+            if not self.k_code:
+                if not silent:
+                    self.send_response(self.iopub_socket, 'stream', {
+                        'name': 'stderr',
+                        'text': 'No K code. Enter some K code first.\n'
+                    })
+            else:
+                # Run with -smt flag to get SMT output
+                full_code = '\n\n'.join(self.k_code)
+                # For now, show raw output which includes SMT if available
+                # TODO: Add -smt flag support to K frontend
+                if not silent:
+                    if self.last_result and self.last_result.get('raw_output'):
+                        # Try to extract SMT from output
+                        output = self.last_result['raw_output']
+                        smt_start = output.find('(set-logic')
+                        if smt_start == -1:
+                            smt_start = output.find('(declare-')
+                        if smt_start >= 0:
+                            # Find a reasonable end point
+                            smt_content = output[smt_start:]
+                            self.send_response(self.iopub_socket, 'display_data', {
+                                'data': {
+                                    'text/plain': f'SMT-LIB2 Output:\n\n{smt_content[:2000]}...' if len(smt_content) > 2000 else f'SMT-LIB2 Output:\n\n{smt_content}',
+                                    'text/html': f'<details><summary><b>SMT-LIB2 Output</b> (click to expand)</summary><pre style="background: #f5f5f5; padding: 10px; max-height: 400px; overflow: auto;">{smt_content}</pre></details>'
+                                },
+                                'metadata': {}
+                            })
+                        else:
+                            self.send_response(self.iopub_socket, 'stream', {
+                                'name': 'stdout',
+                                'text': 'No SMT output found. Run %verbose on and re-execute to capture SMT.\n'
+                            })
+                    else:
+                        self.send_response(self.iopub_socket, 'stream', {
+                            'name': 'stdout',
+                            'text': 'No previous result. Execute your K model first.\n'
+                        })
+
+        elif magic == '%stats':
+            if self.last_result and self.last_result.get('statistics'):
+                stats = self.last_result['statistics']
+                text = "**Model Statistics:**\n\n"
+                for key, val in stats.items():
+                    text += f"- {key}: {val}\n"
+                if not silent:
+                    self.send_response(self.iopub_socket, 'display_data', {
+                        'data': {
+                            'text/plain': text,
+                            'text/markdown': text
+                        },
+                        'metadata': {}
+                    })
+            else:
+                if not silent:
+                    self.send_response(self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': 'No statistics available. Execute your K model first.\n'
+                    })
+
+        elif magic == '%raw':
+            if self.last_result and self.last_result.get('raw_output'):
+                if not silent:
+                    self.send_response(self.iopub_socket, 'display_data', {
+                        'data': {
+                            'text/plain': self.last_result['raw_output'],
+                            'text/html': f'<pre style="background: #f5f5f5; padding: 10px; max-height: 500px; overflow: auto;">{self.last_result["raw_output"]}</pre>'
+                        },
+                        'metadata': {}
+                    })
+            else:
+                if not silent:
+                    self.send_response(self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': 'No output available. Execute your K model first.\n'
+                    })
 
         elif magic == '%timeout':
             try:
@@ -311,6 +539,12 @@ Use %help for available magic commands.
 
         elif magic == '%load':
             filepath = args.strip()
+            # Try relative to K_HOME if not absolute
+            if not os.path.isabs(filepath) and self.k_dir:
+                k_path = self.k_dir / filepath
+                if k_path.exists():
+                    filepath = str(k_path)
+
             if os.path.exists(filepath):
                 with open(filepath, 'r') as f:
                     self.k_code = [f.read()]
@@ -348,15 +582,21 @@ Use %help for available magic commands.
                 })
 
         elif magic == '%help':
-            help_text = """
-# K Jupyter Kernel - Magic Commands
+            help_text = """# K Jupyter Kernel
+
+Interactive constraint programming with K backed by Z3.
+
+## Magic Commands
 
 | Command | Description |
 |---------|-------------|
 | `%reset` | Clear the current K model |
-| `%solve` | Solve the current model |
-| `%show` | Display the current K model |
+| `%solve` | Explicitly solve the current model |
+| `%show` | Display the accumulated K code |
+| `%verbose [on/off]` | Toggle verbose output (parse trees, etc.) |
 | `%smt` | Show generated SMT-LIB2 code |
+| `%stats` | Show model statistics |
+| `%raw` | Show raw K output |
 | `%timeout N` | Set solver timeout to N seconds |
 | `%load file` | Load a K file |
 | `%save file` | Save current model to file |
@@ -365,10 +605,13 @@ Use %help for available magic commands.
 ## Usage
 
 Enter K code in cells to build up a model incrementally.
-Each cell's code is accumulated until you run `%reset`.
+Each cell's code is accumulated and solved automatically.
+Use `%reset` to start a new model.
 
-Example:
+## Example
+
 ```k
+-- Cell 1: Define a class
 class Point {
     x : Int
     y : Int
@@ -376,9 +619,21 @@ class Point {
     req y >= 0
 }
 
+-- Cell 2: Add constraints
 p : Point
 req p.x + p.y = 10
+req p.x < p.y
 ```
+
+## K Language Basics
+
+- **Classes**: `class Name { properties and constraints }`
+- **Properties**: `name : Type`
+- **Constraints**: `req expression`
+- **Soft constraints**: `soft req expression`
+- **Functions**: `fun name(params) : ReturnType { body }`
+- **Types**: `Int`, `Real`, `Bool`, `String`, `Set[T]`, `Seq[T]`
+- **Optimization**: `minimize expr` or `maximize expr`
 """
             if not silent:
                 self.send_response(self.iopub_socket, 'display_data', {
