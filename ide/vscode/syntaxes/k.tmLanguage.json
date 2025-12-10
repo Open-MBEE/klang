@@ -1,0 +1,257 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "K",
+  "scopeName": "source.k",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#annotations" },
+    { "include": "#keywords" },
+    { "include": "#constraints" },
+    { "include": "#optimization" },
+    { "include": "#types" },
+    { "include": "#operators" },
+    { "include": "#numbers" },
+    { "include": "#function-definition" },
+    { "include": "#class-definition" },
+    { "include": "#function-call" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-dash.k",
+          "match": "--.*$"
+        },
+        {
+          "name": "comment.block.k",
+          "begin": "^=+\\s*$",
+          "end": "^=+\\s*$",
+          "patterns": [
+            {
+              "name": "comment.block.documentation.k",
+              "match": ".*"
+            }
+          ]
+        },
+        {
+          "name": "comment.block.title.k",
+          "match": "^=+.*=+$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.k",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.k",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.k",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.k",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "annotations": {
+      "patterns": [
+        {
+          "name": "meta.annotation.k",
+          "match": "(@)(\\w+)(\\([^)]*\\))?",
+          "captures": {
+            "1": { "name": "punctuation.definition.annotation.k" },
+            "2": { "name": "entity.name.annotation.k" },
+            "3": { "name": "meta.annotation.parameters.k" }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.k",
+          "match": "\\b(if|then|else|match|with|case|while|do|for|in|return|break|continue)\\b"
+        },
+        {
+          "name": "keyword.declaration.k",
+          "match": "\\b(class|assoc|package|import|extends|type|annotation)\\b"
+        },
+        {
+          "name": "keyword.modifier.k",
+          "match": "\\b(part|var|val|ordered|unique|source|target)\\b"
+        },
+        {
+          "name": "keyword.other.k",
+          "match": "\\b(pre|post|fun)\\b"
+        },
+        {
+          "name": "constant.language.k",
+          "match": "\\b(true|false|null|this)\\b"
+        },
+        {
+          "name": "keyword.operator.quantifier.k",
+          "match": "\\b(forall|exists)\\b"
+        },
+        {
+          "name": "keyword.operator.such-that.k",
+          "match": ":-"
+        }
+      ]
+    },
+    "constraints": {
+      "patterns": [
+        {
+          "name": "keyword.constraint.hard.k",
+          "match": "\\b(req)\\b"
+        },
+        {
+          "name": "keyword.constraint.soft.k",
+          "match": "\\b(soft)\\s+(req)\\b",
+          "captures": {
+            "1": { "name": "keyword.constraint.soft.modifier.k" },
+            "2": { "name": "keyword.constraint.soft.k" }
+          }
+        },
+        {
+          "name": "keyword.other.assert.k",
+          "match": "\\b(assert)\\b"
+        }
+      ]
+    },
+    "optimization": {
+      "patterns": [
+        {
+          "name": "keyword.optimization.k",
+          "match": "\\b(minimize|maximize)\\b"
+        },
+        {
+          "name": "keyword.optimization.weight.k",
+          "match": "\\b(weight)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.k",
+          "match": "\\b(Bool|Char|Int|Real|String|Unit|Time|Duration)\\b"
+        },
+        {
+          "name": "support.type.collection.k",
+          "match": "\\b(Set|OSet|Bag|Seq|Class)\\b"
+        },
+        {
+          "name": "storage.type.k",
+          "match": "\\b(Tuple)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.k",
+          "match": "\\b(&&|\\|\\||!|=>|<=>)\\b"
+        },
+        {
+          "name": "keyword.operator.comparison.k",
+          "match": "(<=|>=|<|>|=|!=)"
+        },
+        {
+          "name": "keyword.operator.set.k",
+          "match": "\\b(isin|!isin|subset|psubset|union|inter)\\b"
+        },
+        {
+          "name": "keyword.operator.arithmetic.k",
+          "match": "(\\+|-|\\*|/|%)"
+        },
+        {
+          "name": "keyword.operator.type.k",
+          "match": "\\b(is|as)\\b"
+        },
+        {
+          "name": "keyword.operator.assignment.k",
+          "match": ":="
+        },
+        {
+          "name": "keyword.operator.lambda.k",
+          "match": "->"
+        },
+        {
+          "name": "keyword.operator.collect.k",
+          "match": "\\b(collect|sum|size|length|toSeq|toSet)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.k",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.k",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "function-definition": {
+      "patterns": [
+        {
+          "match": "\\b(fun)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*",
+          "captures": {
+            "1": { "name": "keyword.other.fun.k" },
+            "2": { "name": "entity.name.function.k" }
+          }
+        }
+      ]
+    },
+    "class-definition": {
+      "patterns": [
+        {
+          "match": "\\b(class|assoc)\\s+([A-Z][a-zA-Z0-9_]*)\\s*",
+          "captures": {
+            "1": { "name": "keyword.declaration.class.k" },
+            "2": { "name": "entity.name.type.class.k" }
+          }
+        }
+      ]
+    },
+    "function-call": {
+      "patterns": [
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": { "name": "entity.name.function.call.k" }
+          }
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.k",
+          "match": "\\b[a-z_][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "entity.name.type.k",
+          "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    }
+  }
+}
+

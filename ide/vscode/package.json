@@ -1,0 +1,35 @@
+{
+  "name": "k-language",
+  "displayName": "K Language Support",
+  "description": "Syntax highlighting and language support for the K constraint programming language",
+  "version": "0.1.0",
+  "publisher": "nasa-jpl",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nasa-jpl/klang"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "k",
+        "aliases": ["K", "k"],
+        "extensions": [".k"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "k",
+        "scopeName": "source.k",
+        "path": "./syntaxes/k.tmLanguage.json"
+      }
+    ]
+  }
+}
+
