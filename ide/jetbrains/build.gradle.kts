@@ -33,7 +33,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("243")
-        untilBuild.set("") // Empty = no upper bound, compatible with all future versions
+        untilBuild.set("253.*") // Compatible through IntelliJ 2025.3.x
     }
 
     signPlugin {

@@ -167,7 +167,7 @@ class KLexer : LexerBase() {
                     tokenEnd++
                 }
                 if (tokenEnd < bufferEnd) tokenEnd++ // consume newline
-
+                
                 // Now consume content until we find another line starting with ==
                 while (tokenEnd < bufferEnd) {
                     // Check if this line starts with ==

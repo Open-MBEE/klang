@@ -53,6 +53,10 @@
         <lang.braceMatcher
             language="K"
             implementationClass="nasa.jpl.klang.ide.KBraceMatcher"/>
+
+        <!-- Color Settings Page (Preferences → Editor → Color Scheme → K) -->
+        <colorSettingsPage
+            implementationClass="nasa.jpl.klang.ide.highlighting.KColorSettingsPage"/>
     </extensions>
 </idea-plugin>
 
