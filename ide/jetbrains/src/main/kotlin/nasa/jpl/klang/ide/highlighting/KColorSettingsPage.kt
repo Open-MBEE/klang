@@ -100,4 +100,3 @@ class KColorSettingsPage : ColorSettingsPage {
 
     override fun getDisplayName(): String = "K"
 }
-

@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>nasa.jpl.klang.ide</id>
     <name>K Language</name>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <vendor email="klang@jpl.nasa.gov" url="https://github.com/nasa-jpl/klang">NASA JPL</vendor>
 
     <description><![CDATA[
@@ -10,8 +10,13 @@
     <h2>Features</h2>
     <ul>
         <li>Syntax highlighting for K files (.k)</li>
+        <li>Go to Definition (Ctrl+Click / Ctrl+B)</li>
+        <li>Find Usages (Alt+F7)</li>
+        <li>Structure View (Alt+7) - navigate classes, functions, properties</li>
+        <li>Documentation on hover (Ctrl+Q)</li>
         <li>Comment support (line and block)</li>
         <li>Bracket matching</li>
+        <li>Color scheme customization</li>
     </ul>
 
     <h2>About K</h2>
@@ -20,6 +25,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>0.2.0</h3>
+    <ul>
+        <li>Go to Definition support</li>
+        <li>Find Usages support</li>
+        <li>Structure View for file navigation</li>
+        <li>Documentation popups on hover</li>
+        <li>PSI parser for better code understanding</li>
+    </ul>
     <h3>0.1.0</h3>
     <ul>
         <li>Initial release</li>
@@ -39,6 +52,11 @@
             language="K"
             extensions="k"/>
 
+        <!-- Parser -->
+        <lang.parserDefinition
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.parser.KParserDefinition"/>
+
         <!-- Syntax Highlighting -->
         <lang.syntaxHighlighterFactory
             language="K"
@@ -54,9 +72,33 @@
             language="K"
             implementationClass="nasa.jpl.klang.ide.KBraceMatcher"/>
 
+        <!-- Structure View -->
+        <lang.psiStructureViewFactory
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.structure.KStructureViewFactory"/>
+
+        <!-- Find Usages -->
+        <lang.findUsagesProvider
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.navigation.KFindUsagesProvider"/>
+
+        <!-- Go to Declaration -->
+        <gotoDeclarationHandler
+            implementationClass="nasa.jpl.klang.ide.navigation.KGotoDeclarationHandler"/>
+
+        <!-- Documentation -->
+        <lang.documentationProvider
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.documentation.KDocumentationProvider"/>
+
         <!-- Color Settings Page (Preferences → Editor → Color Scheme → K) -->
         <colorSettingsPage
             implementationClass="nasa.jpl.klang.ide.highlighting.KColorSettingsPage"/>
+
+        <!-- Reference Contributor (enables Find Usages) -->
+        <psi.referenceContributor
+            language="K"
+            implementation="nasa.jpl.klang.ide.psi.KReferenceContributor"/>
     </extensions>
 </idea-plugin>
 
