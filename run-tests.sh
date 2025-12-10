@@ -35,6 +35,7 @@ FILTER=""
 TEST_FILE=""
 PARALLEL_JOBS=1  # Default: sequential
 BATCH_MODE=false  # Single JVM mode (fastest)
+TIMING_MODE=false  # Show detailed timing breakdown
 
 show_help() {
     echo "======================================"
@@ -58,6 +59,7 @@ show_help() {
     echo "  -test <file>  Run a single test file"
     echo "  -filter <pat> Run only tests matching pattern"
     echo "  -batch        Run all tests in single JVM (fastest)"
+    echo "  -timing       Show detailed timing breakdown (with -batch)"
     echo "  -v, --verbose Show full output for each test"
     echo "  -h, --help    Show this help"
     echo ""
@@ -70,6 +72,7 @@ show_help() {
     echo "  ./run-tests.sh              # Run core tests"
     echo "  ./run-tests.sh -all         # Run all tests"
     echo "  ./run-tests.sh -batch       # Run in single JVM (fastest)"
+    echo "  ./run-tests.sh -batch -timing  # With detailed timing"
     echo "  ./run-tests.sh -j 4         # Run with 4 parallel jobs"
     echo "  ./run-tests.sh -j auto      # Auto-detect parallelism"
     echo "  ./run-tests.sh -new         # Run new feature tests"
@@ -128,6 +131,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -batch)
             BATCH_MODE=true
+            shift
+            ;;
+        -timing)
+            TIMING_MODE=true
             shift
             ;;
         -opt)
@@ -259,12 +266,18 @@ if [ "$BATCH_MODE" = true ]; then
     BATCH_OUTPUT_FILE=$(mktemp)
     trap "rm -f $BATCH_OUTPUT_FILE" EXIT
 
+    # Build Java args
+    JAVA_ARGS="-batch"
+    if [ "$TIMING_MODE" = true ]; then
+        JAVA_ARGS="$JAVA_ARGS -timing"
+    fi
+
     # Run batch mode - pipe test files to Java, capture output
     # Filter to only lines that look like results (STATUS|...)
     echo "$TEST_FILES" | java -Djava.library.path="$SCRIPT_DIR/export/lib" \
         -Djava.awt.headless=true \
         -classpath "$CLASSPATH" \
-        k.frontend.Main -batch 2>&1 | grep -E "^(PASSED|FAILED|NOTFOUND|UNKNOWN|SUMMARY)\|" > "$BATCH_OUTPUT_FILE"
+        k.frontend.Main $JAVA_ARGS 2>&1 | grep -E "^(PASSED|FAILED|NOTFOUND|UNKNOWN|SUMMARY)\|" > "$BATCH_OUTPUT_FILE"
 
     # Parse and display results
     PASSED=0

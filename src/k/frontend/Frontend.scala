@@ -90,6 +90,7 @@ object Frontend {
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
       case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
+      case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
       case "-debug" :: tail =>
         K2Z3.debug = true
         UnifiedSolver.debug = true
@@ -226,6 +227,7 @@ object Frontend {
     options.get('batch) match {
       case Some(true) =>
         K2Z3.silent = true  // Suppress verbose K2Z3 output
+        val showTiming = options.get('timing).contains(true)
         val startTime = System.nanoTime()
         var passed = 0
         var failed = 0
@@ -240,29 +242,58 @@ object Frontend {
           var extra = ""
 
           try {
-            // Reset all state for each test
+            // Reset all state for each test (with optional timing)
+            var t0, t1, tReset, tParse, tCombine, tTypeCheck, tSMTGen, tSolve: Long = 0
+
+            t0 = System.nanoTime()
             TypeChecker.reset()
             UtilSMT.reset  // This also calls ExternalFunctions.reset()
             K2Z3.reset()
+            t1 = System.nanoTime()
+            tReset = t1 - t0
 
             val file = new File(testFile.trim)
             if (!file.exists()) {
               status = "NOTFOUND"
             } else {
+              t0 = System.nanoTime()
               val testModel = getModelFromFile(testFile.trim)
+              t1 = System.nanoTime()
+              tParse = t1 - t0
+
               if (testModel != null) {
                 val testDir = if (file.getParent == null) "." else file.getParent
                 classpath = Set(testDir)
                 modelFileDirectory = testDir
 
+                t0 = System.nanoTime()
                 val combinedModel = combineModel(testModel, testFile.trim)
+                t1 = System.nanoTime()
+                tCombine = t1 - t0
+
+                t0 = System.nanoTime()
                 val tc: TypeChecker = new TypeChecker(combinedModel)
                 tc.smtCheck
+                t1 = System.nanoTime()
+                tTypeCheck = t1 - t0
 
+                t0 = System.nanoTime()
                 val smtStr = combinedModel.toSMT
+                t1 = System.nanoTime()
+                tSMTGen = t1 - t0
+
+                t0 = System.nanoTime()
                 K2Z3.solveSMT(combinedModel, smtStr, false)
+                t1 = System.nanoTime()
+                tSolve = t1 - t0
+
                 status = "PASSED"
                 passed += 1
+
+                // Add timing breakdown if requested
+                if (showTiming) {
+                  extra = f"reset=${tReset/1e6}%.0f,parse=${tParse/1e6}%.0f,combine=${tCombine/1e6}%.0f,tc=${tTypeCheck/1e6}%.0f,smt=${tSMTGen/1e6}%.0f,solve=${tSolve/1e6}%.0f"
+                }
               }
             }
           } catch {
