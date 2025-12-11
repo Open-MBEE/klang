@@ -2,39 +2,33 @@ package nasa.jpl.klang.ide.run
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
-import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessHandlerFactory
-import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import org.jdom.Element
 import java.io.File
 
-/**
- * Run configuration for K language files
- */
 class KRunConfiguration(
     project: Project,
     factory: ConfigurationFactory,
     name: String
-) : RunConfigurationBase<KRunConfigurationOptions>(project, factory, name) {
+) : RunConfigurationBase<RunConfigurationOptions>(project, factory, name) {
 
-    override fun getOptions(): KRunConfigurationOptions {
-        return super.getOptions() as KRunConfigurationOptions
-    }
+    private var _kFilePath: String = ""
+    private var _kInstallPath: String = ""
+    private var _javaHome: String = ""
 
     var kFilePath: String
-        get() = options.kFilePath ?: ""
-        set(value) { options.kFilePath = value }
+        get() = _kFilePath
+        set(value) { _kFilePath = value }
 
     var kInstallPath: String
-        get() = options.kInstallPath ?: ""
-        set(value) { options.kInstallPath = value }
+        get() = _kInstallPath
+        set(value) { _kInstallPath = value }
 
     var javaHome: String
-        get() = options.javaHome ?: ""
-        set(value) { options.javaHome = value }
+        get() = _javaHome
+        set(value) { _javaHome = value }
 
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
         return KRunConfigurationEditor(project)
@@ -52,14 +46,18 @@ class KRunConfiguration(
             throw RuntimeConfigurationError("K file does not exist: $kFilePath")
         }
     }
-}
 
-/**
- * Options for K run configuration (persisted)
- */
-class KRunConfigurationOptions : RunConfigurationOptions() {
-    var kFilePath: String? = null
-    var kInstallPath: String? = null
-    var javaHome: String? = null
-}
+    override fun readExternal(element: Element) {
+        super.readExternal(element)
+        _kFilePath = element.getAttributeValue("kFilePath") ?: ""
+        _kInstallPath = element.getAttributeValue("kInstallPath") ?: ""
+        _javaHome = element.getAttributeValue("javaHome") ?: ""
+    }
 
+    override fun writeExternal(element: Element) {
+        super.writeExternal(element)
+        element.setAttribute("kFilePath", _kFilePath)
+        element.setAttribute("kInstallPath", _kInstallPath)
+        element.setAttribute("javaHome", _javaHome)
+    }
+}

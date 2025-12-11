@@ -11,7 +11,6 @@
     <ul>
         <li>Syntax highlighting for K files (.k)</li>
         <li>Run K files (right-click → Run, or create Run Configuration)</li>
-        <li>Go to Definition (Ctrl+Click / Ctrl+B)</li>
         <li>Find Usages (Alt+F7)</li>
         <li>Structure View (Alt+7) - navigate classes, functions, properties</li>
         <li>Documentation on hover (Ctrl+Q)</li>
@@ -26,19 +25,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>0.2.0</h3>
     <h3>0.3.0</h3>
     <ul>
         <li>Run K files directly from the IDE</li>
         <li>Auto-detect K installation and SDKMAN Java</li>
         <li>Run configuration with customizable settings</li>
     </ul>
-    <h3>0.2.0</h3>
-    <ul>
-        <li>Go to Definition support</li>
-        <li>Find Usages support</li>
-        <li>Structure View for file navigation</li>
-        <li>Documentation popups on hover</li>
-        <li>PSI parser for better code understanding</li>
     </ul>
     <h3>0.1.0</h3>
     <ul>
@@ -113,6 +106,10 @@
 
         <runConfigurationProducer
             implementation="nasa.jpl.klang.ide.run.KRunConfigurationProducer"/>
+
+        <!-- Run Line Marker (gutter icon) -->
+        <runLineMarkerContributor
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.run.KRunLineMarkerContributor"/>
     </extensions>
 </idea-plugin>
-

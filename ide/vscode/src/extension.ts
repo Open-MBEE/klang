@@ -4,9 +4,11 @@ import { KReferenceProvider } from './providers/referenceProvider';
 import { KHoverProvider } from './providers/hoverProvider';
 import { KDocumentSymbolProvider } from './providers/documentSymbolProvider';
 import { KWorkspaceSymbolProvider } from './providers/workspaceSymbolProvider';
+import { KDiagnosticsProvider } from './providers/diagnosticsProvider';
 import { runKFile, runKFileWithArgs } from './runner';
 
-const K_MODE: vscode.DocumentFilter = { language: 'k', scheme: 'file' };
+// Document selector for K language files
+const K_MODE: vscode.DocumentSelector = { language: 'k', scheme: 'file' };
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('K Language extension is now active');
@@ -44,7 +46,44 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('k.runFileWithArgs', runKFileWithArgs)
     );
+
+    // Register Diagnostics Provider (real-time error checking)
+    const diagnosticsProvider = new KDiagnosticsProvider();
+    context.subscriptions.push(diagnosticsProvider);
+
+    // Update diagnostics on document change
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document.languageId === 'k') {
+                diagnosticsProvider.scheduleDiagnostics(event.document);
+            }
+        })
+    );
+
+    // Update diagnostics when a K file is opened
+    context.subscriptions.push(
+        vscode.workspace.onDidOpenTextDocument(document => {
+            if (document.languageId === 'k') {
+                diagnosticsProvider.scheduleDiagnostics(document);
+            }
+        })
+    );
+
+    // Clear diagnostics when document is closed
+    context.subscriptions.push(
+        vscode.workspace.onDidCloseTextDocument(document => {
+            if (document.languageId === 'k') {
+                diagnosticsProvider.clear(document);
+            }
+        })
+    );
+
+    // Run diagnostics on any already-open K files
+    vscode.workspace.textDocuments.forEach(document => {
+        if (document.languageId === 'k') {
+            diagnosticsProvider.scheduleDiagnostics(document);
+        }
+    });
 }
 
 export function deactivate() {}
-
