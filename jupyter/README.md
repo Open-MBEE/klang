@@ -63,6 +63,23 @@ jupyter lab
 
 Then create a new notebook and select the "K" kernel.
 
+### Jupyter Notebook 7 Note
+
+If double-clicking `.ipynb` files opens them as raw JSON instead of as a notebook,
+you can fix this by creating `~/.jupyter/labconfig/default_setting_overrides.json`:
+
+```json
+{
+  "@jupyterlab/docmanager-extension:plugin": {
+    "defaultViewers": {
+      "ipynb": "Notebook"
+    }
+  }
+}
+```
+
+Alternatively, right-click the file and select "Open With" → "Notebook".
+
 ### Magic Commands
 
 | Command | Description |
