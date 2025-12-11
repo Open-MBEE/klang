@@ -209,20 +209,104 @@ class TestResultFormatting:
 class TestMagicCommands:
     """Test magic command handling."""
 
+    def test_reset_clears_model(self, kernel):
+        """Reset should clear accumulated code."""
+        kernel.k_code = ["x : Int", "req x > 0"]
+        kernel._handle_magic("%reset", silent=True)
+        assert kernel.k_code == []
+        assert kernel.last_result is None
+
     def test_timeout_command(self, kernel):
         """Setting timeout should work."""
         kernel.timeout = 30
-        # Simulate magic command (would normally go through do_execute)
-        kernel.timeout = 60
+        kernel._handle_magic("%timeout 60", silent=True)
         assert kernel.timeout == 60
 
-    def test_verbose_toggle(self, kernel):
-        """Verbose mode should toggle."""
-        assert kernel.verbose == False
-        kernel.verbose = True
-        assert kernel.verbose == True
+    def test_timeout_invalid(self, kernel):
+        """Invalid timeout should not crash."""
+        kernel.timeout = 30
+        kernel._handle_magic("%timeout abc", silent=True)
+        assert kernel.timeout == 30  # Unchanged
+
+    def test_verbose_on(self, kernel):
+        """Verbose on should enable verbose mode."""
         kernel.verbose = False
+        kernel._handle_magic("%verbose on", silent=True)
+        assert kernel.verbose == True
+
+    def test_verbose_off(self, kernel):
+        """Verbose off should disable verbose mode."""
+        kernel.verbose = True
+        kernel._handle_magic("%verbose off", silent=True)
         assert kernel.verbose == False
+
+    def test_verbose_toggle(self, kernel):
+        """Verbose without args should toggle."""
+        kernel.verbose = False
+        kernel._handle_magic("%verbose", silent=True)
+        assert kernel.verbose == True
+        kernel._handle_magic("%verbose", silent=True)
+        assert kernel.verbose == False
+
+    def test_show_displays_code(self, kernel):
+        """Show should return accumulated code."""
+        kernel.k_code = ["x : Int", "req x > 0"]
+        # Just verify it doesn't crash
+        result = kernel._handle_magic("%show", silent=True)
+        assert result['status'] == 'ok'
+
+    def test_solve_runs_model(self, kernel):
+        """Solve should execute the model."""
+        kernel.k_code = ["x : Int", "req x = 5"]
+        result = kernel._handle_magic("%solve", silent=True)
+        assert result['status'] == 'ok'
+        assert kernel.last_result is not None
+
+    def test_stats_after_solve(self, kernel):
+        """Stats should work after solving."""
+        kernel.k_code = ["x : Int", "req x = 5"]
+        kernel._handle_magic("%solve", silent=True)
+        result = kernel._handle_magic("%stats", silent=True)
+        assert result['status'] == 'ok'
+
+    def test_raw_after_solve(self, kernel):
+        """Raw should show output after solving."""
+        kernel.k_code = ["x : Int", "req x = 5"]
+        kernel._handle_magic("%solve", silent=True)
+        result = kernel._handle_magic("%raw", silent=True)
+        assert result['status'] == 'ok'
+
+    def test_help_returns_ok(self, kernel):
+        """Help should return successfully."""
+        result = kernel._handle_magic("%help", silent=True)
+        assert result['status'] == 'ok'
+
+    def test_unknown_magic(self, kernel):
+        """Unknown magic should not crash."""
+        result = kernel._handle_magic("%unknown", silent=True)
+        assert result['status'] == 'ok'
+
+    def test_save_and_load(self, kernel):
+        """Save and load should work with temp file."""
+        import tempfile
+        import os
+
+        kernel.k_code = ["x : Int", "req x > 0"]
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.k', delete=False) as f:
+            temp_file = f.name
+
+        try:
+            kernel._handle_magic(f"%save {temp_file}", silent=True)
+
+            # Clear and reload
+            kernel.k_code = []
+            kernel._handle_magic(f"%load {temp_file}", silent=True)
+
+            assert len(kernel.k_code) == 1
+            assert "x : Int" in kernel.k_code[0]
+        finally:
+            os.unlink(temp_file)
 
 
 class TestCodeCompletion:

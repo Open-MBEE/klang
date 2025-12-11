@@ -669,7 +669,7 @@ req p.x < p.y
 - **Constraints**: `req expression`
 - **Soft constraints**: `soft req expression`
 - **Functions**: `fun name(params) : ReturnType { body }`
-- **Types**: `Int`, `Real`, `Bool`, `String`, `Set[T]`, `Seq[T]`
+- **Types**: `Int`, `Real`, `Bool`, `String`, `Time`, `Duration`, `Set[T]`, `Seq[T]`
 - **Optimization**: `minimize expr` or `maximize expr`
 """
             if not silent:
