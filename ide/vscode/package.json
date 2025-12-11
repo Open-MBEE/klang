@@ -45,12 +45,23 @@
         "command": "k.runFileWithArgs",
         "title": "Run K File with Arguments...",
         "category": "K"
+      },
+      {
+        "command": "k.visualizeSolution",
+        "title": "Visualize Solution",
+        "category": "K",
+        "icon": "$(graph)"
       }
     ],
     "menus": {
       "editor/title/run": [
         {
           "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        },
+        {
+          "command": "k.visualizeSolution",
           "when": "resourceLangId == k",
           "group": "navigation"
         }
@@ -75,6 +86,12 @@
         "command": "k.runFile",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
+        "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.visualizeSolution",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
         "when": "resourceLangId == k"
       }
     ],

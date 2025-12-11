@@ -13,6 +13,7 @@ object KElementTypes {
 
     // Definitions
     @JvmField val CLASS_DEFINITION = KElementType("CLASS_DEFINITION")
+    @JvmField val CLASS_BODY = KElementType("CLASS_BODY")
     @JvmField val ASSOC_DEFINITION = KElementType("ASSOC_DEFINITION")
     @JvmField val TYPE_ALIAS = KElementType("TYPE_ALIAS")
 

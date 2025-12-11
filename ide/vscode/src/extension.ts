@@ -5,6 +5,10 @@ import { KHoverProvider } from './providers/hoverProvider';
 import { KDocumentSymbolProvider } from './providers/documentSymbolProvider';
 import { KWorkspaceSymbolProvider } from './providers/workspaceSymbolProvider';
 import { KDiagnosticsProvider } from './providers/diagnosticsProvider';
+import { KCompletionProvider } from './providers/completionProvider';
+import { KFormattingProvider, KOnTypeFormattingProvider } from './providers/formattingProvider';
+import { KRenameProvider } from './providers/renameProvider';
+import { KSolutionProvider } from './providers/solutionProvider';
 import { runKFile, runKFileWithArgs } from './runner';
 
 // Document selector for K language files
@@ -38,6 +42,30 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerWorkspaceSymbolProvider(new KWorkspaceSymbolProvider())
     );
 
+    // Register Completion Provider (IntelliSense)
+    context.subscriptions.push(
+        vscode.languages.registerCompletionItemProvider(K_MODE, new KCompletionProvider(), '.', ':')
+    );
+
+    // Register Formatting Provider
+    const formattingProvider = new KFormattingProvider();
+    context.subscriptions.push(
+        vscode.languages.registerDocumentFormattingEditProvider(K_MODE, formattingProvider)
+    );
+    context.subscriptions.push(
+        vscode.languages.registerDocumentRangeFormattingEditProvider(K_MODE, formattingProvider)
+    );
+
+    // Register On-Type Formatting Provider
+    context.subscriptions.push(
+        vscode.languages.registerOnTypeFormattingEditProvider(K_MODE, new KOnTypeFormattingProvider(), '}', '\n')
+    );
+
+    // Register Rename Provider
+    context.subscriptions.push(
+        vscode.languages.registerRenameProvider(K_MODE, new KRenameProvider())
+    );
+
     // Register Run Commands
     context.subscriptions.push(
         vscode.commands.registerCommand('k.runFile', runKFile)
@@ -46,6 +74,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('k.runFileWithArgs', runKFileWithArgs)
     );
+
+    // Register Solution Visualization
+    const solutionProvider = new KSolutionProvider(context);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.visualizeSolution', () => solutionProvider.runAndVisualize())
+    );
+    context.subscriptions.push(solutionProvider);
 
     // Register Diagnostics Provider (real-time error checking)
     const diagnosticsProvider = new KDiagnosticsProvider();

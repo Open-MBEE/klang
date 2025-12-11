@@ -71,8 +71,21 @@ interface KConstraint : PsiElement {
 }
 
 /**
+ * Represents a named constraint definition
+ */
+interface KConstraintDefinition : KNamedElement {
+    fun getConstraintName(): String?
+}
+
+/**
  * Represents a type reference
  */
 interface KTypeReference : PsiElement {
     fun getReferencedTypeName(): String?
 }
+
+/**
+ * Represents an identifier
+ */
+interface KIdentifier : PsiElement
+
