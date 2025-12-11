@@ -2,6 +2,7 @@
 
 # Automatically select the correct Z3 libraries based on OS and JVM architecture
 # Supports: macOS (x86_64, ARM64), Linux (x86_64)
+# Also warns if Java architecture doesn't match the native CPU architecture
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
@@ -19,6 +20,20 @@ case "$OS" in
     *)
         echo "⚠️  Unsupported OS: $OS"
         exit 1
+        ;;
+esac
+
+# Detect native CPU architecture
+CPU_ARCH=$(uname -m)
+case "$CPU_ARCH" in
+    x86_64)
+        NATIVE_ARCH="x86_64"
+        ;;
+    arm64|aarch64)
+        NATIVE_ARCH="arm64"
+        ;;
+    *)
+        NATIVE_ARCH="unknown"
         ;;
 esac
 
@@ -47,6 +62,68 @@ case "$JAVA_ARCH" in
 esac
 
 echo "🔍 Detected platform: $OS_TYPE ($JAVA_ARCH)"
+echo "   Native CPU: $NATIVE_ARCH, Java: $JAVA_ARCH"
+
+# Warn if Java architecture doesn't match native CPU (running under Rosetta)
+if [ "$OS_TYPE" = "macos" ] && [ "$NATIVE_ARCH" = "arm64" ] && [ "$JAVA_ARCH" = "x86_64" ]; then
+    echo ""
+    echo "⚠️  WARNING: You are running x86_64 Java on an ARM64 Mac (via Rosetta 2)"
+    echo "   This will cause performance degradation and may cause Z3 crashes."
+    echo ""
+    echo "   To fix, install native ARM64 Java:"
+    echo "   1. Using SDKMAN:"
+    echo "      sdk install java 21.0.5-tem"
+    echo "      (Make sure to download the aarch64/arm64 version)"
+    echo ""
+    echo "   2. Or download directly from Adoptium:"
+    echo "      https://adoptium.net/temurin/releases/?os=mac&arch=aarch64"
+    echo ""
+    echo "   3. Or using Homebrew:"
+    echo "      brew install openjdk@21"
+    echo ""
+
+    # Check if there's an arm64 Java available in common locations
+    ARM64_JAVA=""
+
+    # Check SDKMAN installations
+    if [ -d "$HOME/.sdkman/candidates/java" ]; then
+        for dir in "$HOME/.sdkman/candidates/java"/*; do
+            if [ -d "$dir" ] && [ "$(basename "$dir")" != "current" ]; then
+                # Check both direct bin and macOS Contents/Home structure
+                for java_path in "$dir/bin/java" "$dir/Contents/Home/bin/java"; do
+                    if [ -f "$java_path" ]; then
+                        arch=$(file "$java_path" | grep -o "arm64\|aarch64" | head -1)
+                        if [ -n "$arch" ]; then
+                            ARM64_JAVA="$java_path"
+                            ARM64_JAVA_DIR="$dir"
+                            break 2
+                        fi
+                    fi
+                done
+            fi
+        done
+    fi
+
+    # Check Homebrew Java
+    if [ -z "$ARM64_JAVA" ] && [ -f "/opt/homebrew/opt/openjdk@21/bin/java" ]; then
+        arch=$(file "/opt/homebrew/opt/openjdk@21/bin/java" | grep -o "arm64\|aarch64" | head -1)
+        if [ -n "$arch" ]; then
+            ARM64_JAVA="/opt/homebrew/opt/openjdk@21/bin/java"
+            ARM64_JAVA_DIR="/opt/homebrew/opt/openjdk@21"
+        fi
+    fi
+
+    if [ -n "$ARM64_JAVA" ]; then
+        echo "   ✅ Found ARM64 Java at: $ARM64_JAVA_DIR"
+        echo "   Set JAVA_HOME to use it:"
+        echo "      export JAVA_HOME=\"$ARM64_JAVA_DIR\""
+        # Handle macOS JDK structure (Contents/Home)
+        if [[ "$ARM64_JAVA" == *"/Contents/Home/"* ]]; then
+            echo "      export JAVA_HOME=\"${ARM64_JAVA_DIR}/Contents/Home\""
+        fi
+        echo ""
+    fi
+fi
 
 # Determine which library directory to use
 if [ "$OS_TYPE" = "linux" ]; then
