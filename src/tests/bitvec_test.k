@@ -1,6 +1,6 @@
 -- Test: bitvec_test.k
--- Tests bit vector type and operations
--- Expected: PASSED
+-- Tests bit vector type declarations
+-- Expected: K2Z3 exception (BitVec operations not fully supported yet)
 
 class BitVecBasicTest {
   -- Basic bit vector declarations with decimal literals

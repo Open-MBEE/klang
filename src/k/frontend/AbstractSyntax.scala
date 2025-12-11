@@ -1416,11 +1416,22 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
       val ty = pd.getTypeOrError
       val getter = s"$ident!$propertyName"
       UtilSMT.addGetter(getter)
+
+      // Convert expression to SMT, handling BitVec type conversions
+      val expSMT = ty match {
+        case bv: BitVecType =>
+          exp match {
+            case IntegerLiteral(i) => s"(_ bv$i ${bv.width})"
+            case _ => exp.toSMT(ident, false)
+          }
+        case _ => exp.toSMT(ident, false)
+      }
+
       var constraintSMT =
         if (UtilSMT.isClassName(ty) && UtilSMT.isConstructorAppl(exp))
-          s"(= (deref ($getter this)) ${exp.toSMT(ident, false)})"
+          s"(= (deref ($getter this)) $expSMT)"
         else
-          s"(= ($getter this) ${exp.toSMT(ident, false)})"
+          s"(= ($getter this) $expSMT)"
 
       result += mkInvFunAndAssert(ident, constraintSMT, s"$propertyName : $ty = $exp")
     }
@@ -3330,6 +3341,32 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
     s"($quantifier ($bindingsSMT) ($op $smt1 $smt2))"
   }
 
+  /**
+   * Generate SMT for bitwise operations with a specific bit width.
+   * This is used when the outer context knows the expected BitVec width.
+   */
+  def toSMTWithBitWidth(className: String, subTyping: Boolean, bitWidth: Int): String = {
+    var exp1SMT = exp1 match {
+      case IntegerLiteral(i) => s"(_ bv$i $bitWidth)"
+      case binExp: BinExp =>
+        val isBitOp = binExp.op == BITAND || binExp.op == BITOR || binExp.op == BITXOR ||
+                      binExp.op == BITSHL || binExp.op == BITSHR || binExp.op == BITASHR
+        if (isBitOp) binExp.toSMTWithBitWidth(className, subTyping, bitWidth)
+        else exp1.toSMT(className, subTyping)
+      case _ => exp1.toSMT(className, subTyping)
+    }
+    var exp2SMT = exp2 match {
+      case IntegerLiteral(i) => s"(_ bv$i $bitWidth)"
+      case binExp: BinExp =>
+        val isBitOp = binExp.op == BITAND || binExp.op == BITOR || binExp.op == BITXOR ||
+                      binExp.op == BITSHL || binExp.op == BITSHR || binExp.op == BITASHR
+        if (isBitOp) binExp.toSMTWithBitWidth(className, subTyping, bitWidth)
+        else exp2.toSMT(className, subTyping)
+      case _ => exp2.toSMT(className, subTyping)
+    }
+    s"(${op.toSMT} $exp1SMT $exp2SMT)"
+  }
+
   override def toSMT(className: String, subTyping: Boolean): String = {
     if (!exp1.containsSetComprhension && !exp2.containsSetComprhension) {
       var exp1SMT = exp1.toSMT(className, subTyping)
@@ -3338,28 +3375,50 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
       // Handle BitVec operations - convert integer literals to bitvector format
       val exp1Type = TypeChecker.exp2Type.get(exp1)
       val exp2Type = TypeChecker.exp2Type.get(exp2)
-      op match {
-        case BITAND | BITOR | BITXOR | BITSHL | BITSHR | BITASHR =>
-          val bitWidth = (exp1Type, exp2Type) match {
-            case (bv: BitVecType, _) => bv.width
-            case (_, bv: BitVecType) => bv.width
-            case _ => 64
-          }
-          if (exp1.isInstanceOf[IntegerLiteral]) {
-            exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} $bitWidth)"
-          }
-          if (exp2.isInstanceOf[IntegerLiteral]) {
-            exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} $bitWidth)"
-          }
-        case EQ | NEQ =>
-          (exp1Type, exp2Type) match {
-            case (bv: BitVecType, IntType) if exp2.isInstanceOf[IntegerLiteral] =>
-              exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} ${bv.width})"
-            case (IntType, bv: BitVecType) if exp1.isInstanceOf[IntegerLiteral] =>
-              exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} ${bv.width})"
-            case _ =>
-          }
-        case _ =>
+
+      // Get result type from the outer context (if this is the RHS of an equality)
+      val isBitOp = op == BITAND || op == BITOR || op == BITXOR || op == BITSHL || op == BITSHR || op == BITASHR
+
+      if (isBitOp) {
+        // For bitwise operations, determine width from operand types
+        val bitWidth = (exp1Type, exp2Type) match {
+          case (bv: BitVecType, _) => bv.width
+          case (_, bv: BitVecType) => bv.width
+          case _ => 64  // Default for Int ops
+        }
+        if (exp1.isInstanceOf[IntegerLiteral]) {
+          exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} $bitWidth)"
+        }
+        if (exp2.isInstanceOf[IntegerLiteral]) {
+          exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} $bitWidth)"
+        }
+      }
+
+      // For equality with BitVec, convert Int literals
+      if (op == EQ || op == NEQ) {
+        (exp1Type, exp2Type) match {
+          case (bv: BitVecType, IntType) if exp2.isInstanceOf[IntegerLiteral] =>
+            exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} ${bv.width})"
+          case (IntType, bv: BitVecType) if exp1.isInstanceOf[IntegerLiteral] =>
+            exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} ${bv.width})"
+          // Handle case where RHS is a bitwise operation - regenerate with correct width
+          case (bv: BitVecType, _) if exp2.isInstanceOf[BinExp] =>
+            val binExp2 = exp2.asInstanceOf[BinExp]
+            val isBitOp2 = binExp2.op == BITAND || binExp2.op == BITOR || binExp2.op == BITXOR ||
+                           binExp2.op == BITSHL || binExp2.op == BITSHR || binExp2.op == BITASHR
+            if (isBitOp2) {
+              // Regenerate the RHS with the correct BitVec width
+              exp2SMT = binExp2.toSMTWithBitWidth(className, subTyping, bv.width)
+            }
+          case (_, bv: BitVecType) if exp1.isInstanceOf[BinExp] =>
+            val binExp1 = exp1.asInstanceOf[BinExp]
+            val isBitOp1 = binExp1.op == BITAND || binExp1.op == BITOR || binExp1.op == BITXOR ||
+                           binExp1.op == BITSHL || binExp1.op == BITSHR || binExp1.op == BITASHR
+            if (isBitOp1) {
+              exp1SMT = binExp1.toSMTWithBitWidth(className, subTyping, bv.width)
+            }
+          case _ =>
+        }
       }
 
       if (UtilSMT.isConstructorPredicate(this)) {
