@@ -3,7 +3,7 @@ package k.frontend
 import java.util.HashMap
 import com.microsoft.z3.{Context, Solver, Sort, Expr, BoolExpr, IntExpr, RealExpr, ArithExpr, ArrayExpr,
   FuncDecl, Symbol => Z3Symbol, Model => Z3Model, Pattern, Status, Quantifier, Optimize,
-  Constructor, DatatypeSort, StringSymbol, TupleSort, ArithSort, BoolSort}
+  Constructor, DatatypeSort, StringSymbol, TupleSort, ArithSort, BoolSort, BitVecSort, BitVecExpr}
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{ HashMap => MMap }
@@ -57,13 +57,24 @@ class DataTypes(ctx: Context) {
     addDataType(CartesianType(fieldTypes), dataType)
   }
 
-  def getDataType(ty: Type): DataType = datatypes(ty)
+  def getDataType(ty: Type): DataType = {
+    ty match {
+      case BitVecType(width) =>
+        // Create bitvector sort on demand
+        if (!datatypes.contains(ty)) {
+          addDataType(ty, DataType(ctx.mkBitVecSort(width), null, null))
+        }
+        datatypes(ty)
+      case _ =>
+        datatypes(ty)
+    }
+  }
 
   def getSort(ty: Type): Sort = getDataType(ty).sort
 
   addDataType(RealType, DataType(ctx.getRealSort(), null, null))
   addDataType(BoolType, DataType(ctx.getBoolSort(), null, null))
-  addDataType(RealType, DataType(ctx.getRealSort(), null, null))
+  addDataType(IntType, DataType(ctx.getIntSort(), null, null))
 }
 
 case class DataType(sort: Sort, constructor: FuncDecl[_ <: Sort], selectors: Map[String, FuncDecl[_ <: Sort]])

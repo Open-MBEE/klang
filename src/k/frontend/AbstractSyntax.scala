@@ -176,6 +176,7 @@ object UtilSMT {
       case CartesianType(types)          => types forall wellFormedType
       case ParenType(ty)                 => wellFormedType(ty)
       case BoolType | IntType | RealType | StringType | TimeType | DurationType => true
+      case BitVecType(_)                 => true
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -3331,8 +3332,36 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
 
   override def toSMT(className: String, subTyping: Boolean): String = {
     if (!exp1.containsSetComprhension && !exp2.containsSetComprhension) {
-      val exp1SMT = exp1.toSMT(className, subTyping)
-      val exp2SMT = exp2.toSMT(className, subTyping)
+      var exp1SMT = exp1.toSMT(className, subTyping)
+      var exp2SMT = exp2.toSMT(className, subTyping)
+
+      // Handle BitVec operations - convert integer literals to bitvector format
+      val exp1Type = TypeChecker.exp2Type.get(exp1)
+      val exp2Type = TypeChecker.exp2Type.get(exp2)
+      op match {
+        case BITAND | BITOR | BITXOR | BITSHL | BITSHR | BITASHR =>
+          val bitWidth = (exp1Type, exp2Type) match {
+            case (bv: BitVecType, _) => bv.width
+            case (_, bv: BitVecType) => bv.width
+            case _ => 64
+          }
+          if (exp1.isInstanceOf[IntegerLiteral]) {
+            exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} $bitWidth)"
+          }
+          if (exp2.isInstanceOf[IntegerLiteral]) {
+            exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} $bitWidth)"
+          }
+        case EQ | NEQ =>
+          (exp1Type, exp2Type) match {
+            case (bv: BitVecType, IntType) if exp2.isInstanceOf[IntegerLiteral] =>
+              exp2SMT = s"(_ bv${exp2.asInstanceOf[IntegerLiteral].i} ${bv.width})"
+            case (IntType, bv: BitVecType) if exp1.isInstanceOf[IntegerLiteral] =>
+              exp1SMT = s"(_ bv${exp1.asInstanceOf[IntegerLiteral].i} ${bv.width})"
+            case _ =>
+          }
+        case _ =>
+      }
+
       if (UtilSMT.isConstructorPredicate(this)) {
         s"(= (deref $exp1SMT) $exp2SMT)"
       } else {
@@ -4458,6 +4487,46 @@ case object SUB extends BinaryOp {
   override def toJsonName = "Minus"
 }
 
+// =============================================================================
+// Bitwise Binary Operators (for BitVec type)
+// =============================================================================
+
+case object BITAND extends BinaryOp {
+  override def toSMT = "bvand"
+  override def toString = "band"
+  override def toJsonName = "BitAnd"
+}
+
+case object BITOR extends BinaryOp {
+  override def toSMT = "bvor"
+  override def toString = "bor"
+  override def toJsonName = "BitOr"
+}
+
+case object BITXOR extends BinaryOp {
+  override def toSMT = "bvxor"
+  override def toString = "bxor"
+  override def toJsonName = "BitXor"
+}
+
+case object BITSHL extends BinaryOp {
+  override def toSMT = "bvshl"
+  override def toString = "shl"
+  override def toJsonName = "BitShiftLeft"
+}
+
+case object BITSHR extends BinaryOp {
+  override def toSMT = "bvlshr"
+  override def toString = "shr"
+  override def toJsonName = "BitShiftRight"
+}
+
+case object BITASHR extends BinaryOp {
+  override def toSMT = "bvashr"
+  override def toString = "sar"
+  override def toJsonName = "BitArithShiftRight"
+}
+
 case object SETUNION extends BinaryOp {
   override def statistics() {
     UtilSMT.statistics.SETOP += 1
@@ -4555,6 +4624,12 @@ case object PREV extends UnaryOp {
   override def toJsonName = "Prev"
 }
 
+case object BITNOT extends UnaryOp {
+  override def toSMT = "bvnot"
+  override def toString = "bnot"
+  override def toJsonName = "BitNot"
+}
+
 trait Literal extends Exp {
   override def children = List()
 
@@ -4568,7 +4643,7 @@ case class IntegerLiteral(i: Long) extends Literal {
   override def statistics() {
     UtilSMT.statistics.INTLIT += 1
   }
-  
+
   override def toSMT(className: String, subTyping: Boolean): String = {
     i.toString
   }
@@ -4597,7 +4672,7 @@ case class RealLiteral(f: java.math.BigDecimal) extends Literal {
   override def statistics() {
     UtilSMT.statistics.REALLIT += 1
   }
-  
+
   override def toSMT(className: String, subTyping: Boolean): String = {
     f.formatted("%.16f")
   }
@@ -5283,6 +5358,34 @@ case object DurationType extends PrimitiveType {
 
   override def toJson2 = {
     new JSONObject().put("type", "ElementValue").put("element", "String" )
+  }
+}
+
+/**
+ * Bit vector type with specified width.
+ * Maps to SMT-LIB2 (_ BitVec N) theory.
+ */
+case class BitVecType(width: Int) extends PrimitiveType {
+  require(width > 0, s"BitVec width must be positive, got $width")
+
+  override def statistics() {
+    // No specific statistic yet
+  }
+
+  override def toSMT: String = s"(_ BitVec $width)"
+
+  override def toScala: String = "Long"
+
+  override def toString = s"BitVec[$width]"
+
+  override def toJavaString = "Long"
+
+  override def toJson1 = {
+    new JSONObject().put("type", "BitVecType").put("width", width)
+  }
+
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", s"BitVec[$width]")
   }
 }
 

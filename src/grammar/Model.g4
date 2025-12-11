@@ -156,6 +156,7 @@ primitiveType:
   | 'Unit'
   | 'Time'
   | 'Duration'
+  | 'BitVec' '[' IntegerLiteral ']'  // Fixed-width bit vector
   ;
 
 classIdentifier:
@@ -201,6 +202,7 @@ expression:
   | expression 'as' type # TypeCastExp
   | expression ('*'|'/'|'%'|'inter'|'\\'|'++'|'#'|'^') expression #BinOp1Exp
   | expression ('+'|'-'|'union') expression #BinOp2Exp
+  | expression ('band'|'bor'|'bxor'|'shl'|'shr'|'sar') expression #BitOpExp
   | expression ('<=' | '>=' | '<' | '>' | '=' | '!=' | 'isin'|'!isin'|'subset'|'psubset') expression #BinOp3Exp
   | expression '&&' expression #AndExp
   | expression '||' expression #OrExp
@@ -208,6 +210,7 @@ expression:
   | expression ':=' expression #AssignExp
   | 'assert' '(' expression ')' #AssertExp 
   | '-' expression #NegExp
+  | 'bnot' expression #BitNotExp
   | qualifiedName '~' #PrevExp
   | 'forall' rngBindingList SUCHTHAT expression #ForallExp 
   | 'exists' rngBindingList SUCHTHAT expression #ExistsExp 

@@ -89,15 +89,22 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitPrimitiveType(ctx: ModelParser.PrimitiveTypeContext): AnyRef = {
-    ctx.getText() match {
-      case "Bool"   => BoolType
-      case "Char"   => CharType
-      case "Int"    => IntType
-      case "Real"   => RealType
-      case "String" => StringType
-      case "Unit"   => UnitType
-      case "Time"   => TimeType
-      case "Duration"   => DurationType
+    // Check if this is a BitVec type - grammar has: 'BitVec' '[' IntegerLiteral ']'
+    if (ctx.IntegerLiteral() != null) {
+      val widthStr = ctx.IntegerLiteral().getText()
+      val width = widthStr.toInt
+      BitVecType(width)
+    } else {
+      ctx.getText() match {
+        case "Bool"   => BoolType
+        case "Char"   => CharType
+        case "Int"    => IntType
+        case "Real"   => RealType
+        case "String" => StringType
+        case "Unit"   => UnitType
+        case "Time"   => TimeType
+        case "Duration"   => DurationType
+      }
     }
   }
 
@@ -410,6 +417,26 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var e0: Exp = visit(ctx.expression(0)).asInstanceOf[Exp]
     var e1: Exp = visit(ctx.expression(1)).asInstanceOf[Exp]
     BinExp(e0, OR, e1)
+  }
+
+  override def visitBitOpExp(ctx: ModelParser.BitOpExpContext): AnyRef = {
+    var e0: Exp = visit(ctx.expression(0)).asInstanceOf[Exp]
+    var e1: Exp = visit(ctx.expression(1)).asInstanceOf[Exp]
+    var op: BinaryOp =
+      ctx.getChild(1).getText() match {
+        case "band" => BITAND
+        case "bor"  => BITOR
+        case "bxor" => BITXOR
+        case "shl"  => BITSHL
+        case "shr"  => BITSHR
+        case "sar"  => BITASHR
+      }
+    BinExp(e0, op, e1)
+  }
+
+  override def visitBitNotExp(ctx: ModelParser.BitNotExpContext): AnyRef = {
+    var e: Exp = visit(ctx.expression()).asInstanceOf[Exp]
+    UnaryExp(BITNOT, e)
   }
 
   override def visitIFFExp(ctx: ModelParser.IFFExpContext): AnyRef = {
