@@ -165,46 +165,61 @@ export class KSolutionProvider {
         // |Variable|Ref  |Value                                                       |
         // +--------+-----+------------------------------------------------------------+
         // |        |Ref 8|Obtuse(sides::3, a:: Ref 5, ...)                            |
-        const tableLines = output.split('\n').filter(line =>
-            line.includes('|') &&
-            !line.match(/^\s*\+[-+]+\+\s*$/) &&
-            !line.includes('Variable') &&
-            line.includes('Ref ')
-        );
 
-        console.log('K Solution: Found table lines:', tableLines.length);
+        // First, let's log the output for debugging
+        console.log('K Solution: Raw output length:', output.length);
 
-        for (const row of tableLines) {
-            // Split by | and filter empty cells
-            const parts = row.split('|');
-            if (parts.length >= 4) {
-                const variable = parts[1]?.trim() || '';
-                const ref = parts[2]?.trim() || '';
-                const valueStr = parts[3]?.trim() || '';
+        // Find all lines that look like table data rows
+        const allLines = output.split('\n');
+        console.log('K Solution: Total lines:', allLines.length);
 
-                console.log('K Solution: Parsing row - var:', variable, 'ref:', ref, 'value:', valueStr.substring(0, 50));
+        for (const line of allLines) {
+            // Look for lines with pipe characters that contain "Ref " followed by a digit
+            if (line.includes('|') && /\|Ref \d+\|/.test(line)) {
+                console.log('K Solution: Found table row:', line.substring(0, 80));
 
-                // Parse the value: ClassName(prop1::val1, prop2::val2, ...)
-                const valueMatch = valueStr.match(/^(\w+)\((.+)\)$/);
-                if (valueMatch) {
-                    const className = valueMatch[1];
-                    const propsStr = valueMatch[2];
-                    const properties: { [key: string]: string } = {};
+                // Split by | - the line format is: |Variable|Ref N|ClassName(...)|
+                const parts = line.split('|');
+                // parts[0] is empty (before first |)
+                // parts[1] is Variable (often empty)
+                // parts[2] is "Ref N"
+                // parts[3] is "ClassName(props...)"
 
-                    // Parse properties - handle "prop:: value" with spaces
-                    const propPattern = /(\w+)::\s*([^,]+?)(?=,\s*\w+::|$)/g;
-                    let propMatch;
-                    while ((propMatch = propPattern.exec(propsStr)) !== null) {
-                        const propName = propMatch[1].trim();
-                        const propValue = propMatch[2].trim();
-                        properties[propName] = propValue;
+                if (parts.length >= 4) {
+                    const variable = parts[1]?.trim() || '';
+                    const ref = parts[2]?.trim() || '';
+                    const valueStr = parts[3]?.trim() || '';
+
+                    console.log('K Solution: Parsing - ref:', ref, 'value:', valueStr.substring(0, 60));
+
+                    // Parse the value: ClassName(prop1::val1, prop2::val2, ...)
+                    // Handle both "prop::val" and "prop:: val" formats
+                    const valueMatch = valueStr.match(/^(\w+)\((.+)\)$/);
+                    if (valueMatch) {
+                        const className = valueMatch[1];
+                        const propsStr = valueMatch[2];
+                        const properties: { [key: string]: string } = {};
+
+                        // Split by comma, but be careful with nested refs like "a:: Ref 5"
+                        // Pattern: word::space?value (where value continues until comma+space+word:: or end)
+                        const propParts = propsStr.split(/,\s*(?=\w+::)/);
+                        for (const part of propParts) {
+                            const colonIdx = part.indexOf('::');
+                            if (colonIdx > 0) {
+                                const propName = part.substring(0, colonIdx).trim();
+                                const propValue = part.substring(colonIdx + 2).trim();
+                                properties[propName] = propValue;
+                            }
+                        }
+
+                        solution.objects.push({ variable, ref, className, properties });
+                        console.log('K Solution: Added object:', className, 'props:', Object.keys(properties).join(', '));
                     }
-
-                    solution.objects.push({ variable, ref, className, properties });
-                    console.log('K Solution: Added object:', className, 'with', Object.keys(properties).length, 'properties');
                 }
             }
         }
+
+        console.log('K Solution: Total objects parsed:', solution.objects.length);
 
         if (solution.objects.length > 0) {
             solution.status = 'SAT';
