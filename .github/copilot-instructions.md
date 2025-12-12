@@ -78,7 +78,7 @@ Most AST nodes have a `toSMT(className: String, subTyping: Boolean): String` met
 
 ### Avoid Heredocs and Multi-line Strings
 - **DON'T**: Use `cat << EOF` or heredoc syntax - can get stuck in `heredoc>` mode
-- **DON'T**: Use multi-line strings with quotes - can get stuck in `dquote>` mode  
+- **DON'T**: Use multi-line strings with quotes - can get stuck in `dquote>` mode ; even a `git commit -m "...."` has this problem with a long string
 - **DO**: Use `create_file` tool to write file contents
 - **DO**: Use Python one-liners for complex text manipulation: `python3 -c "..."`
 

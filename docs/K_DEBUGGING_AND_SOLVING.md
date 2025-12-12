@@ -329,7 +329,60 @@ When timeout occurs with `@bestEffort`:
 
 ---
 
-## 7. Implementation Roadmap
+## 7. Implementation Status
+
+### Implemented (VS Code)
+
+#### Auto-Solve Mode ✅
+- `src/autoSolve.ts` - Status bar indicator, debounced solving
+- Settings: `k.autoSolve.enabled`, `k.autoSolve.debounceMs`, `k.autoSolve.timeoutMs`
+- Commands: `k.toggleAutoSolve`, `k.solveNow`, `k.showSolution`
+
+#### Inline Value Decorations ✅
+- `src/inlineDecorations.ts` - Shows values in editor like Java debugger
+- Property values shown next to declarations
+- Constraint satisfaction indicators (✓/✗)
+- Variable range display
+
+#### Progress Reporting ✅
+- `src/solverManager.ts` - Long-running solve management
+- VS Code progress notification with cancellation
+- `KProgressPanel` - Detailed progress webview
+- Phase tracking: parsing, typechecking, translating, solving, CEGAR
+- Commands: `k.solveWithProgress`, `k.showProgress`
+
+#### Constraint Debugger ✅
+- `src/constraintDebugger.ts` - Step through constraints
+- Visual indicator of current constraint
+- Variable range narrowing visualization
+- Constraint stepping UI with prev/next/run-all
+- Commands: `k.startConstraintDebug`, `k.debugStepNext`, `k.debugStepPrev`, `k.debugRunToEnd`, `k.debugStop`
+
+### Remaining Work
+
+#### Phase 2: Enhanced Visualization
+- [ ] Solution graph view with D3.js (UML-like diagrams)
+- [ ] Constraint graph visualization
+- [ ] Interactive object exploration
+
+#### Phase 3: UNSAT Experience
+- [ ] Parse and display unsat core with highlighting
+- [ ] Generate fix suggestions
+- [ ] Quick fix actions in editor
+
+#### Phase 5: CEGAR Debugging
+- [ ] CEGAR iteration view with call trace
+- [ ] External function result display
+- [ ] Java/Python debugger integration
+
+#### Phase 6: Unified Solver (K-side changes needed)
+- [ ] Structured JSON output from K compiler
+- [ ] Incremental solving support
+- [ ] Partial solution extraction on timeout
+
+---
+
+## 8. Implementation Roadmap
 
 ### Phase 1: Foundation (Current Sprint)
 - [ ] Auto-solve mode with debounce (VS Code first)
