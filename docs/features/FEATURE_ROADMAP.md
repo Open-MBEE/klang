@@ -302,25 +302,156 @@ class FloatExample {
 
 ---
 
-## Summary: Priority Order
+## Numeric Type Conversions and Casting
 
-1. **High Priority**
-   - Java constructor calls (small, high value)
-   - Bit vectors (enables new use cases)
+### Current K Type System for Numbers
 
-2. **Medium Priority**
-   - IEEE floating point
-   - Fixed-width integer aliases
+K has these numeric types:
+- `Int` - arbitrary precision mathematical integers
+- `Real` - exact rational numbers (no floating-point errors)
+- `BitVec[N]` - fixed-width N-bit vectors
+- `Int8/16/32/64` - signed fixed-width integers (aliases for BitVec with signed semantics)
+- `UInt8/16/32/64` - unsigned fixed-width integers
+- `Float32/Float64` - IEEE 754 floating-point (planned)
 
-3. **Low Priority**
-   - Direct array theory access
-   - Additional string operations
+### Comparison with Common Programming Languages
+
+| Language | Int | Float | Implicit Widening | Implicit Narrowing |
+|----------|-----|-------|-------------------|-------------------|
+| **Java** | byte→short→int→long | float→double | Yes (widening) | No (requires cast) |
+| **C#** | sbyte→short→int→long | float→double | Yes (widening) | No (requires cast) |
+| **Python** | int (arbitrary) | float | Yes (int→float) | Explicit |
+| **Scala** | Byte→Short→Int→Long | Float→Double | Yes (widening) | No |
+| **Rust** | i8→i16→i32→i64 | f32→f64 | **No** | **No** (all explicit) |
+| **K** | Int (arbitrary) | Real | **Partial** | **No** |
+
+### Current K Implicit Conversions
+
+The `TypeChecker.areTypesEqual` method with `compatibility=true` allows these implicit conversions:
+
+```scala
+// Currently allowed when checking type compatibility:
+Int ↔ BitVec[N]     // Int literals can be used as BitVec
+Int ↔ SignedIntType   // Int can be Int32, etc.
+Int ↔ UnsignedIntType // Int can be UInt32, etc.  
+Real ↔ FloatType      // Real can be Float32/64
+BitVec[N] ↔ SignedIntType(N)   // Same width
+BitVec[N] ↔ UnsignedIntType(N) // Same width
+```
+
+### The `as` Operator
+
+K has a type cast operator:
+
+```k
+value as Type
+```
+
+**Current Implementation:**
+- Grammar: `expression 'as' type` → `TypeCastExp`
+- AST: Creates `TypeCastCheckExp(cast=true, exp, ty)`
+- TypeChecker: Simply returns target type (no validation!)
+- SMT Backend: **NOT IMPLEMENTED** - casts are ignored!
+
+### Issues with Current System
+
+1. **No SMT conversion for casts**: The `as` operator is parsed but doesn't generate SMT conversion functions like `int2bv`, `bv2int`, `to_fp`, etc.
+
+2. **Inconsistent with programming languages**: Most languages have clear widening/narrowing rules. K's compatibility is symmetric (Int↔BitVec) which is unusual.
+
+3. **No width checking on narrowing**: `x as Int8` when `x : Int` might overflow - this should be constrained.
+
+4. **No Int↔Real conversion**: Unlike most languages, K doesn't implicitly convert `Int` to `Real` in mixed expressions.
+
+### Proposed Improvements
+
+#### Option A: Explicit-Only (Rust-like)
+All conversions require explicit casts. Simple but verbose.
+
+```k
+value : Int32 = 42 as Int32        // Required
+mixed : Real = (x as Real) + 1.5   // Required
+```
+
+#### Option B: Safe Widening (Java/Scala-like)
+Allow implicit widening, require explicit narrowing.
+
+**Safe widening (implicit):**
+- `Int8 → Int16 → Int32 → Int64 → Int`
+- `UInt8 → UInt16 → UInt32 → UInt64`
+- `Float32 → Float64 → Real`
+- `Int → Real` (integers can become rationals)
+
+**Narrowing (explicit cast required):**
+- `Int → Int32` (might overflow)
+- `Real → Float64` (might lose precision)
+- `Int64 → Int8` (truncation)
+
+```k
+x : Int8 = 100
+y : Int32 = x         // OK: widening
+z : Int8 = y as Int8  // Required: narrowing
+
+a : Int = 42
+b : Real = a          // OK: Int can become Real
+c : Int = b as Int    // Required: truncation
+```
+
+#### Option C: Current K + Fixes
+Keep current symmetric compatibility but fix the SMT backend:
+
+```k
+x : Int = 42
+y : BitVec[32] = x    // OK (current behavior)
+
+// When converting Int → BitVec[N], add SMT constraint:
+// (assert (and (>= x 0) (< x (^ 2 N))))  ; for unsigned
+// or use ((_ int2bv N) x)
+
+z : Int = y as Int    // Should emit (bv2int y)
+```
+
+### Required SMT Conversions
+
+For proper numeric conversion support, K2Z3 needs to implement:
+
+| Conversion | SMT Function |
+|-----------|--------------|
+| Int → BitVec[N] | `((_ int2bv N) x)` |
+| BitVec[N] → Int (unsigned) | `(bv2nat x)` |
+| BitVec[N] → Int (signed) | `(bv2int x)` |
+| Int → Real | `(to_real x)` |
+| Real → Int | `(to_int x)` (floor) |
+| Real → Float | `((_ to_fp E S) RNE x)` |
+| Float → Real | `(fp.to_real x)` |
+| BitVec → Float | `((_ to_fp E S) RNE x)` |
+| Float → BitVec | `(fp.to_sbv N RNE x)` |
+
+### Recommendation
+
+**Adopt Option B (Safe Widening)** for these reasons:
+
+1. **Familiar to most programmers** - matches Java, Scala, C#
+2. **Catches errors** - narrowing requires explicit acknowledgment  
+3. **Minimal verbosity** - safe operations "just work"
+4. **SMT-compatible** - Z3 has all needed conversion functions
+
+### Implementation Plan
+
+1. **Phase 1: Fix `as` operator** 
+   - Add `TypeCastCheckExp` handling to K2Z3
+   - Emit appropriate SMT conversion functions
+   - Add type compatibility validation for casts
+
+2. **Phase 2: Define widening hierarchy**
+   - Establish clear widening relationships in TypeChecker
+   - Add `isWideningConversion(from, to)` function
+   - Update `areTypesEqual` to use directional compatibility
+
+3. **Phase 3: Add conversion methods**
+   - `.toInt32()`, `.toInt64()`, etc. for explicit narrowing
+   - `.toReal()`, `.toFloat64()` for floating conversions
+   - These provide more clarity than `as` operator
 
 ---
-
-## References
-
-- [SMT-LIB Standard](http://smtlib.cs.uiowa.edu/)
-- [Z3 Guide - Bitvectors](https://microsoft.github.io/z3guide/docs/theories/Bitvectors/)
-- [Z3 Guide - Floating Point](https://microsoft.github.io/z3guide/docs/theories/IEEE%20Floats/)
 

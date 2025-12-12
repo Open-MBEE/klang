@@ -65,6 +65,24 @@ class DataTypes(ctx: Context) {
           addDataType(ty, DataType(ctx.mkBitVecSort(width), null, null))
         }
         datatypes(ty)
+      case FloatType(ebits, sbits) =>
+        // Create floating-point sort on demand
+        if (!datatypes.contains(ty)) {
+          addDataType(ty, DataType(ctx.mkFPSort(ebits, sbits), null, null))
+        }
+        datatypes(ty)
+      case SignedIntType(width) =>
+        // Signed integers use BitVec representation
+        if (!datatypes.contains(ty)) {
+          addDataType(ty, DataType(ctx.mkBitVecSort(width), null, null))
+        }
+        datatypes(ty)
+      case UnsignedIntType(width) =>
+        // Unsigned integers use BitVec representation
+        if (!datatypes.contains(ty)) {
+          addDataType(ty, DataType(ctx.mkBitVecSort(width), null, null))
+        }
+        datatypes(ty)
       case _ =>
         datatypes(ty)
     }
@@ -1501,6 +1519,128 @@ object K2Z3 {
     }
   }
 
+  /**
+   * Convert an expression from one numeric type to another using appropriate SMT functions.
+   *
+   * Supported conversions:
+   * - Int → BitVec[N]: int2bv
+   * - BitVec[N] → Int: bv2int (signed) or bv2nat (unsigned)
+   * - Int → Real: to_real
+   * - Real → Int: to_int (floor)
+   * - SignedInt/UnsignedInt: same as BitVec conversions
+   * - Float → Real: fp.to_real (future)
+   * - Real → Float: to_fp (future)
+   */
+  def convertNumericType(expr: Expr[_ <: Sort], fromType: Type, toType: Type): Expr[_ <: Sort] = {
+    (fromType, toType) match {
+      // Same type - no conversion needed
+      case (t1, t2) if t1 == t2 => expr
+
+      // Int → Real
+      case (IntType, RealType) =>
+        ctx.mkInt2Real(expr.asInstanceOf[IntExpr])
+
+      // Real → Int (floor/truncation)
+      case (RealType, IntType) =>
+        ctx.mkReal2Int(expr.asInstanceOf[RealExpr])
+
+      // Int → BitVec[N]
+      case (IntType, BitVecType(width)) =>
+        ctx.mkInt2BV(width, expr.asInstanceOf[IntExpr])
+
+      // Int → SignedIntType (same as Int → BitVec)
+      case (IntType, SignedIntType(width)) =>
+        ctx.mkInt2BV(width, expr.asInstanceOf[IntExpr])
+
+      // Int → UnsignedIntType (same as Int → BitVec)
+      case (IntType, UnsignedIntType(width)) =>
+        ctx.mkInt2BV(width, expr.asInstanceOf[IntExpr])
+
+      // BitVec[N] → Int (signed interpretation)
+      case (BitVecType(_), IntType) =>
+        ctx.mkBV2Int(expr.asInstanceOf[BitVecExpr], true) // true = signed
+
+      // SignedIntType → Int (signed interpretation)
+      case (SignedIntType(_), IntType) =>
+        ctx.mkBV2Int(expr.asInstanceOf[BitVecExpr], true)
+
+      // UnsignedIntType → Int (unsigned interpretation)
+      case (UnsignedIntType(_), IntType) =>
+        ctx.mkBV2Int(expr.asInstanceOf[BitVecExpr], false) // false = unsigned
+
+      // SignedIntType → Real (via Int)
+      case (SignedIntType(_), RealType) =>
+        val asInt = ctx.mkBV2Int(expr.asInstanceOf[BitVecExpr], true)
+        ctx.mkInt2Real(asInt)
+
+      // UnsignedIntType → Real (via Int)
+      case (UnsignedIntType(_), RealType) =>
+        val asInt = ctx.mkBV2Int(expr.asInstanceOf[BitVecExpr], false)
+        ctx.mkInt2Real(asInt)
+
+      // Real → SignedIntType (via Int)
+      case (RealType, SignedIntType(width)) =>
+        val asInt = ctx.mkReal2Int(expr.asInstanceOf[RealExpr])
+        ctx.mkInt2BV(width, asInt)
+
+      // Real → UnsignedIntType (via Int)
+      case (RealType, UnsignedIntType(width)) =>
+        val asInt = ctx.mkReal2Int(expr.asInstanceOf[RealExpr])
+        ctx.mkInt2BV(width, asInt)
+
+      // BitVec widening (zero extension)
+      case (BitVecType(w1), BitVecType(w2)) if w1 < w2 =>
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+
+      // BitVec narrowing (extraction of lower bits)
+      case (BitVecType(w1), BitVecType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // SignedIntType widening (sign extension)
+      case (SignedIntType(w1), SignedIntType(w2)) if w1 < w2 =>
+        ctx.mkSignExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+
+      // SignedIntType narrowing
+      case (SignedIntType(w1), SignedIntType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // UnsignedIntType widening (zero extension)
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if w1 < w2 =>
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+
+      // UnsignedIntType narrowing
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // SignedIntType ↔ UnsignedIntType of same width (reinterpretation - no SMT change)
+      case (SignedIntType(w1), UnsignedIntType(w2)) if w1 == w2 => expr
+      case (UnsignedIntType(w1), SignedIntType(w2)) if w1 == w2 => expr
+
+      // SignedIntType ↔ BitVec of same width
+      case (SignedIntType(w1), BitVecType(w2)) if w1 == w2 => expr
+      case (BitVecType(w1), SignedIntType(w2)) if w1 == w2 => expr
+
+      // UnsignedIntType ↔ BitVec of same width
+      case (UnsignedIntType(w1), BitVecType(w2)) if w1 == w2 => expr
+      case (BitVecType(w1), UnsignedIntType(w2)) if w1 == w2 => expr
+
+      // Float conversions (future - requires FP support)
+      case (FloatType(_, _), RealType) =>
+        // For now, just return the expr - proper FP support needed
+        log(s"Warning: Float to Real conversion not fully implemented")
+        expr
+
+      case (RealType, FloatType(ebits, sbits)) =>
+        // For now, just return the expr - proper FP support needed
+        log(s"Warning: Real to Float conversion not fully implemented")
+        expr
+
+      case _ =>
+        log(s"Warning: Unsupported type conversion from $fromType to $toType")
+        expr
+    }
+  }
+
   def Expr2Z3(e: Exp): com.microsoft.z3.Expr[_ <: Sort] = {
     e match {
 
@@ -1657,6 +1797,38 @@ object K2Z3 {
         ctx.mkBool(b)
       case RealLiteral(r) =>
         ctx.mkReal(r.toString)
+      case TypeCastCheckExp(cast, exp, targetType) =>
+        if (cast) {
+          // Type cast using 'as' operator
+          val sourceExpr = Expr2Z3(exp)
+          // Get source type from TypeChecker - try exp2Type first, fall back to inferring
+          val sourceType = TypeChecker.exp2Type.get(exp) match {
+            case null =>
+              // Fallback: try to infer type from the expression
+              exp match {
+                case IntegerLiteral(_) => IntType
+                case RealLiteral(_) => RealType
+                case BooleanLiteral(_) => BoolType
+                case IdentExp(name) =>
+                  // Try to look up identifier type
+                  idents.get(name) match {
+                    case Some((expr, _)) =>
+                      expr.getSort match {
+                        case _: BitVecSort => BitVecType(expr.getSort.asInstanceOf[BitVecSort].getSize)
+                        case _ => IntType // Default to Int
+                      }
+                    case None => IntType
+                  }
+                case _ => IntType // Default fallback
+              }
+            case t => t
+          }
+          convertNumericType(sourceExpr, sourceType, targetType)
+        } else {
+          // Type check using 'is' operator - this should be handled elsewhere
+          // For now, just return a boolean constant (actual implementation depends on runtime type checking)
+          ctx.mkBool(true)
+        }
       case QuantifiedExp(quantifier, bindings, expression) =>
         var qtypes = new ListBuffer[com.microsoft.z3.Sort]()
         var names = new ListBuffer[com.microsoft.z3.Symbol]()

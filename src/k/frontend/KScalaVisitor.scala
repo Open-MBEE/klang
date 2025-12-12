@@ -96,14 +96,27 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       BitVecType(width)
     } else {
       ctx.getText() match {
-        case "Bool"   => BoolType
-        case "Char"   => CharType
-        case "Int"    => IntType
-        case "Real"   => RealType
-        case "String" => StringType
-        case "Unit"   => UnitType
-        case "Time"   => TimeType
-        case "Duration"   => DurationType
+        case "Bool"     => BoolType
+        case "Char"     => CharType
+        case "Int"      => IntType
+        case "Real"     => RealType
+        case "String"   => StringType
+        case "Unit"     => UnitType
+        case "Time"     => TimeType
+        case "Duration" => DurationType
+        // IEEE 754 floating-point types
+        case "Float32"  => FloatType.Float32
+        case "Float64"  => FloatType.Float64
+        // Fixed-width signed integers
+        case "Int8"     => SignedIntType(8)
+        case "Int16"    => SignedIntType(16)
+        case "Int32"    => SignedIntType(32)
+        case "Int64"    => SignedIntType(64)
+        // Fixed-width unsigned integers
+        case "UInt8"    => UnsignedIntType(8)
+        case "UInt16"   => UnsignedIntType(16)
+        case "UInt32"   => UnsignedIntType(32)
+        case "UInt64"   => UnsignedIntType(64)
       }
     }
   }
@@ -485,7 +498,8 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
 
   override def visitLiteral(ctx: ModelParser.LiteralContext): AnyRef = {
     if (ctx.IntegerLiteral() != null) {
-      IntegerLiteral(java.lang.Long.parseLong(ctx.IntegerLiteral().getSymbol().getText()))
+      // Use decode() to handle decimal, hex (0x), octal (0), and binary (0b) literals
+      IntegerLiteral(java.lang.Long.decode(ctx.IntegerLiteral().getSymbol().getText()))
     } else if (ctx.RealLiteral() != null) {
       //RealLiteral(java.lang.Float.parseFloat(ctx.RealLiteral().getSymbol().getText()))
       val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText)//.

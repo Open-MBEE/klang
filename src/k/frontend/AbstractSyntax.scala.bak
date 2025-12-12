@@ -177,9 +177,6 @@ object UtilSMT {
       case ParenType(ty)                 => wellFormedType(ty)
       case BoolType | IntType | RealType | StringType | TimeType | DurationType => true
       case BitVecType(_)                 => true
-      case SignedIntType(_)              => true
-      case UnsignedIntType(_)            => true
-      case FloatType(_, _)               => true
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -4100,58 +4097,14 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
   }
 
   override def toSMT(className: String, subTyping: Boolean): String = {
-    if (cast) {
-      // Type cast using 'as' operator
-      val expSMT = exp.toSMT(className, subTyping)
-      // Get the source type from the type checker's exp2Type map
-      val sourceType = Option(TypeChecker.exp2Type.get(exp)).getOrElse {
-        exp match {
-          case _: IntegerLiteral => IntType
-          case _: RealLiteral => RealType  
-          case _: BooleanLiteral => BoolType
-          case _ => IntType // Default fallback
-        }
-      }
-      // Generate appropriate SMT conversion
-      (sourceType, ty) match {
-        // Real -> Int (truncation)
-        case (RealType, IntType) => s"(to_int $expSMT)"
-        // Int -> Real
-        case (IntType, RealType) => s"(to_real $expSMT)"
-        // Int -> BitVec
-        case (IntType, BitVecType(width)) => s"((_ int2bv $width) $expSMT)"
-        // BitVec -> Int
-        case (BitVecType(_), IntType) => s"(bv2int $expSMT)"
-        // Int -> SignedIntType
-        case (IntType, SignedIntType(width)) => s"((_ int2bv $width) $expSMT)"
-        // Int -> UnsignedIntType  
-        case (IntType, UnsignedIntType(width)) => s"((_ int2bv $width) $expSMT)"
-        // SignedIntType -> Int
-        case (SignedIntType(_), IntType) => s"(bv2int $expSMT)"
-        // UnsignedIntType -> Int
-        case (UnsignedIntType(_), IntType) => s"(bv2nat $expSMT)"
-        // Float -> Int
-        case (FloatType(_, _), IntType) => s"(fp.to_sbv 32 RTZ $expSMT)"
-        // Int -> Float
-        case (IntType, FloatType(ebits, sbits)) => s"((_ to_fp $ebits $sbits) RNE (to_real $expSMT))"
-        // Real -> Float  
-        case (RealType, FloatType(ebits, sbits)) => s"((_ to_fp $ebits $sbits) RNE $expSMT)"
-        // Float -> Real
-        case (FloatType(_, _), RealType) => s"(fp.to_real $expSMT)"
-        // Same type - no conversion needed
-        case (from, to) if from == to => expSMT
-        // Default: just use the expression (types are compatible)
-        case _ => expSMT
-      }
-    } else {
-      // Type check using 'is' operator
-      ty match {
-        case IdentType(QualifiedName(name :: Nil), Nil) =>
-          val expSMT = exp.toSMT(className, subTyping)
-          s"(deref-isa-$name $expSMT)"
-        case _ =>
-          UtilSMT.error(s"type test format $this")
-      }
+    if (cast)
+      UtilSMT.error(s"type cast $this")
+    ty match {
+      case IdentType(QualifiedName(name :: Nil), Nil) =>
+        val expSMT = exp.toSMT(className, subTyping)
+        s"(deref-isa-$name $expSMT)"
+      case _ =>
+        UtilSMT.error(s"type test format $this")
     }
   }
 

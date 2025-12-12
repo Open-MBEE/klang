@@ -106,6 +106,16 @@ case object TypeChecker {
       // BitVec is compatible with Int for implicit conversions (e.g., integer literals)
       case (BitVecType(_), IntType) if compatibility => return true
       case (IntType, BitVecType(_)) if compatibility => return true
+      // SignedIntType is compatible with Int for literals and conversions
+      case (SignedIntType(_), IntType) if compatibility => return true
+      case (IntType, SignedIntType(_)) if compatibility => return true
+      // UnsignedIntType is compatible with Int for literals and conversions
+      case (UnsignedIntType(_), IntType) if compatibility => return true
+      case (IntType, UnsignedIntType(_)) if compatibility => return true
+      // SignedIntType widening: smaller width can be assigned to larger width
+      case (SignedIntType(w1), SignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      // UnsignedIntType widening: smaller width can be assigned to larger width
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility && w1 <= w2 => return true
       // Two BitVecs must have same width
       case (BitVecType(w1), BitVecType(w2)) => return w1 == w2
       case _ => Misc.areTypesEqual(ty1, ty2, compatibility)
@@ -412,6 +422,9 @@ class TypeChecker(model: Model) {
       case TimeType   => return true
       case DurationType => return true
       case BitVecType(_) => return true
+      case SignedIntType(_) => return true
+      case UnsignedIntType(_) => return true
+      case FloatType(_, _) => return true
     }
     return false
   }

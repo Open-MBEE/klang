@@ -163,7 +163,12 @@ else
 fi
 
 if [ -d "$PROJECT_ROOT/export/lib/$LIB_DIR" ]; then
-    cp "$PROJECT_ROOT/export/lib/$LIB_DIR"/* "$PROJECT_ROOT/export/lib/"
+    cp -f "$PROJECT_ROOT/export/lib/$LIB_DIR"/* "$PROJECT_ROOT/export/lib/"
+    # Sign the libraries on macOS (required for Gatekeeper on unsigned binaries)
+    if [ "$OS_TYPE" = "macos" ]; then
+        codesign -s - "$PROJECT_ROOT/export/lib/libz3.dylib" 2>/dev/null || true
+        codesign -s - "$PROJECT_ROOT/export/lib/libz3java.dylib" 2>/dev/null || true
+    fi
     echo "   ✅ Updated export/lib/"
 else
     echo "   ⚠️  Directory export/lib/$LIB_DIR not found"
@@ -171,7 +176,12 @@ else
 fi
 
 if [ -d "$PROJECT_ROOT/lib/$LIB_DIR" ]; then
-    cp "$PROJECT_ROOT/lib/$LIB_DIR"/* "$PROJECT_ROOT/lib/"
+    cp -f "$PROJECT_ROOT/lib/$LIB_DIR"/* "$PROJECT_ROOT/lib/"
+    # Sign the libraries on macOS
+    if [ "$OS_TYPE" = "macos" ]; then
+        codesign -s - "$PROJECT_ROOT/lib/libz3.dylib" 2>/dev/null || true
+        codesign -s - "$PROJECT_ROOT/lib/libz3java.dylib" 2>/dev/null || true
+    fi
     echo "   ✅ Updated lib/"
 else
     echo "   ⚠️  Directory lib/$LIB_DIR not found"
