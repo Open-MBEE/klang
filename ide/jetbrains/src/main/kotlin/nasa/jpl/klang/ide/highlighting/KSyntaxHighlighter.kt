@@ -24,9 +24,17 @@ object KHighlightingColors {
     // Constraints (distinctive purple color)
     val CONSTRAINT = createTextAttributesKey("K_CONSTRAINT", DefaultLanguageHighlighterColors.METADATA)
     
-    // Types
+    // Types (built-in types like Int, Real, Bool)
     val TYPE = createTextAttributesKey("K_TYPE", DefaultLanguageHighlighterColors.CLASS_NAME)
     
+    // Semantic highlighting - definitions
+    val CLASS_NAME = createTextAttributesKey("K_CLASS_NAME", DefaultLanguageHighlighterColors.CLASS_NAME)
+    val CLASS_REFERENCE = createTextAttributesKey("K_CLASS_REFERENCE", DefaultLanguageHighlighterColors.CLASS_REFERENCE)
+    val FUNCTION_NAME = createTextAttributesKey("K_FUNCTION_NAME", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
+    val PROPERTY_NAME = createTextAttributesKey("K_PROPERTY_NAME", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
+    val CONSTRAINT_NAME = createTextAttributesKey("K_CONSTRAINT_NAME", DefaultLanguageHighlighterColors.CONSTANT)
+    val PARAMETER = createTextAttributesKey("K_PARAMETER", DefaultLanguageHighlighterColors.PARAMETER)
+
     // Operators
     val OPERATOR = createTextAttributesKey("K_OPERATOR", DefaultLanguageHighlighterColors.OPERATION_SIGN)
     

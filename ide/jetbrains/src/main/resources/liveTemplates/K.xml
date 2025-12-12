@@ -1,0 +1,68 @@
+<templateSet group="K">
+    <template name="class" value="class $NAME$ {&#10;  $END$&#10;}" description="Class definition" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="ClassName" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="classext" value="class $NAME$ extends $PARENT$ {&#10;  $END$&#10;}" description="Class extending another" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="ClassName" alwaysStopAt="true"/>
+        <variable name="PARENT" expression="" defaultValue="ParentClass" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="fun" value="fun $NAME$($PARAMS$) : $RETURN$ {&#10;  $END$&#10;}" description="Function definition" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="functionName" alwaysStopAt="true"/>
+        <variable name="PARAMS" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="RETURN" expression="" defaultValue="Int" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="prop" value="$NAME$ : $TYPE$" description="Property declaration" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="propertyName" alwaysStopAt="true"/>
+        <variable name="TYPE" expression="" defaultValue="Int" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="req" value="req $CONSTRAINT$" description="Constraint" toReformat="true" toShortenFQNames="true">
+        <variable name="CONSTRAINT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="reqn" value="req $NAME$: $CONSTRAINT$" description="Named constraint" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="constraintName" alwaysStopAt="true"/>
+        <variable name="CONSTRAINT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="forall" value="forall $VAR$ : $TYPE$ :- $EXPR$ => $BODY$" description="Universal quantifier" toReformat="true" toShortenFQNames="true">
+        <variable name="VAR" expression="" defaultValue="x" alwaysStopAt="true"/>
+        <variable name="TYPE" expression="" defaultValue="Int" alwaysStopAt="true"/>
+        <variable name="EXPR" expression="" defaultValue="true" alwaysStopAt="true"/>
+        <variable name="BODY" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="exists" value="exists $VAR$ : $TYPE$ :- $EXPR$ => $BODY$" description="Existential quantifier" toReformat="true" toShortenFQNames="true">
+        <variable name="VAR" expression="" defaultValue="x" alwaysStopAt="true"/>
+        <variable name="TYPE" expression="" defaultValue="Int" alwaysStopAt="true"/>
+        <variable name="EXPR" expression="" defaultValue="true" alwaysStopAt="true"/>
+        <variable name="BODY" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="package" value="package $NAME$&#10;&#10;$END$" description="Package declaration" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="mypackage" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+</templateSet>
+

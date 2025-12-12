@@ -1,8 +1,8 @@
 {
   "name": "k-language",
   "displayName": "K Language Support",
-  "description": "Syntax highlighting and language support for the K constraint programming language",
-  "version": "0.1.0",
+  "description": "Full language support for the K constraint programming language - syntax highlighting, IntelliSense, diagnostics, and more",
+  "version": "0.5.0",
   "publisher": "nasa-jpl",
   "repository": {
     "type": "git",
@@ -33,19 +33,103 @@
         "scopeName": "source.k",
         "path": "./syntaxes/k.tmLanguage.json"
       }
-    ]
+    ],
+    "snippets": [
+      {
+        "language": "k",
+        "path": "./snippets/k.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "k.runFile",
+        "title": "Run K File",
+        "category": "K",
+        "icon": "$(play)"
+      },
+      {
+        "command": "k.runFileWithArgs",
+        "title": "Run K File with Arguments...",
+        "category": "K"
+      },
+      {
+        "command": "k.visualizeSolution",
+        "title": "Visualize Solution",
+        "category": "K",
+        "icon": "$(graph)"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        },
+        {
+          "command": "k.visualizeSolution",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "k.runFile",
+          "when": "resourceExtname == .k",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "k.runFile",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.visualizeSolution",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "resourceLangId == k"
+      }
+    ],
+    "configuration": {
+      "title": "K Language",
+      "properties": {
+        "k.installation.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the K language installation directory (containing the 'export/k' script or 'k' executable)"
+        },
+        "k.java.home": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Java installation (Java 8 or 21 required). Leave empty to use system default or JAVA_HOME."
+        },
+        "k.run.showOutput": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show output panel when running K files"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.0",
-    "@vscode/vsce": "^2.15.0"
+    "typescript": "^5.3.0"
   }
 }
-

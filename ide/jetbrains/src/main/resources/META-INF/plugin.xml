@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>nasa.jpl.klang.ide</id>
     <name>K Language</name>
-    <version>0.2.0</version>
+    <version>0.5.0</version>
     <vendor email="klang@jpl.nasa.gov" url="https://github.com/nasa-jpl/klang">NASA JPL</vendor>
 
     <description><![CDATA[
@@ -10,11 +10,19 @@
     <h2>Features</h2>
     <ul>
         <li>Syntax highlighting for K files (.k)</li>
-        <li>Go to Definition (Ctrl+Click / Ctrl+B)</li>
+        <li>Code completion (IntelliSense) for keywords, types, and symbols</li>
+        <li>Real-time error highlighting and diagnostics</li>
+        <li>Code formatting (Ctrl+Alt+L)</li>
+        <li>Code folding for classes, functions, and comments</li>
+        <li>Breadcrumb navigation</li>
+        <li>Rename refactoring (Shift+F6)</li>
+        <li>Run K files (right-click → Run, or Cmd+Shift+R)</li>
+        <li>Solution visualization tool window</li>
         <li>Find Usages (Alt+F7)</li>
+        <li>Go to Definition (Ctrl+Click / F12)</li>
         <li>Structure View (Alt+7) - navigate classes, functions, properties</li>
         <li>Documentation on hover (Ctrl+Q)</li>
-        <li>Comment support (line and block)</li>
+        <li>Comment support (-- // /* */ and ===...===)</li>
         <li>Bracket matching</li>
         <li>Color scheme customization</li>
     </ul>
@@ -25,13 +33,25 @@
     ]]></description>
 
     <change-notes><![CDATA[
-    <h3>0.2.0</h3>
+    <h3>0.5.0</h3>
     <ul>
-        <li>Go to Definition support</li>
-        <li>Find Usages support</li>
-        <li>Structure View for file navigation</li>
-        <li>Documentation popups on hover</li>
-        <li>PSI parser for better code understanding</li>
+        <li>Code folding for classes, functions, and block comments</li>
+        <li>Breadcrumb navigation (package → class → function)</li>
+        <li>Improved block comment support (/* */ and ===...===)</li>
+    </ul>
+    <h3>0.4.0</h3>
+    <ul>
+        <li>Code completion for keywords, types, and symbols</li>
+        <li>Real-time error highlighting and diagnostics</li>
+        <li>Code formatting support</li>
+        <li>Rename refactoring</li>
+        <li>Solution visualization tool window</li>
+    </ul>
+    <h3>0.3.0</h3>
+    <ul>
+        <li>Run K files directly from the IDE</li>
+        <li>Auto-detect K installation and SDKMAN Java</li>
+        <li>Run configuration with customizable settings</li>
     </ul>
     <h3>0.1.0</h3>
     <ul>
@@ -99,6 +119,59 @@
         <psi.referenceContributor
             language="K"
             implementation="nasa.jpl.klang.ide.psi.KReferenceContributor"/>
+
+        <!-- Run Configuration -->
+        <configurationType
+            implementation="nasa.jpl.klang.ide.run.KRunConfigurationType"/>
+
+        <runConfigurationProducer
+            implementation="nasa.jpl.klang.ide.run.KRunConfigurationProducer"/>
+
+        <!-- Run Line Marker (gutter icon) -->
+        <runLineMarkerContributor
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.run.KRunLineMarkerContributor"/>
+
+        <!-- Code Completion -->
+        <completion.contributor
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.completion.KCompletionContributor"/>
+
+        <!-- Code Formatting -->
+        <lang.formatter
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.formatting.KFormattingModelBuilder"/>
+
+        <!-- Code Folding -->
+        <lang.foldingBuilder
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.folding.KFoldingBuilder"/>
+
+        <!-- Breadcrumbs -->
+        <breadcrumbsInfoProvider
+            implementation="nasa.jpl.klang.ide.breadcrumbs.KBreadcrumbsProvider"/>
+
+        <!-- Live Templates -->
+        <liveTemplateContext
+            implementation="nasa.jpl.klang.ide.templates.KTemplateContext"/>
+        <defaultLiveTemplates file="/liveTemplates/K.xml"/>
+
+        <!-- Annotator (error highlighting) -->
+        <annotator
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.highlighting.KAnnotator"/>
+
+        <!-- Refactoring Support -->
+        <lang.refactoringSupport
+            language="K"
+            implementationClass="nasa.jpl.klang.ide.refactoring.KRefactoringSupportProvider"/>
+
+        <!-- Solution Tool Window -->
+        <toolWindow
+            id="K Solution"
+            anchor="bottom"
+            secondary="true"
+            factoryClass="nasa.jpl.klang.ide.toolwindow.KSolutionToolWindowFactory"
+            icon="/icons/k_icon.svg"/>
     </extensions>
 </idea-plugin>
-
