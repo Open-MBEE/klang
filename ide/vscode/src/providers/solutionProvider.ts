@@ -43,11 +43,14 @@ export class KSolutionProvider {
      * Run solver and show results
      */
     async runAndVisualize(fileUri?: vscode.Uri): Promise<void> {
+        console.log('K Solution: runAndVisualize called');
         const uri = fileUri || vscode.window.activeTextEditor?.document.uri;
         if (!uri || !uri.fsPath.endsWith('.k')) {
             vscode.window.showErrorMessage('Please open a K file first');
+            console.log('K Solution: No K file found');
             return;
         }
+        console.log('K Solution: Processing file:', uri.fsPath);
 
         // Show progress
         await vscode.window.withProgress({
@@ -74,6 +77,7 @@ export class KSolutionProvider {
     private async runKSolver(filePath: string, token: vscode.CancellationToken): Promise<string> {
         return new Promise((resolve, reject) => {
             const kScript = this.findKScript();
+            console.log('K Solution: Found K script:', kScript);
             if (!kScript) {
                 reject(new Error('K installation not found'));
                 return;
@@ -223,7 +227,9 @@ export class KSolutionProvider {
     }
 
     private showSolutionPanel(): void {
+        console.log('K Solution: showSolutionPanel called, solution:', this.currentSolution?.status);
         if (!this.currentSolution) {
+            console.log('K Solution: No current solution to show');
             return;
         }
 

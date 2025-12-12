@@ -1,27 +1,36 @@
 # K Language JetBrains Plugin
 
-IntelliJ IDEA plugin providing support for the K constraint programming language.
+IntelliJ IDEA plugin providing comprehensive support for the K constraint programming language.
 
 ## Features
 
-### Implemented
+### Navigation & Code Intelligence
 - [x] File type recognition (.k files)
-- [x] Syntax highlighting
-- [x] Comment support (line `--` and block `==...==`)
+- [x] Syntax highlighting with customizable colors
+- [x] Go to Definition (Ctrl+Click / F12)
+- [x] Find Usages (Alt+F7)
+- [x] Code completion (IntelliSense)
+- [x] Structure view (Alt+7)
+- [x] Documentation on hover (Ctrl+Q)
+- [x] Breadcrumb navigation
+
+### Editing
+- [x] Code formatting (Ctrl+Alt+L)
+- [x] Code folding for classes, functions, and comments
+- [x] Comment support (-- // /* */ and ===...===)
 - [x] Brace matching
+- [x] Rename refactoring (Shift+F6)
+- [x] Color scheme customization
 
-### Planned (Phase 2)
-- [ ] Parser integration (using existing ANTLR grammar)
-- [ ] Go to Definition
-- [ ] Find Usages
-- [ ] Code completion
-- [ ] Structure view
-- [ ] Error highlighting
+### Running & Diagnostics
+- [x] Run K files (right-click → Run, or Cmd+Shift+R)
+- [x] Run configuration with customizable settings
+- [x] Real-time error highlighting
+- [x] Solution visualization tool window
 
-### Planned (Phase 3 - Solver Integration)
-- [ ] "Solve" action (Ctrl+Shift+S)
-- [ ] Solutions tool window
-- [ ] UNSAT explanation
+### Planned (Future)
+- [ ] Debugger integration
+- [ ] UNSAT explanation visualization
 - [ ] Constraint graph visualization
 - [ ] Line markers for constraint status
 
@@ -35,13 +44,13 @@ IntelliJ IDEA plugin providing support for the K constraint programming language
 
 ```bash
 # Build the plugin
-./gradlew build
+./gradlew buildPlugin
 
 # Run in development IDE
 ./gradlew runIde
 
-# Package as ZIP
-./gradlew buildPlugin
+# Just compile (faster)
+./gradlew compileKotlin
 ```
 
 The built plugin will be in `build/distributions/`.
@@ -56,6 +65,12 @@ The built plugin will be in `build/distributions/`.
 ### Development Mode
 Run `./gradlew runIde` to launch a development instance of IntelliJ IDEA with the plugin installed.
 
+## Requirements
+
+- IntelliJ IDEA 2024.3+ (or other JetBrains IDE 243+)
+- K installation (for running files): The plugin looks for `{project}/export/k`
+- Java 21+ (auto-detected from SDKMAN)
+
 ## Architecture
 
 The plugin follows standard IntelliJ Platform architecture:
@@ -66,35 +81,23 @@ src/main/kotlin/nasa/jpl/klang/ide/
 ├── KFileType.kt          # File type (.k)
 ├── KIcons.kt             # Icon resources
 ├── KCommenter.kt         # Comment handling
-├── parser/               # Parser (TODO: integrate ANTLR)
-├── highlighting/         # Syntax highlighter
+├── KBraceMatcher.kt      # Bracket matching
+├── lexer/                # Lexer for syntax highlighting
+├── parser/               # Parser definition
+├── psi/                  # PSI element types
+├── highlighting/         # Syntax & semantic highlighting
 ├── completion/           # Code completion
 ├── navigation/           # Go to definition, find usages
+├── documentation/        # Documentation provider
 ├── structure/            # Structure view
-├── annotator/            # Semantic highlighting
+├── formatting/           # Code formatter
 ├── folding/              # Code folding
-├── toolwindow/           # Solutions panel
-├── actions/              # IDE actions
+├── breadcrumbs/          # Breadcrumb navigation
+├── refactoring/          # Rename refactoring
+├── toolwindow/           # Solution visualization
 └── run/                  # Run configurations
 ```
 
-### Integration with K Compiler
-
-The plugin can integrate with the existing K compiler by:
-
-1. **Embedding**: Include klang JAR as a dependency
-2. **Process**: Run klang as an external process
-3. **LSP**: (Future) Implement Language Server Protocol
-
-For best performance, we recommend embedding the klang JAR and calling
-the Scala APIs directly:
-
-```kotlin
-// Example: Using K type checker
-val model = KScalaVisitor().visitModel(parseTree)
-val typeChecker = TypeChecker()
-val errors = typeChecker.check(model)
-```
 
 ## Roadmap
 

@@ -18,7 +18,13 @@ class KColorSettingsPage : ColorSettingsPage {
         private val DESCRIPTORS = arrayOf(
             AttributesDescriptor("Keywords//Declaration", KHighlightingColors.KEYWORD),
             AttributesDescriptor("Keywords//Constraint", KHighlightingColors.CONSTRAINT),
-            AttributesDescriptor("Types", KHighlightingColors.TYPE),
+            AttributesDescriptor("Types//Built-in types", KHighlightingColors.TYPE),
+            AttributesDescriptor("Declarations//Class name", KHighlightingColors.CLASS_NAME),
+            AttributesDescriptor("Declarations//Class reference", KHighlightingColors.CLASS_REFERENCE),
+            AttributesDescriptor("Declarations//Function name", KHighlightingColors.FUNCTION_NAME),
+            AttributesDescriptor("Declarations//Property name", KHighlightingColors.PROPERTY_NAME),
+            AttributesDescriptor("Declarations//Constraint name", KHighlightingColors.CONSTRAINT_NAME),
+            AttributesDescriptor("Declarations//Parameter", KHighlightingColors.PARAMETER),
             AttributesDescriptor("Operators", KHighlightingColors.OPERATOR),
             AttributesDescriptor("Literals//Number", KHighlightingColors.NUMBER),
             AttributesDescriptor("Literals//String", KHighlightingColors.STRING),
@@ -36,6 +42,12 @@ class KColorSettingsPage : ColorSettingsPage {
             "kw" to KHighlightingColors.KEYWORD,
             "con" to KHighlightingColors.CONSTRAINT,
             "type" to KHighlightingColors.TYPE,
+            "cls" to KHighlightingColors.CLASS_NAME,
+            "clsref" to KHighlightingColors.CLASS_REFERENCE,
+            "fn" to KHighlightingColors.FUNCTION_NAME,
+            "prop" to KHighlightingColors.PROPERTY_NAME,
+            "cname" to KHighlightingColors.CONSTRAINT_NAME,
+            "param" to KHighlightingColors.PARAMETER,
             "num" to KHighlightingColors.NUMBER,
             "str" to KHighlightingColors.STRING,
             "ann" to KHighlightingColors.ANNOTATION
@@ -61,34 +73,33 @@ class KColorSettingsPage : ColorSettingsPage {
         |
         |/* Block comment */
         |
-        |<kw>class</kw> Shape {
-        |  sides : <type>Int</type>
-        |  <kw>fun</kw> area : <type>Real</type>
+        |<kw>class</kw> <cls>Shape</cls> {
+        |  <prop>sides</prop> : <type>Int</type>
+        |  <kw>fun</kw> <fn>area</fn> : <type>Real</type>
         |}
         |
-        |<kw>class</kw> Triangle <kw>extends</kw> Shape {
-        |  base : <type>Int</type>
-        |  height : <type>Int</type>
+        |<kw>class</kw> <cls>Triangle</cls> <kw>extends</kw> <clsref>Shape</clsref> {
+        |  <prop>base</prop> : <type>Int</type>
+        |  <prop>height</prop> : <type>Int</type>
         |  
         |  <con>req</con> sides = <num>3</num>
         |  
-        |  <kw>fun</kw> area : <type>Real</type> {
+        |  <kw>fun</kw> <fn>area</fn> : <type>Real</type> {
         |    base * height / <num>2</num>
         |  }
         |  
-        |  name : <type>String</type> = <str>"triangle"</str>
-        |  isValid : <type>Bool</type> = <kw>true</kw>
+        |  <prop>name</prop> : <type>String</type> = <str>"triangle"</str>
+        |  <prop>isValid</prop> : <type>Bool</type> = <kw>true</kw>
         |  
-        |  <con>req</con> Valid: base > <num>0</num> && height > <num>0</num>
+        |  <con>req</con> <cname>Valid</cname>: base > <num>0</num> && height > <num>0</num>
         |  
-        |  <con>soft</con> Prefer: area > <num>100</num>
+        |  <con>soft</con> <cname>Prefer</cname>: area > <num>100</num>
         |  
         |  <con>minimize</con> base + height
         |}
         |
-        |<ann>@</ann>constraint
-        |<kw>class</kw> Equilateral <kw>extends</kw> Triangle {
-        |  <con>req</con> <kw>forall</kw> a, b : sides => a = b
+        |<kw>class</kw> <cls>Equilateral</cls> <kw>extends</kw> <clsref>Triangle</clsref> {
+        |  <con>req</con> <kw>forall</kw> <param>a</param>, <param>b</param> : sides => a = b
         |}
     """.trimMargin()
 

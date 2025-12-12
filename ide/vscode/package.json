@@ -1,8 +1,8 @@
 {
   "name": "k-language",
   "displayName": "K Language Support",
-  "description": "Syntax highlighting and language support for the K constraint programming language",
-  "version": "0.1.0",
+  "description": "Full language support for the K constraint programming language - syntax highlighting, IntelliSense, diagnostics, and more",
+  "version": "0.5.0",
   "publisher": "nasa-jpl",
   "repository": {
     "type": "git",
@@ -32,6 +32,12 @@
         "language": "k",
         "scopeName": "source.k",
         "path": "./syntaxes/k.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "k",
+        "path": "./snippets/k.json"
       }
     ],
     "commands": [

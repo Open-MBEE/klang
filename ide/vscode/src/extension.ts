@@ -9,6 +9,7 @@ import { KCompletionProvider } from './providers/completionProvider';
 import { KFormattingProvider, KOnTypeFormattingProvider } from './providers/formattingProvider';
 import { KRenameProvider } from './providers/renameProvider';
 import { KSolutionProvider } from './providers/solutionProvider';
+import { KInlayHintsProvider } from './providers/inlayHintsProvider';
 import { runKFile, runKFileWithArgs } from './runner';
 
 // Document selector for K language files
@@ -66,6 +67,11 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerRenameProvider(K_MODE, new KRenameProvider())
     );
 
+    // Register Inlay Hints Provider (parameter names, type hints)
+    context.subscriptions.push(
+        vscode.languages.registerInlayHintsProvider(K_MODE, new KInlayHintsProvider())
+    );
+
     // Register Run Commands
     context.subscriptions.push(
         vscode.commands.registerCommand('k.runFile', runKFile)
@@ -78,7 +84,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Register Solution Visualization
     const solutionProvider = new KSolutionProvider(context);
     context.subscriptions.push(
-        vscode.commands.registerCommand('k.visualizeSolution', () => solutionProvider.runAndVisualize())
+        vscode.commands.registerCommand('k.visualizeSolution', () => {
+            console.log('K: visualizeSolution command invoked');
+            return solutionProvider.runAndVisualize();
+        })
     );
     context.subscriptions.push(solutionProvider);
 

@@ -19,8 +19,10 @@ object KElementTypes {
 
     // Class members
     @JvmField val PROPERTY_DEFINITION = KElementType("PROPERTY_DEFINITION")
+    @JvmField val PROPERTY_DECLARATION = KElementType("PROPERTY_DECLARATION")
     @JvmField val FUNCTION_DEFINITION = KElementType("FUNCTION_DEFINITION")
     @JvmField val CONSTRAINT = KElementType("CONSTRAINT")
+    @JvmField val CONSTRAINT_DEFINITION = KElementType("CONSTRAINT_DEFINITION")
 
     // Type system
     @JvmField val TYPE_REFERENCE = KElementType("TYPE_REFERENCE")

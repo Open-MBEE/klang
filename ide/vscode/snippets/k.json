@@ -1,0 +1,138 @@
+{
+  "Class definition": {
+    "prefix": "class",
+    "body": [
+      "class ${1:ClassName} {",
+      "  $0",
+      "}"
+    ],
+    "description": "Class definition"
+  },
+  "Class extends": {
+    "prefix": "classext",
+    "body": [
+      "class ${1:ClassName} extends ${2:ParentClass} {",
+      "  $0",
+      "}"
+    ],
+    "description": "Class extending another class"
+  },
+  "Function definition": {
+    "prefix": "fun",
+    "body": [
+      "fun ${1:functionName}(${2:params}) : ${3:ReturnType} {",
+      "  $0",
+      "}"
+    ],
+    "description": "Function definition"
+  },
+  "Function (no body)": {
+    "prefix": "funv",
+    "body": [
+      "fun ${1:functionName}(${2:params}) : ${3:ReturnType}"
+    ],
+    "description": "Function declaration without body"
+  },
+  "Property": {
+    "prefix": "prop",
+    "body": [
+      "${1:name} : ${2:Type}"
+    ],
+    "description": "Property declaration"
+  },
+  "Property with value": {
+    "prefix": "propv",
+    "body": [
+      "${1:name} : ${2:Type} = ${3:value}"
+    ],
+    "description": "Property with initial value"
+  },
+  "Constraint": {
+    "prefix": "req",
+    "body": [
+      "req ${1:constraint}"
+    ],
+    "description": "Constraint (req)"
+  },
+  "Named constraint": {
+    "prefix": "reqn",
+    "body": [
+      "req ${1:Name}: ${2:constraint}"
+    ],
+    "description": "Named constraint"
+  },
+  "Soft constraint": {
+    "prefix": "soft",
+    "body": [
+      "soft req ${1:constraint}"
+    ],
+    "description": "Soft constraint"
+  },
+  "Forall quantifier": {
+    "prefix": "forall",
+    "body": [
+      "forall ${1:x} : ${2:Type} :- ${3:condition} => ${4:body}"
+    ],
+    "description": "Universal quantifier"
+  },
+  "Exists quantifier": {
+    "prefix": "exists",
+    "body": [
+      "exists ${1:x} : ${2:Type} :- ${3:condition} => ${4:body}"
+    ],
+    "description": "Existential quantifier"
+  },
+  "Package declaration": {
+    "prefix": "package",
+    "body": [
+      "package ${1:packageName}",
+      "",
+      "$0"
+    ],
+    "description": "Package declaration"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": [
+      "import ${1:packageName}"
+    ],
+    "description": "Import statement"
+  },
+  "Association": {
+    "prefix": "assoc",
+    "body": [
+      "assoc ${1:AssocName} {",
+      "  source ${2:SourceClass}",
+      "  target ${3:TargetClass}",
+      "  $0",
+      "}"
+    ],
+    "description": "Association definition"
+  },
+  "If-then-else": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} then ${2:thenExpr} else ${3:elseExpr}"
+    ],
+    "description": "If-then-else expression"
+  },
+  "Block comment": {
+    "prefix": "/**",
+    "body": [
+      "/**",
+      " * ${1:description}",
+      " */"
+    ],
+    "description": "Block comment"
+  },
+  "Documentation block": {
+    "prefix": "===",
+    "body": [
+      "==============================================",
+      "${1:Documentation}",
+      "=============================================="
+    ],
+    "description": "Documentation block with equals signs"
+  }
+}
+

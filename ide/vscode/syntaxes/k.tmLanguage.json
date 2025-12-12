@@ -8,12 +8,15 @@
     { "include": "#annotations" },
     { "include": "#keywords" },
     { "include": "#constraints" },
+    { "include": "#named-constraint" },
     { "include": "#optimization" },
     { "include": "#types" },
     { "include": "#operators" },
     { "include": "#numbers" },
     { "include": "#function-definition" },
     { "include": "#class-definition" },
+    { "include": "#extends-clause" },
+    { "include": "#property-definition" },
     { "include": "#function-call" },
     { "include": "#identifiers" }
   ],
@@ -231,6 +234,41 @@
           "captures": {
             "1": { "name": "keyword.declaration.class.k" },
             "2": { "name": "entity.name.type.class.k" }
+          }
+        }
+      ]
+    },
+    "property-definition": {
+      "patterns": [
+        {
+          "match": "^\\s*([a-z_][a-zA-Z0-9_]*)\\s*(:)\\s*([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "variable.other.property.k" },
+            "2": { "name": "punctuation.separator.type.k" },
+            "3": { "name": "entity.name.type.k" }
+          }
+        }
+      ]
+    },
+    "named-constraint": {
+      "patterns": [
+        {
+          "match": "\\b(req)\\s+([A-Z][a-zA-Z0-9_]*)\\s*(:)",
+          "captures": {
+            "1": { "name": "keyword.constraint.hard.k" },
+            "2": { "name": "entity.name.constraint.k" },
+            "3": { "name": "punctuation.separator.constraint.k" }
+          }
+        }
+      ]
+    },
+    "extends-clause": {
+      "patterns": [
+        {
+          "match": "\\b(extends)\\s+([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.declaration.extends.k" },
+            "2": { "name": "entity.other.inherited-class.k" }
           }
         }
       ]
