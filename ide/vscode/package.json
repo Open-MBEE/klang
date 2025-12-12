@@ -74,6 +74,52 @@
         "title": "Solve Now",
         "category": "K",
         "icon": "$(run)"
+      },
+      {
+        "command": "k.startConstraintDebug",
+        "title": "Start Constraint Debugger",
+        "category": "K Debug",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "k.debugStepNext",
+        "title": "Step Next Constraint",
+        "category": "K Debug",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "k.debugStepPrev",
+        "title": "Step Previous Constraint",
+        "category": "K Debug",
+        "icon": "$(debug-step-back)"
+      },
+      {
+        "command": "k.debugRunToEnd",
+        "title": "Run All Constraints",
+        "category": "K Debug",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "k.debugStop",
+        "title": "Stop Debugging",
+        "category": "K Debug",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "k.solveWithProgress",
+        "title": "Solve with Progress Panel",
+        "category": "K",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "k.showProgress",
+        "title": "Show Progress Panel",
+        "category": "K"
+      },
+      {
+        "command": "k.clearDecorations",
+        "title": "Clear Inline Values",
+        "category": "K"
       }
     ],
     "menus": {

@@ -1,4 +1,4 @@
-Iimport * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import { KSymbolParser } from './symbolParser';
 
 /**
