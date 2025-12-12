@@ -1845,6 +1845,7 @@ object K2Z3 {
           val sourceType = TypeChecker.exp2Type.get(exp) match {
             case null =>
               // Fallback: try to infer type from the expression
+              // Debug removed
               exp match {
                 case IntegerLiteral(_) => IntType
                 case RealLiteral(_) => RealType

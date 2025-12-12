@@ -64,5 +64,123 @@
             <option name="K" value="true"/>
         </context>
     </template>
+    <!-- Type Conversions -->
+    <template name="asint" value="$EXPR$ as Int" description="Cast to Int" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asreal" value="$EXPR$ as Real" description="Cast to Real" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asint8" value="$EXPR$ as Int8" description="Cast to Int8" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asint16" value="$EXPR$ as Int16" description="Cast to Int16" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asint32" value="$EXPR$ as Int32" description="Cast to Int32" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asint64" value="$EXPR$ as Int64" description="Cast to Int64" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asuint8" value="$EXPR$ as UInt8" description="Cast to UInt8" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asuint16" value="$EXPR$ as UInt16" description="Cast to UInt16" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asuint32" value="$EXPR$ as UInt32" description="Cast to UInt32" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="asuint64" value="$EXPR$ as UInt64" description="Cast to UInt64" toReformat="true" toShortenFQNames="true">
+        <variable name="EXPR" expression="" defaultValue="expr" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <!-- Bitvector Property Declarations -->
+    <template name="int8" value="$NAME$ : Int8 = $VALUE$" description="Int8 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="byteVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="int16" value="$NAME$ : Int16 = $VALUE$" description="Int16 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="shortVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="int32" value="$NAME$ : Int32 = $VALUE$" description="Int32 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="intVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="int64" value="$NAME$ : Int64 = $VALUE$" description="Int64 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="longVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="uint8" value="$NAME$ : UInt8 = $VALUE$" description="UInt8 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="ubyteVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="uint16" value="$NAME$ : UInt16 = $VALUE$" description="UInt16 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="ushortVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="uint32" value="$NAME$ : UInt32 = $VALUE$" description="UInt32 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="uintVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
+    <template name="uint64" value="$NAME$ : UInt64 = $VALUE$" description="UInt64 property" toReformat="true" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="ulongVal" alwaysStopAt="true"/>
+        <variable name="VALUE" expression="" defaultValue="0" alwaysStopAt="true"/>
+        <context>
+            <option name="K" value="true"/>
+        </context>
+    </template>
 </templateSet>
 

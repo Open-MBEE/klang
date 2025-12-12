@@ -4195,6 +4195,21 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
             // Narrowing: extract lower bits
             s"((_ extract ${toWidth - 1} 0) $expSMT)"
           }
+        // ========== Bitvector <-> Real conversions ==========
+        // SignedIntType -> Real (via signed Int interpretation)
+        case (SignedIntType(width), RealType) =>
+          // Use bv2int with sign check for signed interpretation
+          val signBit = width - 1
+          s"(ite (= ((_ extract $signBit $signBit) $expSMT) #b1) (to_real (- (bv2int (bvneg $expSMT)))) (to_real (bv2int $expSMT)))"
+        // UnsignedIntType -> Real (via unsigned Int interpretation)
+        case (UnsignedIntType(_), RealType) =>
+          s"(to_real (bv2int $expSMT))"
+        // Real -> SignedIntType (via Int)
+        case (RealType, SignedIntType(width)) =>
+          s"((_ int2bv $width) (to_int $expSMT))"
+        // Real -> UnsignedIntType (via Int)
+        case (RealType, UnsignedIntType(width)) =>
+          s"((_ int2bv $width) (to_int $expSMT))"
                 // Same type - no conversion needed
         case (from, to) if from == to => expSMT
         // Default: just use the expression (types are compatible)
