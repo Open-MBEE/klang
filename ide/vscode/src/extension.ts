@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Reference Provider (Find All References - Shift+F12)
     context.subscriptions.push(
-        vscode.languages.registerReferenceProvider(K_MODE, new KReferenceProvider()))
+        vscode.languages.registerReferenceProvider(K_MODE, new KReferenceProvider())
     );
 
     // Register Hover Provider (Show documentation on hover)
