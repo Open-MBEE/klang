@@ -159,40 +159,54 @@ export class KSolutionProvider {
             if (constrsMatch) solution.statistics.constraints = parseInt(constrsMatch[1]);
         }
 
-        // Parse objects table
-        const tableMatch = output.match(/\+[-+]+\+([\s\S]*?)\+[-+]+\+[\s\S]*$/);
-        if (tableMatch) {
-            const tableContent = tableMatch[1];
-            const rows = tableContent.split('\n').filter(line => line.includes('|') && !line.match(/^\+[-+]+\+$/));
+        // Parse objects table - look for rows with |Variable|Ref|Value| pattern
+        // The table looks like:
+        // +--------+-----+------------------------------------------------------------+
+        // |Variable|Ref  |Value                                                       |
+        // +--------+-----+------------------------------------------------------------+
+        // |        |Ref 8|Obtuse(sides::3, a:: Ref 5, ...)                            |
+        const tableLines = output.split('\n').filter(line =>
+            line.includes('|') &&
+            !line.match(/^\s*\+[-+]+\+\s*$/) &&
+            !line.includes('Variable') &&
+            line.includes('Ref ')
+        );
 
-            for (const row of rows) {
-                const cells = row.split('|').map(s => s.trim()).filter(Boolean);
-                if (cells.length >= 3) {
-                    const variable = cells[0] || '';
-                    const ref = cells[1] || '';
-                    const valueStr = cells[2] || '';
+        console.log('K Solution: Found table lines:', tableLines.length);
 
-                    // Parse the value: ClassName(prop1::val1, prop2::val2, ...)
-                    const valueMatch = valueStr.match(/^(\w+)\((.*)\)$/);
-                    if (valueMatch) {
-                        const className = valueMatch[1];
-                        const propsStr = valueMatch[2];
-                        const properties: { [key: string]: string } = {};
+        for (const row of tableLines) {
+            // Split by | and filter empty cells
+            const parts = row.split('|');
+            if (parts.length >= 4) {
+                const variable = parts[1]?.trim() || '';
+                const ref = parts[2]?.trim() || '';
+                const valueStr = parts[3]?.trim() || '';
 
-                        // Parse properties
-                        const propMatches = propsStr.match(/(\w+)::\s*([^,)]+)/g);
-                        if (propMatches) {
-                            for (const pm of propMatches) {
-                                const [propName, propValue] = pm.split('::').map(s => s.trim());
-                                properties[propName] = propValue;
-                            }
-                        }
+                console.log('K Solution: Parsing row - var:', variable, 'ref:', ref, 'value:', valueStr.substring(0, 50));
 
-                        solution.objects.push({ variable, ref, className, properties });
+                // Parse the value: ClassName(prop1::val1, prop2::val2, ...)
+                const valueMatch = valueStr.match(/^(\w+)\((.+)\)$/);
+                if (valueMatch) {
+                    const className = valueMatch[1];
+                    const propsStr = valueMatch[2];
+                    const properties: { [key: string]: string } = {};
+
+                    // Parse properties - handle "prop:: value" with spaces
+                    const propPattern = /(\w+)::\s*([^,]+?)(?=,\s*\w+::|$)/g;
+                    let propMatch;
+                    while ((propMatch = propPattern.exec(propsStr)) !== null) {
+                        const propName = propMatch[1].trim();
+                        const propValue = propMatch[2].trim();
+                        properties[propName] = propValue;
                     }
+
+                    solution.objects.push({ variable, ref, className, properties });
+                    console.log('K Solution: Added object:', className, 'with', Object.keys(properties).length, 'properties');
                 }
             }
+        }
 
+        if (solution.objects.length > 0) {
             solution.status = 'SAT';
         }
 
