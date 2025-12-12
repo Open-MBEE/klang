@@ -460,12 +460,12 @@ export class KAutoSolveController implements vscode.Disposable {
     private updateAutoSolveToggle(): void {
         const enabled = this.isAutoSolveEnabled();
         if (enabled) {
-            this.autoSolveToggle.text = '$(debug-start) Auto';
-            this.autoSolveToggle.tooltip = 'Auto-Solve: ON (click to disable)';
-            this.autoSolveToggle.backgroundColor = new vscode.ThemeColor('statusBarItem.prominentBackground');
+            this.autoSolveToggle.text = '$(sync~spin) Auto-Solve: ON';
+            this.autoSolveToggle.tooltip = 'Auto-Solve is ENABLED - Click to disable\nSolver runs automatically after edits';
+            this.autoSolveToggle.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         } else {
-            this.autoSolveToggle.text = '$(debug-pause) Auto';
-            this.autoSolveToggle.tooltip = 'Auto-Solve: OFF (click to enable)';
+            this.autoSolveToggle.text = '$(sync) Auto-Solve: OFF';
+            this.autoSolveToggle.tooltip = 'Auto-Solve is DISABLED - Click to enable\nManually run solver with Cmd+Alt+R';
             this.autoSolveToggle.backgroundColor = undefined;
         }
     }

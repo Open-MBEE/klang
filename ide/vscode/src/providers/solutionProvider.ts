@@ -297,6 +297,9 @@ export class KSolutionProvider {
     /**
      * Find "root" objects - objects that are not referenced by any other object.
      * These are the top-level instances that contain other objects as properties.
+     * We also filter out objects that:
+     * 1. Have no variable name (not explicitly declared)
+     * 2. Are a base type of another object (e.g., Angle when we have TAngle)
      */
     private findRootObjects(objects: SolverObject[]): SolverObject[] {
         // Collect all refs that are referenced by other objects
@@ -309,8 +312,61 @@ export class KSolutionProvider {
             }
         }
 
-        // Root objects are those not referenced by anyone
-        return objects.filter(obj => !referencedRefs.has(obj.ref));
+        // Get inheritance hierarchy - a class that other classes extend
+        // If we have Triangle, Equilateral, Obtuse all extending Shape,
+        // then standalone Shape objects may be unnecessary
+        const classesWithSubclasses = new Set<string>();
+
+        // Simple heuristic: if we have objects of ClassName and SubClassName,
+        // assume SubClassName extends ClassName (based on K naming conventions)
+        const classNames = new Set(objects.map(o => o.className));
+
+        // Root objects are those:
+        // 1. Not referenced by anyone
+        // 2. Either have a variable name OR are concrete (no other class extends them that we have)
+        const rootCandidates = objects.filter(obj => !referencedRefs.has(obj.ref));
+
+        // Count how many unreferenced objects of each class exist
+        const unreferencedByClass = new Map<string, SolverObject[]>();
+        for (const obj of rootCandidates) {
+            if (!unreferencedByClass.has(obj.className)) {
+                unreferencedByClass.set(obj.className, []);
+            }
+            unreferencedByClass.get(obj.className)!.push(obj);
+        }
+
+        // Filter out standalone objects that seem auto-generated (no variable name)
+        // and are likely just base class instances created for completeness
+        return rootCandidates.filter(obj => {
+            // If it has a variable name, always include
+            if (obj.variable && obj.variable.trim()) {
+                return true;
+            }
+
+            // If this is the only unreferenced object of its class, include it
+            // (it's likely a meaningful instance)
+            const sameClassObjects = unreferencedByClass.get(obj.className) || [];
+            if (sameClassObjects.length === 1) {
+                return true;
+            }
+
+            // Check if there are more specific (subclass) objects
+            // that make this base class object redundant
+            const hasMoreSpecificClass = rootCandidates.some(other =>
+                other.ref !== obj.ref &&
+                other.className !== obj.className &&
+                other.className.includes(obj.className.slice(0, 3)) // simple heuristic
+            );
+
+            // If it has properties that look substantive (not just defaults), include it
+            const hasSubstantiveProps = Object.values(obj.properties).some(v => {
+                if (v.startsWith('Ref ')) return true; // has object references
+                const numVal = parseInt(v);
+                return !isNaN(numVal) && Math.abs(numVal) > 10; // non-trivial numeric value
+            });
+
+            return hasSubstantiveProps;
+        });
     }
 
     /**

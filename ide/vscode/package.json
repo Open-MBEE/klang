@@ -66,8 +66,15 @@
       },
       {
         "command": "k.toggleAutoSolve",
-        "title": "Toggle Auto-Solve",
-        "category": "K"
+        "title": "Enable Auto-Solve",
+        "category": "K",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "k.disableAutoSolve",
+        "title": "Disable Auto-Solve",
+        "category": "K",
+        "icon": "$(sync~spin)"
       },
       {
         "command": "k.solveNow",
@@ -123,6 +130,33 @@
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "k.toggleAutoSolve",
+          "when": "resourceLangId == k && !k.autoSolveEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "k.disableAutoSolve",
+          "when": "resourceLangId == k && k.autoSolveEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation@2"
+        },
+        {
+          "command": "k.visualizeSolution",
+          "when": "resourceLangId == k",
+          "group": "navigation@3"
+        },
+        {
+          "command": "k.startConstraintDebug",
+          "when": "resourceLangId == k",
+          "group": "navigation@4"
+        }
+      ],
       "editor/title/run": [
         {
           "command": "k.runFile",
@@ -138,6 +172,11 @@
       "editor/context": [
         {
           "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        },
+        {
+          "command": "k.startConstraintDebug",
           "when": "resourceLangId == k",
           "group": "navigation"
         }
@@ -161,6 +200,18 @@
         "command": "k.visualizeSolution",
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
+        "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.startConstraintDebug",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+alt+d",
+        "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.toggleAutoSolve",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
         "when": "resourceLangId == k"
       }
     ],

@@ -9,6 +9,8 @@ export interface KConstraint {
     line: number;
     type: 'hard' | 'soft' | 'optimization';
     satisfied?: boolean;
+    className?: string;  // The class this constraint belongs to
+    enabled: boolean;    // Whether constraint is enabled (for toggling)
 }
 
 /**
@@ -172,6 +174,59 @@ export class KConstraintDebugger implements vscode.Disposable {
     }
 
     /**
+     * Toggle a constraint on/off
+     */
+    public toggleConstraint(index: number): void {
+        if (!this.debugSession || index < 0 || index >= this.debugSession.constraints.length) return;
+
+        this.debugSession.constraints[index].enabled = !this.debugSession.constraints[index].enabled;
+        this.evaluateCurrentState();
+        this.updatePanel();
+        this._onStateChange.fire(this.getCurrentState());
+    }
+
+    /**
+     * Enable or disable all constraints
+     */
+    public setAllConstraintsEnabled(enabled: boolean): void {
+        if (!this.debugSession) return;
+
+        for (const c of this.debugSession.constraints) {
+            c.enabled = enabled;
+        }
+        this.evaluateCurrentState();
+        this.updatePanel();
+        this._onStateChange.fire(this.getCurrentState());
+    }
+
+    /**
+     * Reorder constraints by class or by line
+     */
+    public reorderConstraints(order: 'class' | 'line'): void {
+        if (!this.debugSession) return;
+
+        if (order === 'class') {
+            // Sort by class name first, then by line within class
+            this.debugSession.constraints.sort((a, b) => {
+                const classCompare = (a.className || 'ZZZZ').localeCompare(b.className || 'ZZZZ');
+                if (classCompare !== 0) return classCompare;
+                return a.line - b.line;
+            });
+        } else {
+            // Sort by line number
+            this.debugSession.constraints.sort((a, b) => a.line - b.line);
+        }
+
+        // Reset step to beginning after reorder
+        this.debugSession.currentStep = 0;
+        this.debugSession.activeConstraints = [];
+        this.evaluateCurrentState();
+        this.updateDecorations();
+        this.updatePanel();
+        this._onStateChange.fire(this.getCurrentState());
+    }
+
+    /**
      * Stop the debug session
      */
     public stopSession(): void {
@@ -223,6 +278,48 @@ export class KConstraintDebugger implements vscode.Disposable {
         const constraints: KConstraint[] = [];
         const text = document.getText();
 
+        // First, build a map of line ranges to class names
+        const classRanges: { name: string; start: number; end: number }[] = [];
+        const classPattern = /^\s*(?:class|assoc)\s+([A-Z][a-zA-Z0-9_]*)[^{]*\{/gm;
+        let classMatch;
+        while ((classMatch = classPattern.exec(text)) !== null) {
+            const startLine = document.positionAt(classMatch.index).line;
+            classRanges.push({ name: classMatch[1], start: startLine, end: -1 });
+        }
+
+        // Find end of each class (track brace depth)
+        for (const classRange of classRanges) {
+            let braceDepth = 0;
+            let foundStart = false;
+            const lines = text.split('\n');
+            for (let i = classRange.start; i < lines.length; i++) {
+                for (const char of lines[i]) {
+                    if (char === '{') {
+                        braceDepth++;
+                        foundStart = true;
+                    } else if (char === '}') {
+                        braceDepth--;
+                        if (foundStart && braceDepth === 0) {
+                            classRange.end = i;
+                            break;
+                        }
+                    }
+                }
+                if (classRange.end > 0) break;
+            }
+            if (classRange.end < 0) classRange.end = document.lineCount - 1;
+        }
+
+        // Helper to find class for a line
+        const getClassForLine = (line: number): string | undefined => {
+            for (const range of classRanges) {
+                if (line >= range.start && line <= range.end) {
+                    return range.name;
+                }
+            }
+            return undefined;
+        };
+
         // Pattern for req constraints (hard)
         const reqPattern = /^\s*req\s+(?:([A-Z][a-zA-Z0-9_]*)\s*:)?\s*(.+)$/gm;
         let match;
@@ -233,7 +330,9 @@ export class KConstraintDebugger implements vscode.Disposable {
                 name: match[1] || undefined,
                 expression: match[2].trim(),
                 line,
-                type: 'hard'
+                type: 'hard',
+                className: getClassForLine(line),
+                enabled: true
             });
         }
 
@@ -245,7 +344,9 @@ export class KConstraintDebugger implements vscode.Disposable {
                 name: match[1] || undefined,
                 expression: match[2].trim(),
                 line,
-                type: 'soft'
+                type: 'soft',
+                className: getClassForLine(line),
+                enabled: true
             });
         }
 
@@ -257,7 +358,9 @@ export class KConstraintDebugger implements vscode.Disposable {
                 name: match[1],
                 expression: match[2].trim(),
                 line,
-                type: 'optimization'
+                type: 'optimization',
+                className: getClassForLine(line),
+                enabled: true
             });
         }
 
@@ -453,6 +556,21 @@ export class KConstraintDebugger implements vscode.Disposable {
                 case 'stop':
                     this.stopSession();
                     break;
+                case 'toggleConstraint':
+                    this.toggleConstraint(message.index);
+                    break;
+                case 'enableAll':
+                    this.setAllConstraintsEnabled(true);
+                    break;
+                case 'disableAll':
+                    this.setAllConstraintsEnabled(false);
+                    break;
+                case 'reorderByClass':
+                    this.reorderConstraints('class');
+                    break;
+                case 'reorderByLine':
+                    this.reorderConstraints('line');
+                    break;
             }
         }, null, this.disposables);
 
@@ -467,28 +585,56 @@ export class KConstraintDebugger implements vscode.Disposable {
     }
 
     private getPanelHtml(state: DebugState): string {
-        const constraintsList = this.debugSession?.constraints.map((c, i) => {
-            const status = i < state.step ? 'processed' : (i === state.step ? 'current' : 'pending');
-            const icon = i < state.step ? '✓' : (i === state.step ? '▶' : '○');
+        // Group constraints by class
+        const constraintsByClass = new Map<string, KConstraint[]>();
+        for (const c of this.debugSession?.constraints || []) {
+            const className = c.className || 'Global';
+            if (!constraintsByClass.has(className)) {
+                constraintsByClass.set(className, []);
+            }
+            constraintsByClass.get(className)!.push(c);
+        }
+
+        // Generate constraint list grouped by class
+        let constraintIdx = 0;
+        const constraintsList = Array.from(constraintsByClass.entries()).map(([className, constraints]) => {
+            const constraintsHtml = constraints.map((c) => {
+                const idx = this.debugSession?.constraints.indexOf(c) ?? 0;
+                const status = idx < state.step ? 'processed' : (idx === state.step ? 'current' : 'pending');
+                const icon = idx < state.step ? '✓' : (idx === state.step ? '▶' : '○');
+                const enabledClass = c.enabled ? '' : 'disabled';
+                constraintIdx++;
+                return `
+                    <div class="constraint ${status} ${enabledClass}" data-index="${idx}">
+                        <input type="checkbox" class="toggle-constraint" data-index="${idx}" ${c.enabled ? 'checked' : ''} onclick="toggleConstraint(${idx}, event)">
+                        <span class="icon">${icon}</span>
+                        <span class="step">Step ${idx + 1}</span>
+                        <span class="name">${c.name || c.type}</span>
+                        <span class="expr">${this.escapeHtml(c.expression)}</span>
+                    </div>
+                `;
+            }).join('');
+
             return `
-                <div class="constraint ${status}" onclick="goToStep(${i})">
-                    <span class="icon">${icon}</span>
-                    <span class="step">Step ${i + 1}</span>
-                    <span class="name">${c.name || c.type}</span>
-                    <span class="expr">${this.escapeHtml(c.expression)}</span>
+                <div class="class-group">
+                    <div class="class-header">${className}</div>
+                    ${constraintsHtml}
                 </div>
             `;
-        }).join('') || '';
+        }).join('');
 
-        const variablesList = state.variables.map(v => `
-            <div class="variable">
-                <span class="var-name">${v.className ? v.className + '.' : ''}${v.name}</span>
-                <span class="var-type">: ${v.type}</span>
-                ${v.range ? `<span class="var-range">∈ [${v.range[0]}, ${v.range[1]}]</span>` : ''}
-                ${state.sampleSolution?.[v.name] !== undefined ? 
-                    `<span class="var-value">= ${state.sampleSolution[v.name]}</span>` : ''}
-            </div>
-        `).join('');
+        const variablesList = state.variables.map(v => {
+            const qualifiedName = v.className ? `${v.className}.${v.name}` : v.name;
+            return `
+                <div class="variable">
+                    <span class="var-name">${qualifiedName}</span>
+                    <span class="var-type">: ${v.type}</span>
+                    ${v.range ? `<span class="var-range">∈ [${v.range[0]}, ${v.range[1]}]</span>` : ''}
+                    ${state.sampleSolution?.[v.name] !== undefined ? 
+                        `<span class="var-value">= ${state.sampleSolution[v.name]}</span>` : ''}
+                </div>
+            `;
+        }).join('');
 
         return `<!DOCTYPE html>
 <html>
@@ -540,9 +686,21 @@ export class KConstraintDebugger implements vscode.Disposable {
             padding-bottom: 4px;
         }
         
+        .class-group {
+            margin-bottom: 12px;
+        }
+        .class-header {
+            font-weight: bold;
+            color: var(--vscode-symbolIcon-classForeground);
+            padding: 4px 8px;
+            background: var(--vscode-input-background);
+            border-radius: 4px 4px 0 0;
+            border-bottom: 2px solid var(--vscode-symbolIcon-classForeground);
+        }
+        
         .constraint {
             padding: 8px;
-            margin: 4px 0;
+            margin: 2px 0;
             border-radius: 4px;
             cursor: pointer;
             display: flex;
@@ -562,6 +720,14 @@ export class KConstraintDebugger implements vscode.Disposable {
         .constraint.pending {
             opacity: 0.6;
         }
+        .constraint.disabled {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        .constraint .toggle-constraint {
+            flex-shrink: 0;
+            cursor: pointer;
+        }
         .constraint .icon {
             flex-shrink: 0;
             width: 20px;
@@ -575,6 +741,7 @@ export class KConstraintDebugger implements vscode.Disposable {
             flex-shrink: 0;
             font-weight: bold;
             min-width: 80px;
+            color: var(--vscode-symbolIcon-functionForeground);
         }
         .constraint .expr {
             font-family: var(--vscode-editor-font-family);
@@ -619,6 +786,17 @@ export class KConstraintDebugger implements vscode.Disposable {
             background: var(--vscode-progressBar-foreground);
             transition: width 0.3s;
         }
+        
+        .toolbar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .toolbar button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -650,7 +828,13 @@ export class KConstraintDebugger implements vscode.Disposable {
         </div>
     </div>
     
-    <h3>Constraints</h3>
+    <h3>Constraints by Class</h3>
+    <div class="toolbar">
+        <button onclick="enableAll()">Enable All</button>
+        <button onclick="disableAll()">Disable All</button>
+        <button onclick="reorderByClass()">Group by Class</button>
+        <button onclick="reorderByLine()">Order by Line</button>
+    </div>
     <div class="constraints-list">
         ${constraintsList}
     </div>
@@ -678,6 +862,31 @@ export class KConstraintDebugger implements vscode.Disposable {
         function stop() {
             vscode.postMessage({ type: 'stop' });
         }
+        function toggleConstraint(idx, event) {
+            event.stopPropagation();
+            vscode.postMessage({ type: 'toggleConstraint', index: idx });
+        }
+        function enableAll() {
+            vscode.postMessage({ type: 'enableAll' });
+        }
+        function disableAll() {
+            vscode.postMessage({ type: 'disableAll' });
+        }
+        function reorderByClass() {
+            vscode.postMessage({ type: 'reorderByClass' });
+        }
+        function reorderByLine() {
+            vscode.postMessage({ type: 'reorderByLine' });
+        }
+        
+        // Click on constraint row to go to that step
+        document.querySelectorAll('.constraint').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if (e.target.classList.contains('toggle-constraint')) return;
+                const idx = parseInt(el.dataset.index);
+                goToStep(idx);
+            });
+        });
     </script>
 </body>
 </html>`;

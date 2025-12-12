@@ -142,10 +142,27 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('k.toggleAutoSolve', async () => {
             const config = vscode.workspace.getConfiguration('k');
             const current = config.get<boolean>('autoSolve.enabled', false);
-            await config.update('autoSolve.enabled', !current, vscode.ConfigurationTarget.Workspace);
-            vscode.window.showInformationMessage(`K Auto-Solve: ${!current ? 'Enabled' : 'Disabled'}`);
+            const newValue = !current;
+            await config.update('autoSolve.enabled', newValue, vscode.ConfigurationTarget.Workspace);
+            // Set context for button state
+            await vscode.commands.executeCommand('setContext', 'k.autoSolveEnabled', newValue);
+            vscode.window.showInformationMessage(`K Auto-Solve: ${newValue ? 'ENABLED ✓' : 'DISABLED'}`);
         })
     );
+
+    // Explicit disable command (shows as different button when enabled)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.disableAutoSolve', async () => {
+            const config = vscode.workspace.getConfiguration('k');
+            await config.update('autoSolve.enabled', false, vscode.ConfigurationTarget.Workspace);
+            await vscode.commands.executeCommand('setContext', 'k.autoSolveEnabled', false);
+            vscode.window.showInformationMessage('K Auto-Solve: DISABLED');
+        })
+    );
+
+    // Initialize auto-solve context
+    const initialAutoSolve = vscode.workspace.getConfiguration('k').get<boolean>('autoSolve.enabled', false);
+    vscode.commands.executeCommand('setContext', 'k.autoSolveEnabled', initialAutoSolve);
 
     context.subscriptions.push(
         vscode.commands.registerCommand('k.solveNow', () => {
@@ -170,12 +187,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Constraint Debugger Commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('k.startConstraintDebug', () => {
-            const editor = vscode.window.activeTextEditor;
-            if (editor && editor.document.languageId === 'k') {
-                constraintDebugger.startSession(editor.document);
-            } else {
-                vscode.window.showWarningMessage('Open a K file to debug');
+        vscode.commands.registerCommand('k.startConstraintDebug', async () => {
+            try {
+                const editor = vscode.window.activeTextEditor;
+                if (editor && editor.document.languageId === 'k') {
+                    await constraintDebugger.startSession(editor.document);
+                } else {
+                    vscode.window.showWarningMessage('Open a K file to debug');
+                }
+            } catch (error) {
+                console.error('Error starting constraint debugger:', error);
+                vscode.window.showErrorMessage(`Failed to start debugger: ${error instanceof Error ? error.message : String(error)}`);
             }
         })
     );
