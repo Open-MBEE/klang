@@ -151,11 +151,22 @@ primitiveType:
     'Bool'
   | 'Char'
   | 'Int'       // Scala bigint (arbitrary precision)
-  | 'Real'      // double
+  | 'Real'      // Mathematical reals (exact rationals)
   | 'String'
   | 'Unit'
   | 'Time'
   | 'Duration'
+  | 'BitVec' '[' IntegerLiteral ']'  // Fixed-width bit vector
+  | 'Float32'   // IEEE 754 single precision
+  | 'Float64'   // IEEE 754 double precision
+  | 'Int8'      // 8-bit signed integer
+  | 'Int16'     // 16-bit signed integer
+  | 'Int32'     // 32-bit signed integer
+  | 'Int64'     // 64-bit signed integer
+  | 'UInt8'     // 8-bit unsigned integer
+  | 'UInt16'    // 16-bit unsigned integer
+  | 'UInt32'    // 32-bit unsigned integer
+  | 'UInt64'    // 64-bit unsigned integer
   ;
 
 classIdentifier:
@@ -201,6 +212,7 @@ expression:
   | expression 'as' type # TypeCastExp
   | expression ('*'|'/'|'%'|'inter'|'\\'|'++'|'#'|'^') expression #BinOp1Exp
   | expression ('+'|'-'|'union') expression #BinOp2Exp
+  | expression ('band'|'bor'|'bxor'|'shl'|'shr'|'sar') expression #BitOpExp
   | expression ('<=' | '>=' | '<' | '>' | '=' | '!=' | 'isin'|'!isin'|'subset'|'psubset') expression #BinOp3Exp
   | expression '&&' expression #AndExp
   | expression '||' expression #OrExp
@@ -208,6 +220,7 @@ expression:
   | expression ':=' expression #AssignExp
   | 'assert' '(' expression ')' #AssertExp 
   | '-' expression #NegExp
+  | 'bnot' expression #BitNotExp
   | qualifiedName '~' #PrevExp
   | 'forall' rngBindingList SUCHTHAT expression #ForallExp 
   | 'exists' rngBindingList SUCHTHAT expression #ExistsExp 

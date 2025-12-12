@@ -105,6 +105,42 @@ Based on the analysis:
 3. **Z3 Context Creation**: Currently creates new context per test (~4ms) - 
    could potentially reuse with `solver.reset()` instead
 
+## Parallelization Constraints
+
+### Why Batch Mode Cannot Parallelize Within a Single JVM
+
+The current architecture uses **singleton objects with mutable state**:
+
+- `object TypeChecker` - mutable maps (`exp2Type`, `classes`, `globalTypeEnv`, etc.)
+- `object K2Z3` - mutable Z3 `Context`, `Solver`, `z3Model`
+- `object UtilSMT` - mutable counters and maps
+
+This state is **reset between tests** but cannot be safely shared across threads.
+
+### Z3 Thread Safety
+
+Z3's Java API has specific threading requirements:
+- Each `Context` is thread-safe within itself
+- Multiple threads should **NOT** share a single Context for concurrent solving
+- The recommended approach is **one Context per thread**
+
+### Parallelization Options
+
+| Option | Effort | Description |
+|--------|--------|-------------|
+| **Process-level (`-j N`)** | Already done | Run N JVM processes in parallel. Safe but has JVM startup overhead. |
+| **Instance-based refactor** | Major (~1000 LOC) | Convert `object` singletons to `class` instances. Each test gets isolated state. |
+| **ThreadLocal state** | Medium | Wrap mutable state in `ThreadLocal`. Risk of subtle bugs with shared references. |
+
+### Current Recommendation
+
+**Batch mode (sequential, single JVM)** is the best balance:
+- 6-7x faster than sequential multi-JVM
+- Avoids Z3 native library conflicts
+- No threading complexity
+
+For further speedup, use **process-level parallelism** (`-j 4`) for tests that benefit from it, though gains are limited by JVM startup overhead.
+
 ## Historical Notes
 
 - **December 2025**: Added batch mode, achieving 6-7x speedup

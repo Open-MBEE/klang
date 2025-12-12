@@ -103,6 +103,21 @@ case object TypeChecker {
         val same = (it1.equals(it3) && (it2 zip it4).forall { t => areTypesEqual(t._1, t._2, compatibility) })
         val inheritanceSame = !((it1Parents.intersect(it2Parents)).isEmpty) || it1Parents.contains(ty2) || it2Parents.contains(ty1)
         return same || inheritanceSame
+      // BitVec is compatible with Int for implicit conversions (e.g., integer literals)
+      case (BitVecType(_), IntType) if compatibility => return true
+      case (IntType, BitVecType(_)) if compatibility => return true
+      // SignedIntType is compatible with Int for literals and conversions
+      case (SignedIntType(_), IntType) if compatibility => return true
+      case (IntType, SignedIntType(_)) if compatibility => return true
+      // UnsignedIntType is compatible with Int for literals and conversions
+      case (UnsignedIntType(_), IntType) if compatibility => return true
+      case (IntType, UnsignedIntType(_)) if compatibility => return true
+      // SignedIntType widening: smaller width can be assigned to larger width
+      case (SignedIntType(w1), SignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      // UnsignedIntType widening: smaller width can be assigned to larger width
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      // Two BitVecs must have same width
+      case (BitVecType(w1), BitVecType(w2)) => return w1 == w2
       case _ => Misc.areTypesEqual(ty1, ty2, compatibility)
     }
   }
@@ -406,6 +421,10 @@ class TypeChecker(model: Model) {
       case RealType   => return true
       case TimeType   => return true
       case DurationType => return true
+      case BitVecType(_) => return true
+      case SignedIntType(_) => return true
+      case UnsignedIntType(_) => return true
+      case FloatType(_, _) => return true
     }
     return false
   }
@@ -1406,6 +1425,21 @@ class TypeChecker(model: Model) {
             ty1 match {
               case CartesianType(types) => types(exp2.toString.toInt - 1)
               case _                    => error(s"Non tuple type found with tuple indexing. $exp")
+            }
+          // Bitwise operators
+          case BITAND | BITOR | BITXOR =>
+            (ty1, ty2) match {
+              case (BitVecType(w1), BitVecType(w2)) if w1 == w2 => ty1
+              case (BitVecType(_), IntType) => ty1  // Int literal compatible with BitVec
+              case (IntType, BitVecType(_)) => ty2  // Int literal compatible with BitVec
+              case (IntType, IntType) => IntType    // Allow Int band Int (result is Int)
+              case _ => error(s"$exp requires matching BitVec or Int operands, got $ty1 and $ty2")
+            }
+          case BITSHL | BITSHR | BITASHR =>
+            ty1 match {
+              case BitVecType(_) => ty1
+              case IntType => IntType
+              case _ => error(s"Shift operator requires BitVec or Int left operand, got $ty1")
             }
         }
       case FunApplExp(fexp, args) =>

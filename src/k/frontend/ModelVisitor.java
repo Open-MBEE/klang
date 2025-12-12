@@ -436,6 +436,13 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambdaExp(ModelParser.LambdaExpContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code BitNotExp}
+	 * labeled alternative in {@link ModelParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitNotExp(ModelParser.BitNotExpContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code BinOp1Exp}
 	 * labeled alternative in {@link ModelParser#expression}.
 	 * @param ctx the parse tree
@@ -498,6 +505,13 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMatchExp(ModelParser.MatchExpContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code BitOpExp}
+	 * labeled alternative in {@link ModelParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitOpExp(ModelParser.BitOpExpContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ParenExp}
 	 * labeled alternative in {@link ModelParser#expression}.
