@@ -1612,17 +1612,57 @@ object K2Z3 {
       case (UnsignedIntType(w1), UnsignedIntType(w2)) if w1 > w2 =>
         ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
 
-      // SignedIntType ↔ UnsignedIntType of same width (reinterpretation - no SMT change)
+      // SignedIntType <-> UnsignedIntType of same width (reinterpretation - no SMT change)
       case (SignedIntType(w1), UnsignedIntType(w2)) if w1 == w2 => expr
       case (UnsignedIntType(w1), SignedIntType(w2)) if w1 == w2 => expr
 
-      // SignedIntType ↔ BitVec of same width
+      // SignedIntType -> UnsignedIntType with width change
+      case (SignedIntType(w1), UnsignedIntType(w2)) if w1 < w2 =>
+        // Widening: sign-extend first, then reinterpret as unsigned
+        ctx.mkSignExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (SignedIntType(w1), UnsignedIntType(w2)) if w1 > w2 =>
+        // Narrowing: extract lower bits
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // UnsignedIntType -> SignedIntType with width change
+      case (UnsignedIntType(w1), SignedIntType(w2)) if w1 < w2 =>
+        // Widening: zero-extend first, then reinterpret as signed
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (UnsignedIntType(w1), SignedIntType(w2)) if w1 > w2 =>
+        // Narrowing: extract lower bits
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // SignedIntType <-> BitVec of same width
       case (SignedIntType(w1), BitVecType(w2)) if w1 == w2 => expr
       case (BitVecType(w1), SignedIntType(w2)) if w1 == w2 => expr
 
-      // UnsignedIntType ↔ BitVec of same width
+      // SignedIntType -> BitVec with width change
+      case (SignedIntType(w1), BitVecType(w2)) if w1 < w2 =>
+        ctx.mkSignExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (SignedIntType(w1), BitVecType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // BitVec -> SignedIntType with width change  
+      case (BitVecType(w1), SignedIntType(w2)) if w1 < w2 =>
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (BitVecType(w1), SignedIntType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // UnsignedIntType <-> BitVec of same width
       case (UnsignedIntType(w1), BitVecType(w2)) if w1 == w2 => expr
       case (BitVecType(w1), UnsignedIntType(w2)) if w1 == w2 => expr
+
+      // UnsignedIntType -> BitVec with width change
+      case (UnsignedIntType(w1), BitVecType(w2)) if w1 < w2 =>
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (UnsignedIntType(w1), BitVecType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
+
+      // BitVec -> UnsignedIntType with width change
+      case (BitVecType(w1), UnsignedIntType(w2)) if w1 < w2 =>
+        ctx.mkZeroExt(w2 - w1, expr.asInstanceOf[BitVecExpr])
+      case (BitVecType(w1), UnsignedIntType(w2)) if w1 > w2 =>
+        ctx.mkExtract(w2 - 1, 0, expr.asInstanceOf[BitVecExpr])
 
       // Float conversions (future - requires FP support)
       case (FloatType(_, _), RealType) =>

@@ -45,7 +45,11 @@ else
 fi
 
 # Get the architecture of the Java binary
-JAVA_ARCH=$(file "$JAVA_BIN" | grep -o "x86_64\|x86-64\|aarch64\|arm64" | head -1)
+# Note that a universal library shows both arm64 and x86_64 in the output from file
+JAVA_ARCH=$(file "$JAVA_BIN" | grep -o "aarch64\|arm64" | head -1)
+if [ -z "$JAVA_ARCH" ]; then
+  JAVA_ARCH=$(file "$JAVA_BIN" | grep -o "x86_64\|x86-64" | head -1)
+fi
 
 # Normalize architecture names
 case "$JAVA_ARCH" in
