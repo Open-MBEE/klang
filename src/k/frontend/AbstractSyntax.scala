@@ -1427,6 +1427,16 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
             case IntegerLiteral(i) => s"(_ bv$i ${bv.width})"
             case _ => exp.toSMT(ident, false)
           }
+        case st: SignedIntType =>
+          exp match {
+            case IntegerLiteral(i) => s"(_ bv$i ${st.width})"
+            case _ => exp.toSMT(ident, false)
+          }
+        case ut: UnsignedIntType =>
+          exp match {
+            case IntegerLiteral(i) => s"(_ bv$i ${ut.width})"
+            case _ => exp.toSMT(ident, false)
+          }
         case _ => exp.toSMT(ident, false)
       }
 
@@ -4126,8 +4136,10 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
         case (IntType, SignedIntType(width)) => s"((_ int2bv $width) $expSMT)"
         // Int -> UnsignedIntType  
         case (IntType, UnsignedIntType(width)) => s"((_ int2bv $width) $expSMT)"
-        // SignedIntType -> Int
-        case (SignedIntType(_), IntType) => s"(bv2int $expSMT)"
+        // SignedIntType -> Int (signed interpretation: if MSB=1, subtract 2^width)
+        case (SignedIntType(width), IntType) => 
+          val fullRange = BigInt(1) << width  // 2^width, e.g. 256 for 8-bit
+          s"(ite (bvslt $expSMT (_ bv0 $width)) (- (bv2int $expSMT) $fullRange) (bv2int $expSMT))"
         // UnsignedIntType -> Int
         case (UnsignedIntType(_), IntType) => s"(bv2nat $expSMT)"
         // Float -> Int
