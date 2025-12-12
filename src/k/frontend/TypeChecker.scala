@@ -113,9 +113,14 @@ case object TypeChecker {
       case (UnsignedIntType(_), IntType) if compatibility => return true
       case (IntType, UnsignedIntType(_)) if compatibility => return true
       // SignedIntType widening: smaller width can be assigned to larger width
-      case (SignedIntType(w1), SignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      case (SignedIntType(w1), SignedIntType(w2)) if compatibility => return true
       // UnsignedIntType widening: smaller width can be assigned to larger width
-      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility => return true
+      // SignedIntType/UnsignedIntType can widen to Real
+      case (RealType, SignedIntType(_)) if compatibility => return true
+      case (RealType, UnsignedIntType(_)) if compatibility => return true
+      case (SignedIntType(_), RealType) if compatibility => return true
+      case (UnsignedIntType(_), RealType) if compatibility => return true
       // Two BitVecs must have same width
       case (BitVecType(w1), BitVecType(w2)) => return w1 == w2
       case _ => Misc.areTypesEqual(ty1, ty2, compatibility)
@@ -1442,6 +1447,37 @@ class TypeChecker(model: Model) {
               case _ => error(s"Shift operator requires BitVec or Int left operand, got $ty1")
             }
         }
+      case CtorApplExp(ty, args) =>
+        // Java-style constructor call (new Type(...) or Type(...))
+        val decl = type2Decl.get(ty)
+        if (decl.isEmpty) {
+          error(s"Unknown type in constructor call: $ty")
+        }
+        val entityDecl = decl.get.asInstanceOf[EntityDecl]
+        val declTypeEnvironment = decl2TypeEnvi(entityDecl)
+        
+        // Type check all arguments
+        args.foreach { arg =>
+          arg match {
+            case NamedArgument(ident, e) =>
+              val propTypeInfo = declTypeEnvironment.map.get(ident)
+              if (propTypeInfo.isEmpty) {
+                error(s"Property $ident not found in ${entityDecl.ident}")
+              }
+              val lhsType = propTypeInfo.get match {
+                case PropertyTypeInfo(pd, _, _, _) => pd.getTypeOrError
+                case _ => error(s"$ident is not a property in ${entityDecl.ident}")
+              }
+              val rhsType = getExpType(te, e, owner)
+              if (!areTypesEqual(lhsType, rhsType, false)) {
+                error(s"Type mismatch for property $ident: expected $lhsType, got $rhsType")
+              }
+            case PositionalArgument(e) =>
+              // For positional arguments, just type check the expression
+              getExpType(te, e, owner)
+          }
+        }
+        ty
       case FunApplExp(fexp, args) =>
         // Check if this is a string method call
         fexp match {
@@ -1644,6 +1680,38 @@ class TypeChecker(model: Model) {
         getExpType(newTe, body, owner)
       case TypeCastCheckExp(cast, e, ty) =>
         val eType = getExpType(te, e, owner)
+        // Store the inner expression's type so TypeCastCheckExp.toSMT can find it
+        exp2Type.put(e, eType)
+        // Check for potentially lossy narrowing conversions
+        if (cast) {
+          (eType, ty) match {
+            case (SignedIntType(fromWidth), SignedIntType(toWidth)) if toWidth < fromWidth =>
+              warning(s"Narrowing conversion from Int$fromWidth to Int$toWidth may lose data: $e")
+            case (UnsignedIntType(fromWidth), UnsignedIntType(toWidth)) if toWidth < fromWidth =>
+              warning(s"Narrowing conversion from UInt$fromWidth to UInt$toWidth may lose data: $e")
+            case (SignedIntType(fromWidth), UnsignedIntType(toWidth)) =>
+              warning(s"Converting signed Int$fromWidth to unsigned UInt$toWidth may change sign: $e")
+            case (UnsignedIntType(fromWidth), SignedIntType(toWidth)) if toWidth <= fromWidth =>
+              warning(s"Converting unsigned UInt$fromWidth to signed Int$toWidth may overflow: $e")
+            case (IntType, SignedIntType(toWidth)) =>
+              warning(s"Narrowing arbitrary-precision Int to fixed-width Int$toWidth may lose data: $e")
+            case (IntType, UnsignedIntType(toWidth)) =>
+              warning(s"Narrowing arbitrary-precision Int to fixed-width UInt$toWidth may lose data: $e")
+            case (RealType, SignedIntType(toWidth)) =>
+              warning(s"Converting Real to Int$toWidth may lose precision and data: $e")
+            case (RealType, UnsignedIntType(toWidth)) =>
+              warning(s"Converting Real to UInt$toWidth may lose precision and data: $e")
+            case (RealType, IntType) =>
+              warning(s"Converting Real to Int may lose precision: $e")
+            case (FloatType(_, _), SignedIntType(toWidth)) =>
+              warning(s"Converting Float to Int$toWidth may lose precision and data: $e")
+            case (FloatType(_, _), UnsignedIntType(toWidth)) =>
+              warning(s"Converting Float to UInt$toWidth may lose precision and data: $e")
+            case (FloatType(_, _), IntType) =>
+              warning(s"Converting Float to Int may lose precision: $e")
+            case _ => // Safe conversion or unknown - no warning
+          }
+        }
         if (cast) ty else BoolType
       case QuantifiedExp(q, b, e) =>
 
@@ -1729,6 +1797,7 @@ class TypeChecker(model: Model) {
       case CharacterLiteral(_) => CharType
       case StringLiteral(_)    => StringType
       case RealLiteral(_)      => RealType
+      case FloatLiteral(_, ft) => ft  // Return the FloatType from the literal
       case DateLiteral(_)      => TimeType
       case DurationLiteral(_)  => DurationType
       case ThisLiteral =>

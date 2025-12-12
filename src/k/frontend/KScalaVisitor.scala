@@ -277,6 +277,18 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     CtorApplExp(ty, argumentList)
   }
 
+  // Java-style 'new' keyword constructor call
+  override def visitNewExp(ctx: ModelParser.NewExpContext): AnyRef = {
+    var ty = visit(ctx.`type`()).asInstanceOf[Type]
+    var argumentList =
+      if (ctx.argumentList() != null)
+        visit(ctx.argumentList()).asInstanceOf[List[Argument]]
+      else
+        Nil
+
+    CtorApplExp(ty, argumentList)
+  }
+
   override def visitAppExp(ctx: ModelParser.AppExpContext): AnyRef = {
     var e0: Exp = visit(ctx.expression()).asInstanceOf[Exp]
     var argumentList =
@@ -502,9 +514,18 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       IntegerLiteral(java.lang.Long.decode(ctx.IntegerLiteral().getSymbol().getText()))
     } else if (ctx.RealLiteral() != null) {
       //RealLiteral(java.lang.Float.parseFloat(ctx.RealLiteral().getSymbol().getText()))
-      val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText)//.
+      var text = ctx.RealLiteral.getSymbol.getText
+      // Strip float suffix (f/F) for Float32, (d/D) for Float64
+      val isFloat32 = text.endsWith("f") || text.endsWith("F")
+      val isFloat64 = text.endsWith("d") || text.endsWith("D")
+      if (isFloat32 || isFloat64) {
+        text = text.dropRight(1)
+      }
+      val bd = new java.math.BigDecimal(text)//.
         //setScale(16, java.math.BigDecimal.ROUND_DOWN)
-      RealLiteral(bd)
+      if (isFloat32) FloatLiteral(bd, FloatType.Float32)
+      else if (isFloat64) FloatLiteral(bd, FloatType.Float64)
+      else RealLiteral(bd)
     } else if (ctx.CharacterLiteral() != null) {
       CharacterLiteral(ctx.CharacterLiteral().getSymbol().getText().charAt(0))
     } else if (ctx.StringLiteral() != null) {

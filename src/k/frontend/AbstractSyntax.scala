@@ -412,6 +412,8 @@ object UtilSMT {
     exp match {
       case FunApplExp(function, _) =>
         isConstructor(function)
+      case CtorApplExp(_, _) =>
+        true  // CtorApplExp is always a constructor application
       case IfExp(_, trueBranch, Some(falseBranch)) =>
         isConstructorAppl(trueBranch) && isConstructorAppl(falseBranch)
       case _ =>
@@ -3023,6 +3025,32 @@ case class CtorApplExp(ty: Type, arguments: List[Argument]) extends CallApplExp 
       result += "(" + args.map(_.toJavaString).mkString(",") + ")"
     result
   }
+  
+  // Override toSMT to directly generate constructor application
+  // since isConstructor may not recognize our dynamically created IdentExp
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // constructor application - same logic as CallApplExp.toSMT's isConstructor branch
+    val ident = ty match {
+      case IdentType(qn, _) => qn.toString
+      case _ => ty.toString
+    }
+    val argMap: Map[String, Exp] = (for (NamedArgument(x, exp) <- args) yield (x -> exp)).toMap
+    val entityDecl = TypeChecker.getEntityDecl(ident)
+    val propertyDecls = entityDecl.getAllPropertyDecls
+    if (propertyDecls.isEmpty)
+      s"(lift-$ident mk-$ident)"
+    else {
+      val argsSMTList: List[String] =
+        for (pd @ PropertyDecl(_, id, _, _, _, _) <- propertyDecls) yield {
+          if (argMap contains id) 
+            argMap(id).toSMT(className, subTyping) 
+          else 
+            UtilSMT.getNewConstant(pd.getTypeOrError)
+        }
+      val argsSMT = argsSMTList.mkString(" ")
+      s"(lift-$ident (mk-$ident $argsSMT))"
+    }
+  }
 }
 
 case class IfExp(cond: Exp, trueBranch: Exp, falseBranch: Option[Exp]) extends Exp {
@@ -3462,8 +3490,93 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
             val exp2Type = TypeChecker.exp2Type.get(exp2)
             if (exp1Type == StringType || exp2Type == StringType) {
               s"(str.++ $exp1SMT $exp2SMT)"
+            } else if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.add RNE $exp1SMT $exp2SMT)"
             } else {
               s"(+ $exp1SMT $exp2SMT)"
+            }
+          case SUB =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.sub RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(- $exp1SMT $exp2SMT)"
+            }
+          case MUL =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.mul RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(* $exp1SMT $exp2SMT)"
+            }
+          case DIV =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.div RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(/ $exp1SMT $exp2SMT)"
+            }
+          case LT =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.lt $exp1SMT $exp2SMT)"
+            } else {
+              s"(< $exp1SMT $exp2SMT)"
+            }
+          case LTE =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.leq $exp1SMT $exp2SMT)"
+            } else {
+              s"(<= $exp1SMT $exp2SMT)"
+            }
+          case GT =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.gt $exp1SMT $exp2SMT)"
+            } else {
+              s"(> $exp1SMT $exp2SMT)"
+            }
+          case GTE =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.geq $exp1SMT $exp2SMT)"
+            } else {
+              s"(>= $exp1SMT $exp2SMT)"
+            }
+          case EQ =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            // Handle widening for different numeric type comparisons
+            (exp1Type, exp2Type) match {
+              case (SignedIntType(w1), SignedIntType(w2)) if w1 != w2 =>
+                val maxWidth = Math.max(w1, w2)
+                val exp1Widened = if (w1 < maxWidth) s"((_ sign_extend ${maxWidth - w1}) $exp1SMT)" else exp1SMT
+                val exp2Widened = if (w2 < maxWidth) s"((_ sign_extend ${maxWidth - w2}) $exp2SMT)" else exp2SMT
+                s"(= $exp1Widened $exp2Widened)"
+              case (UnsignedIntType(w1), UnsignedIntType(w2)) if w1 != w2 =>
+                val maxWidth = Math.max(w1, w2)
+                val exp1Widened = if (w1 < maxWidth) s"((_ zero_extend ${maxWidth - w1}) $exp1SMT)" else exp1SMT
+                val exp2Widened = if (w2 < maxWidth) s"((_ zero_extend ${maxWidth - w2}) $exp2SMT)" else exp2SMT
+                s"(= $exp1Widened $exp2Widened)"
+              // SignedIntType to Real: convert bitvector to real via signed int2real
+              case (RealType, SignedIntType(w)) =>
+                // For signed bv, check sign bit and conditionally negate
+                val asInt = s"(ite (bvslt $exp2SMT (_ bv0 $w)) (- (bv2int (bvneg $exp2SMT))) (bv2int $exp2SMT))"
+                s"(= $exp1SMT (to_real $asInt))"
+              case (SignedIntType(w), RealType) =>
+                val asInt = s"(ite (bvslt $exp1SMT (_ bv0 $w)) (- (bv2int (bvneg $exp1SMT))) (bv2int $exp1SMT))"
+                s"(= (to_real $asInt) $exp2SMT)"
+              // UnsignedIntType to Real: convert bitvector to real via unsigned bv2int
+              case (RealType, UnsignedIntType(_)) =>
+                s"(= $exp1SMT (to_real (bv2int $exp2SMT)))"
+              case (UnsignedIntType(_), RealType) =>
+                s"(= (to_real (bv2int $exp1SMT)) $exp2SMT)"
+              case _ =>
+                s"(= $exp1SMT $exp2SMT)"
             }
           case _ =>
             val opSMT = op.toSMT
@@ -4868,6 +4981,38 @@ case class RealLiteral(f: java.math.BigDecimal) extends Literal {
   override def toJson2 = {
     val expression = new JSONObject()
     expression.put("type", "LiteralReal").put("double", f)
+  }
+}
+
+/**
+ * IEEE 754 floating-point literal with explicit precision.
+ * Generated from literals like 1.5f (Float32) or 1.5d (Float64).
+ */
+case class FloatLiteral(f: java.math.BigDecimal, floatType: FloatType) extends Literal {
+  override def children = List()
+
+  override def statistics() {
+    UtilSMT.statistics.REALLIT += 1
+  }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    s"((_ to_fp ${floatType.ebits} ${floatType.sbits}) RNE ${f.formatted("%.16f")})"
+  }
+
+  override def toScala = if (floatType == FloatType.Float32) s"${f}f" else f.toString
+
+  override def toString = if (floatType == FloatType.Float32) s"${f}f" else s"${f}d"
+
+  override def toJson1 = {
+    val o = new JSONObject()
+    o.put("f", f.formatted("%.16f"))
+    o.put("type", "LiteralFloat")
+    o.put("floatType", floatType.toString)
+  }
+
+  override def toJson2 = {
+    val expression = new JSONObject()
+    expression.put("type", "LiteralFloat").put("double", f).put("floatType", floatType.toString)
   }
 }
 
