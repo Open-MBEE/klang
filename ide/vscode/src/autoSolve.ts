@@ -25,8 +25,11 @@ export class KAutoSolveController implements vscode.Disposable {
     private _onSolvingEnd = new vscode.EventEmitter<KSolution | undefined>();
     public readonly onSolvingEnd = this._onSolvingEnd.event;
 
+    // Auto-solve toggle button
+    private autoSolveToggle: vscode.StatusBarItem;
+
     constructor() {
-        // Create status bar item
+        // Create status bar item for solve status
         this.statusBarItem = vscode.window.createStatusBarItem(
             vscode.StatusBarAlignment.Right,
             100
@@ -34,6 +37,24 @@ export class KAutoSolveController implements vscode.Disposable {
         this.statusBarItem.command = 'k.showSolution';
         this.updateStatusBar('idle');
         this.statusBarItem.show();
+
+        // Create auto-solve toggle button
+        this.autoSolveToggle = vscode.window.createStatusBarItem(
+            vscode.StatusBarAlignment.Right,
+            99
+        );
+        this.autoSolveToggle.command = 'k.toggleAutoSolve';
+        this.updateAutoSolveToggle();
+        this.autoSolveToggle.show();
+
+        // Listen for config changes to update toggle button
+        this.disposables.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('k.autoSolve.enabled')) {
+                    this.updateAutoSolveToggle();
+                }
+            })
+        );
 
         // Create output channel
         this.outputChannel = vscode.window.createOutputChannel('K Solver');
@@ -436,6 +457,19 @@ export class KAutoSolveController implements vscode.Disposable {
         return this.lastSolution;
     }
 
+    private updateAutoSolveToggle(): void {
+        const enabled = this.isAutoSolveEnabled();
+        if (enabled) {
+            this.autoSolveToggle.text = '$(debug-start) Auto';
+            this.autoSolveToggle.tooltip = 'Auto-Solve: ON (click to disable)';
+            this.autoSolveToggle.backgroundColor = new vscode.ThemeColor('statusBarItem.prominentBackground');
+        } else {
+            this.autoSolveToggle.text = '$(debug-pause) Auto';
+            this.autoSolveToggle.tooltip = 'Auto-Solve: OFF (click to enable)';
+            this.autoSolveToggle.backgroundColor = undefined;
+        }
+    }
+
     private async findKScript(): Promise<string | undefined> {
         const config = vscode.workspace.getConfiguration('k');
         const configuredPath = config.get<string>('installation.path');
@@ -487,6 +521,7 @@ export class KAutoSolveController implements vscode.Disposable {
             clearTimeout(this.timeout);
         }
         this.statusBarItem.dispose();
+        this.autoSolveToggle.dispose();
         this.outputChannel.dispose();
         this._onSolutionUpdate.dispose();
         this._onSolvingStart.dispose();

@@ -283,6 +283,52 @@ export class KSolutionProvider {
         this.panel.webview.html = this.getWebviewContent(this.currentSolution);
     }
 
+    /**
+     * Build a map from ref to object for resolving references
+     */
+    private buildRefMap(objects: SolverObject[]): Map<string, SolverObject> {
+        const map = new Map<string, SolverObject>();
+        for (const obj of objects) {
+            map.set(obj.ref, obj);
+        }
+        return map;
+    }
+
+    /**
+     * Format a property value, resolving refs to nested constructor syntax
+     */
+    private formatValue(value: string, refMap: Map<string, SolverObject>, depth: number = 0): string {
+        // Check if this is a reference
+        if (value.startsWith('Ref ')) {
+            const referenced = refMap.get(value);
+            if (referenced && depth < 2) {
+                // Show as nested constructor (limit depth to avoid too much nesting)
+                const props = Object.entries(referenced.properties)
+                    .filter(([_, v]) => !v.startsWith('Ref ')) // Only show primitive values inline
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(', ');
+                return `${referenced.className}(${props})`;
+            }
+            // Just show class name for deep refs
+            const referenced2 = refMap.get(value);
+            return referenced2 ? `→${referenced2.className}` : value;
+        }
+        return this.escapeHtml(value);
+    }
+
+    /**
+     * Generate constructor-style representation of an object
+     */
+    private formatAsConstructor(obj: SolverObject, refMap: Map<string, SolverObject>): string {
+        const props = Object.entries(obj.properties)
+            .map(([key, value]) => {
+                const formattedValue = this.formatValue(value, refMap, 0);
+                return `  ${key}: ${formattedValue}`;
+            })
+            .join(',\n');
+        return `${obj.className}(\n${props}\n)`;
+    }
+
     private getWebviewContent(solution: SolverSolution): string {
         const statusColor = {
             'SAT': '#4caf50',
@@ -298,23 +344,36 @@ export class KSolutionProvider {
             'ERROR': '⚠'
         }[solution.status];
 
-        const objectsHtml = solution.objects.map(obj => `
-            <div class="object">
-                <div class="object-header">
-                    <span class="ref">${obj.ref}</span>
-                    <span class="class-name">${obj.className}</span>
-                    ${obj.variable ? `<span class="var-name">${obj.variable}</span>` : ''}
+        // Build ref map for resolving references
+        const refMap = this.buildRefMap(solution.objects);
+
+        // Generate objects HTML with nicer display
+        const objectsHtml = solution.objects.map((obj, idx) => {
+            // Format properties with resolved references
+            const propsHtml = Object.entries(obj.properties).map(([key, value]) => {
+                const formattedValue = this.formatValue(value, refMap, 0);
+                const isRef = value.startsWith('Ref ');
+                return `
+                    <div class="property ${isRef ? 'ref-property' : ''}">
+                        <span class="prop-name">${key}</span>
+                        <span class="prop-value">${formattedValue}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="object">
+                    <div class="object-header">
+                        <span class="object-num">#${idx + 1}</span>
+                        <span class="class-name">${obj.className}</span>
+                        ${obj.variable ? `<span class="var-name">${obj.variable}</span>` : ''}
+                    </div>
+                    <div class="properties">
+                        ${propsHtml}
+                    </div>
                 </div>
-                <div class="properties">
-                    ${Object.entries(obj.properties).map(([key, value]) => `
-                        <div class="property">
-                            <span class="prop-name">${key}</span>
-                            <span class="prop-value">${value}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         const errorsHtml = solution.errors?.length ? `
             <div class="errors">
@@ -402,17 +461,20 @@ export class KSolutionProvider {
             gap: 10px;
             padding: 10px;
             background-color: var(--vscode-input-background);
+            align-items: center;
         }
-        .ref {
+        .object-num {
             padding: 2px 8px;
             background-color: var(--vscode-badge-background);
             color: var(--vscode-badge-foreground);
             border-radius: 4px;
             font-family: monospace;
+            font-size: 12px;
         }
         .class-name {
             font-weight: bold;
             color: var(--vscode-symbolIcon-classForeground);
+            font-size: 16px;
         }
         .var-name {
             opacity: 0.7;
@@ -429,6 +491,9 @@ export class KSolutionProvider {
         }
         .property:last-child {
             border-bottom: none;
+        }
+        .property.ref-property .prop-value {
+            color: var(--vscode-textLink-foreground);
         }
         .prop-name {
             min-width: 100px;
