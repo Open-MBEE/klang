@@ -57,6 +57,23 @@
         "title": "Visualize Solution",
         "category": "K",
         "icon": "$(graph)"
+      },
+      {
+        "command": "k.showSolution",
+        "title": "Show Last Solution",
+        "category": "K",
+        "icon": "$(output)"
+      },
+      {
+        "command": "k.toggleAutoSolve",
+        "title": "Toggle Auto-Solve",
+        "category": "K"
+      },
+      {
+        "command": "k.solveNow",
+        "title": "Solve Now",
+        "category": "K",
+        "icon": "$(run)"
       }
     ],
     "menus": {
@@ -118,6 +135,28 @@
           "type": "boolean",
           "default": true,
           "description": "Show output panel when running K files"
+        },
+        "k.autoSolve.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically solve K files after edits (with debounce)"
+        },
+        "k.autoSolve.debounceMs": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 200,
+          "description": "Milliseconds to wait after last edit before auto-solving"
+        },
+        "k.autoSolve.timeoutMs": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1000,
+          "description": "Maximum time in milliseconds for auto-solve (shorter for live feedback)"
+        },
+        "k.autoSolve.onSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically solve when saving a K file (immediate, no debounce)"
         }
       }
     }
