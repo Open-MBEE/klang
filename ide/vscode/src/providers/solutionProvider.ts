@@ -295,6 +295,25 @@ export class KSolutionProvider {
     }
 
     /**
+     * Find "root" objects - objects that are not referenced by any other object.
+     * These are the top-level instances that contain other objects as properties.
+     */
+    private findRootObjects(objects: SolverObject[]): SolverObject[] {
+        // Collect all refs that are referenced by other objects
+        const referencedRefs = new Set<string>();
+        for (const obj of objects) {
+            for (const value of Object.values(obj.properties)) {
+                if (value.startsWith('Ref ')) {
+                    referencedRefs.add(value);
+                }
+            }
+        }
+
+        // Root objects are those not referenced by anyone
+        return objects.filter(obj => !referencedRefs.has(obj.ref));
+    }
+
+    /**
      * Format a property value, resolving refs to nested constructor syntax
      */
     private formatValue(value: string, refMap: Map<string, SolverObject>, depth: number = 0): string {
@@ -347,9 +366,12 @@ export class KSolutionProvider {
         // Build ref map for resolving references
         const refMap = this.buildRefMap(solution.objects);
 
-        // Generate objects HTML with nicer display
-        const objectsHtml = solution.objects.map((obj, idx) => {
-            // Format properties with resolved references
+        // Find root objects (not referenced by others)
+        const rootObjects = this.findRootObjects(solution.objects);
+        const componentObjects = solution.objects.filter(obj => !rootObjects.includes(obj));
+
+        // Helper to generate object HTML
+        const generateObjectHtml = (obj: SolverObject, idx: number, isRoot: boolean) => {
             const propsHtml = Object.entries(obj.properties).map(([key, value]) => {
                 const formattedValue = this.formatValue(value, refMap, 0);
                 const isRef = value.startsWith('Ref ');
@@ -362,9 +384,8 @@ export class KSolutionProvider {
             }).join('');
 
             return `
-                <div class="object">
+                <div class="object ${isRoot ? 'root-object' : 'component-object'}">
                     <div class="object-header">
-                        <span class="object-num">#${idx + 1}</span>
                         <span class="class-name">${obj.className}</span>
                         ${obj.variable ? `<span class="var-name">${obj.variable}</span>` : ''}
                     </div>
@@ -373,7 +394,22 @@ export class KSolutionProvider {
                     </div>
                 </div>
             `;
-        }).join('');
+        };
+
+        // Generate root objects HTML
+        const rootObjectsHtml = rootObjects.map((obj, idx) =>
+            generateObjectHtml(obj, idx, true)
+        ).join('');
+
+        // Generate component objects HTML (collapsible)
+        const componentObjectsHtml = componentObjects.length > 0 ? `
+            <details class="component-section">
+                <summary>Component Objects (${componentObjects.length})</summary>
+                <div class="component-objects">
+                    ${componentObjects.map((obj, idx) => generateObjectHtml(obj, idx, false)).join('')}
+                </div>
+            </details>
+        ` : '';
 
         const errorsHtml = solution.errors?.length ? `
             <div class="errors">
@@ -503,6 +539,32 @@ export class KSolutionProvider {
         .prop-value {
             font-family: monospace;
         }
+        .root-object {
+            border-left: 3px solid var(--vscode-textLink-foreground);
+        }
+        .component-object {
+            opacity: 0.85;
+            border-left: 3px solid var(--vscode-descriptionForeground);
+        }
+        .component-section {
+            margin-top: 20px;
+        }
+        .component-section summary {
+            cursor: pointer;
+            padding: 10px;
+            background-color: var(--vscode-input-background);
+            border-radius: 4px;
+            user-select: none;
+        }
+        .component-section summary:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+        .component-objects {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
         .errors, .unsat-core {
             margin-top: 20px;
             padding: 15px;
@@ -550,11 +612,12 @@ export class KSolutionProvider {
     ${errorsHtml}
     ${unsatCoreHtml}
 
-    ${solution.objects.length ? `
-        <h2>Objects (${solution.objects.length})</h2>
+    ${rootObjects.length ? `
+        <h2>Solution Instances (${rootObjects.length})</h2>
         <div class="objects">
-            ${objectsHtml}
+            ${rootObjectsHtml}
         </div>
+        ${componentObjectsHtml}
     ` : '<p>No instance objects created.</p>'}
 </body>
 </html>`;
