@@ -98,17 +98,55 @@ The type inference is implemented as "local type inference" - the type is inferr
 
 See `src/tests/type_inference_test.k` for a working example demonstrating the feature.
 
+## Bare Expressions as Implicit Constraints
+
+As of December 2025, bare expressions like `x < y` are now treated as implicit constraints, equivalent to `req x < y`. Combined with type inference for undeclared variables, this allows very concise K programs:
+
+```k
+// These are now equivalent:
+x < y
+req x < y
+```
+
+When `x` and `y` are undeclared, the type checker infers their types (defaulting to Real) and creates synthetic property declarations.
+
+## Type Inference Modes
+
+K type checking can be conceptualized as having four modes based on two boolean options:
+
+| Mode | Declarations Required | Types Must Be Unambiguous | Status |
+|------|----------------------|---------------------------|--------|
+| **Strict** | Yes | Yes | Traditional - all tests pass |
+| **Inferred Decls** | No | Yes | Current default for top-level |
+| **Ambiguous Types** | Yes | No | Future work |
+| **Fully Flexible** | No | No | Future work |
+
+### Current Behavior
+
+- **Top-level**: Variables can be undeclared; types inferred from context (defaults to Real)
+- **Class members**: Variables must be declared explicitly
+- **Type ambiguity**: Currently resolved by defaulting to Real; future work to use constraint solving
+
+### Future: Four-Mode Configuration
+
+A potential configuration could be:
+
+```k
+@options(requireDeclarations = false, requireUnambiguousTypes = false)
+x < y    // x, y inferred as Real (or any numeric type)
+```
+
 ## Future Work: Type Constraints in Z3
 
 The current type checker (`src/k/frontend/TypeChecker.scala`) is large and complex (~1500 lines). A cleaner approach would be to integrate type inference with the constraint solver by making types part of the constraint problem.
 
-### Current Limitation
+### Motivation
 
 Currently, `=` in K is an equality constraint, not an assignment. However, the type checker treats property declarations with `=` specially for type inference:
 
 ```k
-x = 0      // Type inferred from RHS - works
-x > 0      // Type NOT inferred - requires declaration
+x = 0      // Type inferred from RHS - works  
+x > 0      // Type inferred from context - NOW WORKS (defaults to Real)
 ```
 
 Semantically, both are constraints. The second implies `x` must be numeric just as much as the first.
@@ -141,6 +179,24 @@ req y = x + 1       // Infers y : Int (same as x)
 req name = "hello"  // Infers name : String
 req a = b           // Infers a, b : Int (default) with a = b
 ```
+
+### Challenges and Research Directions
+
+1. **Ambiguous Types**: When is `x < y` comparing Ints vs Reals? Options:
+   - Default to a specific type (current: Real)
+   - Require explicit declarations when ambiguous
+   - Use constraint-based type resolution (CEGAR-like approach)
+
+2. **CEGAR for Types**: Counterexample-Guided Abstraction Refinement could help:
+   - Start with most general types
+   - If constraints are unsatisfiable, refine type assumptions
+   - Iterate until solution found or proven impossible
+
+3. **Difficult Cases** (TODO: create test cases):
+   - Cyclic type dependencies: `f(x) = y, g(y) = x`
+   - Overloaded operators: `a + b` where `+` works on Int, Real, String
+   - Polymorphic functions: `identity(x) = x`
+   - Subtyping: `class A extends B` with type constraints
 
 ### Reference
 
