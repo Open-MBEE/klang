@@ -1420,6 +1420,9 @@ class TypeChecker(model: Model) {
           case ExternalType(qname) =>
             // Extending external type path - e.g., java.lang -> java.lang.Math
             ExternalType(qname + "." + i)
+          case PythonExternalType(qname) =>
+            // Extending Python external type path - e.g., math -> math.sqrt
+            PythonExternalType(qname + "." + i)
           case tt @ _ =>
             if (i == "collect") CollectType(List(tt))
             else if (i == "size") SumType(List(tt))
