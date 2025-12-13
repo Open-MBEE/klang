@@ -4343,8 +4343,13 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
           s"(ite (bvslt $expSMT (_ bv0 $width)) (- (bv2int $expSMT) $fullRange) (bv2int $expSMT))"
         // UnsignedIntType -> Int
         case (UnsignedIntType(_), IntType) => s"(bv2nat $expSMT)"
-        // Float -> Int
-        case (FloatType(_, _), IntType) => s"(fp.to_sbv 32 RTZ $expSMT)"
+        // Float -> Int (truncate toward zero)
+        case (FloatType(_, _), IntType) =>
+          // fp.to_sbv converts to signed bitvector, then we convert to int
+          // Use 64-bit bitvector to handle full range of float values
+          // Syntax: ((_ fp.to_sbv width) roundingMode floatExpr)
+          val bvWidth = 64
+          s"(ite (fp.isNaN $expSMT) 0 (ite (bvslt ((_ fp.to_sbv $bvWidth) RTZ $expSMT) (_ bv0 $bvWidth)) (- (bv2int ((_ fp.to_sbv $bvWidth) RTZ $expSMT)) ${BigInt(1) << bvWidth}) (bv2int ((_ fp.to_sbv $bvWidth) RTZ $expSMT))))"
         // Int -> Float
         case (IntType, FloatType(ebits, sbits)) => s"((_ to_fp $ebits $sbits) RNE (to_real $expSMT))"
         // Real -> Float  
