@@ -5,15 +5,15 @@
 
 set -e
 
-# Setup Java 21
+# Setup Java 21 - handle both Linux and macOS directory structures
 if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
-    export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-    export PATH="$JAVA_HOME/bin:$PATH"
-elif [ -d "$HOME/.sdkman/candidates/java/21.0.8-tem" ]; then
-    export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.8-tem"
-    export PATH="$JAVA_HOME/bin:$PATH"
-elif [ -d "$HOME/.sdkman/candidates/java/21.0.2-open" ]; then
-    export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.2-open"
+    if [ -d "$HOME/.sdkman/candidates/java/current/Contents/Home/bin" ]; then
+        # macOS structure
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/current/Contents/Home"
+    else
+        # Linux structure
+        export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+    fi
     export PATH="$JAVA_HOME/bin:$PATH"
 fi
 

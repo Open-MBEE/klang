@@ -198,11 +198,19 @@ object Misc {
       case (pt1 @ _, ParenType(pt2))                => return areTypesEqual(pt1, pt2, compatibility)
       case (CartesianType(ct1), CartesianType(ct2)) => return (ct1 zip ct2).forall { t => areTypesEqual(t._1, t._2, compatibility) }
       case (IdentType(it1, it2), IdentType(it3, it4)) =>
-        return it1.equals(it3) // TODO 
+        // Check that the type names match (e.g., both are "Set")
+        if (!it1.equals(it3)) return false
+        // Check type parameters recursively, treating UnitType as wildcard (for empty collections)
+        if (it2.length != it4.length) return false
+        return (it2 zip it4).forall { case (tp1, tp2) =>
+          tp1 == UnitType || tp2 == UnitType || areTypesEqual(tp1, tp2, compatibility)
+        }
       case (CollectType(ct1), CollectType(ct2)) =>
         return (ct1 zip ct2).forall { t => areTypesEqual(t._1, t._2, compatibility) }
       case (AnyType, _)                         => return true
       case (_, AnyType)                         => return true
+      case (UnitType, _) if compatibility       => return true  // UnitType as wildcard in compatibility mode
+      case (_, UnitType) if compatibility       => return true  // UnitType as wildcard in compatibility mode
       case (RealType, IntType) if compatibility => return true
       case (IntType, RealType) if compatibility => return true
       case _                                    => return t1.equals(t2)
