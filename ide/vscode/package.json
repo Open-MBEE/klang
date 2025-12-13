@@ -22,8 +22,13 @@
     "languages": [
       {
         "id": "k",
-        "aliases": ["K", "k"],
-        "extensions": [".k"],
+        "aliases": [
+          "K",
+          "k"
+        ],
+        "extensions": [
+          ".k"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -261,11 +266,18 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "pretest": "npm run compile"
   },
   "devDependencies": {
+    "@types/glob": "^9.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.5.2",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
     "typescript": "^5.3.0"
   }
 }
