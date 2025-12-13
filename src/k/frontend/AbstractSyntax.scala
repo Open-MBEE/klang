@@ -4000,7 +4000,11 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
       case SetKind =>
         val ty = exp2Type.get(this)
         val tySMT = ty match {
-          case IdentType(_, elemType :: _) => elemType.toSMT
+          case IdentType(_, elemType :: _) => 
+            elemType match {
+              case UnitType => "Int"  // Empty set: default element type to Int
+              case _ => elemType.toSMT
+            }
           case _ => "Int" // fallback
         }
         val emptySMT = s"((as const (Set $tySMT)) false)"
@@ -4014,7 +4018,11 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
         // Use Z3 sequence theory: seq.empty, seq.unit, seq.++
         val ty = exp2Type.get(this)
         val tySMT = ty match {
-          case IdentType(_, elemType :: _) => elemType.toSMT
+          case IdentType(_, elemType :: _) => 
+            elemType match {
+              case UnitType => "Int"  // Empty sequence: default element type to Int
+              case _ => elemType.toSMT
+            }
           case _ => "Int" // fallback
         }
         if (exps.isEmpty) {

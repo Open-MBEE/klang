@@ -1419,7 +1419,18 @@ class TypeChecker(model: Model) {
           case ASSIGN =>
             if (!areTypesEqual(ty1, ty2, false)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             UnitType
-          case ISIN | NOTISIN | SUBSET | PSUBSET =>
+          case ISIN | NOTISIN =>
+            // For x isin S, check that x's type matches the element type of S
+            ty2 match {
+              case IdentType(_, elemType :: _) if Misc.isCollection(ty2.asInstanceOf[IdentType]) =>
+                if (!areTypesEqual(ty1, elemType, false)) 
+                  error(s"$exp does not type check. $ty1 is not compatible with element type $elemType of $ty2.")
+              case _ =>
+                error(s"$exp does not type check. $ty2 is not a collection type.")
+            }
+            BoolType
+          case SUBSET | PSUBSET =>
+            // For S1 subset S2, both should be collections with the same element type
             val (typesCompat, cType) = Misc.typeTypeCollection(ty1, ty2)
             if (!typesCompat) error(s"$exp does not type check. $ty1 and $ty2 are not compatible.")
             BoolType
