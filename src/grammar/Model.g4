@@ -198,6 +198,7 @@ expression:
   | literal #LiteralExp
   | Identifier #IdentExp
   | primitiveType #IdentExp
+  | importLanguage #IdentExp
   | expression '.' ThisLiteral #ThisOuterExp
   | expression '.' Identifier #DotExp
   | type '.' 'class' #ClassExp 
