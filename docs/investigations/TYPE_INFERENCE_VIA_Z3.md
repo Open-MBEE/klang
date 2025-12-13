@@ -2,22 +2,30 @@
 
 ## Current State (December 2025)
 
+### ✅ FIXED: Undeclared Variable Bug
+
+**Bug**: Top-level bare expressions like `x < y` were silently ignored (passed type checking but produced nothing).
+
+**Fix** (commit 442ef6c): Removed `ExpressionDecl` from `inferUndeclaredTypes()` collection. Now bare expressions properly error with "x not found in scope".
+
+**Test**: `src/tests/undeclared_variable_error.k`
+
 ### Variable Declaration Requirements
 
 | Context | Example | Result | Notes |
 |---------|---------|--------|-------|
-| Top-level bare expression | `x < y` | ✅ Parses, type checks | But produces no output - effectively ignored |
-| Top-level `req` constraint | `req x < y` | ✅ Parses, type checks | Fails at Z3 (undeclared vars) |
+| Top-level bare expression | `x < y` | ❌ Type error | "x not found in scope" (FIXED) |
+| Top-level `req` constraint | `req x > 0` | ✅ Type checks | Infers x as numeric |
 | Top-level `x = y` | `x = y` | ❌ Type error | Parsed as property declaration; `y not found` |
 | In class | `class A { x < y }` | ❌ Type error | `x not found in scope` |
 | Top-level with decls | `x : Int` + `req x < y` | ✅ Works | Full solution |
 
 ### Key Insight
 
-The type checker is **inconsistent**:
-- Top-level expressions (`x < y`) pass type checking but are silently ignored
+The type checker now has **consistent behavior**:
+- ConstraintDecl (`req x > 0`) allows type inference for undeclared variables
+- ExpressionDecl (bare `x < y`) requires declared variables
 - Expressions in classes require declared variables
-- `x = y` is parsed as a **property declaration** (not equality constraint), requiring `y` to exist
 
 ### Original Proposal (from TYPE_INFERENCE.md)
 
