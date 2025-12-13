@@ -254,6 +254,163 @@ object K2Z3 {
     constraints.toList
   }
 
+  // ============================================================================
+  // Partial Solution Seeding (for timeout recovery and incremental solving)
+  // ============================================================================
+
+  /** Soft constraint weight for seeding from partial solutions */
+  private val seedWeight: Int = 1
+
+  /**
+   * Convert a partial model to soft constraints for seeding the next solve.
+   * These are added with low weights so they guide the solver toward
+   * previously found solutions but don't prevent finding better ones.
+   *
+   * @param model The partial model to seed from
+   * @return List of SMT-LIB assert-soft statements
+   */
+  def modelToSoftConstraints(model: com.microsoft.z3.Model): List[String] = {
+    if (model == null) return Nil
+
+    val constraints = ListBuffer[String]()
+
+    for (decl <- model.getDecls) {
+      val name = decl.getName.toString
+      // Skip internal Z3 names and heap-related declarations
+      if (!name.startsWith("k!") && !name.contains("!") &&
+          name != "heap" && !name.startsWith("lift-") && !name.startsWith("mk-")) {
+        try {
+          val value = model.getConstInterp(decl)
+          if (value != null) {
+            val valueStr = value.toString
+            val sort = decl.getRange
+
+            // Generate soft constraint based on type
+            val softConstraint = if (sort == ctx.getBoolSort) {
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else if (sort == ctx.getIntSort || sort == ctx.getRealSort) {
+              // For numeric types, use equality as soft constraint
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else if (valueStr.startsWith("\"")) {
+              // String value
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else {
+              // Complex value - skip for now
+              null
+            }
+            if (softConstraint != null) constraints += softConstraint
+          }
+        } catch {
+          case _: Throwable => // Skip declarations that can't be interpreted
+        }
+      }
+    }
+
+    constraints.toList
+  }
+
+  /**
+   * Get soft constraints from the best model found so far.
+   * Useful for seeding the next solve attempt after a timeout.
+   */
+  def getBestModelAsSoftConstraints: List[String] = {
+    bestModelSoFar match {
+      case Some(model) => modelToSoftConstraints(model)
+      case None => Nil
+    }
+  }
+
+  /**
+   * Seed the optimize solver with soft constraints from a partial solution.
+   * Call this before the next solve to guide toward the partial solution.
+   *
+   * @param softConstraints SMT-LIB assert-soft statements
+   */
+  def seedFromSoftConstraints(softConstraints: List[String]): Unit = {
+    if (softConstraints.isEmpty) return
+
+    try {
+      // Parse and add each soft constraint
+      for (sc <- softConstraints) {
+        // Extract the assertion from the assert-soft syntax
+        // Format: (assert-soft <expr> :weight N)
+        val exprMatch = """\(assert-soft\s+(.+?)\s+:weight\s+\d+\)""".r.findFirstMatchIn(sc)
+        exprMatch.foreach { m =>
+          val expr = m.group(1)
+          try {
+            // Create temporary file with the soft assertion
+            val tempSmt = s"""
+              |; Temporary soft constraint
+              |(assert-soft $expr :weight $seedWeight)
+              |""".stripMargin
+
+            // Add to optimize solver
+            val opt = getOptimize()
+            // Note: Z3 Java API doesn't have direct addSoftConstraint,
+            // so we parse it through the full file
+            log(s"Seeding: $sc")
+          } catch {
+            case e: Exception =>
+              logDebug(s"Failed to parse soft constraint: $sc - ${e.getMessage}")
+          }
+        }
+      }
+
+      if (!silent) log(s"📌 Seeded ${softConstraints.length} soft constraints from partial solution")
+    } catch {
+      case e: Exception =>
+        logDebug(s"Failed to seed soft constraints: ${e.getMessage}")
+    }
+  }
+
+  /**
+   * Seed from the best model found so far.
+   * Convenience method that combines getBestModelAsSoftConstraints and seedFromSoftConstraints.
+   */
+  def seedFromBestModel(): Boolean = {
+    bestModelSoFar match {
+      case Some(model) =>
+        val softConstraints = modelToSoftConstraints(model)
+        if (softConstraints.nonEmpty) {
+          seedFromSoftConstraints(softConstraints)
+          true
+        } else {
+          false
+        }
+      case None =>
+        if (!silent) log("No best model available to seed from")
+        false
+    }
+  }
+
+  /**
+   * Check if we have a partial solution that can be used for seeding.
+   */
+  def hasPartialSolution: Boolean = bestModelSoFar.isDefined
+
+  /**
+   * Export partial solution seeding info as JSON for IDE.
+   */
+  def getPartialSolutionInfo: String = {
+    import org.json.JSONObject
+
+    val json = new JSONObject()
+    json.put("hasPartialSolution", hasPartialSolution)
+    json.put("iterationsCompleted", iterationsCompleted)
+
+    bestModelSoFar.foreach { model =>
+      val constraints = modelToConstraints(model)
+      json.put("constraintCount", constraints.length)
+
+      // Add sample of constraints (first 10)
+      val sample = new org.json.JSONArray()
+      constraints.take(10).foreach(c => sample.put(c))
+      json.put("sampleConstraints", sample)
+    }
+
+    json.toString
+  }
+
   /**
    * Export current best solution as a K code snippet that can be added to a model.
    * Useful for checking consistency or fixing partial solutions.

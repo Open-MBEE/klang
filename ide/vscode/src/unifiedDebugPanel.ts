@@ -583,7 +583,75 @@ export class KDebugPanel {
             case 'toggleAutoSolve':
                 this.handleToggleAutoSolve(message.enabled);
                 break;
+            case 'toggleBreakpoint':
+                this.toggleBreakpoint(message.constraintId);
+                break;
+            case 'queryBounds':
+                this.queryVariableBounds(message.variableName);
+                break;
+            case 'showCegarDetails':
+                this.showCegarIterationDetails(message.iterationIndex);
+                break;
         }
+    }
+
+    /**
+     * Toggle breakpoint on a constraint
+     */
+    private toggleBreakpoint(constraintId: number): void {
+        const session = this.getActiveSession();
+        if (!session) return;
+
+        if (session.breakpointConstraints.has(constraintId)) {
+            session.breakpointConstraints.delete(constraintId);
+        } else {
+            session.breakpointConstraints.add(constraintId);
+        }
+
+        this.updatePanel();
+    }
+
+    /**
+     * Query bounds for a specific variable
+     */
+    private async queryVariableBounds(variableName: string): Promise<void> {
+        // This would communicate with the K solver to get bounds
+        // For now, show a message
+        vscode.window.showInformationMessage(
+            `Variable bounds for '${variableName}' would be queried from solver`
+        );
+    }
+
+    /**
+     * Show detailed information about a CEGAR iteration
+     */
+    private showCegarIterationDetails(iterationIndex: number): void {
+        const session = this.getActiveSession();
+        if (!session || iterationIndex >= session.cegarIterations.length) return;
+
+        const iteration = session.cegarIterations[iterationIndex];
+
+        let details = `CEGAR Iteration #${iteration.iteration}\n`;
+        details += `Status: ${iteration.status}\n`;
+
+        if (iteration.externalFunction) {
+            details += `\nExternal Function: ${iteration.externalFunction}\n`;
+        }
+        if (iteration.expectedValue && iteration.actualValue) {
+            details += `Expected: ${iteration.expectedValue}\n`;
+            details += `Actual: ${iteration.actualValue}\n`;
+        }
+        if (iteration.refinementConstraint) {
+            details += `\nRefinement:\n${iteration.refinementConstraint}\n`;
+        }
+        if (iteration.candidateSolution) {
+            details += `\nCandidate Solution:\n`;
+            for (const [k, v] of Object.entries(iteration.candidateSolution)) {
+                details += `  ${k} = ${v}\n`;
+            }
+        }
+
+        vscode.window.showInformationMessage(details, { modal: true });
     }
 
     /**
@@ -723,10 +791,11 @@ export class KDebugPanel {
             </button>
         `).join('');
 
-        // Constraints list - with external function indicators
+        // Constraints list - with external function indicators and breakpoints
         const constraintsHtml = session ? session.constraints.map((c, i) => {
             const status = i < session.currentStep ? 'processed' : (i === session.currentStep ? 'current' : 'pending');
             const icon = i < session.currentStep ? '✓' : (i === session.currentStep ? '▶' : '○');
+            const hasBreakpoint = session.breakpointConstraints.has(c.id);
 
             // Generate external call buttons
             const externalCallsHtml = c.externalCalls?.map((call, callIdx) => {
@@ -745,7 +814,11 @@ export class KDebugPanel {
             }).join('') || '';
 
             return `
-                <div class="constraint ${status} ${c.enabled ? '' : 'disabled'}" onclick="goToStep(${i})">
+                <div class="constraint ${status} ${c.enabled ? '' : 'disabled'} ${hasBreakpoint ? 'has-breakpoint' : ''}" 
+                     onclick="goToStep(${i})">
+                    <span class="breakpoint-toggle ${hasBreakpoint ? 'active' : ''}"
+                          onclick="event.stopPropagation(); toggleBreakpoint(${c.id})"
+                          title="${hasBreakpoint ? 'Remove breakpoint' : 'Set breakpoint'}">●</span>
                     <input type="checkbox" ${c.enabled ? 'checked' : ''} 
                            onclick="event.stopPropagation(); toggleConstraint(${i})">
                     <span class="icon">${icon}</span>
@@ -1189,10 +1262,48 @@ export class KDebugPanel {
         }
         
         /* Breakpoint indicator */
-        .constraint.has-breakpoint::before {
-            content: '●';
-            color: #f44336;
+        .constraint.has-breakpoint {
+            border-left: 3px solid #f44336;
+        }
+        .breakpoint-toggle {
+            cursor: pointer;
+            color: var(--vscode-descriptionForeground);
+            opacity: 0.3;
             margin-right: 4px;
+            font-size: 10px;
+        }
+        .breakpoint-toggle:hover {
+            opacity: 0.8;
+            color: #f44336;
+        }
+        .breakpoint-toggle.active {
+            opacity: 1;
+            color: #f44336;
+        }
+        
+        /* Call Stack */
+        .callstack-section { margin-bottom: 12px; }
+        .callstack-frame {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .callstack-frame:last-child { border-bottom: none; }
+        .frame-type {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+        .frame-type.k-constraint { background: #9c27b0; color: white; }
+        .frame-type.java { background: #b07219; color: white; }
+        .frame-type.python { background: #3572A5; color: white; }
+        .frame-name { flex: 1; }
+        .frame-location { 
+            color: var(--vscode-descriptionForeground); 
+            font-size: 11px;
         }
     </style>
 </head>
@@ -1266,6 +1377,18 @@ export class KDebugPanel {
         }
         function toggleAutoSolve(enabled) {
             vscode.postMessage({ type: 'toggleAutoSolve', enabled: enabled });
+        }
+        // Breakpoint support
+        function toggleBreakpoint(constraintId) {
+            vscode.postMessage({ type: 'toggleBreakpoint', constraintId: constraintId });
+        }
+        // CEGAR details
+        function showCegarDetails(iterationIndex) {
+            vscode.postMessage({ type: 'showCegarDetails', iterationIndex: iterationIndex });
+        }
+        // Variable bounds query
+        function queryBounds(variableName) {
+            vscode.postMessage({ type: 'queryBounds', variableName: variableName });
         }
     </script>
 </body>
