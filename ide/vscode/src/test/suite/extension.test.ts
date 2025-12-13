@@ -150,5 +150,41 @@ suite('K Language Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands();
         assert.ok(commands.includes('k.visualizeSolution'), 'k.visualizeSolution command should exist');
     });
+
+    test('Java debug command should exist', async () => {
+        const ext = vscode.extensions.getExtension('nasa-jpl.k-language');
+        if (ext && !ext.isActive) {
+            await ext.activate();
+        }
+        const commands = await vscode.commands.getCommands();
+        assert.ok(commands.includes('k.runWithJavaDebug'), 'k.runWithJavaDebug command should exist');
+    });
+
+    test('Python debug command should exist', async () => {
+        const ext = vscode.extensions.getExtension('nasa-jpl.k-language');
+        if (ext && !ext.isActive) {
+            await ext.activate();
+        }
+        const commands = await vscode.commands.getCommands();
+        assert.ok(commands.includes('k.runWithPythonDebug'), 'k.runWithPythonDebug command should exist');
+    });
+
+    test('Full debug command should exist', async () => {
+        const ext = vscode.extensions.getExtension('nasa-jpl.k-language');
+        if (ext && !ext.isActive) {
+            await ext.activate();
+        }
+        const commands = await vscode.commands.getCommands();
+        assert.ok(commands.includes('k.runWithFullDebug'), 'k.runWithFullDebug command should exist');
+    });
+
+    test('Unified debug panel command should exist', async () => {
+        const ext = vscode.extensions.getExtension('nasa-jpl.k-language');
+        if (ext && !ext.isActive) {
+            await ext.activate();
+        }
+        const commands = await vscode.commands.getCommands();
+        assert.ok(commands.includes('k.openUnifiedDebugger'), 'k.openUnifiedDebugger command should exist');
+    });
 });
 

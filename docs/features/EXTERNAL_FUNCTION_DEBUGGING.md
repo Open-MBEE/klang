@@ -8,6 +8,16 @@ K is a constraint-based language that can import and call functions from Java an
 2. **Navigate to source** files of imported Java/Python modules
 3. **Step into external debuggers** to debug Java/Python code alongside K constraint solving
 
+## Current Implementation Status
+
+✅ **Working Features:**
+- Python external function imports (`import python math`)
+- Java external function imports (`import java.lang.Math`)
+- Mixed Java + Python in same K file
+- VS Code debug commands for Java/Python
+- debugpy integration for Python debugging
+- Unified Debug Panel with external function detection
+
 ## How It Works
 
 ### Import Statements
@@ -16,10 +26,20 @@ K can import external functions using:
 
 ```k
 -- Import a Java class
-import java com.example.MyCalculator
+import java.lang.Math
 
--- Import a Python module
-import python my_calculations
+-- Import a Python module  
+import python math
+
+-- Use both in the same file!
+class MixedExample {
+  javaResult : Real
+  pythonResult : Real
+  
+  req javaResult = Math.sqrt(16.0)    -- Java
+  req pythonResult = math.sqrt(16.0)  -- Python
+  req javaResult = pythonResult       -- They must match!
+}
 ```
 
 ### Detection and Display

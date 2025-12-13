@@ -15,7 +15,7 @@ import { KInlineDecorations } from './inlineDecorations';
 import { KSolverManager, KProgressPanel } from './solverManager';
 import { KConstraintDebugger } from './constraintDebugger';
 import { KDebugPanel } from './unifiedDebugPanel';
-import { runKFile, runKFileWithArgs } from './runner';
+import { runKFile, runKFileWithArgs, runKFileWithDebug, runKFileWithPythonDebug, runKFileWithFullDebug } from './runner';
 
 // Document selector for K language files
 const K_MODE: vscode.DocumentSelector = { language: 'k', scheme: 'file' };
@@ -109,6 +109,102 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('k.runFileWithArgs', runKFileWithArgs)
+    );
+
+    // Register Run with Debug Command (Java debug agent)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.runWithJavaDebug', async () => {
+            const process = await runKFileWithDebug();
+            if (process) {
+                // Wait a moment for the debug agent to start
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Prompt user to attach debugger
+                const attach = await vscode.window.showInformationMessage(
+                    'K is running with Java debug agent on port 5005. Attach debugger?',
+                    'Attach Java Debugger',
+                    'Later'
+                );
+
+                if (attach === 'Attach Java Debugger') {
+                    // Launch Java debugger attach configuration
+                    const debugConfig: vscode.DebugConfiguration = {
+                        type: 'java',
+                        name: 'Attach to K Java',
+                        request: 'attach',
+                        hostName: 'localhost',
+                        port: 5005
+                    };
+                    await vscode.debug.startDebugging(undefined, debugConfig);
+                }
+            }
+        })
+    );
+
+    // Register Run with Python Debug Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.runWithPythonDebug', async () => {
+            const process = await runKFileWithPythonDebug();
+            if (process) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                const attach = await vscode.window.showInformationMessage(
+                    'K is running with Python debug enabled on port 5678. Attach debugger?',
+                    'Attach Python Debugger',
+                    'Later'
+                );
+
+                if (attach === 'Attach Python Debugger') {
+                    const debugConfig: vscode.DebugConfiguration = {
+                        type: 'python',
+                        name: 'Attach to K Python',
+                        request: 'attach',
+                        connect: {
+                            host: 'localhost',
+                            port: 5678
+                        }
+                    };
+                    await vscode.debug.startDebugging(undefined, debugConfig);
+                }
+            }
+        })
+    );
+
+    // Register Run with Full Debug (Java + Python)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.runWithFullDebug', async () => {
+            const process = await runKFileWithFullDebug();
+            if (process) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                const choice = await vscode.window.showInformationMessage(
+                    'K is running with Java (5005) and Python (5678) debug enabled.',
+                    'Attach Java',
+                    'Attach Python',
+                    'Attach Both',
+                    'Later'
+                );
+
+                if (choice === 'Attach Java' || choice === 'Attach Both') {
+                    await vscode.debug.startDebugging(undefined, {
+                        type: 'java',
+                        name: 'Attach to K Java',
+                        request: 'attach',
+                        hostName: 'localhost',
+                        port: 5005
+                    });
+                }
+
+                if (choice === 'Attach Python' || choice === 'Attach Both') {
+                    await vscode.debug.startDebugging(undefined, {
+                        type: 'python',
+                        name: 'Attach to K Python',
+                        request: 'attach',
+                        connect: { host: 'localhost', port: 5678 }
+                    });
+                }
+            }
+        })
     );
 
     // Register Auto-Solve Commands

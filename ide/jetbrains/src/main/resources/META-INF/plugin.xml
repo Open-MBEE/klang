@@ -68,7 +68,6 @@
         <fileType
             name="K File"
             implementationClass="nasa.jpl.klang.ide.KFileType"
-            fieldName="INSTANCE"
             language="K"
             extensions="k"/>
 

@@ -12,7 +12,7 @@ class KTemplateContext : TemplateContextType("K", "K") {
 
     override fun isInContext(templateActionContext: TemplateActionContext): Boolean {
         val file = templateActionContext.file
-        return file.fileType == KFileType.INSTANCE
+        return file.fileType == KFileType
     }
 }
 

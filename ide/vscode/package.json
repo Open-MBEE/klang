@@ -58,6 +58,24 @@
         "category": "K"
       },
       {
+        "command": "k.runWithJavaDebug",
+        "title": "Run K File with Java Debugger",
+        "category": "K Debug",
+        "icon": "$(debug)"
+      },
+      {
+        "command": "k.runWithPythonDebug",
+        "title": "Run K File with Python Debugger",
+        "category": "K Debug",
+        "icon": "$(debug)"
+      },
+      {
+        "command": "k.runWithFullDebug",
+        "title": "Run K File with Full Debug (Java + Python)",
+        "category": "K Debug",
+        "icon": "$(debug-alt)"
+      },
+      {
         "command": "k.visualizeSolution",
         "title": "Visualize Solution",
         "category": "K",
@@ -163,39 +181,39 @@
         {
           "command": "k.toggleAutoSolve",
           "when": "resourceLangId == k && !k.autoSolveEnabled",
-          "group": "navigation@1"
+          "group": "navigation@0"
         },
         {
           "command": "k.disableAutoSolve",
           "when": "resourceLangId == k && k.autoSolveEnabled",
-          "group": "navigation@1"
+          "group": "navigation@0"
         },
         {
           "command": "k.runFile",
           "when": "resourceLangId == k",
+          "group": "navigation@1"
+        },
+        {
+          "command": "k.openUnifiedDebugger",
+          "when": "resourceLangId == k",
           "group": "navigation@2"
-        },
-        {
-          "command": "k.visualizeSolution",
-          "when": "resourceLangId == k",
-          "group": "navigation@3"
-        },
-        {
-          "command": "k.startConstraintDebug",
-          "when": "resourceLangId == k",
-          "group": "navigation@4"
         }
       ],
       "editor/title/run": [
         {
           "command": "k.runFile",
           "when": "resourceLangId == k",
-          "group": "navigation"
+          "group": "navigation@0"
+        },
+        {
+          "command": "k.openUnifiedDebugger",
+          "when": "resourceLangId == k",
+          "group": "navigation@1"
         },
         {
           "command": "k.visualizeSolution",
           "when": "resourceLangId == k",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ],
       "editor/context": [

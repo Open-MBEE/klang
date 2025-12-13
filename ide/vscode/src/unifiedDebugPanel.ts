@@ -45,6 +45,70 @@ interface KDebugSession {
     externalFunctions: ExternalFunction[];
     javaDebugSession?: vscode.DebugSession;
     pythonDebugSession?: vscode.DebugSession;
+    // CEGAR visibility
+    cegarIterations: CEGARIteration[];
+    currentCegarIteration: number;
+    // Value ranges
+    variableBounds: Map<string, VariableBounds>;
+    // Optimization
+    optimizationProgress?: OptimizationProgress;
+    // Breakpoints
+    breakpointConstraints: Set<number>;
+    // Call stack
+    callStack: CallFrame[];
+}
+
+/**
+ * CEGAR iteration information
+ */
+interface CEGARIteration {
+    iteration: number;
+    status: 'started' | 'candidate' | 'counterexample' | 'refined' | 'verified';
+    candidateSolution?: { [key: string]: string };
+    counterexample?: string;
+    refinementConstraint?: string;
+    externalFunction?: string;
+    expectedValue?: string;
+    actualValue?: string;
+    timestamp: number;
+}
+
+/**
+ * Variable bounds for inline display
+ */
+interface VariableBounds {
+    variableName: string;
+    minValue?: string;
+    maxValue?: string;
+    exactValue?: string;
+    feasible: boolean;
+    varType: string;
+}
+
+/**
+ * Optimization progress tracking
+ */
+interface OptimizationProgress {
+    iteration: number;
+    objectiveName: string;
+    currentValue?: string;
+    bestValue?: string;
+    lowerBound?: string;
+    upperBound?: string;
+    gap?: number;
+    status: 'running' | 'optimal' | 'timeout' | 'infeasible';
+    timestamp: number;
+}
+
+/**
+ * Unified call stack frame (K + Java + Python)
+ */
+interface CallFrame {
+    frameType: 'k-constraint' | 'java' | 'python';
+    name: string;
+    file?: string;
+    line?: number;
+    details?: string;
 }
 
 interface KConstraint {
@@ -166,7 +230,14 @@ export class KDebugPanel {
             activeConstraints: [],
             solutionObjects: [],
             createdAt: new Date(),
-            externalFunctions
+            externalFunctions,
+            // New debug features
+            cegarIterations: [],
+            currentCegarIteration: 0,
+            variableBounds: new Map(),
+            optimizationProgress: undefined,
+            breakpointConstraints: new Set(),
+            callStack: []
         };
 
         this.sessions.set(sessionId, session);
@@ -506,7 +577,114 @@ export class KDebugPanel {
             case 'goToExternal':
                 this.handleGoToExternal(message.constraintIndex, message.callIndex);
                 break;
+            case 'goToStep':
+                this.goToStep(message.step);
+                break;
+            case 'toggleAutoSolve':
+                this.handleToggleAutoSolve(message.enabled);
+                break;
+            case 'toggleBreakpoint':
+                this.toggleBreakpoint(message.constraintId);
+                break;
+            case 'queryBounds':
+                this.queryVariableBounds(message.variableName);
+                break;
+            case 'showCegarDetails':
+                this.showCegarIterationDetails(message.iterationIndex);
+                break;
         }
+    }
+
+    /**
+     * Toggle breakpoint on a constraint
+     */
+    private toggleBreakpoint(constraintId: number): void {
+        const session = this.getActiveSession();
+        if (!session) return;
+
+        if (session.breakpointConstraints.has(constraintId)) {
+            session.breakpointConstraints.delete(constraintId);
+        } else {
+            session.breakpointConstraints.add(constraintId);
+        }
+
+        this.updatePanel();
+    }
+
+    /**
+     * Query bounds for a specific variable
+     */
+    private async queryVariableBounds(variableName: string): Promise<void> {
+        // This would communicate with the K solver to get bounds
+        // For now, show a message
+        vscode.window.showInformationMessage(
+            `Variable bounds for '${variableName}' would be queried from solver`
+        );
+    }
+
+    /**
+     * Show detailed information about a CEGAR iteration
+     */
+    private showCegarIterationDetails(iterationIndex: number): void {
+        const session = this.getActiveSession();
+        if (!session || iterationIndex >= session.cegarIterations.length) return;
+
+        const iteration = session.cegarIterations[iterationIndex];
+
+        let details = `CEGAR Iteration #${iteration.iteration}\n`;
+        details += `Status: ${iteration.status}\n`;
+
+        if (iteration.externalFunction) {
+            details += `\nExternal Function: ${iteration.externalFunction}\n`;
+        }
+        if (iteration.expectedValue && iteration.actualValue) {
+            details += `Expected: ${iteration.expectedValue}\n`;
+            details += `Actual: ${iteration.actualValue}\n`;
+        }
+        if (iteration.refinementConstraint) {
+            details += `\nRefinement:\n${iteration.refinementConstraint}\n`;
+        }
+        if (iteration.candidateSolution) {
+            details += `\nCandidate Solution:\n`;
+            for (const [k, v] of Object.entries(iteration.candidateSolution)) {
+                details += `  ${k} = ${v}\n`;
+            }
+        }
+
+        vscode.window.showInformationMessage(details, { modal: true });
+    }
+
+    /**
+     * Jump to a specific constraint step
+     */
+    public async goToStep(step: number): Promise<void> {
+        const session = this.getActiveSession();
+        if (!session) return;
+
+        step = Math.max(0, Math.min(step, session.constraints.length));
+        session.currentStep = step;
+        session.activeConstraints = session.constraints.slice(0, step);
+
+        await this.runSolver(session.id);
+        this.updatePanel();
+        this.updateDecorations();
+    }
+
+    /**
+     * Handle auto-solve toggle from the panel
+     */
+    private async handleToggleAutoSolve(enabled: boolean): Promise<void> {
+        const config = vscode.workspace.getConfiguration('k');
+        await config.update('autoSolve.enabled', enabled, vscode.ConfigurationTarget.Workspace);
+        await vscode.commands.executeCommand('setContext', 'k.autoSolveEnabled', enabled);
+        this.updatePanel();
+    }
+
+    /**
+     * Check if auto-solve is enabled
+     */
+    private isAutoSolveEnabled(): boolean {
+        return vscode.workspace.getConfiguration('k').get<boolean>('autoSolve.enabled', false);
     }
 
     /**
@@ -613,10 +791,11 @@ export class KDebugPanel {
             </button>
         `).join('');
 
-        // Constraints list - with external function indicators
+        // Constraints list - with external function indicators and breakpoints
         const constraintsHtml = session ? session.constraints.map((c, i) => {
             const status = i < session.currentStep ? 'processed' : (i === session.currentStep ? 'current' : 'pending');
             const icon = i < session.currentStep ? '✓' : (i === session.currentStep ? '▶' : '○');
+            const hasBreakpoint = session.breakpointConstraints.has(c.id);
 
             // Generate external call buttons
             const externalCallsHtml = c.externalCalls?.map((call, callIdx) => {
@@ -635,7 +814,11 @@ export class KDebugPanel {
             }).join('') || '';
 
             return `
-                <div class="constraint ${status} ${c.enabled ? '' : 'disabled'}" onclick="goToStep(${i})">
+                <div class="constraint ${status} ${c.enabled ? '' : 'disabled'} ${hasBreakpoint ? 'has-breakpoint' : ''}" 
+                     onclick="goToStep(${i})">
+                    <span class="breakpoint-toggle ${hasBreakpoint ? 'active' : ''}"
+                          onclick="event.stopPropagation(); toggleBreakpoint(${c.id})"
+                          title="${hasBreakpoint ? 'Remove breakpoint' : 'Set breakpoint'}">●</span>
                     <input type="checkbox" ${c.enabled ? 'checked' : ''} 
                            onclick="event.stopPropagation(); toggleConstraint(${i})">
                     <span class="icon">${icon}</span>
@@ -664,11 +847,23 @@ export class KDebugPanel {
             </div>
         ` : '';
 
-        // Solution objects - formatted nicely
-        const objectsHtml = session?.solutionObjects.map(obj => {
-            const propsHtml = Object.entries(obj.properties).map(([k, v]) =>
-                `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-value">${this.escapeHtml(v)}</span></div>`
-            ).join('');
+        // Solution objects - formatted nicely, filtering out nested objects shown inline
+        const topLevelObjects = this.filterTopLevelObjects(session?.solutionObjects || []);
+        const objectsHtml = topLevelObjects.map(obj => {
+            const propsHtml = Object.entries(obj.properties).map(([k, v]) => {
+                // Format ref properties to show inline object if available
+                const refMatch = v.match(/^Ref (\d+)$/);
+                if (refMatch) {
+                    const referencedObj = session?.solutionObjects.find(o => o.ref === v);
+                    if (referencedObj) {
+                        const nestedProps = Object.entries(referencedObj.properties)
+                            .map(([nk, nv]) => `${nk}: ${nv}`)
+                            .join(', ');
+                        return `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-ref">${referencedObj.className}(${nestedProps})</span></div>`;
+                    }
+                }
+                return `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-value">${this.escapeHtml(v)}</span></div>`;
+            }).join('');
             return `
                 <div class="solution-object">
                     <div class="obj-header">
@@ -777,6 +972,23 @@ export class KDebugPanel {
         .status-bar.unsat { background: rgba(244, 67, 54, 0.2); }
         .status-bar.running { background: rgba(33, 150, 243, 0.2); }
         .status-bar.error { background: rgba(255, 152, 0, 0.2); }
+        .auto-solve-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            background: var(--vscode-button-secondaryBackground);
+            border-radius: 4px;
+        }
+        .auto-solve-toggle:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        .auto-solve-toggle input {
+            margin: 0;
+            cursor: pointer;
+        }
         
         /* Sections */
         .section { margin-bottom: 16px; }
@@ -895,6 +1107,10 @@ export class KDebugPanel {
         .prop { font-size: 12px; padding: 2px 0; }
         .prop-name { color: var(--vscode-symbolIcon-fieldForeground); }
         .prop-value { color: var(--vscode-debugTokenExpression-value); }
+        .prop-ref { 
+            color: var(--vscode-symbolIcon-classForeground); 
+            font-style: italic;
+        }
         
         /* Unsat panel */
         .unsat-panel {
@@ -939,6 +1155,156 @@ export class KDebugPanel {
             background: var(--vscode-progressBar-foreground);
             transition: width 0.3s;
         }
+        
+        /* CEGAR Iterations */
+        .cegar-section { margin-bottom: 12px; }
+        .cegar-section h3 .count { 
+            font-weight: normal; 
+            color: var(--vscode-descriptionForeground); 
+        }
+        .cegar-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        .cegar-iteration {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .cegar-iteration:last-child { border-bottom: none; }
+        .cegar-iteration:hover { background: var(--vscode-list-hoverBackground); }
+        .cegar-iteration.current { 
+            background: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
+        }
+        .cegar-iteration.verified { background: rgba(76, 175, 80, 0.1); }
+        .cegar-iteration.counterexample { background: rgba(244, 67, 54, 0.1); }
+        .cegar-iteration.refined { background: rgba(255, 152, 0, 0.1); }
+        .cegar-icon { font-size: 14px; }
+        .cegar-num { font-weight: bold; color: var(--vscode-descriptionForeground); }
+        .cegar-status { text-transform: capitalize; }
+        .cegar-details {
+            flex-basis: 100%;
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            padding-left: 26px;
+        }
+        .cegar-func { 
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+        .cegar-mismatch { color: #f44336; }
+        .cegar-constraint {
+            font-family: var(--vscode-editor-font-family);
+            font-size: 10px;
+            background: var(--vscode-textCodeBlock-background);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        /* Optimization Progress */
+        .optimization-section { margin-bottom: 12px; }
+        .optimization-info {
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .opt-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .opt-icon { font-size: 18px; }
+        .opt-objective { font-weight: bold; }
+        .opt-status-text {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .opt-status-text[data-status="running"] { background: #2196f3; color: white; }
+        .opt-status-text[data-status="optimal"] { background: #4caf50; color: white; }
+        .opt-status-text[data-status="timeout"] { background: #ff9800; color: white; }
+        .opt-status-text[data-status="infeasible"] { background: #f44336; color: white; }
+        .opt-values {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 8px;
+        }
+        .opt-current, .opt-best { font-size: 13px; }
+        .opt-bounds {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 4px;
+        }
+        .opt-iteration {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        /* Variable Bounds Indicator */
+        .var-bounds {
+            display: inline-block;
+            font-size: 10px;
+            color: var(--vscode-debugTokenExpression-number);
+            margin-left: 8px;
+            font-style: italic;
+        }
+        
+        /* Breakpoint indicator */
+        .constraint.has-breakpoint {
+            border-left: 3px solid #f44336;
+        }
+        .breakpoint-toggle {
+            cursor: pointer;
+            color: var(--vscode-descriptionForeground);
+            opacity: 0.3;
+            margin-right: 4px;
+            font-size: 10px;
+        }
+        .breakpoint-toggle:hover {
+            opacity: 0.8;
+            color: #f44336;
+        }
+        .breakpoint-toggle.active {
+            opacity: 1;
+            color: #f44336;
+        }
+        
+        /* Call Stack */
+        .callstack-section { margin-bottom: 12px; }
+        .callstack-frame {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .callstack-frame:last-child { border-bottom: none; }
+        .frame-type {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+        .frame-type.k-constraint { background: #9c27b0; color: white; }
+        .frame-type.java { background: #b07219; color: white; }
+        .frame-type.python { background: #3572A5; color: white; }
+        .frame-name { flex: 1; }
+        .frame-location { 
+            color: var(--vscode-descriptionForeground); 
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -951,6 +1317,12 @@ export class KDebugPanel {
             <div class="status-bar ${session.status}">
                 <strong>${session.status.toUpperCase()}</strong>
                 ${session.message ? `<span>${this.escapeHtml(session.message)}</span>` : ''}
+                <span style="flex:1"></span>
+                <label class="auto-solve-toggle">
+                    <input type="checkbox" id="autoSolveCheck" onchange="toggleAutoSolve(this.checked)"
+                           ${this.isAutoSolveEnabled() ? 'checked' : ''}>
+                    Auto-solve
+                </label>
             </div>
             
             ${unsatHtml}
@@ -970,6 +1342,10 @@ export class KDebugPanel {
             </div>
             
             ${externalFuncsHtml}
+            
+            ${this.getCegarHtml(session)}
+            
+            ${this.getOptimizationHtml(session)}
             
             <div class="section">
                 <h3>CONSTRAINTS</h3>
@@ -999,6 +1375,21 @@ export class KDebugPanel {
         function goToExternal(constraintIdx, callIdx) {
             vscode.postMessage({ type: 'goToExternal', constraintIndex: constraintIdx, callIndex: callIdx });
         }
+        function toggleAutoSolve(enabled) {
+            vscode.postMessage({ type: 'toggleAutoSolve', enabled: enabled });
+        }
+        // Breakpoint support
+        function toggleBreakpoint(constraintId) {
+            vscode.postMessage({ type: 'toggleBreakpoint', constraintId: constraintId });
+        }
+        // CEGAR details
+        function showCegarDetails(iterationIndex) {
+            vscode.postMessage({ type: 'showCegarDetails', iterationIndex: iterationIndex });
+        }
+        // Variable bounds query
+        function queryBounds(variableName) {
+            vscode.postMessage({ type: 'queryBounds', variableName: variableName });
+        }
     </script>
 </body>
 </html>`;
@@ -1010,6 +1401,121 @@ export class KDebugPanel {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    /**
+     * Generate HTML for CEGAR iterations display
+     */
+    private getCegarHtml(session: KDebugSession | undefined): string {
+        if (!session || session.cegarIterations.length === 0) {
+            return '';
+        }
+
+        const iterationsHtml = session.cegarIterations.map((iter, idx) => {
+            const statusIcon = {
+                'started': '🔄',
+                'candidate': '💡',
+                'counterexample': '❌',
+                'refined': '🔧',
+                'verified': '✅'
+            }[iter.status] || '❓';
+
+            const detailsHtml = [];
+            if (iter.externalFunction) {
+                detailsHtml.push(`<span class="cegar-func">${this.escapeHtml(iter.externalFunction)}</span>`);
+            }
+            if (iter.expectedValue && iter.actualValue) {
+                detailsHtml.push(`<span class="cegar-mismatch">expected ${this.escapeHtml(iter.expectedValue)}, got ${this.escapeHtml(iter.actualValue)}</span>`);
+            }
+            if (iter.refinementConstraint) {
+                detailsHtml.push(`<code class="cegar-constraint">${this.escapeHtml(iter.refinementConstraint)}</code>`);
+            }
+
+            return `
+                <div class="cegar-iteration ${iter.status} ${idx === session.currentCegarIteration ? 'current' : ''}"
+                     onclick="showCegarDetails(${idx})">
+                    <span class="cegar-icon">${statusIcon}</span>
+                    <span class="cegar-num">#${iter.iteration}</span>
+                    <span class="cegar-status">${iter.status}</span>
+                    ${detailsHtml.length > 0 ? `<div class="cegar-details">${detailsHtml.join(' ')}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="section cegar-section">
+                <h3>🔄 CEGAR ITERATIONS <span class="count">(${session.cegarIterations.length})</span></h3>
+                <div class="cegar-list">${iterationsHtml}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Generate HTML for optimization progress display
+     */
+    private getOptimizationHtml(session: KDebugSession | undefined): string {
+        if (!session?.optimizationProgress) {
+            return '';
+        }
+
+        const opt = session.optimizationProgress;
+        const statusIcon = {
+            'running': '⏳',
+            'optimal': '🏆',
+            'timeout': '⏱️',
+            'infeasible': '❌'
+        }[opt.status] || '❓';
+
+        const boundsHtml = [];
+        if (opt.lowerBound) boundsHtml.push(`Lower: ${this.escapeHtml(opt.lowerBound)}`);
+        if (opt.upperBound) boundsHtml.push(`Upper: ${this.escapeHtml(opt.upperBound)}`);
+        if (opt.gap !== undefined) boundsHtml.push(`Gap: ${(opt.gap * 100).toFixed(2)}%`);
+
+        return `
+            <div class="section optimization-section">
+                <h3>📈 OPTIMIZATION</h3>
+                <div class="optimization-info">
+                    <div class="opt-status">
+                        <span class="opt-icon">${statusIcon}</span>
+                        <span class="opt-objective">${this.escapeHtml(opt.objectiveName)}</span>
+                        <span class="opt-status-text">${opt.status}</span>
+                    </div>
+                    <div class="opt-values">
+                        ${opt.currentValue ? `<div class="opt-current">Current: <strong>${this.escapeHtml(opt.currentValue)}</strong></div>` : ''}
+                        ${opt.bestValue ? `<div class="opt-best">Best: <strong>${this.escapeHtml(opt.bestValue)}</strong></div>` : ''}
+                    </div>
+                    ${boundsHtml.length > 0 ? `<div class="opt-bounds">${boundsHtml.join(' | ')}</div>` : ''}
+                    <div class="opt-iteration">Iteration: ${opt.iteration}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Filter to show only top-level objects (not those that are referenced by other objects)
+     * This avoids showing the same object twice - once as a nested ref and once standalone
+     */
+    private filterTopLevelObjects(objects: SolutionObject[]): SolutionObject[] {
+        // Collect all refs that are referenced by other objects
+        const referencedRefs = new Set<string>();
+        for (const obj of objects) {
+            for (const value of Object.values(obj.properties)) {
+                const refMatch = value.match(/^Ref (\d+)$/);
+                if (refMatch) {
+                    referencedRefs.add(value);
+                }
+            }
+        }
+
+        // Return objects that are either:
+        // 1. Named top-level variables, OR
+        // 2. Not referenced by any other object (likely the "root" objects)
+        return objects.filter(obj => {
+            // Always show named variables
+            if (obj.varName) return true;
+            // Show objects that aren't nested in another object
+            return !referencedRefs.has(obj.ref || '');
+        });
     }
 
     // ========================================================================
@@ -1134,11 +1640,11 @@ export class KDebugPanel {
 
     /**
      * Step into an external Java function
-     * Launches the VS Code Java debugger and sets a breakpoint
+     * Launches K with Java debug agent and attaches VS Code debugger
      */
     public async stepIntoJavaFunction(func: ExternalFunction): Promise<void> {
-        if (func.language !== 'java' || !func.sourceFile) {
-            vscode.window.showErrorMessage('Cannot find Java source file for ' + func.name);
+        if (func.language !== 'java') {
+            vscode.window.showErrorMessage('This is not a Java function');
             return;
         }
 
@@ -1155,64 +1661,47 @@ export class KDebugPanel {
             return;
         }
 
-        // Open the source file
-        const doc = await vscode.workspace.openTextDocument(func.sourceFile);
-        const editor = await vscode.window.showTextDocument(doc);
+        const session = this.getActiveSession();
+        if (!session) return;
 
-        // Find the method line and set a breakpoint
-        if (func.methodName) {
-            const methodLine = this.findMethodLine(doc, func.methodName);
-            if (methodLine !== undefined) {
-                // Add breakpoint
-                const bp = new vscode.SourceBreakpoint(
-                    new vscode.Location(doc.uri, new vscode.Position(methodLine, 0))
-                );
-                vscode.debug.addBreakpoints([bp]);
+        // Open source file and set breakpoint if we can find it
+        if (func.sourceFile) {
+            const doc = await vscode.workspace.openTextDocument(func.sourceFile);
+            const editor = await vscode.window.showTextDocument(doc);
 
-                // Scroll to method
-                editor.revealRange(new vscode.Range(methodLine, 0, methodLine + 10, 0));
+            if (func.methodName) {
+                const methodLine = this.findMethodLine(doc, func.methodName);
+                if (methodLine !== undefined) {
+                    // Add breakpoint
+                    const bp = new vscode.SourceBreakpoint(
+                        new vscode.Location(doc.uri, new vscode.Position(methodLine, 0))
+                    );
+                    vscode.debug.addBreakpoints([bp]);
+                    editor.revealRange(new vscode.Range(methodLine, 0, methodLine + 10, 0));
+                    vscode.window.showInformationMessage(`Breakpoint set at ${func.name}.${func.methodName}()`);
+                }
             }
         }
 
-        // Create debug configuration for Java
-        const debugConfig: vscode.DebugConfiguration = {
-            type: 'java',
-            name: 'K Debug - Java',
-            request: 'attach',
-            hostName: 'localhost',
-            port: 5005, // Standard Java debug port
-            projectName: path.basename(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '')
-        };
-
-        // Show info about connecting
-        vscode.window.showInformationMessage(
-            'To debug Java code, ensure your K application is running with: ' +
-            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-        );
-
-        // Start debug session
-        const session = this.getActiveSession();
-        if (session) {
-            try {
-                const started = await vscode.debug.startDebugging(
-                    vscode.workspace.workspaceFolders?.[0],
-                    debugConfig
-                );
-                if (started) {
-                    session.javaDebugSession = vscode.debug.activeDebugSession;
-                }
-            } catch (error) {
-                console.error('Failed to start Java debugger:', error);
-            }
+        // Start K with Java debug agent
+        const runDebugCommand = 'k.runWithJavaDebug';
+        try {
+            await vscode.commands.executeCommand(runDebugCommand);
+        } catch (error) {
+            // Manual instructions if the command fails
+            vscode.window.showInformationMessage(
+                'To debug Java code, run K with: JAVA_TOOL_OPTIONS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" ./export/k yourfile.k'
+            );
         }
     }
 
     /**
      * Step into an external Python function
+     * Uses Py4J bridge with debugpy for debugging
      */
     public async stepIntoPythonFunction(func: ExternalFunction): Promise<void> {
-        if (func.language !== 'python' || !func.sourceFile) {
-            vscode.window.showErrorMessage('Cannot find Python source file for ' + func.name);
+        if (func.language !== 'python') {
+            vscode.window.showErrorMessage('This is not a Python function');
             return;
         }
 
@@ -1229,51 +1718,34 @@ export class KDebugPanel {
             return;
         }
 
-        // Open the source file
-        const doc = await vscode.workspace.openTextDocument(func.sourceFile);
-        const editor = await vscode.window.showTextDocument(doc);
+        // Open source file and set breakpoint if we can find it
+        if (func.sourceFile) {
+            const doc = await vscode.workspace.openTextDocument(func.sourceFile);
+            const editor = await vscode.window.showTextDocument(doc);
 
-        // Find the function and set a breakpoint
-        if (func.methodName) {
-            const funcLine = this.findPythonFunctionLine(doc, func.methodName);
-            if (funcLine !== undefined) {
-                const bp = new vscode.SourceBreakpoint(
-                    new vscode.Location(doc.uri, new vscode.Position(funcLine, 0))
-                );
-                vscode.debug.addBreakpoints([bp]);
-                editor.revealRange(new vscode.Range(funcLine, 0, funcLine + 10, 0));
+            if (func.methodName) {
+                const funcLine = this.findPythonFunctionLine(doc, func.methodName);
+                if (funcLine !== undefined) {
+                    const bp = new vscode.SourceBreakpoint(
+                        new vscode.Location(doc.uri, new vscode.Position(funcLine, 0))
+                    );
+                    vscode.debug.addBreakpoints([bp]);
+                    editor.revealRange(new vscode.Range(funcLine, 0, funcLine + 10, 0));
+                    vscode.window.showInformationMessage(`Breakpoint set at ${func.name}.${func.methodName}()`);
+                }
             }
         }
 
-        // Create debug configuration for Python
-        const debugConfig: vscode.DebugConfiguration = {
-            type: 'python',
-            name: 'K Debug - Python',
-            request: 'attach',
-            connect: {
-                host: 'localhost',
-                port: 5678 // Standard debugpy port
-            }
-        };
-
-        vscode.window.showInformationMessage(
-            'To debug Python code, ensure your K application is running with debugpy: ' +
-            'python -m debugpy --listen 5678 --wait-for-client your_script.py'
-        );
-
-        const session = this.getActiveSession();
-        if (session) {
-            try {
-                const started = await vscode.debug.startDebugging(
-                    vscode.workspace.workspaceFolders?.[0],
-                    debugConfig
-                );
-                if (started) {
-                    session.pythonDebugSession = vscode.debug.activeDebugSession;
-                }
-            } catch (error) {
-                console.error('Failed to start Python debugger:', error);
-            }
+        // Start K with Python debug enabled (uses Py4J bridge with debugpy)
+        try {
+            await vscode.commands.executeCommand('k.runWithPythonDebug');
+        } catch (error) {
+            vscode.window.showInformationMessage(
+                'To debug Python functions:\n' +
+                '1. Install: pip install py4j debugpy\n' +
+                '2. Run K with K_PYTHON_DEBUG=1\n' +
+                '3. Attach VS Code to localhost:5678'
+            );
         }
     }
 

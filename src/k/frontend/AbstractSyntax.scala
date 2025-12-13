@@ -152,6 +152,7 @@ object UtilSMT {
     createdLocals = Set()
     externalFuncDecls = Set()
     ExternalFunctions.reset()
+    PythonExternalFunctions.reset()
   }
 
   def error(msg: String) = {
@@ -314,6 +315,23 @@ object UtilSMT {
       case Some(qname) => ExternalFunctions.isExternalReference(qname)
       case None => false
     }
+  }
+
+  /**
+   * Check if an expression represents a Python external function call
+   */
+  def isPythonExternalCall(exp: Exp): Boolean = {
+    extractQualifiedName(exp) match {
+      case Some(qname) => PythonExternalFunctions.isPythonReference(qname)
+      case None => false
+    }
+  }
+
+  /**
+   * Check if an expression represents any external function call (Java or Python)
+   */
+  def isAnyExternalCall(exp: Exp): Boolean = {
+    isExternalCall(exp) || isPythonExternalCall(exp)
   }
 
   /** Set of external function declarations for SMT */
@@ -1277,16 +1295,32 @@ case class QualifiedName(names: List[String]) {
    }
  }
 
-case class ImportDecl(name: QualifiedName, star: Boolean) {
+/** Language specifier for imports */
+sealed trait ImportLanguage
+case object JavaImport extends ImportLanguage
+case object PythonImport extends ImportLanguage
+case object DefaultImport extends ImportLanguage  // Defaults to Java for backward compatibility
+
+case class ImportDecl(name: QualifiedName, star: Boolean, language: ImportLanguage = DefaultImport) {
   def toStringNoImport = name + (if (star) ".*" else "")
-  override def toString =
-    "import " + toStringNoImport
+  override def toString = language match {
+    case JavaImport => "import java " + toStringNoImport
+    case PythonImport => "import python " + toStringNoImport
+    case DefaultImport => "import " + toStringNoImport
+  }
+
+  /** Check if this is a Python import */
+  def isPython: Boolean = language == PythonImport
+
+  /** Check if this is a Java import (explicit or default) */
+  def isJava: Boolean = language == JavaImport || language == DefaultImport
 
   def toJson: JSONObject = {
     val importdecl = new JSONObject()
     importdecl.put("type", "ImportDecl")
     importdecl.put("name", name.toJson)
     importdecl.put("star", star.toString)
+    importdecl.put("language", language.toString)
   }
 
 }
@@ -2986,6 +3020,71 @@ trait CallApplExp extends Exp {
         } else {
           return s"($smtFuncName $argsSMT)"
         }
+
+      case Some(qualifiedName) if PythonExternalFunctions.isPythonReference(qualifiedName) =>
+        // This is an external Python function call
+        // Try to evaluate concretely if all arguments are literals
+        val concreteArgs = args.flatMap {
+          case PositionalArgument(IntegerLiteral(v)) => Some(v.toInt)
+          case PositionalArgument(RealLiteral(v)) => Some(v.doubleValue())
+          case PositionalArgument(StringLiteral(v)) => Some(v)
+          case PositionalArgument(BooleanLiteral(v)) => Some(v)
+          case _ => None
+        }
+
+        if (concreteArgs.length == args.length) {
+          // All arguments are concrete - try to evaluate via Python
+          PythonExternalFunctions.tryEvaluate(qualifiedName, concreteArgs) match {
+            case Some(result: Int) => return result.toString
+            case Some(result: Long) => return result.toString
+            case Some(result: Double) =>
+              if (result == result.toLong) return s"${result.toLong}.0"
+              else return result.toString
+            case Some(result: Float) => return result.toString
+            case Some(result: Boolean) => return result.toString
+            case Some(result: String) => return s""""$result""""
+            case Some(result) => return result.toString
+            case None =>
+              // Evaluation failed - fall through to uninterpreted function
+          }
+        }
+
+        // Use uninterpreted function for Python call (same as Java)
+        val smtFuncName = "py_" + qualifiedName.replace(".", "_")
+
+        // Determine argument and return sorts
+        val argSorts = args.map(_ => "Real").mkString(" ")
+        val returnSort = "Real"
+
+        // Declare the uninterpreted function
+        val declStr = if (args.isEmpty) {
+          s"(declare-const $smtFuncName $returnSort)"
+        } else {
+          s"(declare-fun $smtFuncName ($argSorts) $returnSort)"
+        }
+        UtilSMT.addExternalFuncDecl(declStr)
+
+        // Register for CEGAR verification (using Python evaluator)
+        val argVarNames = args.zipWithIndex.map { case (arg, i) =>
+          arg match {
+            case PositionalArgument(IdentExp(name)) => name
+            case _ => s"_arg_${smtFuncName}_$i"
+          }
+        }
+        // Register with the Java ExternalFunctions but mark as Python
+        ExternalFunctions.registerExternalCall(smtFuncName, "python:" + qualifiedName, argVarNames)
+        if (K2Z3.debug) {
+          println(s"[DEBUG] Registered Python external call: $qualifiedName as $smtFuncName with args: ${argVarNames.mkString(", ")}")
+        }
+
+        // Generate function application
+        val argsSMT = args.map(_.toSMT(className, subTyping)).mkString(" ")
+        if (args.isEmpty) {
+          return smtFuncName
+        } else {
+          return s"($smtFuncName $argsSMT)"
+        }
+
       case _ =>
         // Not an external call, continue with regular handling
     }
@@ -5482,6 +5581,21 @@ case class ExternalType(qualifiedName: String) extends Type {
   override def toString = s"External($qualifiedName)"
   override def toJson1 = {
     new JSONObject().put("type", "ExternalType").put("qualifiedName", qualifiedName)
+  }
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", qualifiedName)
+  }
+}
+
+/**
+ * Represents an external Python type for module paths like "math" or "numpy.linalg"
+ * Used during type checking to track Python external references.
+ */
+case class PythonExternalType(qualifiedName: String) extends Type {
+  override def toSMT: String = "Real"  // Python external functions return Real by default
+  override def toString = s"PythonExternal($qualifiedName)"
+  override def toJson1 = {
+    new JSONObject().put("type", "PythonExternalType").put("qualifiedName", qualifiedName)
   }
   override def toJson2 = {
     new JSONObject().put("type", "ElementValue").put("element", qualifiedName)

@@ -350,11 +350,21 @@ object ExternalFunctions {
    * Returns either None (all verified) or Some(constraints) for refinement.
    *
    * @param getVarValue Function to extract variable value from Z3 model
+   * @param iteration Current CEGAR iteration (for progress reporting)
    * @return None if all external calls verified, Some(list of refinement constraints) otherwise
    */
-  def verifyAndRefine(getVarValue: String => Option[Any]): Option[List[String]] = {
+  def verifyAndRefine(getVarValue: String => Option[Any], iteration: Int = 0): Option[List[String]] = {
     var refinements: List[String] = Nil
     var allVerified = true
+
+    // Report CEGAR iteration start
+    SolverProgress.cegarStart(iteration)
+
+    // Build current solution map for progress reporting
+    val solutionMap = externalCallsInModel.flatMap { case (_, info) =>
+      info.argVarNames.flatMap { v => getVarValue(v).map(value => v -> value.toString) }
+    }.toMap
+    SolverProgress.cegarCandidate(iteration, solutionMap)
 
     for ((smtFuncName, callInfo) <- externalCallsInModel) {
       // Try to get concrete values for arguments
@@ -382,6 +392,9 @@ object ExternalFunctions {
               println(s"[CEGAR] Verified: ${callInfo.qualifiedName}(${concreteArgs.mkString(", ")}) = $actualResult")
             }
 
+            // Report refinement to progress tracker
+            SolverProgress.cegarRefinement(iteration, refinement)
+
           case None =>
             if (logCalls) {
               println(s"[CEGAR] Could not evaluate: ${callInfo.qualifiedName}(${concreteArgs.mkString(", ")})")
@@ -390,7 +403,12 @@ object ExternalFunctions {
       }
     }
 
-    if (refinements.isEmpty) None else Some(refinements)
+    if (refinements.isEmpty) {
+      SolverProgress.cegarVerified(iteration)
+      None
+    } else {
+      Some(refinements)
+    }
   }
 
   /**

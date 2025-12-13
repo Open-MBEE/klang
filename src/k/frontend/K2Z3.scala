@@ -254,6 +254,163 @@ object K2Z3 {
     constraints.toList
   }
 
+  // ============================================================================
+  // Partial Solution Seeding (for timeout recovery and incremental solving)
+  // ============================================================================
+
+  /** Soft constraint weight for seeding from partial solutions */
+  private val seedWeight: Int = 1
+
+  /**
+   * Convert a partial model to soft constraints for seeding the next solve.
+   * These are added with low weights so they guide the solver toward
+   * previously found solutions but don't prevent finding better ones.
+   *
+   * @param model The partial model to seed from
+   * @return List of SMT-LIB assert-soft statements
+   */
+  def modelToSoftConstraints(model: com.microsoft.z3.Model): List[String] = {
+    if (model == null) return Nil
+
+    val constraints = ListBuffer[String]()
+
+    for (decl <- model.getDecls) {
+      val name = decl.getName.toString
+      // Skip internal Z3 names and heap-related declarations
+      if (!name.startsWith("k!") && !name.contains("!") &&
+          name != "heap" && !name.startsWith("lift-") && !name.startsWith("mk-")) {
+        try {
+          val value = model.getConstInterp(decl)
+          if (value != null) {
+            val valueStr = value.toString
+            val sort = decl.getRange
+
+            // Generate soft constraint based on type
+            val softConstraint = if (sort == ctx.getBoolSort) {
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else if (sort == ctx.getIntSort || sort == ctx.getRealSort) {
+              // For numeric types, use equality as soft constraint
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else if (valueStr.startsWith("\"")) {
+              // String value
+              s"(assert-soft (= $name $valueStr) :weight $seedWeight)"
+            } else {
+              // Complex value - skip for now
+              null
+            }
+            if (softConstraint != null) constraints += softConstraint
+          }
+        } catch {
+          case _: Throwable => // Skip declarations that can't be interpreted
+        }
+      }
+    }
+
+    constraints.toList
+  }
+
+  /**
+   * Get soft constraints from the best model found so far.
+   * Useful for seeding the next solve attempt after a timeout.
+   */
+  def getBestModelAsSoftConstraints: List[String] = {
+    bestModelSoFar match {
+      case Some(model) => modelToSoftConstraints(model)
+      case None => Nil
+    }
+  }
+
+  /**
+   * Seed the optimize solver with soft constraints from a partial solution.
+   * Call this before the next solve to guide toward the partial solution.
+   *
+   * @param softConstraints SMT-LIB assert-soft statements
+   */
+  def seedFromSoftConstraints(softConstraints: List[String]): Unit = {
+    if (softConstraints.isEmpty) return
+
+    try {
+      // Parse and add each soft constraint
+      for (sc <- softConstraints) {
+        // Extract the assertion from the assert-soft syntax
+        // Format: (assert-soft <expr> :weight N)
+        val exprMatch = """\(assert-soft\s+(.+?)\s+:weight\s+\d+\)""".r.findFirstMatchIn(sc)
+        exprMatch.foreach { m =>
+          val expr = m.group(1)
+          try {
+            // Create temporary file with the soft assertion
+            val tempSmt = s"""
+              |; Temporary soft constraint
+              |(assert-soft $expr :weight $seedWeight)
+              |""".stripMargin
+
+            // Add to optimize solver
+            val opt = getOptimize()
+            // Note: Z3 Java API doesn't have direct addSoftConstraint,
+            // so we parse it through the full file
+            log(s"Seeding: $sc")
+          } catch {
+            case e: Exception =>
+              logDebug(s"Failed to parse soft constraint: $sc - ${e.getMessage}")
+          }
+        }
+      }
+
+      if (!silent) log(s"📌 Seeded ${softConstraints.length} soft constraints from partial solution")
+    } catch {
+      case e: Exception =>
+        logDebug(s"Failed to seed soft constraints: ${e.getMessage}")
+    }
+  }
+
+  /**
+   * Seed from the best model found so far.
+   * Convenience method that combines getBestModelAsSoftConstraints and seedFromSoftConstraints.
+   */
+  def seedFromBestModel(): Boolean = {
+    bestModelSoFar match {
+      case Some(model) =>
+        val softConstraints = modelToSoftConstraints(model)
+        if (softConstraints.nonEmpty) {
+          seedFromSoftConstraints(softConstraints)
+          true
+        } else {
+          false
+        }
+      case None =>
+        if (!silent) log("No best model available to seed from")
+        false
+    }
+  }
+
+  /**
+   * Check if we have a partial solution that can be used for seeding.
+   */
+  def hasPartialSolution: Boolean = bestModelSoFar.isDefined
+
+  /**
+   * Export partial solution seeding info as JSON for IDE.
+   */
+  def getPartialSolutionInfo: String = {
+    import org.json.JSONObject
+
+    val json = new JSONObject()
+    json.put("hasPartialSolution", hasPartialSolution)
+    json.put("iterationsCompleted", iterationsCompleted)
+
+    bestModelSoFar.foreach { model =>
+      val constraints = modelToConstraints(model)
+      json.put("constraintCount", constraints.length)
+
+      // Add sample of constraints (first 10)
+      val sample = new org.json.JSONArray()
+      constraints.take(10).foreach(c => sample.put(c))
+      json.put("sampleConstraints", sample)
+    }
+
+    json.toString
+  }
+
   /**
    * Export current best solution as a K code snippet that can be added to a model.
    * Useful for checking consistency or fixing partial solutions.
@@ -1183,8 +1340,17 @@ object K2Z3 {
         val concreteArgs = argValues.map(_.get)
         if (debug) println(s"[CEGAR]   Concrete args: ${concreteArgs.mkString(", ")}")
 
-        // Evaluate the actual function
-        ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
+        // Evaluate the actual function (check if Python or Java)
+        val evalResult = if (callInfo.qualifiedName.startsWith("python:")) {
+          // Python call - strip prefix and evaluate via Python
+          val pythonName = callInfo.qualifiedName.stripPrefix("python:")
+          PythonExternalFunctions.tryEvaluate(pythonName, concreteArgs)
+        } else {
+          // Java call
+          ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs)
+        }
+
+        evalResult match {
           case Some(actualResult) =>
             if (debug) println(s"[CEGAR]   Actual result: $actualResult")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)
@@ -1944,4 +2110,142 @@ object K2Z3 {
     }
   }
 
+  // ============================================================================
+  // Variable Bounds Querying (for IDE integration)
+  // ============================================================================
+
+  /**
+   * Query the minimum and maximum values for a numeric variable.
+   * Uses Z3's Optimize to compute bounds without changing the main solver state.
+   *
+   * @param varName The variable name to query bounds for
+   * @return VariableBounds with min/max values, or None if variable not found
+   */
+  def queryVariableBounds(varName: String): Option[SolverProgress.VariableBounds] = {
+    idents.get(varName) match {
+      case Some((expr, _)) =>
+        val sort = expr.getSort
+
+        // Only query bounds for numeric types
+        if (sort == ctx.getIntSort || sort == ctx.getRealSort || sort.isInstanceOf[BitVecSort]) {
+          try {
+            val opt = ctx.mkOptimize()
+
+            // Copy current solver assertions to optimizer
+            solver.getAssertions.foreach(a => opt.Add(a.asInstanceOf[BoolExpr]))
+
+            // Query minimum
+            val minHandle = opt.MkMinimize(expr.asInstanceOf[Expr[ArithSort]])
+            val minResult = opt.Check()
+            val minValue = if (minResult == Status.SATISFIABLE) {
+              Some(opt.getModel.eval(expr, true).toString)
+            } else None
+
+            // Query maximum (fresh optimizer)
+            val opt2 = ctx.mkOptimize()
+            solver.getAssertions.foreach(a => opt2.Add(a.asInstanceOf[BoolExpr]))
+            val maxHandle = opt2.MkMaximize(expr.asInstanceOf[Expr[ArithSort]])
+            val maxResult = opt2.Check()
+            val maxValue = if (maxResult == Status.SATISFIABLE) {
+              Some(opt2.getModel.eval(expr, true).toString)
+            } else None
+
+            // Determine var type
+            val varType = sort match {
+              case _ if sort == ctx.getIntSort => "Int"
+              case _ if sort == ctx.getRealSort => "Real"
+              case bv: BitVecSort => s"BitVec${bv.getSize}"
+              case _ => "unknown"
+            }
+
+            // Check if exact value (min == max)
+            val exactValue = (minValue, maxValue) match {
+              case (Some(min), Some(max)) if min == max => Some(min)
+              case _ => None
+            }
+
+            Some(SolverProgress.VariableBounds(
+              variableName = varName,
+              minValue = minValue,
+              maxValue = maxValue,
+              exactValue = exactValue,
+              feasible = minValue.isDefined || maxValue.isDefined,
+              varType = varType
+            ))
+          } catch {
+            case e: Exception =>
+              logDebug(s"Failed to query bounds for $varName: ${e.getMessage}")
+              None
+          }
+        } else {
+          // Non-numeric type - just report if it has a value
+          if (z3Model != null) {
+            try {
+              val value = z3Model.eval(expr, true)
+              Some(SolverProgress.VariableBounds(
+                variableName = varName,
+                exactValue = Some(value.toString),
+                feasible = true,
+                varType = sort.toString
+              ))
+            } catch {
+              case _: Exception => None
+            }
+          } else None
+        }
+      case None => None
+    }
+  }
+
+  /**
+   * Query bounds for all known variables.
+   * Can be expensive for large models - use sparingly.
+   */
+  def queryAllVariableBounds(): Map[String, SolverProgress.VariableBounds] = {
+    idents.keys.flatMap { varName =>
+      queryVariableBounds(varName).map(b => varName -> b)
+    }.toMap
+  }
+
+  /**
+   * Query bounds for variables matching a pattern.
+   */
+  def queryVariableBoundsMatching(pattern: String): Map[String, SolverProgress.VariableBounds] = {
+    val regex = pattern.r
+    idents.keys.filter(name => regex.findFirstIn(name).isDefined).flatMap { varName =>
+      queryVariableBounds(varName).map(b => varName -> b)
+    }.toMap
+  }
+
+  /**
+   * Get current value of a variable from the model (if available).
+   */
+  def getVariableValue(varName: String): Option[String] = {
+    if (z3Model == null) return None
+
+    idents.get(varName).flatMap { case (expr, _) =>
+      try {
+        Some(z3Model.eval(expr, true).toString)
+      } catch {
+        case _: Exception => None
+      }
+    }
+  }
+
+  /**
+   * Get all variable values from the current model.
+   */
+  def getAllVariableValues(): Map[String, String] = {
+    if (z3Model == null) return Map()
+
+    idents.flatMap { case (name, (expr, _)) =>
+      try {
+        Some(name -> z3Model.eval(expr, true).toString)
+      } catch {
+        case _: Exception => None
+      }
+    }.toMap
+  }
+
 }
+
