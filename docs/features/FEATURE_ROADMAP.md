@@ -22,6 +22,8 @@ This document tracks features that are missing or incomplete in K relative to SM
 | Regular Expressions | Regex | `.matches()` | Via string theory |
 | Optimization | Optimize | `@soft`, `@minimize` | Soft constraints |
 | Time/Duration | - | `Time`, `Duration` | K-specific types |
+| **Bit Vectors** | QF_BV | `Int8`, `Int16`, `Int32`, `Int64`, `UInt8`, `UInt16`, `UInt32`, `UInt64` | **NEW** - Full SMT conversion support |
+| **Type Conversions** | - | `x as Type` | **NEW** - Bitvector↔Int↔Real conversions |
 
 ### ⚠️ Partially Supported Features
 
@@ -35,7 +37,6 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | SMT Theory | Priority | Complexity | Notes |
 |---------|-----------|----------|------------|-------|
-| **Bit Vectors** | QF_BV | High | Medium | Hardware modeling, binary protocols |
 | **IEEE Floating Point** | QF_FP | Medium | High | Overflow, NaN, rounding modes |
 | **Arrays (direct)** | QF_A | Low | Medium | Currently only used internally |
 
@@ -347,111 +348,70 @@ K has a type cast operator:
 value as Type
 ```
 
-**Current Implementation:**
+**Current Implementation (December 2025):**
 - Grammar: `expression 'as' type` → `TypeCastExp`
 - AST: Creates `TypeCastCheckExp(cast=true, exp, ty)`
-- TypeChecker: Simply returns target type (no validation!)
-- SMT Backend: **NOT IMPLEMENTED** - casts are ignored!
+- TypeChecker: Returns target type
+- SMT Backend: ✅ **FULLY IMPLEMENTED** for numeric types
 
-### Issues with Current System
+### Supported Type Conversions
 
-1. **No SMT conversion for casts**: The `as` operator is parsed but doesn't generate SMT conversion functions like `int2bv`, `bv2int`, `to_fp`, etc.
+| Source Type | Target Type | SMT Function | Notes |
+|-------------|-------------|--------------|-------|
+| Int → SignedIntType(N) | `((_ int2bv N) x)` | N = 8, 16, 32, 64 |
+| Int → UnsignedIntType(N) | `((_ int2bv N) x)` | N = 8, 16, 32, 64 |
+| SignedIntType(N) → Int | `(ite (bvslt x 0) (- (bv2int x) 2^N) (bv2int x))` | Signed interpretation |
+| UnsignedIntType(N) → Int | `(bv2int x)` | Unsigned interpretation |
+| Int → Real | `(to_real x)` | Exact |
+| Real → Int | `(to_int x)` | Truncates toward zero |
+| SignedIntType(N) → Real | `(ite sign-bit (to_real (- (bv2int (bvneg x)))) (to_real (bv2int x)))` | Signed value to Real |
+| UnsignedIntType(N) → Real | `(to_real (bv2int x))` | Unsigned value to Real |
+| Real → SignedIntType(N) | `((_ int2bv N) (to_int x))` | Truncates to bitvector |
+| Real → UnsignedIntType(N) | `((_ int2bv N) (to_int x))` | Truncates to bitvector |
+| Float → Real | `(fp.to_real x)` | IEEE FP to exact |
+| Real → Float | `((_ to_fp E S) RNE x)` | Real to IEEE FP |
 
-2. **Inconsistent with programming languages**: Most languages have clear widening/narrowing rules. K's compatibility is symmetric (Int↔BitVec) which is unusual.
+### Bitvector Width Conversions
 
-3. **No width checking on narrowing**: `x as Int8` when `x : Int` might overflow - this should be constrained.
+| Conversion | SMT Function | Notes |
+|------------|--------------|-------|
+| Signed narrow → wide | `((_ sign_extend N) x)` | Preserves sign |
+| Unsigned narrow → wide | `((_ zero_extend N) x)` | Zero pads |
+| Wide → narrow | `((_ extract M 0) x)` | Keeps lower bits |
+| Signed ↔ Unsigned (same width) | identity | Just reinterprets bits |
 
-4. **No Int↔Real conversion**: Unlike most languages, K doesn't implicitly convert `Int` to `Real` in mixed expressions.
-
-### Proposed Improvements
-
-#### Option A: Explicit-Only (Rust-like)
-All conversions require explicit casts. Simple but verbose.
-
-```k
-value : Int32 = 42 as Int32        // Required
-mixed : Real = (x as Real) + 1.5   // Required
-```
-
-#### Option B: Safe Widening (Java/Scala-like)
-Allow implicit widening, require explicit narrowing.
-
-**Safe widening (implicit):**
-- `Int8 → Int16 → Int32 → Int64 → Int`
-- `UInt8 → UInt16 → UInt32 → UInt64`
-- `Float32 → Float64 → Real`
-- `Int → Real` (integers can become rationals)
-
-**Narrowing (explicit cast required):**
-- `Int → Int32` (might overflow)
-- `Real → Float64` (might lose precision)
-- `Int64 → Int8` (truncation)
+### Example Usage
 
 ```k
-x : Int8 = 100
-y : Int32 = x         // OK: widening
-z : Int8 = y as Int8  // Required: narrowing
+class TypeConversions {
+  // Signed bitvector to Real
+  x: Int8 = 0x80          // -128 in signed interpretation
+  y: Real = x as Real     // y = -128.0 ✓
 
-a : Int = 42
-b : Real = a          // OK: Int can become Real
-c : Int = b as Int    // Required: truncation
+  // Unsigned bitvector to Real  
+  a: UInt8 = 0x80         // 128 in unsigned interpretation
+  b: Real = a as Real     // b = 128.0 ✓
+
+  // Real to bitvector
+  r: Real = 42.7
+  i: Int8 = r as Int8     // i = 42 (truncated)
+
+  // Width conversions
+  small: Int8 = 0xFF
+  large: Int16 = small as Int16  // Sign-extended: 0xFFFF (-1)
+}
 ```
 
-#### Option C: Current K + Fixes
-Keep current symmetric compatibility but fix the SMT backend:
+### Regression Tests
 
-```k
-x : Int = 42
-y : BitVec[32] = x    // OK (current behavior)
+- [bitvector_width_conversions.k](../../src/tests/bitvector_width_conversions.k): Tests all width conversion scenarios
+- [bitvector_real_conversions.k](../../src/tests/bitvector_real_conversions.k): Tests bitvector ↔ Real conversions
 
-// When converting Int → BitVec[N], add SMT constraint:
-// (assert (and (>= x 0) (< x (^ 2 N))))  ; for unsigned
-// or use ((_ int2bv N) x)
+### Future Improvements
 
-z : Int = y as Int    // Should emit (bv2int y)
-```
+1. **Width checking on narrowing**: `x as Int8` when `x : Int` could optionally constrain values to fit in target type.
 
-### Required SMT Conversions
-
-For proper numeric conversion support, K2Z3 needs to implement:
-
-| Conversion | SMT Function |
-|-----------|--------------|
-| Int → BitVec[N] | `((_ int2bv N) x)` |
-| BitVec[N] → Int (unsigned) | `(bv2nat x)` |
-| BitVec[N] → Int (signed) | `(bv2int x)` |
-| Int → Real | `(to_real x)` |
-| Real → Int | `(to_int x)` (floor) |
-| Real → Float | `((_ to_fp E S) RNE x)` |
-| Float → Real | `(fp.to_real x)` |
-| BitVec → Float | `((_ to_fp E S) RNE x)` |
-| Float → BitVec | `(fp.to_sbv N RNE x)` |
-
-### Recommendation
-
-**Adopt Option B (Safe Widening)** for these reasons:
-
-1. **Familiar to most programmers** - matches Java, Scala, C#
-2. **Catches errors** - narrowing requires explicit acknowledgment  
-3. **Minimal verbosity** - safe operations "just work"
-4. **SMT-compatible** - Z3 has all needed conversion functions
-
-### Implementation Plan
-
-1. **Phase 1: Fix `as` operator** 
-   - Add `TypeCastCheckExp` handling to K2Z3
-   - Emit appropriate SMT conversion functions
-   - Add type compatibility validation for casts
-
-2. **Phase 2: Define widening hierarchy**
-   - Establish clear widening relationships in TypeChecker
-   - Add `isWideningConversion(from, to)` function
-   - Update `areTypesEqual` to use directional compatibility
-
-3. **Phase 3: Add conversion methods**
-   - `.toInt32()`, `.toInt64()`, etc. for explicit narrowing
-   - `.toReal()`, `.toFloat64()` for floating conversions
-   - These provide more clarity than `as` operator
+2. **Implicit widening support**: Could add automatic widening (Int8 → Int16 → Int32) without explicit casts.
 
 ---
 

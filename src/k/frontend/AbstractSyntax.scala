@@ -4150,7 +4150,67 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
         case (RealType, FloatType(ebits, sbits)) => s"((_ to_fp $ebits $sbits) RNE $expSMT)"
         // Float -> Real
         case (FloatType(_, _), RealType) => s"(fp.to_real $expSMT)"
-        // Same type - no conversion needed
+        // ========== Bitvector Width Conversions ==========
+        // SignedIntType -> SignedIntType (width change)
+        case (SignedIntType(fromWidth), SignedIntType(toWidth)) =>
+          if (fromWidth == toWidth) expSMT
+          else if (toWidth > fromWidth) {
+            // Widening: sign-extend
+            val extendBy = toWidth - fromWidth
+            s"((_ sign_extend $extendBy) $expSMT)"
+          } else {
+            // Narrowing: extract lower bits
+            s"((_ extract ${toWidth - 1} 0) $expSMT)"
+          }
+        // UnsignedIntType -> UnsignedIntType (width change)
+        case (UnsignedIntType(fromWidth), UnsignedIntType(toWidth)) =>
+          if (fromWidth == toWidth) expSMT
+          else if (toWidth > fromWidth) {
+            // Widening: zero-extend
+            val extendBy = toWidth - fromWidth
+            s"((_ zero_extend $extendBy) $expSMT)"
+          } else {
+            // Narrowing: extract lower bits
+            s"((_ extract ${toWidth - 1} 0) $expSMT)"
+          }
+        // SignedIntType -> UnsignedIntType
+        case (SignedIntType(fromWidth), UnsignedIntType(toWidth)) =>
+          if (fromWidth == toWidth) expSMT  // Same width: just reinterpret bits
+          else if (toWidth > fromWidth) {
+            // Widening: sign-extend first
+            val extendBy = toWidth - fromWidth
+            s"((_ sign_extend $extendBy) $expSMT)"
+          } else {
+            // Narrowing: extract lower bits
+            s"((_ extract ${toWidth - 1} 0) $expSMT)"
+          }
+        // UnsignedIntType -> SignedIntType
+        case (UnsignedIntType(fromWidth), SignedIntType(toWidth)) =>
+          if (fromWidth == toWidth) expSMT  // Same width: just reinterpret bits
+          else if (toWidth > fromWidth) {
+            // Widening: zero-extend first
+            val extendBy = toWidth - fromWidth
+            s"((_ zero_extend $extendBy) $expSMT)"
+          } else {
+            // Narrowing: extract lower bits
+            s"((_ extract ${toWidth - 1} 0) $expSMT)"
+          }
+        // ========== Bitvector <-> Real conversions ==========
+        // SignedIntType -> Real (via signed Int interpretation)
+        case (SignedIntType(width), RealType) =>
+          // Use bv2int with sign check for signed interpretation
+          val signBit = width - 1
+          s"(ite (= ((_ extract $signBit $signBit) $expSMT) #b1) (to_real (- (bv2int (bvneg $expSMT)))) (to_real (bv2int $expSMT)))"
+        // UnsignedIntType -> Real (via unsigned Int interpretation)
+        case (UnsignedIntType(_), RealType) =>
+          s"(to_real (bv2int $expSMT))"
+        // Real -> SignedIntType (via Int)
+        case (RealType, SignedIntType(width)) =>
+          s"((_ int2bv $width) (to_int $expSMT))"
+        // Real -> UnsignedIntType (via Int)
+        case (RealType, UnsignedIntType(width)) =>
+          s"((_ int2bv $width) (to_int $expSMT))"
+                // Same type - no conversion needed
         case (from, to) if from == to => expSMT
         // Default: just use the expression (types are compatible)
         case _ => expSMT

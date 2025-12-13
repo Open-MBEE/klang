@@ -133,6 +133,132 @@
       "=============================================="
     ],
     "description": "Documentation block with equals signs"
+  },
+  "Type cast to Int": {
+    "prefix": "asint",
+    "body": [
+      "${1:expr} as Int"
+    ],
+    "description": "Cast expression to Int"
+  },
+  "Type cast to Real": {
+    "prefix": "asreal",
+    "body": [
+      "${1:expr} as Real"
+    ],
+    "description": "Cast expression to Real"
+  },
+  "Type cast to Int8": {
+    "prefix": "asint8",
+    "body": [
+      "${1:expr} as Int8"
+    ],
+    "description": "Cast expression to signed 8-bit integer"
+  },
+  "Type cast to Int16": {
+    "prefix": "asint16",
+    "body": [
+      "${1:expr} as Int16"
+    ],
+    "description": "Cast expression to signed 16-bit integer"
+  },
+  "Type cast to Int32": {
+    "prefix": "asint32",
+    "body": [
+      "${1:expr} as Int32"
+    ],
+    "description": "Cast expression to signed 32-bit integer"
+  },
+  "Type cast to Int64": {
+    "prefix": "asint64",
+    "body": [
+      "${1:expr} as Int64"
+    ],
+    "description": "Cast expression to signed 64-bit integer"
+  },
+  "Type cast to UInt8": {
+    "prefix": "asuint8",
+    "body": [
+      "${1:expr} as UInt8"
+    ],
+    "description": "Cast expression to unsigned 8-bit integer"
+  },
+  "Type cast to UInt16": {
+    "prefix": "asuint16",
+    "body": [
+      "${1:expr} as UInt16"
+    ],
+    "description": "Cast expression to unsigned 16-bit integer"
+  },
+  "Type cast to UInt32": {
+    "prefix": "asuint32",
+    "body": [
+      "${1:expr} as UInt32"
+    ],
+    "description": "Cast expression to unsigned 32-bit integer"
+  },
+  "Type cast to UInt64": {
+    "prefix": "asuint64",
+    "body": [
+      "${1:expr} as UInt64"
+    ],
+    "description": "Cast expression to unsigned 64-bit integer"
+  },
+  "Signed 8-bit property": {
+    "prefix": "int8",
+    "body": [
+      "${1:name} : Int8 = ${2:0}"
+    ],
+    "description": "Signed 8-bit integer property"
+  },
+  "Signed 16-bit property": {
+    "prefix": "int16",
+    "body": [
+      "${1:name} : Int16 = ${2:0}"
+    ],
+    "description": "Signed 16-bit integer property"
+  },
+  "Signed 32-bit property": {
+    "prefix": "int32",
+    "body": [
+      "${1:name} : Int32 = ${2:0}"
+    ],
+    "description": "Signed 32-bit integer property"
+  },
+  "Signed 64-bit property": {
+    "prefix": "int64",
+    "body": [
+      "${1:name} : Int64 = ${2:0}"
+    ],
+    "description": "Signed 64-bit integer property"
+  },
+  "Unsigned 8-bit property": {
+    "prefix": "uint8",
+    "body": [
+      "${1:name} : UInt8 = ${2:0}"
+    ],
+    "description": "Unsigned 8-bit integer property"
+  },
+  "Unsigned 16-bit property": {
+    "prefix": "uint16",
+    "body": [
+      "${1:name} : UInt16 = ${2:0}"
+    ],
+    "description": "Unsigned 16-bit integer property"
+  },
+  "Unsigned 32-bit property": {
+    "prefix": "uint32",
+    "body": [
+      "${1:name} : UInt32 = ${2:0}"
+    ],
+    "description": "Unsigned 32-bit integer property"
+  },
+  "Unsigned 64-bit property": {
+    "prefix": "uint64",
+    "body": [
+      "${1:name} : UInt64 = ${2:0}"
+    ],
+    "description": "Unsigned 64-bit integer property"
   }
 }
 
