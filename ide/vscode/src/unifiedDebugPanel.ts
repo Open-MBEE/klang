@@ -1242,11 +1242,11 @@ export class KDebugPanel {
 
     /**
      * Step into an external Java function
-     * Launches the VS Code Java debugger and sets a breakpoint
+     * Launches K with Java debug agent and attaches VS Code debugger
      */
     public async stepIntoJavaFunction(func: ExternalFunction): Promise<void> {
-        if (func.language !== 'java' || !func.sourceFile) {
-            vscode.window.showErrorMessage('Cannot find Java source file for ' + func.name);
+        if (func.language !== 'java') {
+            vscode.window.showErrorMessage('This is not a Java function');
             return;
         }
 
@@ -1263,55 +1263,37 @@ export class KDebugPanel {
             return;
         }
 
-        // Open the source file
-        const doc = await vscode.workspace.openTextDocument(func.sourceFile);
-        const editor = await vscode.window.showTextDocument(doc);
+        const session = this.getActiveSession();
+        if (!session) return;
 
-        // Find the method line and set a breakpoint
-        if (func.methodName) {
-            const methodLine = this.findMethodLine(doc, func.methodName);
-            if (methodLine !== undefined) {
-                // Add breakpoint
-                const bp = new vscode.SourceBreakpoint(
-                    new vscode.Location(doc.uri, new vscode.Position(methodLine, 0))
-                );
-                vscode.debug.addBreakpoints([bp]);
+        // Open source file and set breakpoint if we can find it
+        if (func.sourceFile) {
+            const doc = await vscode.workspace.openTextDocument(func.sourceFile);
+            const editor = await vscode.window.showTextDocument(doc);
 
-                // Scroll to method
-                editor.revealRange(new vscode.Range(methodLine, 0, methodLine + 10, 0));
+            if (func.methodName) {
+                const methodLine = this.findMethodLine(doc, func.methodName);
+                if (methodLine !== undefined) {
+                    // Add breakpoint
+                    const bp = new vscode.SourceBreakpoint(
+                        new vscode.Location(doc.uri, new vscode.Position(methodLine, 0))
+                    );
+                    vscode.debug.addBreakpoints([bp]);
+                    editor.revealRange(new vscode.Range(methodLine, 0, methodLine + 10, 0));
+                    vscode.window.showInformationMessage(`Breakpoint set at ${func.name}.${func.methodName}()`);
+                }
             }
         }
 
-        // Create debug configuration for Java
-        const debugConfig: vscode.DebugConfiguration = {
-            type: 'java',
-            name: 'K Debug - Java',
-            request: 'attach',
-            hostName: 'localhost',
-            port: 5005, // Standard Java debug port
-            projectName: path.basename(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '')
-        };
-
-        // Show info about connecting
-        vscode.window.showInformationMessage(
-            'To debug Java code, ensure your K application is running with: ' +
-            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-        );
-
-        // Start debug session
-        const session = this.getActiveSession();
-        if (session) {
-            try {
-                const started = await vscode.debug.startDebugging(
-                    vscode.workspace.workspaceFolders?.[0],
-                    debugConfig
-                );
-                if (started) {
-                    session.javaDebugSession = vscode.debug.activeDebugSession;
-                }
-            } catch (error) {
-                console.error('Failed to start Java debugger:', error);
-            }
+        // Start K with Java debug agent
+        const runDebugCommand = 'k.runWithJavaDebug';
+        try {
+            await vscode.commands.executeCommand(runDebugCommand);
+        } catch (error) {
+            // Manual instructions if the command fails
+            vscode.window.showInformationMessage(
+                'To debug Java code, run K with: JAVA_TOOL_OPTIONS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" ./export/k yourfile.k'
+            );
         }
     }
 

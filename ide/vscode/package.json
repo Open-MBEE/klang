@@ -58,6 +58,12 @@
         "category": "K"
       },
       {
+        "command": "k.runWithJavaDebug",
+        "title": "Run K File with Java Debugger",
+        "category": "K Debug",
+        "icon": "$(debug)"
+      },
+      {
         "command": "k.visualizeSolution",
         "title": "Visualize Solution",
         "category": "K",
