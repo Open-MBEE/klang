@@ -113,9 +113,14 @@ case object TypeChecker {
       case (UnsignedIntType(_), IntType) if compatibility => return true
       case (IntType, UnsignedIntType(_)) if compatibility => return true
       // SignedIntType widening: smaller width can be assigned to larger width
-      case (SignedIntType(w1), SignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      case (SignedIntType(w1), SignedIntType(w2)) if compatibility => return true
       // UnsignedIntType widening: smaller width can be assigned to larger width
-      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility && w1 <= w2 => return true
+      case (UnsignedIntType(w1), UnsignedIntType(w2)) if compatibility => return true
+      // SignedIntType/UnsignedIntType can widen to Real
+      case (RealType, SignedIntType(_)) if compatibility => return true
+      case (RealType, UnsignedIntType(_)) if compatibility => return true
+      case (SignedIntType(_), RealType) if compatibility => return true
+      case (UnsignedIntType(_), RealType) if compatibility => return true
       // Two BitVecs must have same width
       case (BitVecType(w1), BitVecType(w2)) => return w1 == w2
       case _ => Misc.areTypesEqual(ty1, ty2, compatibility)
@@ -425,6 +430,8 @@ class TypeChecker(model: Model) {
       case SignedIntType(_) => return true
       case UnsignedIntType(_) => return true
       case FloatType(_, _) => return true
+      case ArrayType(keyType, valueType) => 
+        return doesTypeExist(te, keyType) && doesTypeExist(te, valueType)
     }
     return false
   }
@@ -1412,7 +1419,18 @@ class TypeChecker(model: Model) {
           case ASSIGN =>
             if (!areTypesEqual(ty1, ty2, false)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             UnitType
-          case ISIN | NOTISIN | SUBSET | PSUBSET =>
+          case ISIN | NOTISIN =>
+            // For x isin S, check that x's type matches the element type of S
+            ty2 match {
+              case IdentType(_, elemType :: _) if Misc.isCollection(ty2.asInstanceOf[IdentType]) =>
+                if (!areTypesEqual(ty1, elemType, false)) 
+                  error(s"$exp does not type check. $ty1 is not compatible with element type $elemType of $ty2.")
+              case _ =>
+                error(s"$exp does not type check. $ty2 is not a collection type.")
+            }
+            BoolType
+          case SUBSET | PSUBSET =>
+            // For S1 subset S2, both should be collections with the same element type
             val (typesCompat, cType) = Misc.typeTypeCollection(ty1, ty2)
             if (!typesCompat) error(s"$exp does not type check. $ty1 and $ty2 are not compatible.")
             BoolType
@@ -1442,7 +1460,95 @@ class TypeChecker(model: Model) {
               case _ => error(s"Shift operator requires BitVec or Int left operand, got $ty1")
             }
         }
+      case CtorApplExp(ty, args) =>
+        // Java-style constructor call (new Type(...) or Type[...](args))
+        ty match {
+          // Handle collection type constructors: Seq[T](...), Set[T](...), etc.
+          case IdentType(QualifiedName(List(collName)), List(elemType)) 
+            if List("Seq", "Set", "OSet", "Bag").contains(collName) =>
+            // Type check all elements against the element type
+            args.foreach { arg =>
+              val argType = arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+              if (!areTypesEqual(elemType, argType, true)) {
+                error(s"Element type mismatch in $collName constructor: expected $elemType, got $argType")
+              }
+            }
+            ty
+            
+          // Handle Array[K, V] constructor
+          case IdentType(QualifiedName(List("Array")), List(keyType, valueType)) =>
+            // Array constructor might take key-value pairs or be empty
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            ty
+            
+          case ArrayType(keyType, valueType) =>
+            // Direct ArrayType constructor
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            ty
+            
+          // Handle tuple constructors: (Int * Bool)(1, true)
+          case CartesianType(types) =>
+            if (args.length != types.length) {
+              error(s"Tuple constructor expects ${types.length} arguments, got ${args.length}")
+            }
+            (types zip args).foreach { case (expectedType, arg) =>
+              val argType = arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+              if (!areTypesEqual(expectedType, argType, true)) {
+                error(s"Tuple element type mismatch: expected $expectedType, got $argType")
+              }
+            }
+            ty
+            
+          // Handle user-defined class constructors
+          case _ =>
+            val decl = type2Decl.get(ty)
+            if (decl.isEmpty) {
+              error(s"Unknown type in constructor call: $ty")
+            }
+            val entityDecl = decl.get.asInstanceOf[EntityDecl]
+            val declTypeEnvironment = decl2TypeEnvi(entityDecl)
+            
+            // Type check all arguments
+            args.foreach { arg =>
+              arg match {
+                case NamedArgument(ident, e) =>
+                  val propTypeInfo = declTypeEnvironment.map.get(ident)
+                  if (propTypeInfo.isEmpty) {
+                    error(s"Property $ident not found in ${entityDecl.ident}")
+                  }
+                  val lhsType = propTypeInfo.get match {
+                    case PropertyTypeInfo(pd, _, _, _) => pd.getTypeOrError
+                    case _ => error(s"$ident is not a property in ${entityDecl.ident}")
+                  }
+                  val rhsType = getExpType(te, e, owner)
+                  if (!areTypesEqual(lhsType, rhsType, false)) {
+                    error(s"Type mismatch for property $ident: expected $lhsType, got $rhsType")
+                  }
+                case PositionalArgument(e) =>
+                  // For positional arguments, just type check the expression
+                  getExpType(te, e, owner)
+              }
+            }
+            ty
+        }
       case FunApplExp(fexp, args) =>
+
         // Check if this is a string method call
         fexp match {
           case DotExp(strExp, methodName) if getExpType(te, strExp, owner) == StringType =>
@@ -1644,6 +1750,38 @@ class TypeChecker(model: Model) {
         getExpType(newTe, body, owner)
       case TypeCastCheckExp(cast, e, ty) =>
         val eType = getExpType(te, e, owner)
+        // Store the inner expression's type so TypeCastCheckExp.toSMT can find it
+        exp2Type.put(e, eType)
+        // Check for potentially lossy narrowing conversions
+        if (cast) {
+          (eType, ty) match {
+            case (SignedIntType(fromWidth), SignedIntType(toWidth)) if toWidth < fromWidth =>
+              warning(s"Narrowing conversion from Int$fromWidth to Int$toWidth may lose data: $e")
+            case (UnsignedIntType(fromWidth), UnsignedIntType(toWidth)) if toWidth < fromWidth =>
+              warning(s"Narrowing conversion from UInt$fromWidth to UInt$toWidth may lose data: $e")
+            case (SignedIntType(fromWidth), UnsignedIntType(toWidth)) =>
+              warning(s"Converting signed Int$fromWidth to unsigned UInt$toWidth may change sign: $e")
+            case (UnsignedIntType(fromWidth), SignedIntType(toWidth)) if toWidth <= fromWidth =>
+              warning(s"Converting unsigned UInt$fromWidth to signed Int$toWidth may overflow: $e")
+            case (IntType, SignedIntType(toWidth)) =>
+              warning(s"Narrowing arbitrary-precision Int to fixed-width Int$toWidth may lose data: $e")
+            case (IntType, UnsignedIntType(toWidth)) =>
+              warning(s"Narrowing arbitrary-precision Int to fixed-width UInt$toWidth may lose data: $e")
+            case (RealType, SignedIntType(toWidth)) =>
+              warning(s"Converting Real to Int$toWidth may lose precision and data: $e")
+            case (RealType, UnsignedIntType(toWidth)) =>
+              warning(s"Converting Real to UInt$toWidth may lose precision and data: $e")
+            case (RealType, IntType) =>
+              warning(s"Converting Real to Int may lose precision: $e")
+            case (FloatType(_, _), SignedIntType(toWidth)) =>
+              warning(s"Converting Float to Int$toWidth may lose precision and data: $e")
+            case (FloatType(_, _), UnsignedIntType(toWidth)) =>
+              warning(s"Converting Float to UInt$toWidth may lose precision and data: $e")
+            case (FloatType(_, _), IntType) =>
+              warning(s"Converting Float to Int may lose precision: $e")
+            case _ => // Safe conversion or unknown - no warning
+          }
+        }
         if (cast) ty else BoolType
       case QuantifiedExp(q, b, e) =>
 
@@ -1729,10 +1867,24 @@ class TypeChecker(model: Model) {
       case CharacterLiteral(_) => CharType
       case StringLiteral(_)    => StringType
       case RealLiteral(_)      => RealType
+      case FloatLiteral(_, ft) => ft  // Return the FloatType from the literal
       case DateLiteral(_)      => TimeType
       case DurationLiteral(_)  => DurationType
       case ThisLiteral =>
         type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](te("this").asInstanceOf[ClassTypeInfo].decl)
+      case IndexExp(exp1, args) =>
+        // arr[key] - index expression for arrays and sequences
+        val exp1Type = getExpType(te, exp1, owner)
+        exp1Type match {
+          case ArrayType(keyType, valueType) =>
+            // For Array[K, V], indexing returns V
+            valueType
+          case IdentType(QualifiedName(List("Seq")), List(elemType)) =>
+            // For Seq[T], indexing returns T
+            elemType
+          case _ =>
+            error(s"IndexExp: Cannot index into type $exp1Type. Expected Array[K, V] or Seq[T].")
+        }
       case _ => error(s"Type checking for ${exp.getClass} not implemented yet!")
     }
     exp2Type.put(exp, result)

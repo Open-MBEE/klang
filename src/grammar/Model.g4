@@ -198,6 +198,7 @@ expression:
   | type '.' 'class' #ClassExp 
   | expression '(' argumentList? ')' #AppExp
   | type '(' argumentList? ')' #ConstructorAppExp2
+  | 'new' type '(' argumentList? ')' #NewExp
   | expression '[' positionalArgumentList ']' #IndexExp
   | '!' expression #NotExp
   | '{' block  '}' {$ctx.parent instanceof ModelParser.ModelContext}? #BlockExp

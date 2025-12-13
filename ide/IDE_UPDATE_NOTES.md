@@ -1,8 +1,39 @@
-# IDE Plugin Updates - December 11, 2025
+# IDE Plugin Updates - December 12, 2025
 
 ## Summary of Changes
 
 This update adds several new features to both the IntelliJ and VS Code plugins for the K language.
+
+### New: Auto-Solve Mode (VS Code)
+
+The extension now supports automatic solving as you type:
+
+- **Status bar indicator**: Shows solving status (SAT/UNSAT/Error)
+- **Debounced solving**: Waits after edits before solving (configurable)
+- **Solve on save**: Immediate solve when saving
+- **Solution as constraints**: Output solution in readable K constraint format
+
+**Settings:**
+- `k.autoSolve.enabled`: Enable/disable auto-solve (default: false)
+- `k.autoSolve.debounceMs`: Delay after edits (default: 1000ms)
+- `k.autoSolve.timeoutMs`: Max solve time (default: 5000ms)
+- `k.autoSolve.onSave`: Solve on save (default: true)
+
+**Commands:**
+- `K: Toggle Auto-Solve` - Enable/disable auto-solve
+- `K: Solve Now` - Manually trigger solve
+- `K: Show Last Solution` - View solution as constraints
+
+### New: K Debugging & Solving Vision Document
+
+Created comprehensive design document at `docs/K_DEBUGGING_AND_SOLVING.md` covering:
+
+1. **Auto-solve mode** with debounce and cancellation
+2. **Solution visualization** as object diagrams (UML-like)
+3. **UNSAT analysis** with fix suggestions
+4. **Constraint-level debugging** (stepping through constraints)
+5. **CEGAR loop debugging** for external functions
+6. **Unified solver integration** with progress reporting
 
 ### IntelliJ Plugin (v0.5.0)
 
@@ -89,13 +120,17 @@ This update adds several new features to both the IntelliJ and VS Code plugins f
 - `README.md` (UPDATED)
 
 **VS Code:**
+- `src/autoSolve.ts` (NEW - auto-solve controller with status bar)
 - `snippets/k.json` (NEW)
 - `src/providers/inlayHintsProvider.ts` (NEW)
-- `src/extension.ts` (UPDATED - inlay hints registration)
+- `src/extension.ts` (UPDATED - auto-solve, inlay hints registration)
 - `syntaxes/k.tmLanguage.json` (UPDATED - semantic scopes)
-- `package.json` (UPDATED)
+- `package.json` (UPDATED - auto-solve settings and commands)
 - `language-configuration.json` (UPDATED)
 - `README.md` (UPDATED)
+
+**Documentation:**
+- `docs/K_DEBUGGING_AND_SOLVING.md` (NEW - vision document)
 
 ### Building
 
@@ -136,9 +171,26 @@ npm run package  # Creates .vsix file
    - All previous features
 
 ### Next Steps (Future)
-- Quick fixes for common errors
-- Parameter info popup during function calls
-- Code actions (refactoring suggestions)
-- Import organization
-- Structure view improvements
+
+**Phase 1: Solution Experience**
+- [ ] Solution graph visualization (webview with D3.js)
+- [ ] UNSAT core display with fix suggestions
+- [ ] Quick fix actions in editor
+
+**Phase 2: Constraint Debugging**
+- [ ] Constraint stepping UI
+- [ ] Variable range visualization
+- [ ] Constraint breakpoints
+
+**Phase 3: CEGAR & External Functions**
+- [ ] CEGAR iteration viewer
+- [ ] External function call tracing
+- [ ] Java/Python debugger integration
+
+**Phase 4: Unified Solver**
+- [ ] Progress reporting UI
+- [ ] Interrupt/resume capability
+- [ ] Partial solution handling
+
+See `docs/K_DEBUGGING_AND_SOLVING.md` for full vision.
 

@@ -22,8 +22,13 @@
     "languages": [
       {
         "id": "k",
-        "aliases": ["K", "k"],
-        "extensions": [".k"],
+        "aliases": [
+          "K",
+          "k"
+        ],
+        "extensions": [
+          ".k"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -57,9 +62,130 @@
         "title": "Visualize Solution",
         "category": "K",
         "icon": "$(graph)"
+      },
+      {
+        "command": "k.showSolution",
+        "title": "Show Last Solution",
+        "category": "K",
+        "icon": "$(output)"
+      },
+      {
+        "command": "k.toggleAutoSolve",
+        "title": "Enable Auto-Solve",
+        "category": "K",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "k.disableAutoSolve",
+        "title": "Disable Auto-Solve",
+        "category": "K",
+        "icon": "$(sync~spin)"
+      },
+      {
+        "command": "k.solveNow",
+        "title": "Solve Now",
+        "category": "K",
+        "icon": "$(run)"
+      },
+      {
+        "command": "k.startConstraintDebug",
+        "title": "Start Constraint Debugger",
+        "category": "K Debug",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "k.debugStepNext",
+        "title": "Step Next Constraint",
+        "category": "K Debug",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "k.debugStepPrev",
+        "title": "Step Previous Constraint",
+        "category": "K Debug",
+        "icon": "$(debug-step-back)"
+      },
+      {
+        "command": "k.debugRunToEnd",
+        "title": "Run All Constraints",
+        "category": "K Debug",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "k.debugStop",
+        "title": "Stop Debugging",
+        "category": "K Debug",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "k.openUnifiedDebugger",
+        "title": "Open Debug Panel (with External Function Support)",
+        "category": "K Debug",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "k.unifiedDebugStepNext",
+        "title": "Step Next (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "k.unifiedDebugStepPrev",
+        "title": "Step Prev (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-step-back)"
+      },
+      {
+        "command": "k.unifiedDebugRunAll",
+        "title": "Run All (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "k.solveWithProgress",
+        "title": "Solve with Progress Panel",
+        "category": "K",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "k.showProgress",
+        "title": "Show Progress Panel",
+        "category": "K"
+      },
+      {
+        "command": "k.clearDecorations",
+        "title": "Clear Inline Values",
+        "category": "K"
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "k.toggleAutoSolve",
+          "when": "resourceLangId == k && !k.autoSolveEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "k.disableAutoSolve",
+          "when": "resourceLangId == k && k.autoSolveEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation@2"
+        },
+        {
+          "command": "k.visualizeSolution",
+          "when": "resourceLangId == k",
+          "group": "navigation@3"
+        },
+        {
+          "command": "k.startConstraintDebug",
+          "when": "resourceLangId == k",
+          "group": "navigation@4"
+        }
+      ],
       "editor/title/run": [
         {
           "command": "k.runFile",
@@ -75,6 +201,11 @@
       "editor/context": [
         {
           "command": "k.runFile",
+          "when": "resourceLangId == k",
+          "group": "navigation"
+        },
+        {
+          "command": "k.startConstraintDebug",
           "when": "resourceLangId == k",
           "group": "navigation"
         }
@@ -99,6 +230,18 @@
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.startConstraintDebug",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+alt+d",
+        "when": "resourceLangId == k"
+      },
+      {
+        "command": "k.toggleAutoSolve",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
+        "when": "resourceLangId == k"
       }
     ],
     "configuration": {
@@ -118,6 +261,28 @@
           "type": "boolean",
           "default": true,
           "description": "Show output panel when running K files"
+        },
+        "k.autoSolve.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically solve K files after edits (with debounce)"
+        },
+        "k.autoSolve.debounceMs": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 200,
+          "description": "Milliseconds to wait after last edit before auto-solving"
+        },
+        "k.autoSolve.timeoutMs": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1000,
+          "description": "Maximum time in milliseconds for auto-solve (shorter for live feedback)"
+        },
+        "k.autoSolve.onSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically solve when saving a K file (immediate, no debounce)"
         }
       }
     }
@@ -125,11 +290,18 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "pretest": "npm run compile"
   },
   "devDependencies": {
+    "@types/glob": "^9.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.5.2",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
     "typescript": "^5.3.0"
   }
 }

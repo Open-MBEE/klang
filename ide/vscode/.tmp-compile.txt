@@ -1,0 +1,5 @@
+
+> k-language@0.5.0 compile
+> tsc -p ./
+
+src/extension.ts(54,5): error TS1128: Declaration or statement expected.

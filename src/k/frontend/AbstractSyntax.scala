@@ -180,6 +180,7 @@ object UtilSMT {
       case SignedIntType(_)              => true
       case UnsignedIntType(_)            => true
       case FloatType(_, _)               => true
+      case ArrayType(keyType, valueType) => wellFormedType(keyType) && wellFormedType(valueType)
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -412,6 +413,16 @@ object UtilSMT {
     exp match {
       case FunApplExp(function, _) =>
         isConstructor(function)
+      case CtorApplExp(ty, _) =>
+        // Only true for user-defined class constructors, not built-in types
+        ty match {
+          case IdentType(QualifiedName(List(name)), _) =>
+            // Not a constructor if it is a built-in collection or primitive type
+            !List("Seq", "Set", "OSet", "Bag", "Array", "Int", "Bool", "Real", "String", "Char").contains(name)
+          case ArrayType(_, _) => false  // Array type is not a class constructor
+          case CartesianType(_) => false  // Tuple type is not a class constructor
+          case _ => false
+        }
       case IfExp(_, trueBranch, Some(falseBranch)) =>
         isConstructorAppl(trueBranch) && isConstructorAppl(falseBranch)
       case _ =>
@@ -497,6 +508,7 @@ class Statistics {
   var TUPLETYPE: Int = 0
   var SETTYPE: Int = 0
   var SEQTYPE: Int = 0
+  var ARRAYTYPE: Int = 0
   var FUNTYPE: Int = 0
   var INTTYPE: Int = 0
   var REALTYPE: Int = 0
@@ -593,6 +605,7 @@ class Statistics {
     data("tuple types", TUPLETYPE)
     data("set types", SETTYPE)
     data("seq types", SEQTYPE)
+    data("array types", ARRAYTYPE)
     data("function types", FUNTYPE)
     data("int types", INTTYPE)
     data("real types", REALTYPE)
@@ -2609,6 +2622,25 @@ case class IndexExp(exp1: Exp, args: List[Argument]) extends Exp {
   }
   
   
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    val exp1SMT = exp1.toSMT(className, subTyping)
+    val exp1Type = TypeChecker.exp2Type.get(exp1)
+    exp1Type match {
+      case ArrayType(_, _) =>
+        // Array[K, V] uses SMT select: (select arr key)
+        val keySMT = args(0).toSMT(className, subTyping)
+        s"(select $exp1SMT $keySMT)"
+      case IdentType(QualifiedName(List("Seq")), _) =>
+        // Seq[T] uses seq.nth: (seq.nth seq index)
+        val indexSMT = args(0).toSMT(className, subTyping)
+        s"(seq.nth $exp1SMT $indexSMT)"
+      case _ =>
+        // Fallback - try select (works for other array-like types)
+        val keySMT = args(0).toSMT(className, subTyping)
+        s"(select $exp1SMT $keySMT)"
+    }
+  }
+
   override def toJavaString = {
     var result = exp1.toJavaString
     args.foreach(result += ".get(" + _.toJavaString + ")")
@@ -3023,7 +3055,83 @@ case class CtorApplExp(ty: Type, arguments: List[Argument]) extends CallApplExp 
       result += "(" + args.map(_.toJavaString).mkString(",") + ")"
     result
   }
+  
+  // Override toSMT to directly generate constructor application
+  // since isConstructor may not recognize our dynamically created IdentExp
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    ty match {
+      // Handle Seq[T] constructor - create a sequence from elements
+      case IdentType(QualifiedName(List("Seq")), List(elemType)) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
+        }
+        // Build nested seq.++ from seq.unit calls
+        if (argsSMT.isEmpty) {
+          "(as seq.empty (Seq " + elemType.toSMT + "))"
+        } else {
+          argsSMT.map(a => s"(seq.unit $a)").reduce((a, b) => s"(seq.++ $a $b)")
+        }
+        
+      // Handle Set[T] constructor - create a set from elements
+      case IdentType(QualifiedName(List("Set")), List(elemType)) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
+        }
+        if (argsSMT.isEmpty) {
+          "((as const (Set " + elemType.toSMT + ")) false)"
+        } else {
+          // Start with empty set and add elements
+          val emptySet = "((as const (Set " + elemType.toSMT + ")) false)"
+          argsSMT.foldLeft(emptySet)((set, elem) => s"(store $set $elem true)")
+        }
+        
+      // Handle Array[K, V] constructor
+      case IdentType(QualifiedName(List("Array")), List(keyType, valueType)) =>
+        // For now, just return a const array with default value
+        val defaultVal = UtilSMT.getNewConstant(valueType)
+        s"((as const (Array ${keyType.toSMT} ${valueType.toSMT})) $defaultVal)"
+        
+      case ArrayType(keyType, valueType) =>
+        val defaultVal = UtilSMT.getNewConstant(valueType)
+        s"((as const (Array ${keyType.toSMT} ${valueType.toSMT})) $defaultVal)"
+        
+      // Handle Tuple constructor (CartesianType)
+      case CartesianType(types) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
+        }
+        val n = types.length
+        s"(mk-Tuple$n ${argsSMT.mkString(" ")})"
+        
+      // Handle user-defined class constructors
+      case _ =>
+        val ident = ty match {
+          case IdentType(qn, _) => qn.toString
+          case _ => ty.toString
+        }
+        val argMap: Map[String, Exp] = (for (NamedArgument(x, exp) <- args) yield (x -> exp)).toMap
+        val entityDecl = TypeChecker.getEntityDecl(ident)
+        val propertyDecls = entityDecl.getAllPropertyDecls
+        if (propertyDecls.isEmpty)
+          s"(lift-$ident mk-$ident)"
+        else {
+          val argsSMTList: List[String] =
+            for (pd @ PropertyDecl(_, id, _, _, _, _) <- propertyDecls) yield {
+              if (argMap contains id) 
+                argMap(id).toSMT(className, subTyping) 
+              else 
+                UtilSMT.getNewConstant(pd.getTypeOrError)
+            }
+          val argsSMT = argsSMTList.mkString(" ")
+          s"(lift-$ident (mk-$ident $argsSMT))"
+        }
+    }
+  }
 }
+
 
 case class IfExp(cond: Exp, trueBranch: Exp, falseBranch: Option[Exp]) extends Exp {
   override def children: List[AnyRef] = List(cond, trueBranch) ::: ListIt.m(falseBranch)
@@ -3462,8 +3570,93 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
             val exp2Type = TypeChecker.exp2Type.get(exp2)
             if (exp1Type == StringType || exp2Type == StringType) {
               s"(str.++ $exp1SMT $exp2SMT)"
+            } else if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.add RNE $exp1SMT $exp2SMT)"
             } else {
               s"(+ $exp1SMT $exp2SMT)"
+            }
+          case SUB =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.sub RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(- $exp1SMT $exp2SMT)"
+            }
+          case MUL =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.mul RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(* $exp1SMT $exp2SMT)"
+            }
+          case DIV =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            if (exp1Type.isInstanceOf[FloatType] || exp2Type.isInstanceOf[FloatType]) {
+              s"(fp.div RNE $exp1SMT $exp2SMT)"
+            } else {
+              s"(/ $exp1SMT $exp2SMT)"
+            }
+          case LT =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.lt $exp1SMT $exp2SMT)"
+            } else {
+              s"(< $exp1SMT $exp2SMT)"
+            }
+          case LTE =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.leq $exp1SMT $exp2SMT)"
+            } else {
+              s"(<= $exp1SMT $exp2SMT)"
+            }
+          case GT =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.gt $exp1SMT $exp2SMT)"
+            } else {
+              s"(> $exp1SMT $exp2SMT)"
+            }
+          case GTE =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            if (exp1Type.isInstanceOf[FloatType]) {
+              s"(fp.geq $exp1SMT $exp2SMT)"
+            } else {
+              s"(>= $exp1SMT $exp2SMT)"
+            }
+          case EQ =>
+            val exp1Type = TypeChecker.exp2Type.get(exp1)
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            // Handle widening for different numeric type comparisons
+            (exp1Type, exp2Type) match {
+              case (SignedIntType(w1), SignedIntType(w2)) if w1 != w2 =>
+                val maxWidth = Math.max(w1, w2)
+                val exp1Widened = if (w1 < maxWidth) s"((_ sign_extend ${maxWidth - w1}) $exp1SMT)" else exp1SMT
+                val exp2Widened = if (w2 < maxWidth) s"((_ sign_extend ${maxWidth - w2}) $exp2SMT)" else exp2SMT
+                s"(= $exp1Widened $exp2Widened)"
+              case (UnsignedIntType(w1), UnsignedIntType(w2)) if w1 != w2 =>
+                val maxWidth = Math.max(w1, w2)
+                val exp1Widened = if (w1 < maxWidth) s"((_ zero_extend ${maxWidth - w1}) $exp1SMT)" else exp1SMT
+                val exp2Widened = if (w2 < maxWidth) s"((_ zero_extend ${maxWidth - w2}) $exp2SMT)" else exp2SMT
+                s"(= $exp1Widened $exp2Widened)"
+              // SignedIntType to Real: convert bitvector to real via signed int2real
+              case (RealType, SignedIntType(w)) =>
+                // For signed bv, check sign bit and conditionally negate
+                val asInt = s"(ite (bvslt $exp2SMT (_ bv0 $w)) (- (bv2int (bvneg $exp2SMT))) (bv2int $exp2SMT))"
+                s"(= $exp1SMT (to_real $asInt))"
+              case (SignedIntType(w), RealType) =>
+                val asInt = s"(ite (bvslt $exp1SMT (_ bv0 $w)) (- (bv2int (bvneg $exp1SMT))) (bv2int $exp1SMT))"
+                s"(= (to_real $asInt) $exp2SMT)"
+              // UnsignedIntType to Real: convert bitvector to real via unsigned bv2int
+              case (RealType, UnsignedIntType(_)) =>
+                s"(= $exp1SMT (to_real (bv2int $exp2SMT)))"
+              case (UnsignedIntType(_), RealType) =>
+                s"(= (to_real (bv2int $exp1SMT)) $exp2SMT)"
+              case _ =>
+                s"(= $exp1SMT $exp2SMT)"
             }
           case _ =>
             val opSMT = op.toSMT
@@ -3807,7 +4000,11 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
       case SetKind =>
         val ty = exp2Type.get(this)
         val tySMT = ty match {
-          case IdentType(_, elemType :: _) => elemType.toSMT
+          case IdentType(_, elemType :: _) => 
+            elemType match {
+              case UnitType => "Int"  // Empty set: default element type to Int
+              case _ => elemType.toSMT
+            }
           case _ => "Int" // fallback
         }
         val emptySMT = s"((as const (Set $tySMT)) false)"
@@ -3821,7 +4018,11 @@ case class CollectionEnumExp(kind: CollectionKind, exps: List[Exp]) extends Exp 
         // Use Z3 sequence theory: seq.empty, seq.unit, seq.++
         val ty = exp2Type.get(this)
         val tySMT = ty match {
-          case IdentType(_, elemType :: _) => elemType.toSMT
+          case IdentType(_, elemType :: _) => 
+            elemType match {
+              case UnitType => "Int"  // Empty sequence: default element type to Int
+              case _ => elemType.toSMT
+            }
           case _ => "Int" // fallback
         }
         if (exps.isEmpty) {
@@ -4142,8 +4343,13 @@ case class TypeCastCheckExp(cast: Boolean, exp: Exp, ty: Type) extends Exp {
           s"(ite (bvslt $expSMT (_ bv0 $width)) (- (bv2int $expSMT) $fullRange) (bv2int $expSMT))"
         // UnsignedIntType -> Int
         case (UnsignedIntType(_), IntType) => s"(bv2nat $expSMT)"
-        // Float -> Int
-        case (FloatType(_, _), IntType) => s"(fp.to_sbv 32 RTZ $expSMT)"
+        // Float -> Int (truncate toward zero)
+        case (FloatType(_, _), IntType) =>
+          // fp.to_sbv converts to signed bitvector, then we convert to int
+          // Use 64-bit bitvector to handle full range of float values
+          // Syntax: ((_ fp.to_sbv width) roundingMode floatExpr)
+          val bvWidth = 64
+          s"(ite (fp.isNaN $expSMT) 0 (ite (bvslt ((_ fp.to_sbv $bvWidth) RTZ $expSMT) (_ bv0 $bvWidth)) (- (bv2int ((_ fp.to_sbv $bvWidth) RTZ $expSMT)) ${BigInt(1) << bvWidth}) (bv2int ((_ fp.to_sbv $bvWidth) RTZ $expSMT))))"
         // Int -> Float
         case (IntType, FloatType(ebits, sbits)) => s"((_ to_fp $ebits $sbits) RNE (to_real $expSMT))"
         // Real -> Float  
@@ -4868,6 +5074,38 @@ case class RealLiteral(f: java.math.BigDecimal) extends Literal {
   override def toJson2 = {
     val expression = new JSONObject()
     expression.put("type", "LiteralReal").put("double", f)
+  }
+}
+
+/**
+ * IEEE 754 floating-point literal with explicit precision.
+ * Generated from literals like 1.5f (Float32) or 1.5d (Float64).
+ */
+case class FloatLiteral(f: java.math.BigDecimal, floatType: FloatType) extends Literal {
+  override def children = List()
+
+  override def statistics() {
+    UtilSMT.statistics.REALLIT += 1
+  }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    s"((_ to_fp ${floatType.ebits} ${floatType.sbits}) RNE ${f.formatted("%.16f")})"
+  }
+
+  override def toScala = if (floatType == FloatType.Float32) s"${f}f" else f.toString
+
+  override def toString = if (floatType == FloatType.Float32) s"${f}f" else s"${f}d"
+
+  override def toJson1 = {
+    val o = new JSONObject()
+    o.put("f", f.formatted("%.16f"))
+    o.put("type", "LiteralFloat")
+    o.put("floatType", floatType.toString)
+  }
+
+  override def toJson2 = {
+    val expression = new JSONObject()
+    expression.put("type", "LiteralFloat").put("double", f).put("floatType", floatType.toString)
   }
 }
 
@@ -5675,6 +5913,40 @@ case class UnsignedIntType(width: Int) extends PrimitiveType {
     new JSONObject().put("type", "ElementValue").put("element", s"UInt$width")
   }
 }
+
+/**
+ * ArrayType represents SMT-LIB2 Array theory (Array K V).
+ * Unlike Seq, arrays are total functions from index to value with no concept of length.
+ * All indices have values (unconstrained if not specified).
+ * 
+ * @param keyType The type of array indices
+ * @param valueType The type of array values
+ */
+case class ArrayType(keyType: Type, valueType: Type) extends Type {
+  override def statistics() {
+    UtilSMT.statistics.ARRAYTYPE += 1
+  }
+
+  override def toSMT: String = s"(Array ${keyType.toSMT} ${valueType.toSMT})"
+
+  override def toScala: String = s"Map[${keyType.toScala}, ${valueType.toScala}]"
+
+  override def toString = s"Array[${keyType}, ${valueType}]"
+
+  override def toJavaString = s"Map<${keyType.toJavaString}, ${valueType.toJavaString}>"
+
+  override def toJson1 = {
+    new JSONObject()
+      .put("type", "ArrayType")
+      .put("keyType", keyType.toJson)
+      .put("valueType", valueType.toJson)
+  }
+
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", s"Array[${keyType}, ${valueType}]")
+  }
+}
+
 trait Pattern extends HasChildren {
   def children: List[AnyRef] = List()
   def boundNames: Set[String] = Set()

@@ -127,7 +127,12 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var typeArguments: List[Type] =
       if (ctx.typeArguments() != null) visit(ctx.typeArguments()).asInstanceOf[List[Type]]
       else Nil
-    IdentType(qn, typeArguments)
+    // Convert Array[K, V] to ArrayType  
+    if (qn.names == List("Array") && typeArguments.length == 2) {
+      ArrayType(typeArguments(0), typeArguments(1))
+    } else {
+      IdentType(qn, typeArguments)
+    }
   }
 
   override def visitCartesianType(ctx: ModelParser.CartesianTypeContext): AnyRef = {
@@ -267,6 +272,18 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitConstructorAppExp2(ctx: ModelParser.ConstructorAppExp2Context): AnyRef = {
+    var ty = visit(ctx.`type`()).asInstanceOf[Type]
+    var argumentList =
+      if (ctx.argumentList() != null)
+        visit(ctx.argumentList()).asInstanceOf[List[Argument]]
+      else
+        Nil
+
+    CtorApplExp(ty, argumentList)
+  }
+
+  // Java-style 'new' keyword constructor call
+  override def visitNewExp(ctx: ModelParser.NewExpContext): AnyRef = {
     var ty = visit(ctx.`type`()).asInstanceOf[Type]
     var argumentList =
       if (ctx.argumentList() != null)
@@ -502,9 +519,18 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       IntegerLiteral(java.lang.Long.decode(ctx.IntegerLiteral().getSymbol().getText()))
     } else if (ctx.RealLiteral() != null) {
       //RealLiteral(java.lang.Float.parseFloat(ctx.RealLiteral().getSymbol().getText()))
-      val bd = new java.math.BigDecimal(ctx.RealLiteral.getSymbol.getText)//.
+      var text = ctx.RealLiteral.getSymbol.getText
+      // Strip float suffix (f/F) for Float32, (d/D) for Float64
+      val isFloat32 = text.endsWith("f") || text.endsWith("F")
+      val isFloat64 = text.endsWith("d") || text.endsWith("D")
+      if (isFloat32 || isFloat64) {
+        text = text.dropRight(1)
+      }
+      val bd = new java.math.BigDecimal(text)//.
         //setScale(16, java.math.BigDecimal.ROUND_DOWN)
-      RealLiteral(bd)
+      if (isFloat32) FloatLiteral(bd, FloatType.Float32)
+      else if (isFloat64) FloatLiteral(bd, FloatType.Float64)
+      else RealLiteral(bd)
     } else if (ctx.CharacterLiteral() != null) {
       CharacterLiteral(ctx.CharacterLiteral().getSymbol().getText().charAt(0))
     } else if (ctx.StringLiteral() != null) {

@@ -41,7 +41,7 @@ class Triangle extends Shape {
   req sides = 3
 
   fun area : Real {
-    base * height / 2  
+    base * height / 2
   }
   
   req Angles: a.value + b.value + c.value = 180
@@ -52,6 +52,7 @@ class  Equilateral extends Triangle {
 }
 
 class Obtuse extends Triangle {
+  //a > 1
   req a.value > 90 || b.value > 90 || c.value > 90
 }
  
