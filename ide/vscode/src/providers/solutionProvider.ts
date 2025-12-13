@@ -159,40 +159,69 @@ export class KSolutionProvider {
             if (constrsMatch) solution.statistics.constraints = parseInt(constrsMatch[1]);
         }
 
-        // Parse objects table
-        const tableMatch = output.match(/\+[-+]+\+([\s\S]*?)\+[-+]+\+[\s\S]*$/);
-        if (tableMatch) {
-            const tableContent = tableMatch[1];
-            const rows = tableContent.split('\n').filter(line => line.includes('|') && !line.match(/^\+[-+]+\+$/));
+        // Parse objects table - look for rows with |Variable|Ref|Value| pattern
+        // The table looks like:
+        // +--------+-----+------------------------------------------------------------+
+        // |Variable|Ref  |Value                                                       |
+        // +--------+-----+------------------------------------------------------------+
+        // |        |Ref 8|Obtuse(sides::3, a:: Ref 5, ...)                            |
 
-            for (const row of rows) {
-                const cells = row.split('|').map(s => s.trim()).filter(Boolean);
-                if (cells.length >= 3) {
-                    const variable = cells[0] || '';
-                    const ref = cells[1] || '';
-                    const valueStr = cells[2] || '';
+        // First, let's log the output for debugging
+        console.log('K Solution: Raw output length:', output.length);
+
+        // Find all lines that look like table data rows
+        const allLines = output.split('\n');
+        console.log('K Solution: Total lines:', allLines.length);
+
+        for (const line of allLines) {
+            // Look for lines with pipe characters that contain "Ref " followed by a digit
+            if (line.includes('|') && /\|Ref \d+\|/.test(line)) {
+                console.log('K Solution: Found table row:', line.substring(0, 80));
+
+                // Split by | - the line format is: |Variable|Ref N|ClassName(...)|
+                const parts = line.split('|');
+                // parts[0] is empty (before first |)
+                // parts[1] is Variable (often empty)
+                // parts[2] is "Ref N"
+                // parts[3] is "ClassName(props...)"
+
+                if (parts.length >= 4) {
+                    const variable = parts[1]?.trim() || '';
+                    const ref = parts[2]?.trim() || '';
+                    const valueStr = parts[3]?.trim() || '';
+
+                    console.log('K Solution: Parsing - ref:', ref, 'value:', valueStr.substring(0, 60));
 
                     // Parse the value: ClassName(prop1::val1, prop2::val2, ...)
-                    const valueMatch = valueStr.match(/^(\w+)\((.*)\)$/);
+                    // Handle both "prop::val" and "prop:: val" formats
+                    const valueMatch = valueStr.match(/^(\w+)\((.+)\)$/);
                     if (valueMatch) {
                         const className = valueMatch[1];
                         const propsStr = valueMatch[2];
                         const properties: { [key: string]: string } = {};
 
-                        // Parse properties
-                        const propMatches = propsStr.match(/(\w+)::\s*([^,)]+)/g);
-                        if (propMatches) {
-                            for (const pm of propMatches) {
-                                const [propName, propValue] = pm.split('::').map(s => s.trim());
+                        // Split by comma, but be careful with nested refs like "a:: Ref 5"
+                        // Pattern: word::space?value (where value continues until comma+space+word:: or end)
+                        const propParts = propsStr.split(/,\s*(?=\w+::)/);
+                        for (const part of propParts) {
+                            const colonIdx = part.indexOf('::');
+                            if (colonIdx > 0) {
+                                const propName = part.substring(0, colonIdx).trim();
+                                const propValue = part.substring(colonIdx + 2).trim();
                                 properties[propName] = propValue;
                             }
                         }
 
                         solution.objects.push({ variable, ref, className, properties });
+                        console.log('K Solution: Added object:', className, 'props:', Object.keys(properties).join(', '));
                     }
                 }
             }
+        }
 
+        console.log('K Solution: Total objects parsed:', solution.objects.length);
+
+        if (solution.objects.length > 0) {
             solution.status = 'SAT';
         }
 
@@ -254,6 +283,127 @@ export class KSolutionProvider {
         this.panel.webview.html = this.getWebviewContent(this.currentSolution);
     }
 
+    /**
+     * Build a map from ref to object for resolving references
+     */
+    private buildRefMap(objects: SolverObject[]): Map<string, SolverObject> {
+        const map = new Map<string, SolverObject>();
+        for (const obj of objects) {
+            map.set(obj.ref, obj);
+        }
+        return map;
+    }
+
+    /**
+     * Find "root" objects - objects that are not referenced by any other object.
+     * These are the top-level instances that contain other objects as properties.
+     * We also filter out objects that:
+     * 1. Have no variable name (not explicitly declared)
+     * 2. Are a base type of another object (e.g., Angle when we have TAngle)
+     */
+    private findRootObjects(objects: SolverObject[]): SolverObject[] {
+        // Collect all refs that are referenced by other objects
+        const referencedRefs = new Set<string>();
+        for (const obj of objects) {
+            for (const value of Object.values(obj.properties)) {
+                if (value.startsWith('Ref ')) {
+                    referencedRefs.add(value);
+                }
+            }
+        }
+
+        // Get inheritance hierarchy - a class that other classes extend
+        // If we have Triangle, Equilateral, Obtuse all extending Shape,
+        // then standalone Shape objects may be unnecessary
+        const classesWithSubclasses = new Set<string>();
+
+        // Simple heuristic: if we have objects of ClassName and SubClassName,
+        // assume SubClassName extends ClassName (based on K naming conventions)
+        const classNames = new Set(objects.map(o => o.className));
+
+        // Root objects are those:
+        // 1. Not referenced by anyone
+        // 2. Either have a variable name OR are concrete (no other class extends them that we have)
+        const rootCandidates = objects.filter(obj => !referencedRefs.has(obj.ref));
+
+        // Count how many unreferenced objects of each class exist
+        const unreferencedByClass = new Map<string, SolverObject[]>();
+        for (const obj of rootCandidates) {
+            if (!unreferencedByClass.has(obj.className)) {
+                unreferencedByClass.set(obj.className, []);
+            }
+            unreferencedByClass.get(obj.className)!.push(obj);
+        }
+
+        // Filter out standalone objects that seem auto-generated (no variable name)
+        // and are likely just base class instances created for completeness
+        return rootCandidates.filter(obj => {
+            // If it has a variable name, always include
+            if (obj.variable && obj.variable.trim()) {
+                return true;
+            }
+
+            // If this is the only unreferenced object of its class, include it
+            // (it's likely a meaningful instance)
+            const sameClassObjects = unreferencedByClass.get(obj.className) || [];
+            if (sameClassObjects.length === 1) {
+                return true;
+            }
+
+            // Check if there are more specific (subclass) objects
+            // that make this base class object redundant
+            const hasMoreSpecificClass = rootCandidates.some(other =>
+                other.ref !== obj.ref &&
+                other.className !== obj.className &&
+                other.className.includes(obj.className.slice(0, 3)) // simple heuristic
+            );
+
+            // If it has properties that look substantive (not just defaults), include it
+            const hasSubstantiveProps = Object.values(obj.properties).some(v => {
+                if (v.startsWith('Ref ')) return true; // has object references
+                const numVal = parseInt(v);
+                return !isNaN(numVal) && Math.abs(numVal) > 10; // non-trivial numeric value
+            });
+
+            return hasSubstantiveProps;
+        });
+    }
+
+    /**
+     * Format a property value, resolving refs to nested constructor syntax
+     */
+    private formatValue(value: string, refMap: Map<string, SolverObject>, depth: number = 0): string {
+        // Check if this is a reference
+        if (value.startsWith('Ref ')) {
+            const referenced = refMap.get(value);
+            if (referenced && depth < 2) {
+                // Show as nested constructor (limit depth to avoid too much nesting)
+                const props = Object.entries(referenced.properties)
+                    .filter(([_, v]) => !v.startsWith('Ref ')) // Only show primitive values inline
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(', ');
+                return `${referenced.className}(${props})`;
+            }
+            // Just show class name for deep refs
+            const referenced2 = refMap.get(value);
+            return referenced2 ? `→${referenced2.className}` : value;
+        }
+        return this.escapeHtml(value);
+    }
+
+    /**
+     * Generate constructor-style representation of an object
+     */
+    private formatAsConstructor(obj: SolverObject, refMap: Map<string, SolverObject>): string {
+        const props = Object.entries(obj.properties)
+            .map(([key, value]) => {
+                const formattedValue = this.formatValue(value, refMap, 0);
+                return `  ${key}: ${formattedValue}`;
+            })
+            .join(',\n');
+        return `${obj.className}(\n${props}\n)`;
+    }
+
     private getWebviewContent(solution: SolverSolution): string {
         const statusColor = {
             'SAT': '#4caf50',
@@ -269,23 +419,53 @@ export class KSolutionProvider {
             'ERROR': '⚠'
         }[solution.status];
 
-        const objectsHtml = solution.objects.map(obj => `
-            <div class="object">
-                <div class="object-header">
-                    <span class="ref">${obj.ref}</span>
-                    <span class="class-name">${obj.className}</span>
-                    ${obj.variable ? `<span class="var-name">${obj.variable}</span>` : ''}
+        // Build ref map for resolving references
+        const refMap = this.buildRefMap(solution.objects);
+
+        // Find root objects (not referenced by others)
+        const rootObjects = this.findRootObjects(solution.objects);
+        const componentObjects = solution.objects.filter(obj => !rootObjects.includes(obj));
+
+        // Helper to generate object HTML
+        const generateObjectHtml = (obj: SolverObject, idx: number, isRoot: boolean) => {
+            const propsHtml = Object.entries(obj.properties).map(([key, value]) => {
+                const formattedValue = this.formatValue(value, refMap, 0);
+                const isRef = value.startsWith('Ref ');
+                return `
+                    <div class="property ${isRef ? 'ref-property' : ''}">
+                        <span class="prop-name">${key}</span>
+                        <span class="prop-value">${formattedValue}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="object ${isRoot ? 'root-object' : 'component-object'}">
+                    <div class="object-header">
+                        <span class="class-name">${obj.className}</span>
+                        ${obj.variable ? `<span class="var-name">${obj.variable}</span>` : ''}
+                    </div>
+                    <div class="properties">
+                        ${propsHtml}
+                    </div>
                 </div>
-                <div class="properties">
-                    ${Object.entries(obj.properties).map(([key, value]) => `
-                        <div class="property">
-                            <span class="prop-name">${key}</span>
-                            <span class="prop-value">${value}</span>
-                        </div>
-                    `).join('')}
+            `;
+        };
+
+        // Generate root objects HTML
+        const rootObjectsHtml = rootObjects.map((obj, idx) =>
+            generateObjectHtml(obj, idx, true)
+        ).join('');
+
+        // Generate component objects HTML (collapsible)
+        const componentObjectsHtml = componentObjects.length > 0 ? `
+            <details class="component-section">
+                <summary>Component Objects (${componentObjects.length})</summary>
+                <div class="component-objects">
+                    ${componentObjects.map((obj, idx) => generateObjectHtml(obj, idx, false)).join('')}
                 </div>
-            </div>
-        `).join('');
+            </details>
+        ` : '';
 
         const errorsHtml = solution.errors?.length ? `
             <div class="errors">
@@ -373,17 +553,20 @@ export class KSolutionProvider {
             gap: 10px;
             padding: 10px;
             background-color: var(--vscode-input-background);
+            align-items: center;
         }
-        .ref {
+        .object-num {
             padding: 2px 8px;
             background-color: var(--vscode-badge-background);
             color: var(--vscode-badge-foreground);
             border-radius: 4px;
             font-family: monospace;
+            font-size: 12px;
         }
         .class-name {
             font-weight: bold;
             color: var(--vscode-symbolIcon-classForeground);
+            font-size: 16px;
         }
         .var-name {
             opacity: 0.7;
@@ -401,6 +584,9 @@ export class KSolutionProvider {
         .property:last-child {
             border-bottom: none;
         }
+        .property.ref-property .prop-value {
+            color: var(--vscode-textLink-foreground);
+        }
         .prop-name {
             min-width: 100px;
             font-family: monospace;
@@ -408,6 +594,32 @@ export class KSolutionProvider {
         }
         .prop-value {
             font-family: monospace;
+        }
+        .root-object {
+            border-left: 3px solid var(--vscode-textLink-foreground);
+        }
+        .component-object {
+            opacity: 0.85;
+            border-left: 3px solid var(--vscode-descriptionForeground);
+        }
+        .component-section {
+            margin-top: 20px;
+        }
+        .component-section summary {
+            cursor: pointer;
+            padding: 10px;
+            background-color: var(--vscode-input-background);
+            border-radius: 4px;
+            user-select: none;
+        }
+        .component-section summary:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+        .component-objects {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .errors, .unsat-core {
             margin-top: 20px;
@@ -456,11 +668,12 @@ export class KSolutionProvider {
     ${errorsHtml}
     ${unsatCoreHtml}
 
-    ${solution.objects.length ? `
-        <h2>Objects (${solution.objects.length})</h2>
+    ${rootObjects.length ? `
+        <h2>Solution Instances (${rootObjects.length})</h2>
         <div class="objects">
-            ${objectsHtml}
+            ${rootObjectsHtml}
         </div>
+        ${componentObjectsHtml}
     ` : '<p>No instance objects created.</p>'}
 </body>
 </html>`;

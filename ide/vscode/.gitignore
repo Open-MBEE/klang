@@ -10,3 +10,4 @@ out/
 # Lock files (optional, can be committed)
 package-lock.json
 
+.vscode-test/
