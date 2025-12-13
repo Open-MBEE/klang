@@ -118,6 +118,30 @@
         "icon": "$(debug-stop)"
       },
       {
+        "command": "k.openUnifiedDebugger",
+        "title": "Open Debug Panel (with External Function Support)",
+        "category": "K Debug",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "k.unifiedDebugStepNext",
+        "title": "Step Next (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "k.unifiedDebugStepPrev",
+        "title": "Step Prev (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-step-back)"
+      },
+      {
+        "command": "k.unifiedDebugRunAll",
+        "title": "Run All (Unified)",
+        "category": "K Debug",
+        "icon": "$(debug-continue)"
+      },
+      {
         "command": "k.solveWithProgress",
         "title": "Solve with Progress Panel",
         "category": "K",

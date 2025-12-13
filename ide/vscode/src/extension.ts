@@ -14,6 +14,7 @@ import { KAutoSolveController } from './autoSolve';
 import { KInlineDecorations } from './inlineDecorations';
 import { KSolverManager, KProgressPanel } from './solverManager';
 import { KConstraintDebugger } from './constraintDebugger';
+import { KDebugPanel } from './unifiedDebugPanel';
 import { runKFile, runKFileWithArgs } from './runner';
 
 // Document selector for K language files
@@ -37,6 +38,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize Constraint Debugger (stepping through constraints)
     const constraintDebugger = new KConstraintDebugger();
     context.subscriptions.push(constraintDebugger);
+
+    // Initialize Unified Debug Panel (combines visualizer + debugger with external function support)
+    const unifiedDebugPanel = KDebugPanel.getInstance(context);
+    context.subscriptions.push(unifiedDebugPanel);
 
     // Connect auto-solve to inline decorations
     autoSolveController.onSolutionUpdate(solution => {
@@ -232,6 +237,36 @@ export function activate(context: vscode.ExtensionContext) {
             if (editor && editor.document.languageId === 'k') {
                 constraintDebugger.startSession(editor.document);
             }
+        })
+    );
+
+    // Register Unified Debug Panel Commands
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.openUnifiedDebugger', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor && editor.document.languageId === 'k') {
+                await unifiedDebugPanel.startSession(editor.document);
+            } else {
+                vscode.window.showWarningMessage('Open a K file to debug');
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.unifiedDebugStepNext', () => {
+            unifiedDebugPanel.stepNext();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.unifiedDebugStepPrev', () => {
+            unifiedDebugPanel.stepPrev();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('k.unifiedDebugRunAll', () => {
+            unifiedDebugPanel.runAll();
         })
     );
 
