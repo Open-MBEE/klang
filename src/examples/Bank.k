@@ -27,8 +27,8 @@ class Bank {
   
 
   -- we do not currently support dot expressions...
-  -- req Counts: customers.length() >= accounts.length()
-  req Counts: customers >= accounts
+  req Counts: customers.length() >= accounts.length()
+  -- req Counts: customers >= accounts
   
   
 }

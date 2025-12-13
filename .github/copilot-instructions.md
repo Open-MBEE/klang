@@ -31,8 +31,8 @@ If you encounter Z3 library loading errors (UnsatisfiedLinkError, wrong architec
 - **DON'T**: Write to `/tmp/` (requires user approval)
 
 ### Testing Changes
+- **DO**: Use `./run-tests.sh` for regression testing, running K examples, and testing K files
 - **DO**: Use `./export/k <file.k>` to test K files
-- **DO**: Use `./run-tests.sh` for regression testing
 - **DON'T**: Manually construct java commands with classpath/library paths
 
 ### Key Source Files
