@@ -1953,4 +1953,142 @@ object K2Z3 {
     }
   }
 
+  // ============================================================================
+  // Variable Bounds Querying (for IDE integration)
+  // ============================================================================
+
+  /**
+   * Query the minimum and maximum values for a numeric variable.
+   * Uses Z3's Optimize to compute bounds without changing the main solver state.
+   *
+   * @param varName The variable name to query bounds for
+   * @return VariableBounds with min/max values, or None if variable not found
+   */
+  def queryVariableBounds(varName: String): Option[SolverProgress.VariableBounds] = {
+    idents.get(varName) match {
+      case Some((expr, _)) =>
+        val sort = expr.getSort
+
+        // Only query bounds for numeric types
+        if (sort == ctx.getIntSort || sort == ctx.getRealSort || sort.isInstanceOf[BitVecSort]) {
+          try {
+            val opt = ctx.mkOptimize()
+
+            // Copy current solver assertions to optimizer
+            solver.getAssertions.foreach(a => opt.Add(a.asInstanceOf[BoolExpr]))
+
+            // Query minimum
+            val minHandle = opt.MkMinimize(expr.asInstanceOf[Expr[ArithSort]])
+            val minResult = opt.Check()
+            val minValue = if (minResult == Status.SATISFIABLE) {
+              Some(opt.getModel.eval(expr, true).toString)
+            } else None
+
+            // Query maximum (fresh optimizer)
+            val opt2 = ctx.mkOptimize()
+            solver.getAssertions.foreach(a => opt2.Add(a.asInstanceOf[BoolExpr]))
+            val maxHandle = opt2.MkMaximize(expr.asInstanceOf[Expr[ArithSort]])
+            val maxResult = opt2.Check()
+            val maxValue = if (maxResult == Status.SATISFIABLE) {
+              Some(opt2.getModel.eval(expr, true).toString)
+            } else None
+
+            // Determine var type
+            val varType = sort match {
+              case _ if sort == ctx.getIntSort => "Int"
+              case _ if sort == ctx.getRealSort => "Real"
+              case bv: BitVecSort => s"BitVec${bv.getSize}"
+              case _ => "unknown"
+            }
+
+            // Check if exact value (min == max)
+            val exactValue = (minValue, maxValue) match {
+              case (Some(min), Some(max)) if min == max => Some(min)
+              case _ => None
+            }
+
+            Some(SolverProgress.VariableBounds(
+              variableName = varName,
+              minValue = minValue,
+              maxValue = maxValue,
+              exactValue = exactValue,
+              feasible = minValue.isDefined || maxValue.isDefined,
+              varType = varType
+            ))
+          } catch {
+            case e: Exception =>
+              logDebug(s"Failed to query bounds for $varName: ${e.getMessage}")
+              None
+          }
+        } else {
+          // Non-numeric type - just report if it has a value
+          if (z3Model != null) {
+            try {
+              val value = z3Model.eval(expr, true)
+              Some(SolverProgress.VariableBounds(
+                variableName = varName,
+                exactValue = Some(value.toString),
+                feasible = true,
+                varType = sort.toString
+              ))
+            } catch {
+              case _: Exception => None
+            }
+          } else None
+        }
+      case None => None
+    }
+  }
+
+  /**
+   * Query bounds for all known variables.
+   * Can be expensive for large models - use sparingly.
+   */
+  def queryAllVariableBounds(): Map[String, SolverProgress.VariableBounds] = {
+    idents.keys.flatMap { varName =>
+      queryVariableBounds(varName).map(b => varName -> b)
+    }.toMap
+  }
+
+  /**
+   * Query bounds for variables matching a pattern.
+   */
+  def queryVariableBoundsMatching(pattern: String): Map[String, SolverProgress.VariableBounds] = {
+    val regex = pattern.r
+    idents.keys.filter(name => regex.findFirstIn(name).isDefined).flatMap { varName =>
+      queryVariableBounds(varName).map(b => varName -> b)
+    }.toMap
+  }
+
+  /**
+   * Get current value of a variable from the model (if available).
+   */
+  def getVariableValue(varName: String): Option[String] = {
+    if (z3Model == null) return None
+
+    idents.get(varName).flatMap { case (expr, _) =>
+      try {
+        Some(z3Model.eval(expr, true).toString)
+      } catch {
+        case _: Exception => None
+      }
+    }
+  }
+
+  /**
+   * Get all variable values from the current model.
+   */
+  def getAllVariableValues(): Map[String, String] = {
+    if (z3Model == null) return Map()
+
+    idents.flatMap { case (name, (expr, _)) =>
+      try {
+        Some(name -> z3Model.eval(expr, true).toString)
+      } catch {
+        case _: Exception => None
+      }
+    }.toMap
+  }
+
 }
+

@@ -190,6 +190,7 @@ object PythonExternalFunctions {
 
   /**
    * Generate Python code to evaluate a function call and print the result
+   * Supports debugging via debugpy when K_PYTHON_DEBUG environment variable is set
    */
   private def generatePythonCode(moduleName: String, funcName: String, args: List[Any]): String = {
     val argsStr = args.map(argToPython).mkString(", ")
@@ -204,10 +205,32 @@ object PythonExternalFunctions {
       (s"import $moduleName", s"$moduleName.$funcName($argsStr)")
     }
 
+    // Check if debugging is enabled via environment variable
+    val debugCode = if (sys.env.getOrElse("K_PYTHON_DEBUG", "0") == "1") {
+      val debugPort = sys.env.getOrElse("K_PYTHON_DEBUG_PORT", "5678")
+      s"""
+         |import os
+         |# Enable debugpy if K_PYTHON_DEBUG is set
+         |if os.environ.get('K_PYTHON_DEBUG', '0') == '1':
+         |    try:
+         |        import debugpy
+         |        debug_port = int(os.environ.get('K_PYTHON_DEBUG_PORT', $debugPort))
+         |        if not debugpy.is_client_connected():
+         |            debugpy.listen(('0.0.0.0', debug_port))
+         |            print(f"[K Python Debug] Listening on port {debug_port}", file=sys.stderr)
+         |    except ImportError:
+         |        print("[K Python Debug] debugpy not installed, skipping debug setup", file=sys.stderr)
+         |    except Exception as e:
+         |        print(f"[K Python Debug] Could not start debugpy: {e}", file=sys.stderr)
+         |""".stripMargin
+    } else {
+      ""
+    }
+
     s"""$importStmt
        |import json
        |import sys
-       |
+       |$debugCode
        |try:
        |    result = $callExpr
        |    # Output in a parseable format

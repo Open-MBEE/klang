@@ -45,6 +45,70 @@ interface KDebugSession {
     externalFunctions: ExternalFunction[];
     javaDebugSession?: vscode.DebugSession;
     pythonDebugSession?: vscode.DebugSession;
+    // CEGAR visibility
+    cegarIterations: CEGARIteration[];
+    currentCegarIteration: number;
+    // Value ranges
+    variableBounds: Map<string, VariableBounds>;
+    // Optimization
+    optimizationProgress?: OptimizationProgress;
+    // Breakpoints
+    breakpointConstraints: Set<number>;
+    // Call stack
+    callStack: CallFrame[];
+}
+
+/**
+ * CEGAR iteration information
+ */
+interface CEGARIteration {
+    iteration: number;
+    status: 'started' | 'candidate' | 'counterexample' | 'refined' | 'verified';
+    candidateSolution?: { [key: string]: string };
+    counterexample?: string;
+    refinementConstraint?: string;
+    externalFunction?: string;
+    expectedValue?: string;
+    actualValue?: string;
+    timestamp: number;
+}
+
+/**
+ * Variable bounds for inline display
+ */
+interface VariableBounds {
+    variableName: string;
+    minValue?: string;
+    maxValue?: string;
+    exactValue?: string;
+    feasible: boolean;
+    varType: string;
+}
+
+/**
+ * Optimization progress tracking
+ */
+interface OptimizationProgress {
+    iteration: number;
+    objectiveName: string;
+    currentValue?: string;
+    bestValue?: string;
+    lowerBound?: string;
+    upperBound?: string;
+    gap?: number;
+    status: 'running' | 'optimal' | 'timeout' | 'infeasible';
+    timestamp: number;
+}
+
+/**
+ * Unified call stack frame (K + Java + Python)
+ */
+interface CallFrame {
+    frameType: 'k-constraint' | 'java' | 'python';
+    name: string;
+    file?: string;
+    line?: number;
+    details?: string;
 }
 
 interface KConstraint {
@@ -166,7 +230,14 @@ export class KDebugPanel {
             activeConstraints: [],
             solutionObjects: [],
             createdAt: new Date(),
-            externalFunctions
+            externalFunctions,
+            // New debug features
+            cegarIterations: [],
+            currentCegarIteration: 0,
+            variableBounds: new Map(),
+            optimizationProgress: undefined,
+            breakpointConstraints: new Set(),
+            callStack: []
         };
 
         this.sessions.set(sessionId, session);
@@ -1011,6 +1082,118 @@ export class KDebugPanel {
             background: var(--vscode-progressBar-foreground);
             transition: width 0.3s;
         }
+        
+        /* CEGAR Iterations */
+        .cegar-section { margin-bottom: 12px; }
+        .cegar-section h3 .count { 
+            font-weight: normal; 
+            color: var(--vscode-descriptionForeground); 
+        }
+        .cegar-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        .cegar-iteration {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .cegar-iteration:last-child { border-bottom: none; }
+        .cegar-iteration:hover { background: var(--vscode-list-hoverBackground); }
+        .cegar-iteration.current { 
+            background: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
+        }
+        .cegar-iteration.verified { background: rgba(76, 175, 80, 0.1); }
+        .cegar-iteration.counterexample { background: rgba(244, 67, 54, 0.1); }
+        .cegar-iteration.refined { background: rgba(255, 152, 0, 0.1); }
+        .cegar-icon { font-size: 14px; }
+        .cegar-num { font-weight: bold; color: var(--vscode-descriptionForeground); }
+        .cegar-status { text-transform: capitalize; }
+        .cegar-details {
+            flex-basis: 100%;
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            padding-left: 26px;
+        }
+        .cegar-func { 
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+        .cegar-mismatch { color: #f44336; }
+        .cegar-constraint {
+            font-family: var(--vscode-editor-font-family);
+            font-size: 10px;
+            background: var(--vscode-textCodeBlock-background);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        /* Optimization Progress */
+        .optimization-section { margin-bottom: 12px; }
+        .optimization-info {
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .opt-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .opt-icon { font-size: 18px; }
+        .opt-objective { font-weight: bold; }
+        .opt-status-text {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .opt-status-text[data-status="running"] { background: #2196f3; color: white; }
+        .opt-status-text[data-status="optimal"] { background: #4caf50; color: white; }
+        .opt-status-text[data-status="timeout"] { background: #ff9800; color: white; }
+        .opt-status-text[data-status="infeasible"] { background: #f44336; color: white; }
+        .opt-values {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 8px;
+        }
+        .opt-current, .opt-best { font-size: 13px; }
+        .opt-bounds {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 4px;
+        }
+        .opt-iteration {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        /* Variable Bounds Indicator */
+        .var-bounds {
+            display: inline-block;
+            font-size: 10px;
+            color: var(--vscode-debugTokenExpression-number);
+            margin-left: 8px;
+            font-style: italic;
+        }
+        
+        /* Breakpoint indicator */
+        .constraint.has-breakpoint::before {
+            content: '●';
+            color: #f44336;
+            margin-right: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1048,6 +1231,10 @@ export class KDebugPanel {
             </div>
             
             ${externalFuncsHtml}
+            
+            ${this.getCegarHtml(session)}
+            
+            ${this.getOptimizationHtml(session)}
             
             <div class="section">
                 <h3>CONSTRAINTS</h3>
@@ -1091,6 +1278,94 @@ export class KDebugPanel {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    /**
+     * Generate HTML for CEGAR iterations display
+     */
+    private getCegarHtml(session: KDebugSession | undefined): string {
+        if (!session || session.cegarIterations.length === 0) {
+            return '';
+        }
+
+        const iterationsHtml = session.cegarIterations.map((iter, idx) => {
+            const statusIcon = {
+                'started': '🔄',
+                'candidate': '💡',
+                'counterexample': '❌',
+                'refined': '🔧',
+                'verified': '✅'
+            }[iter.status] || '❓';
+
+            const detailsHtml = [];
+            if (iter.externalFunction) {
+                detailsHtml.push(`<span class="cegar-func">${this.escapeHtml(iter.externalFunction)}</span>`);
+            }
+            if (iter.expectedValue && iter.actualValue) {
+                detailsHtml.push(`<span class="cegar-mismatch">expected ${this.escapeHtml(iter.expectedValue)}, got ${this.escapeHtml(iter.actualValue)}</span>`);
+            }
+            if (iter.refinementConstraint) {
+                detailsHtml.push(`<code class="cegar-constraint">${this.escapeHtml(iter.refinementConstraint)}</code>`);
+            }
+
+            return `
+                <div class="cegar-iteration ${iter.status} ${idx === session.currentCegarIteration ? 'current' : ''}"
+                     onclick="showCegarDetails(${idx})">
+                    <span class="cegar-icon">${statusIcon}</span>
+                    <span class="cegar-num">#${iter.iteration}</span>
+                    <span class="cegar-status">${iter.status}</span>
+                    ${detailsHtml.length > 0 ? `<div class="cegar-details">${detailsHtml.join(' ')}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="section cegar-section">
+                <h3>🔄 CEGAR ITERATIONS <span class="count">(${session.cegarIterations.length})</span></h3>
+                <div class="cegar-list">${iterationsHtml}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Generate HTML for optimization progress display
+     */
+    private getOptimizationHtml(session: KDebugSession | undefined): string {
+        if (!session?.optimizationProgress) {
+            return '';
+        }
+
+        const opt = session.optimizationProgress;
+        const statusIcon = {
+            'running': '⏳',
+            'optimal': '🏆',
+            'timeout': '⏱️',
+            'infeasible': '❌'
+        }[opt.status] || '❓';
+
+        const boundsHtml = [];
+        if (opt.lowerBound) boundsHtml.push(`Lower: ${this.escapeHtml(opt.lowerBound)}`);
+        if (opt.upperBound) boundsHtml.push(`Upper: ${this.escapeHtml(opt.upperBound)}`);
+        if (opt.gap !== undefined) boundsHtml.push(`Gap: ${(opt.gap * 100).toFixed(2)}%`);
+
+        return `
+            <div class="section optimization-section">
+                <h3>📈 OPTIMIZATION</h3>
+                <div class="optimization-info">
+                    <div class="opt-status">
+                        <span class="opt-icon">${statusIcon}</span>
+                        <span class="opt-objective">${this.escapeHtml(opt.objectiveName)}</span>
+                        <span class="opt-status-text">${opt.status}</span>
+                    </div>
+                    <div class="opt-values">
+                        ${opt.currentValue ? `<div class="opt-current">Current: <strong>${this.escapeHtml(opt.currentValue)}</strong></div>` : ''}
+                        ${opt.bestValue ? `<div class="opt-best">Best: <strong>${this.escapeHtml(opt.bestValue)}</strong></div>` : ''}
+                    </div>
+                    ${boundsHtml.length > 0 ? `<div class="opt-bounds">${boundsHtml.join(' | ')}</div>` : ''}
+                    <div class="opt-iteration">Iteration: ${opt.iteration}</div>
+                </div>
+            </div>
+        `;
     }
 
     /**

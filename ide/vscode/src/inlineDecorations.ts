@@ -2,6 +2,18 @@ import * as vscode from 'vscode';
 import { KSolution, KObject } from './autoSolve';
 
 /**
+ * Variable bounds information for inline display
+ */
+export interface VariableBoundsDisplay {
+    variableName: string;
+    minValue?: string;
+    maxValue?: string;
+    exactValue?: string;
+    feasible: boolean;
+    varType: string;
+}
+
+/**
  * Provides inline decorations showing variable values and constraint status
  * directly in the editor, similar to how Java debuggers show values.
  */
@@ -277,6 +289,118 @@ export class KInlineDecorations implements vscode.Disposable {
         }
 
         editor.setDecorations(this.rangeDecorationType, rangeDecorations);
+    }
+
+    /**
+     * Show variable bounds from solver progress data
+     * This is the enhanced version that handles VariableBounds objects
+     */
+    public showVariableBounds(bounds: Map<string, VariableBoundsDisplay>): void {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || editor.document.languageId !== 'k') {
+            return;
+        }
+
+        const document = editor.document;
+        const text = document.getText();
+        const rangeDecorations: vscode.DecorationOptions[] = [];
+
+        // Track current class context for qualified lookups
+        const classRanges: Array<{name: string, start: number, end: number}> = [];
+        const classPattern = /^\s*(?:class|assoc)\s+([A-Z][a-zA-Z0-9_]*)/gm;
+        let classMatch;
+        while ((classMatch = classPattern.exec(text)) !== null) {
+            classRanges.push({
+                name: classMatch[1],
+                start: classMatch.index,
+                end: text.length
+            });
+        }
+        for (let i = 0; i < classRanges.length - 1; i++) {
+            classRanges[i].end = classRanges[i + 1].start;
+        }
+
+        // Find property declarations and show their bounds
+        const propPattern = /^\s*([a-z][a-zA-Z0-9_]*)\s*:\s*([A-Z][a-zA-Z0-9_]*)/gm;
+        let match;
+
+        while ((match = propPattern.exec(text)) !== null) {
+            const propName = match[1];
+            const position = match.index;
+
+            // Find class context
+            let className = '';
+            for (const cr of classRanges) {
+                if (position >= cr.start && position < cr.end) {
+                    className = cr.name;
+                    break;
+                }
+            }
+
+            // Try both qualified and unqualified lookups
+            const boundInfo = bounds.get(propName) ||
+                              (className ? bounds.get(`${className}.${propName}`) : undefined);
+
+            if (boundInfo) {
+                const line = document.positionAt(match.index).line;
+                const lineEnd = document.lineAt(line).range.end;
+
+                // Format the display string
+                const displayText = this.formatBoundsDisplay(boundInfo);
+                const color = boundInfo.feasible
+                    ? new vscode.ThemeColor('debugTokenExpression.number')
+                    : new vscode.ThemeColor('errorForeground');
+
+                rangeDecorations.push({
+                    range: new vscode.Range(lineEnd, lineEnd),
+                    renderOptions: {
+                        after: {
+                            contentText: ` ${displayText}`,
+                            color: color,
+                            fontStyle: 'italic'
+                        }
+                    },
+                    hoverMessage: new vscode.MarkdownString(
+                        `**Variable Bounds** (${boundInfo.varType})\n\n` +
+                        (boundInfo.exactValue ? `Exact: \`${boundInfo.exactValue}\`\n\n` : '') +
+                        (boundInfo.minValue ? `Min: \`${boundInfo.minValue}\`\n\n` : '') +
+                        (boundInfo.maxValue ? `Max: \`${boundInfo.maxValue}\`\n\n` : '') +
+                        (boundInfo.feasible ? '' : '⚠️ Infeasible')
+                    )
+                });
+            }
+        }
+
+        editor.setDecorations(this.rangeDecorationType, rangeDecorations);
+    }
+
+    /**
+     * Format bounds for display
+     */
+    private formatBoundsDisplay(bounds: VariableBoundsDisplay): string {
+        if (!bounds.feasible) {
+            return '∅ (infeasible)';
+        }
+
+        if (bounds.exactValue !== undefined) {
+            return `= ${bounds.exactValue}`;
+        }
+
+        const hasMin = bounds.minValue !== undefined;
+        const hasMax = bounds.maxValue !== undefined;
+
+        if (hasMin && hasMax) {
+            if (bounds.minValue === bounds.maxValue) {
+                return `= ${bounds.minValue}`;
+            }
+            return `∈ [${bounds.minValue}, ${bounds.maxValue}]`;
+        } else if (hasMin) {
+            return `≥ ${bounds.minValue}`;
+        } else if (hasMax) {
+            return `≤ ${bounds.maxValue}`;
+        }
+
+        return '?';
     }
 
     private buildValueMap(objects: KObject[]): Map<string, Map<string, string>> {
