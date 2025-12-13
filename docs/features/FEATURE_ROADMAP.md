@@ -29,7 +29,6 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | Issue | Status |
 |---------|-------|--------|
-| Java Constructor Calls | TypeChecker missing `CtorApplExp` handling | Needs implementation |
 | Tuple Constructor | `Tuple(x,y)` syntax not type-checked | Needs implementation |
 | Complex Set Operations | Set comparison (`>=`) not SMT-native | Workaround needed |
 
@@ -37,8 +36,16 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | SMT Theory | Priority | Complexity | Notes |
 |---------|-----------|----------|------------|-------|
-| **IEEE Floating Point** | QF_FP | Medium | High | Overflow, NaN, rounding modes |
-| **Arrays (direct)** | QF_A | Low | Medium | Currently only used internally |
+| **Arrays (direct)** | QF_A | Medium | Medium | Map/lookup table semantics |
+
+### ✅ Recently Completed (December 2025)
+
+| Feature | Description | Commit |
+|---------|-------------|--------|
+| **IEEE Floating Point** | `FloatLiteral` with `f/F` and `d/D` suffixes, FP arithmetic/comparisons | feature/advanced-solver-features |
+| **Implicit Widening** | `Int8 → Int16 → Int32 → Int64` automatic in type compatibility | feature/advanced-solver-features |
+| **Narrowing Warnings** | TypeChecker warns when narrowing conversions may lose data | feature/advanced-solver-features |
+| **Java Constructor Calls** | `new Type(args)` syntax with `CtorApplExp` SMT generation | feature/advanced-solver-features |
 
 ---
 

@@ -430,6 +430,8 @@ class TypeChecker(model: Model) {
       case SignedIntType(_) => return true
       case UnsignedIntType(_) => return true
       case FloatType(_, _) => return true
+      case ArrayType(keyType, valueType) => 
+        return doesTypeExist(te, keyType) && doesTypeExist(te, valueType)
     }
     return false
   }
@@ -1448,37 +1450,94 @@ class TypeChecker(model: Model) {
             }
         }
       case CtorApplExp(ty, args) =>
-        // Java-style constructor call (new Type(...) or Type(...))
-        val decl = type2Decl.get(ty)
-        if (decl.isEmpty) {
-          error(s"Unknown type in constructor call: $ty")
+        // Java-style constructor call (new Type(...) or Type[...](args))
+        ty match {
+          // Handle collection type constructors: Seq[T](...), Set[T](...), etc.
+          case IdentType(QualifiedName(List(collName)), List(elemType)) 
+            if List("Seq", "Set", "OSet", "Bag").contains(collName) =>
+            // Type check all elements against the element type
+            args.foreach { arg =>
+              val argType = arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+              if (!areTypesEqual(elemType, argType, true)) {
+                error(s"Element type mismatch in $collName constructor: expected $elemType, got $argType")
+              }
+            }
+            ty
+            
+          // Handle Array[K, V] constructor
+          case IdentType(QualifiedName(List("Array")), List(keyType, valueType)) =>
+            // Array constructor might take key-value pairs or be empty
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            ty
+            
+          case ArrayType(keyType, valueType) =>
+            // Direct ArrayType constructor
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            ty
+            
+          // Handle tuple constructors: (Int * Bool)(1, true)
+          case CartesianType(types) =>
+            if (args.length != types.length) {
+              error(s"Tuple constructor expects ${types.length} arguments, got ${args.length}")
+            }
+            (types zip args).foreach { case (expectedType, arg) =>
+              val argType = arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+              if (!areTypesEqual(expectedType, argType, true)) {
+                error(s"Tuple element type mismatch: expected $expectedType, got $argType")
+              }
+            }
+            ty
+            
+          // Handle user-defined class constructors
+          case _ =>
+            val decl = type2Decl.get(ty)
+            if (decl.isEmpty) {
+              error(s"Unknown type in constructor call: $ty")
+            }
+            val entityDecl = decl.get.asInstanceOf[EntityDecl]
+            val declTypeEnvironment = decl2TypeEnvi(entityDecl)
+            
+            // Type check all arguments
+            args.foreach { arg =>
+              arg match {
+                case NamedArgument(ident, e) =>
+                  val propTypeInfo = declTypeEnvironment.map.get(ident)
+                  if (propTypeInfo.isEmpty) {
+                    error(s"Property $ident not found in ${entityDecl.ident}")
+                  }
+                  val lhsType = propTypeInfo.get match {
+                    case PropertyTypeInfo(pd, _, _, _) => pd.getTypeOrError
+                    case _ => error(s"$ident is not a property in ${entityDecl.ident}")
+                  }
+                  val rhsType = getExpType(te, e, owner)
+                  if (!areTypesEqual(lhsType, rhsType, false)) {
+                    error(s"Type mismatch for property $ident: expected $lhsType, got $rhsType")
+                  }
+                case PositionalArgument(e) =>
+                  // For positional arguments, just type check the expression
+                  getExpType(te, e, owner)
+              }
+            }
+            ty
         }
-        val entityDecl = decl.get.asInstanceOf[EntityDecl]
-        val declTypeEnvironment = decl2TypeEnvi(entityDecl)
-        
-        // Type check all arguments
-        args.foreach { arg =>
-          arg match {
-            case NamedArgument(ident, e) =>
-              val propTypeInfo = declTypeEnvironment.map.get(ident)
-              if (propTypeInfo.isEmpty) {
-                error(s"Property $ident not found in ${entityDecl.ident}")
-              }
-              val lhsType = propTypeInfo.get match {
-                case PropertyTypeInfo(pd, _, _, _) => pd.getTypeOrError
-                case _ => error(s"$ident is not a property in ${entityDecl.ident}")
-              }
-              val rhsType = getExpType(te, e, owner)
-              if (!areTypesEqual(lhsType, rhsType, false)) {
-                error(s"Type mismatch for property $ident: expected $lhsType, got $rhsType")
-              }
-            case PositionalArgument(e) =>
-              // For positional arguments, just type check the expression
-              getExpType(te, e, owner)
-          }
-        }
-        ty
       case FunApplExp(fexp, args) =>
+
         // Check if this is a string method call
         fexp match {
           case DotExp(strExp, methodName) if getExpType(te, strExp, owner) == StringType =>
@@ -1802,6 +1861,19 @@ class TypeChecker(model: Model) {
       case DurationLiteral(_)  => DurationType
       case ThisLiteral =>
         type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](te("this").asInstanceOf[ClassTypeInfo].decl)
+      case IndexExp(exp1, args) =>
+        // arr[key] - index expression for arrays and sequences
+        val exp1Type = getExpType(te, exp1, owner)
+        exp1Type match {
+          case ArrayType(keyType, valueType) =>
+            // For Array[K, V], indexing returns V
+            valueType
+          case IdentType(QualifiedName(List("Seq")), List(elemType)) =>
+            // For Seq[T], indexing returns T
+            elemType
+          case _ =>
+            error(s"IndexExp: Cannot index into type $exp1Type. Expected Array[K, V] or Seq[T].")
+        }
       case _ => error(s"Type checking for ${exp.getClass} not implemented yet!")
     }
     exp2Type.put(exp, result)

@@ -127,7 +127,12 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var typeArguments: List[Type] =
       if (ctx.typeArguments() != null) visit(ctx.typeArguments()).asInstanceOf[List[Type]]
       else Nil
-    IdentType(qn, typeArguments)
+    // Convert Array[K, V] to ArrayType  
+    if (qn.names == List("Array") && typeArguments.length == 2) {
+      ArrayType(typeArguments(0), typeArguments(1))
+    } else {
+      IdentType(qn, typeArguments)
+    }
   }
 
   override def visitCartesianType(ctx: ModelParser.CartesianTypeContext): AnyRef = {

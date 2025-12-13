@@ -180,6 +180,7 @@ object UtilSMT {
       case SignedIntType(_)              => true
       case UnsignedIntType(_)            => true
       case FloatType(_, _)               => true
+      case ArrayType(keyType, valueType) => wellFormedType(keyType) && wellFormedType(valueType)
       case IdentType(_, _)               => true
       case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
         //UtilSMT.error(s"$ty in local property declaration")
@@ -412,8 +413,16 @@ object UtilSMT {
     exp match {
       case FunApplExp(function, _) =>
         isConstructor(function)
-      case CtorApplExp(_, _) =>
-        true  // CtorApplExp is always a constructor application
+      case CtorApplExp(ty, _) =>
+        // Only true for user-defined class constructors, not built-in types
+        ty match {
+          case IdentType(QualifiedName(List(name)), _) =>
+            // Not a constructor if it is a built-in collection or primitive type
+            !List("Seq", "Set", "OSet", "Bag", "Array", "Int", "Bool", "Real", "String", "Char").contains(name)
+          case ArrayType(_, _) => false  // Array type is not a class constructor
+          case CartesianType(_) => false  // Tuple type is not a class constructor
+          case _ => false
+        }
       case IfExp(_, trueBranch, Some(falseBranch)) =>
         isConstructorAppl(trueBranch) && isConstructorAppl(falseBranch)
       case _ =>
@@ -499,6 +508,7 @@ class Statistics {
   var TUPLETYPE: Int = 0
   var SETTYPE: Int = 0
   var SEQTYPE: Int = 0
+  var ARRAYTYPE: Int = 0
   var FUNTYPE: Int = 0
   var INTTYPE: Int = 0
   var REALTYPE: Int = 0
@@ -595,6 +605,7 @@ class Statistics {
     data("tuple types", TUPLETYPE)
     data("set types", SETTYPE)
     data("seq types", SEQTYPE)
+    data("array types", ARRAYTYPE)
     data("function types", FUNTYPE)
     data("int types", INTTYPE)
     data("real types", REALTYPE)
@@ -2611,6 +2622,25 @@ case class IndexExp(exp1: Exp, args: List[Argument]) extends Exp {
   }
   
   
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    val exp1SMT = exp1.toSMT(className, subTyping)
+    val exp1Type = TypeChecker.exp2Type.get(exp1)
+    exp1Type match {
+      case ArrayType(_, _) =>
+        // Array[K, V] uses SMT select: (select arr key)
+        val keySMT = args(0).toSMT(className, subTyping)
+        s"(select $exp1SMT $keySMT)"
+      case IdentType(QualifiedName(List("Seq")), _) =>
+        // Seq[T] uses seq.nth: (seq.nth seq index)
+        val indexSMT = args(0).toSMT(className, subTyping)
+        s"(seq.nth $exp1SMT $indexSMT)"
+      case _ =>
+        // Fallback - try select (works for other array-like types)
+        val keySMT = args(0).toSMT(className, subTyping)
+        s"(select $exp1SMT $keySMT)"
+    }
+  }
+
   override def toJavaString = {
     var result = exp1.toJavaString
     args.foreach(result += ".get(" + _.toJavaString + ")")
@@ -3029,29 +3059,79 @@ case class CtorApplExp(ty: Type, arguments: List[Argument]) extends CallApplExp 
   // Override toSMT to directly generate constructor application
   // since isConstructor may not recognize our dynamically created IdentExp
   override def toSMT(className: String, subTyping: Boolean): String = {
-    // constructor application - same logic as CallApplExp.toSMT's isConstructor branch
-    val ident = ty match {
-      case IdentType(qn, _) => qn.toString
-      case _ => ty.toString
-    }
-    val argMap: Map[String, Exp] = (for (NamedArgument(x, exp) <- args) yield (x -> exp)).toMap
-    val entityDecl = TypeChecker.getEntityDecl(ident)
-    val propertyDecls = entityDecl.getAllPropertyDecls
-    if (propertyDecls.isEmpty)
-      s"(lift-$ident mk-$ident)"
-    else {
-      val argsSMTList: List[String] =
-        for (pd @ PropertyDecl(_, id, _, _, _, _) <- propertyDecls) yield {
-          if (argMap contains id) 
-            argMap(id).toSMT(className, subTyping) 
-          else 
-            UtilSMT.getNewConstant(pd.getTypeOrError)
+    ty match {
+      // Handle Seq[T] constructor - create a sequence from elements
+      case IdentType(QualifiedName(List("Seq")), List(elemType)) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
         }
-      val argsSMT = argsSMTList.mkString(" ")
-      s"(lift-$ident (mk-$ident $argsSMT))"
+        // Build nested seq.++ from seq.unit calls
+        if (argsSMT.isEmpty) {
+          "(as seq.empty (Seq " + elemType.toSMT + "))"
+        } else {
+          argsSMT.map(a => s"(seq.unit $a)").reduce((a, b) => s"(seq.++ $a $b)")
+        }
+        
+      // Handle Set[T] constructor - create a set from elements
+      case IdentType(QualifiedName(List("Set")), List(elemType)) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
+        }
+        if (argsSMT.isEmpty) {
+          "((as const (Set " + elemType.toSMT + ")) false)"
+        } else {
+          // Start with empty set and add elements
+          val emptySet = "((as const (Set " + elemType.toSMT + ")) false)"
+          argsSMT.foldLeft(emptySet)((set, elem) => s"(store $set $elem true)")
+        }
+        
+      // Handle Array[K, V] constructor
+      case IdentType(QualifiedName(List("Array")), List(keyType, valueType)) =>
+        // For now, just return a const array with default value
+        val defaultVal = UtilSMT.getNewConstant(valueType)
+        s"((as const (Array ${keyType.toSMT} ${valueType.toSMT})) $defaultVal)"
+        
+      case ArrayType(keyType, valueType) =>
+        val defaultVal = UtilSMT.getNewConstant(valueType)
+        s"((as const (Array ${keyType.toSMT} ${valueType.toSMT})) $defaultVal)"
+        
+      // Handle Tuple constructor (CartesianType)
+      case CartesianType(types) =>
+        val argsSMT = args.map {
+          case PositionalArgument(e) => e.toSMT(className, subTyping)
+          case NamedArgument(_, e) => e.toSMT(className, subTyping)
+        }
+        val n = types.length
+        s"(mk-Tuple$n ${argsSMT.mkString(" ")})"
+        
+      // Handle user-defined class constructors
+      case _ =>
+        val ident = ty match {
+          case IdentType(qn, _) => qn.toString
+          case _ => ty.toString
+        }
+        val argMap: Map[String, Exp] = (for (NamedArgument(x, exp) <- args) yield (x -> exp)).toMap
+        val entityDecl = TypeChecker.getEntityDecl(ident)
+        val propertyDecls = entityDecl.getAllPropertyDecls
+        if (propertyDecls.isEmpty)
+          s"(lift-$ident mk-$ident)"
+        else {
+          val argsSMTList: List[String] =
+            for (pd @ PropertyDecl(_, id, _, _, _, _) <- propertyDecls) yield {
+              if (argMap contains id) 
+                argMap(id).toSMT(className, subTyping) 
+              else 
+                UtilSMT.getNewConstant(pd.getTypeOrError)
+            }
+          val argsSMT = argsSMTList.mkString(" ")
+          s"(lift-$ident (mk-$ident $argsSMT))"
+        }
     }
   }
 }
+
 
 case class IfExp(cond: Exp, trueBranch: Exp, falseBranch: Option[Exp]) extends Exp {
   override def children: List[AnyRef] = List(cond, trueBranch) ::: ListIt.m(falseBranch)
@@ -5820,6 +5900,40 @@ case class UnsignedIntType(width: Int) extends PrimitiveType {
     new JSONObject().put("type", "ElementValue").put("element", s"UInt$width")
   }
 }
+
+/**
+ * ArrayType represents SMT-LIB2 Array theory (Array K V).
+ * Unlike Seq, arrays are total functions from index to value with no concept of length.
+ * All indices have values (unconstrained if not specified).
+ * 
+ * @param keyType The type of array indices
+ * @param valueType The type of array values
+ */
+case class ArrayType(keyType: Type, valueType: Type) extends Type {
+  override def statistics() {
+    UtilSMT.statistics.ARRAYTYPE += 1
+  }
+
+  override def toSMT: String = s"(Array ${keyType.toSMT} ${valueType.toSMT})"
+
+  override def toScala: String = s"Map[${keyType.toScala}, ${valueType.toScala}]"
+
+  override def toString = s"Array[${keyType}, ${valueType}]"
+
+  override def toJavaString = s"Map<${keyType.toJavaString}, ${valueType.toJavaString}>"
+
+  override def toJson1 = {
+    new JSONObject()
+      .put("type", "ArrayType")
+      .put("keyType", keyType.toJson)
+      .put("valueType", valueType.toJson)
+  }
+
+  override def toJson2 = {
+    new JSONObject().put("type", "ElementValue").put("element", s"Array[${keyType}, ${valueType}]")
+  }
+}
+
 trait Pattern extends HasChildren {
   def children: List[AnyRef] = List()
   def boundNames: Set[String] = Set()
