@@ -45,3 +45,4 @@ src/tests/test.k
 /.metals
 /.vscode
 .tmp/
+.copilot-inbox

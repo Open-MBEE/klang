@@ -1,5 +1,9 @@
 # Copilot Instructions for K Language Project
 
+## Regularly check .copilot-inbox
+Oftentimes, your chat companion wants to tell you something without interrupting you,
+Check this file very often, maybe with `wc`.  If it is not empty, get the message, acknowledge that you got the message, and empty the file.
+
 ## Project Overview
 K is a constraint-based specification language with a Scala frontend that compiles to Z3 SMT solver.
 

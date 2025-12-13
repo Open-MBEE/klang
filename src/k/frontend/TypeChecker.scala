@@ -27,6 +27,9 @@ case object TypeChecker {
   var type2Decl = Map[Type, TopDecl]()
   var annotations = Map[String, AnnotationDecl]()
   var classes = Map[String, EntityDecl]()
+  
+  /** Synthetic property declarations created by type inference for undeclared variables */
+  var syntheticProperties: List[PropertyDecl] = List()
 
   /** Map from simple name to fully qualified Java class name (for imports) */
   var javaImports: Map[String, String] = Map()
@@ -49,6 +52,7 @@ case object TypeChecker {
     type2Decl = Map[Type, TopDecl]()
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
+    syntheticProperties = List()
     javaImports = Map[String, String]("Boolean" -> "java.lang.Boolean", "Byte" -> "java.lang.Byte", "Character" -> "java.lang.Character", "Class" -> "java.lang.Class", "Double" -> "java.lang.Double", "Enum" -> "java.lang.Enum", "Float" -> "java.lang.Float", "Integer" -> "java.lang.Integer", "Long" -> "java.lang.Long", "Math" -> "java.lang.Math", "Number" -> "java.lang.Number", "Object" -> "java.lang.Object", "Short" -> "java.lang.Short", "String" -> "java.lang.String", "StringBuilder" -> "java.lang.StringBuilder", "StringBuffer" -> "java.lang.StringBuffer", "System" -> "java.lang.System", "Thread" -> "java.lang.Thread", "Throwable" -> "java.lang.Throwable")
     propertyAsConstraint = new IMap()
     ClassHierarchy.parents = Map[EntityDecl, Set[Type]]()
@@ -933,13 +937,12 @@ class TypeChecker(model: Model) {
     def inferUndeclaredTypes(): Unit = {
       import scala.collection.mutable
 
-      // Collect expressions from constraints only - NOT bare ExpressionDecl
-      // Bare expressions (like `x < y`) should error, not have types inferred
+      // Collect all expressions from constraints and top-level expressions
+      // Bare expressions are treated as implicit constraints
       val allExpressions = mutable.ListBuffer[Exp]()
       model.decls.foreach {
         case ConstraintDecl(_, exp, _) => allExpressions += exp
-        // Note: ExpressionDecl is NOT included - undeclared variables in bare
-        // expressions should produce an error, not be auto-inferred
+        case ExpressionDecl(exp) => allExpressions += exp
         case _ => ()
       }
 
@@ -966,13 +969,15 @@ class TypeChecker(model: Model) {
         // Solve constraints to infer types
         TypeConstraints.solveConstraints(typeVars, constraints) match {
           case Right(inferredTypes) =>
-            // Add inferred types to global type environment
+            // Add inferred types to global type environment and syntheticProperties list
             inferredTypes.foreach { case (name, ty) =>
               logDebug(s"Inferred type for $name: $ty")
               // Create a synthetic property declaration for the inferred variable
               val syntheticProp = PropertyDecl(List(), name, Some(ty), None, None, None)
               syntheticProp.inferredType = Some(ty)
               globalTypeEnv = globalTypeEnv.union(name -> PropertyTypeInfo(syntheticProp, true, false, null))
+              // Also add to syntheticProperties list so transformModel can use it
+              syntheticProperties = syntheticProp :: syntheticProperties
             }
           case Left(errorMsg) =>
             error(s"Type inference failed: $errorMsg")

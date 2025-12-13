@@ -463,6 +463,19 @@ object UtilSMT {
     val Model(packageName: Option[String], packages, imports, annotations, decls) = model
     var memberDecls: List[MemberDecl] =
       for (decl <- decls if decl.isInstanceOf[MemberDecl]) yield decl.asInstanceOf[MemberDecl]
+    
+    // Convert ExpressionDecl to ConstraintDecl (bare expressions are implicit constraints)
+    memberDecls = memberDecls.map {
+      case ExpressionDecl(exp) => ConstraintDecl(None, exp, false)  // name=None, soft=false
+      case other => other
+    }
+    
+    // Add synthetic properties from type inference (for undeclared variables in constraints)
+    val syntheticProps = TypeChecker.syntheticProperties
+    if (syntheticProps.nonEmpty) {
+      memberDecls = syntheticProps ++ memberDecls
+    }
+    
     var entityDecls: List[EntityDecl] =
       for (decl <- decls if decl.isInstanceOf[EntityDecl]) yield decl.asInstanceOf[EntityDecl]
     val entityDeclsSorted = UtilSMT.sortEntityDecls(entityDecls)

@@ -436,17 +436,17 @@ object Frontend {
       val tc: TypeChecker = new TypeChecker(combinedModel)
       tc.smtCheck
       log("Type checking completed. No errors found.")
+      val beforeLen = smtModel.length
       smtModel += combinedModel.toSMT
-      if (K2Z3.debug) {
-        // Write SMT model to log file for debugging
-        try {
-          val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream(".tmp/k_smt_model.log", false))
-          smtLogFile.println("=== SMT Model Generated (" + new java.util.Date() + ") ===")
-          smtLogFile.println(smtModel)
-          smtLogFile.close()
-          println("[SMT model written to .tmp/k_smt_model.log]")
-        } catch { case _: Throwable => }
-      }
+      val afterLen = smtModel.length
+      // Always write SMT model to log file for debugging
+      try {
+        val smtLogFile = new java.io.PrintWriter(new java.io.FileOutputStream(".tmp/k_smt_model.log", false))
+        smtLogFile.println("=== SMT Model Generated (" + new java.util.Date() + ") ===")
+        smtLogFile.println(smtModel)
+        smtLogFile.close()
+        println("[SMT model written to .tmp/k_smt_model.log]")
+      } catch { case e: Throwable => println("[Failed to write SMT model: " + e) }
       println(UtilSMT.statistics)
       try {
         val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
