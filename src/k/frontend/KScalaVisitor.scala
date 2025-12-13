@@ -57,7 +57,19 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var identifiers = ctx.qualifiedName().Identifier().asScala 
     var children = ctx.children.asScala
     var star: Boolean = children.last.toString() == "*"
-    new ImportDecl(new QualifiedName(identifiers.map(_.toString()).toList), star)
+
+    // Check for optional language specifier (java or python)
+    val language: ImportLanguage = if (ctx.importLanguage() != null) {
+      ctx.importLanguage().getText match {
+        case "java" => JavaImport
+        case "python" => PythonImport
+        case _ => DefaultImport
+      }
+    } else {
+      DefaultImport
+    }
+
+    new ImportDecl(new QualifiedName(identifiers.map(_.toString()).toList), star, language)
   }
 
   override def visitTypeDeclaration(ctx: ModelParser.TypeDeclarationContext): AnyRef = {

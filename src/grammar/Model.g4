@@ -23,7 +23,12 @@ packageDeclaration:
 ;
 
 importDeclaration:
-  'import' qualifiedName ('.' '*')? 
+  'import' importLanguage? qualifiedName ('.' '*')?
+;
+
+importLanguage:
+  'java'
+| 'python'
 ;
 
 annotationDeclaration:

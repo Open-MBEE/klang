@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/bclement/Library/Caches/**)",
+      "Read(//Users/bclement/Library/Logs/**)",
+      "Bash(kill -9 98223 98081 97845 1856 94973)",
+      "Read(//Users/bclement/Library/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1183,8 +1183,17 @@ object K2Z3 {
         val concreteArgs = argValues.map(_.get)
         if (debug) println(s"[CEGAR]   Concrete args: ${concreteArgs.mkString(", ")}")
 
-        // Evaluate the actual function
-        ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs) match {
+        // Evaluate the actual function (check if Python or Java)
+        val evalResult = if (callInfo.qualifiedName.startsWith("python:")) {
+          // Python call - strip prefix and evaluate via Python
+          val pythonName = callInfo.qualifiedName.stripPrefix("python:")
+          PythonExternalFunctions.tryEvaluate(pythonName, concreteArgs)
+        } else {
+          // Java call
+          ExternalFunctions.tryEvaluate(callInfo.qualifiedName, concreteArgs)
+        }
+
+        evalResult match {
           case Some(actualResult) =>
             if (debug) println(s"[CEGAR]   Actual result: $actualResult")
             val z3Result = extractFunctionResult(model, smtFuncName, concreteArgs)

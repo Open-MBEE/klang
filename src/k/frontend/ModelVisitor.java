@@ -41,6 +41,12 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitImportDeclaration(ModelParser.ImportDeclarationContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link ModelParser#importLanguage}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitImportLanguage(ModelParser.ImportLanguageContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link ModelParser#annotationDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

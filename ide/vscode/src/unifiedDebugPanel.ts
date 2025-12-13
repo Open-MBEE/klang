@@ -506,7 +506,46 @@ export class KDebugPanel {
             case 'goToExternal':
                 this.handleGoToExternal(message.constraintIndex, message.callIndex);
                 break;
+            case 'goToStep':
+                this.goToStep(message.step);
+                break;
+            case 'toggleAutoSolve':
+                this.handleToggleAutoSolve(message.enabled);
+                break;
         }
+    }
+
+    /**
+     * Jump to a specific constraint step
+     */
+    public async goToStep(step: number): Promise<void> {
+        const session = this.getActiveSession();
+        if (!session) return;
+
+        step = Math.max(0, Math.min(step, session.constraints.length));
+        session.currentStep = step;
+        session.activeConstraints = session.constraints.slice(0, step);
+
+        await this.runSolver(session.id);
+        this.updatePanel();
+        this.updateDecorations();
+    }
+
+    /**
+     * Handle auto-solve toggle from the panel
+     */
+    private async handleToggleAutoSolve(enabled: boolean): Promise<void> {
+        const config = vscode.workspace.getConfiguration('k');
+        await config.update('autoSolve.enabled', enabled, vscode.ConfigurationTarget.Workspace);
+        await vscode.commands.executeCommand('setContext', 'k.autoSolveEnabled', enabled);
+        this.updatePanel();
+    }
+
+    /**
+     * Check if auto-solve is enabled
+     */
+    private isAutoSolveEnabled(): boolean {
+        return vscode.workspace.getConfiguration('k').get<boolean>('autoSolve.enabled', false);
     }
 
     /**
@@ -664,11 +703,23 @@ export class KDebugPanel {
             </div>
         ` : '';
 
-        // Solution objects - formatted nicely
-        const objectsHtml = session?.solutionObjects.map(obj => {
-            const propsHtml = Object.entries(obj.properties).map(([k, v]) =>
-                `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-value">${this.escapeHtml(v)}</span></div>`
-            ).join('');
+        // Solution objects - formatted nicely, filtering out nested objects shown inline
+        const topLevelObjects = this.filterTopLevelObjects(session?.solutionObjects || []);
+        const objectsHtml = topLevelObjects.map(obj => {
+            const propsHtml = Object.entries(obj.properties).map(([k, v]) => {
+                // Format ref properties to show inline object if available
+                const refMatch = v.match(/^Ref (\d+)$/);
+                if (refMatch) {
+                    const referencedObj = session?.solutionObjects.find(o => o.ref === v);
+                    if (referencedObj) {
+                        const nestedProps = Object.entries(referencedObj.properties)
+                            .map(([nk, nv]) => `${nk}: ${nv}`)
+                            .join(', ');
+                        return `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-ref">${referencedObj.className}(${nestedProps})</span></div>`;
+                    }
+                }
+                return `<div class="prop"><span class="prop-name">${k}</span>: <span class="prop-value">${this.escapeHtml(v)}</span></div>`;
+            }).join('');
             return `
                 <div class="solution-object">
                     <div class="obj-header">
@@ -777,6 +828,23 @@ export class KDebugPanel {
         .status-bar.unsat { background: rgba(244, 67, 54, 0.2); }
         .status-bar.running { background: rgba(33, 150, 243, 0.2); }
         .status-bar.error { background: rgba(255, 152, 0, 0.2); }
+        .auto-solve-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            background: var(--vscode-button-secondaryBackground);
+            border-radius: 4px;
+        }
+        .auto-solve-toggle:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        .auto-solve-toggle input {
+            margin: 0;
+            cursor: pointer;
+        }
         
         /* Sections */
         .section { margin-bottom: 16px; }
@@ -895,6 +963,10 @@ export class KDebugPanel {
         .prop { font-size: 12px; padding: 2px 0; }
         .prop-name { color: var(--vscode-symbolIcon-fieldForeground); }
         .prop-value { color: var(--vscode-debugTokenExpression-value); }
+        .prop-ref { 
+            color: var(--vscode-symbolIcon-classForeground); 
+            font-style: italic;
+        }
         
         /* Unsat panel */
         .unsat-panel {
@@ -951,6 +1023,12 @@ export class KDebugPanel {
             <div class="status-bar ${session.status}">
                 <strong>${session.status.toUpperCase()}</strong>
                 ${session.message ? `<span>${this.escapeHtml(session.message)}</span>` : ''}
+                <span style="flex:1"></span>
+                <label class="auto-solve-toggle">
+                    <input type="checkbox" id="autoSolveCheck" onchange="toggleAutoSolve(this.checked)"
+                           ${this.isAutoSolveEnabled() ? 'checked' : ''}>
+                    Auto-solve
+                </label>
             </div>
             
             ${unsatHtml}
@@ -999,6 +1077,9 @@ export class KDebugPanel {
         function goToExternal(constraintIdx, callIdx) {
             vscode.postMessage({ type: 'goToExternal', constraintIndex: constraintIdx, callIndex: callIdx });
         }
+        function toggleAutoSolve(enabled) {
+            vscode.postMessage({ type: 'toggleAutoSolve', enabled: enabled });
+        }
     </script>
 </body>
 </html>`;
@@ -1010,6 +1091,33 @@ export class KDebugPanel {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    /**
+     * Filter to show only top-level objects (not those that are referenced by other objects)
+     * This avoids showing the same object twice - once as a nested ref and once standalone
+     */
+    private filterTopLevelObjects(objects: SolutionObject[]): SolutionObject[] {
+        // Collect all refs that are referenced by other objects
+        const referencedRefs = new Set<string>();
+        for (const obj of objects) {
+            for (const value of Object.values(obj.properties)) {
+                const refMatch = value.match(/^Ref (\d+)$/);
+                if (refMatch) {
+                    referencedRefs.add(value);
+                }
+            }
+        }
+
+        // Return objects that are either:
+        // 1. Named top-level variables, OR
+        // 2. Not referenced by any other object (likely the "root" objects)
+        return objects.filter(obj => {
+            // Always show named variables
+            if (obj.varName) return true;
+            // Show objects that aren't nested in another object
+            return !referencedRefs.has(obj.ref || '');
+        });
     }
 
     // ========================================================================

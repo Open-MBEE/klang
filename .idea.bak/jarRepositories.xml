@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteRepositoriesConfiguration">
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="maven-libs-release-virtual" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov:443/artifactory/maven-libs-release-virtual" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="cae-releases" />
+      <option name="name" value="cae-releases" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov/artifactory/libs-release-local" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="alfresco-private-repository" />
+      <option name="name" value="alfresco-private-repository" />
+      <option name="url" value="https://artifacts.alfresco.com/nexus/content/groups/private" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="cae-snapshots" />
+      <option name="name" value="cae-snapshots" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov/artifactory/libs-snapshot-local" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="alfresco-public-snapshots" />
+      <option name="name" value="alfresco-public-snapshots" />
+      <option name="url" value="https://artifacts.alfresco.com/nexus/content/groups/public-snapshots" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="github" />
+      <option name="name" value="github" />
+      <option name="url" value="https://maven.pkg.github.com/nasa-ammos/aerie" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="snapshots" />
+      <option name="name" value="maven-libs-snapshot-virtual" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov:443/artifactory/maven-libs-snapshot-virtual" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="cae-external-snapshots" />
+      <option name="name" value="cae-external-snapshots" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov/artifactory/ext-snapshot-local" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="cae-external-releases" />
+      <option name="name" value="cae-external-releases" />
+      <option name="url" value="https://cae-artifactory.jpl.nasa.gov/artifactory/ext-release-local" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="alfresco-public" />
+      <option name="name" value="alfresco-public" />
+      <option name="url" value="https://artifacts.alfresco.com/nexus/content/groups/public" />
+    </remote-repository>
+  </component>
+</project>

@@ -584,8 +584,12 @@ object Frontend {
     for (i <- model.imports) {
       val firstPart = i.name.names.headOption.getOrElse("")
 
+      // Skip Python imports - they are handled by PythonExternalFunctions
+      if (i.isPython) {
+        log(s"Skipping Python import ${i.name} (handled by PythonExternalFunctions)")
+      }
       // Skip Java imports - they are handled by the TypeChecker
-      if (javaPackageRoots.contains(firstPart)) {
+      else if (javaPackageRoots.contains(firstPart) || i.isJava) {
         log(s"Skipping Java import ${i.name} (handled by type checker)")
       } else {
         val iFile = getImportFileLocationFromClassPath((i.name.toPath + ".k").toString)

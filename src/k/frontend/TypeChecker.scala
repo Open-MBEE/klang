@@ -31,6 +31,9 @@ case object TypeChecker {
   /** Map from simple name to fully qualified Java class name (for imports) */
   var javaImports: Map[String, String] = Map()
 
+  /** Map from simple name to Python module.function path (for imports) */
+  var pythonImports: Map[String, String] = Map()
+
   /**
    * PropertyDecls that should be interpreted as equality expressions (constraints).
    * This happens when a PropertyDecl has no explicit type but the name is already
@@ -50,6 +53,7 @@ case object TypeChecker {
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
     javaImports = Map[String, String]()
+    pythonImports = Map[String, String]()
     propertyAsConstraint = new IMap()
     ClassHierarchy.parents = Map[EntityDecl, Set[Type]]()
     ClassHierarchy.children = Map[EntityDecl, Set[Type]]()
@@ -587,21 +591,34 @@ class TypeChecker(model: Model) {
     def processJavaImports(m: Model): Unit = {
       m.imports.foreach { imp =>
         val qualifiedName = imp.name.toString
-        // Check if this looks like a Java import (starts with known package)
-        val javaPackageRoots = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
-        val firstPart = imp.name.names.headOption.getOrElse("")
-        if (javaPackageRoots.contains(firstPart)) {
-          if (imp.star) {
-            // Wildcard import - we can't resolve these statically without classpath scanning
-            logDebug(s"Wildcard Java import not fully supported: $qualifiedName.*")
-          } else {
-            // Single class import - register the simple name
-            val simpleName = imp.name.names.lastOption.getOrElse("")
-            if (simpleName.nonEmpty) {
-              TypeChecker.javaImports += (simpleName -> qualifiedName)
-              logDebug(s"Registered Java import: $simpleName -> $qualifiedName")
-              // Also register in ExternalFunctions
-              ExternalFunctions.registerImport(qualifiedName, imp.star)
+
+        // Check if this is explicitly a Python import
+        if (imp.isPython) {
+          // Register Python import
+          val simpleName = imp.name.names.lastOption.getOrElse("")
+          if (simpleName.nonEmpty) {
+            TypeChecker.pythonImports += (simpleName -> qualifiedName)
+            logDebug(s"Registered Python import: $simpleName -> $qualifiedName")
+            PythonExternalFunctions.registerImport(qualifiedName, imp.star)
+          }
+        } else {
+          // Java import (explicit or default)
+          // Check if this looks like a Java import (starts with known package)
+          val javaPackageRoots = Set("java", "javax", "scala", "com", "org", "gov", "edu", "net")
+          val firstPart = imp.name.names.headOption.getOrElse("")
+          if (javaPackageRoots.contains(firstPart) || imp.isJava) {
+            if (imp.star) {
+              // Wildcard import - we can't resolve these statically without classpath scanning
+              logDebug(s"Wildcard Java import not fully supported: $qualifiedName.*")
+            } else {
+              // Single class import - register the simple name
+              val simpleName = imp.name.names.lastOption.getOrElse("")
+              if (simpleName.nonEmpty) {
+                TypeChecker.javaImports += (simpleName -> qualifiedName)
+                logDebug(s"Registered Java import: $simpleName -> $qualifiedName")
+                // Also register in ExternalFunctions
+                ExternalFunctions.registerImport(qualifiedName, imp.star)
+              }
             }
           }
         }
@@ -1314,6 +1331,9 @@ class TypeChecker(model: Model) {
                   }
               }
             }
+          case ExternalType(_) | PythonExternalType(_) =>
+            // External (Java or Python) function call - return null FunDecl, type will be inferred
+            (true, null)
           case _ => error(s"Unexpected expression type found in function application. $exp $ti")
         }
 
@@ -1337,6 +1357,9 @@ class TypeChecker(model: Model) {
         } else if (TypeChecker.javaImports.contains(i)) {
           // This is an imported Java class - return ExternalType with full qualified name
           ExternalType(TypeChecker.javaImports(i))
+        } else if (TypeChecker.pythonImports.contains(i)) {
+          // This is an imported Python module - return PythonExternalType
+          PythonExternalType(TypeChecker.pythonImports(i))
         } else if (!te.contains(i)) {
           error(s"$i not found in scope.")
         } else {
@@ -1616,6 +1639,18 @@ class TypeChecker(model: Model) {
             }
             // Return Real by default for external functions
             // TODO: Could use reflection to determine actual return type
+            return RealType
+          case PythonExternalType(qname) =>
+            // This is an external Python function call
+            // Type check arguments (all should be valid expressions)
+            args.foreach { arg =>
+              arg match {
+                case PositionalArgument(e) => getExpType(te, e, owner)
+                case NamedArgument(_, e) => getExpType(te, e, owner)
+              }
+            }
+            // Return Real by default for Python external functions
+            // TODO: Could use Python introspection to determine actual return type
             return RealType
           case _ =>
             // Not an external call, continue with regular handling
