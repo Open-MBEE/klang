@@ -933,11 +933,13 @@ class TypeChecker(model: Model) {
     def inferUndeclaredTypes(): Unit = {
       import scala.collection.mutable
 
-      // Collect all expressions from constraints and top-level expressions
+      // Collect expressions from constraints only - NOT bare ExpressionDecl
+      // Bare expressions (like `x < y`) should error, not have types inferred
       val allExpressions = mutable.ListBuffer[Exp]()
       model.decls.foreach {
         case ConstraintDecl(_, exp, _) => allExpressions += exp
-        case ExpressionDecl(exp) => allExpressions += exp
+        // Note: ExpressionDecl is NOT included - undeclared variables in bare
+        // expressions should produce an error, not be auto-inferred
         case _ => ()
       }
 
