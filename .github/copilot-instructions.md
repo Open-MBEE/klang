@@ -74,7 +74,23 @@ Most AST nodes have a `toSMT(className: String, subTyping: Boolean): String` met
 3. Use `./export/k` instead of raw java commands
 4. Check `./run-tests.sh` after making changes
 
+## Test Baseline Policy
+
+### Exception Handling in Tests
+- **DO NOT** change test baselines to allow exceptions that didn't occur before without explicit approval
+- A test that previously passed without exceptions should not be changed to expect/allow exceptions
+- Such changes likely indicate a regression or bug being masked
+- If a test starts throwing exceptions, investigate the root cause rather than updating the baseline
+- Any baseline change that adds exception tolerance requires sign-off from the project owner
+
+### When Tests Fail
+1. First, understand why the test is failing
+2. If it's a legitimate code change, update the test expectations
+3. If it's an unexpected exception, that's likely a bug to fix
+4. Never silently change baselines to "make tests pass"
+
 ## Terminal Command Guidelines
+
 
 ### Avoid Heredocs and Multi-line Strings
 - **DON'T**: Use `cat << EOF` or heredoc syntax - can get stuck in `heredoc>` mode

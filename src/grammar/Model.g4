@@ -105,7 +105,7 @@ propertyModifier:
 ;
 
 functionDeclaration:
-  'fun' Identifier typeParameters? ('(' paramList ')')? (':' type)?
+  'fun' Identifier typeParameters? ('(' paramList? ')')? (':' type)?
     functionSpecification*
   ('{' block '}')?
 ;

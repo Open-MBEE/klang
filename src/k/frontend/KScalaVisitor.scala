@@ -382,8 +382,13 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitLambdaExp(ctx: ModelParser.LambdaExpContext): AnyRef = {
-    var pat: Pattern = visit(ctx.pattern()).asInstanceOf[Pattern]
-    var exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
+    val patCtx = ctx.pattern()
+    val expCtx = ctx.expression()
+    if (patCtx == null || expCtx == null) {
+      Misc.errorExit("[visitLambdaExp]", s"Parse error at line ${ctx.getStart().getLine()}: malformed lambda expression")
+    }
+    var pat: Pattern = visit(patCtx).asInstanceOf[Pattern]
+    var exp: Exp = visit(expCtx).asInstanceOf[Exp]
     LambdaExp(pat, exp)
   }
 

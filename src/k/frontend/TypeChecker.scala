@@ -49,7 +49,7 @@ case object TypeChecker {
     type2Decl = Map[Type, TopDecl]()
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
-    javaImports = Map[String, String]()
+    javaImports = Map[String, String]("Boolean" -> "java.lang.Boolean", "Byte" -> "java.lang.Byte", "Character" -> "java.lang.Character", "Class" -> "java.lang.Class", "Double" -> "java.lang.Double", "Enum" -> "java.lang.Enum", "Float" -> "java.lang.Float", "Integer" -> "java.lang.Integer", "Long" -> "java.lang.Long", "Math" -> "java.lang.Math", "Number" -> "java.lang.Number", "Object" -> "java.lang.Object", "Short" -> "java.lang.Short", "String" -> "java.lang.String", "StringBuilder" -> "java.lang.StringBuilder", "StringBuffer" -> "java.lang.StringBuffer", "System" -> "java.lang.System", "Thread" -> "java.lang.Thread", "Throwable" -> "java.lang.Throwable")
     propertyAsConstraint = new IMap()
     ClassHierarchy.parents = Map[EntityDecl, Set[Type]]()
     ClassHierarchy.children = Map[EntityDecl, Set[Type]]()
@@ -97,6 +97,12 @@ case object TypeChecker {
 
   def areTypesEqual(ty1: Type, ty2: Type, compatibility: Boolean): Boolean = {
     (ty1, ty2) match {
+      // NullType is compatible with any reference type (IdentType that's not a primitive collection) and String
+      case (NullType, i @ IdentType(_, _)) if !Misc.isCollection(i) => return true
+      case (i @ IdentType(_, _), NullType) if !Misc.isCollection(i) => return true
+      case (NullType, StringType) => return true  // Strings can be null
+      case (StringType, NullType) => return true
+      case (NullType, NullType) => return true
       case (i1 @ IdentType(it1, it2), i2 @ IdentType(it3, it4)) if !Misc.isCollection(i1) && !Misc.isCollection(i2) =>
         val it1Parents = ClassHierarchy.parentsTransitive(type2Decl(ty1).asInstanceOf[EntityDecl])
         val it2Parents = ClassHierarchy.parentsTransitive(type2Decl(ty2).asInstanceOf[EntityDecl])
@@ -859,7 +865,8 @@ class TypeChecker(model: Model) {
       }
     }
     
-    processModelClassPropertiesInferred(model)
+    // NOTE: processModelClassPropertiesInferred is called AFTER inheritance processing
+    // so that constructor calls like S(text:: "grammar") can find inherited properties
 
     // pass: get property info on global level - SECOND PASS: properties requiring type inference
     // Now that class type environments are built, we can infer types from expressions that reference class members
@@ -1301,6 +1308,10 @@ class TypeChecker(model: Model) {
         else if (i == "at") (true, null)
         else if (i == "subList") (true, null)
         else ti match {
+          case ExternalType(_) =>
+            // External Java static method call (e.g., Character.isJavaIdentifierPart)
+            // Return true (external) and null (no FunDecl for external methods)
+            (true, null)
           case it @ IdentType(_, _) =>
             if (Misc.isCollection(it)) {
               (true, null)
@@ -1625,8 +1636,17 @@ class TypeChecker(model: Model) {
                 case NamedArgument(_, e) => getExpType(te, e, owner)
               }
             }
-            // Return Real by default for external functions
+            // Infer return type based on method name patterns
             // TODO: Could use reflection to determine actual return type
+            val methodName = fexp match {
+              case DotExp(_, name) => name
+              case _ => ""
+            }
+            // Methods starting with 'is' return Bool
+            if (methodName.startsWith("is")) {
+              return BoolType
+            }
+            // Default to Real for numeric functions
             return RealType
           case _ =>
             // Not an external call, continue with regular handling
@@ -1870,6 +1890,7 @@ class TypeChecker(model: Model) {
       case FloatLiteral(_, ft) => ft  // Return the FloatType from the literal
       case DateLiteral(_)      => TimeType
       case DurationLiteral(_)  => DurationType
+      case NullLiteral         => NullType
       case ThisLiteral =>
         type2Decl.map(_.swap).asInstanceOf[Map[TopDecl, Type]](te("this").asInstanceOf[ClassTypeInfo].decl)
       case IndexExp(exp1, args) =>

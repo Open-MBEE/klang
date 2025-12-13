@@ -2,12 +2,12 @@ package bnf
 
 -- Model of BNF to be used for parsing
 
-==========
-Exp is an expression that constrains the tokens in a string.
-It is instantiated for an input string, which can be BNF or a language defined by BNF.
-This class constrains the expression text to be based on tokens potentially separated
-by whitespece.  Constraints on the tokens are made by subclasses of Exp.
-==========
+-- ==========
+-- Exp is an expression that constrains the tokens in a string.
+-- It is instantiated for an input string, which can be BNF or a language defined by BNF.
+-- This class constrains the expression text to be based on tokens potentially separated
+-- by whitespece.  Constraints on the tokens are made by subclasses of Exp.
+-- ==========
 class Exp {
    var text: String  -- what it looks like in BNF
    var tokens: Seq[Exp]  -- the sequence of things in text that may be separated by whitespace
@@ -16,31 +16,31 @@ class Exp {
    var textArray: Seq[String]
 
    -- tokens are separated by one or more whitespace chars
-   req tokens.size() > 0 => forall i : Int :- Set{0 .. tokens.size()-1} => tokensAndWhitespace[2*i+1] = tokens[i]
-   req tokens.size() > 0 => forall i : Int :- Set{0 .. tokens.size()} => tokensAndWhitespace[2*i] = whitespaces[i]
-   req tokens.size() > 0 => forall i : Int :- Set{0 .. tokensAndWhitespace.size()-1} => textArray[i] = tokensAndWhitespace[i].text
+   req tokens.size > 0 => forall i : Int :- i isin Set{0 .. tokens.size-1} => tokensAndWhitespace[2*i+1] = tokens[i]
+   req tokens.size > 0 => forall i : Int :- i isin Set{0 .. tokens.size} => tokensAndWhitespace[2*i] = whitespaces[i]
+   req tokens.size > 0 => forall i : Int :- i isin Set{0 .. tokensAndWhitespace.size-1} => textArray[i] = tokensAndWhitespace[i].text
 
    -- adjacent tokens must be sure to separate identifier chars with whitespace
-   req tokens.size() > 1 =>
-      forall i : Int :- Set{0 .. tokens.size()-2} =>
+   req tokens.size > 1 =>
+      forall i : Int :- i isin Set{0 .. tokens.size-2} =>
          (lastCharIsIdent(tokens[i].text) && firstCharIsIdent(tokens[i+1].text) =>
             whitespaces[i+1] is RequiredWhitespace)
-   fun lastCharIsIdent( s: String ): Boolean {
-      if s = null || s.length() = 0 then false else Character.isJavaIdentifierPart(substring(s.length()-1))
+   fun lastCharIsIdent( s: String ): Bool {
+      if s = null || s.length = 0 then false else Character.isJavaIdentifierPart(s.substring(s.length-1))
    }
-   fun firstCharIsIdent( s: String ): Boolean {
-      if s = null || s.length() = 0 then false else Character.isJavaIdentifierPart(substring(0, 1))
+   fun firstCharIsIdent( s: String ): Bool {
+      if s = null || s.length = 0 then false else Character.isJavaIdentifierPart(s.substring(0, 1))
    }
 
    -- the text is the concatenation of tokens
-   req tokens.size() > 0 => text = add(textArray)  -- if add fails, try fold(textArray, Plus.class)
+   req tokens.size > 0 => text = add(textArray)  -- if add fails, try fold(textArray, Plus.class)
 }
 
-==========
-The BNF expression is a grammar based on antlr syntax.  It's elements are simply the
-grammar name and rules.  topRuleName must be specified in order to use the parse
-function.
-==========
+-- ==========
+-- The BNF expression is a grammar based on antlr syntax.  It's elements are simply the
+-- grammar name and rules.  topRuleName must be specified in order to use the parse
+-- function.
+-- ==========
 class BNF extends Exp {
    var name: String
    var rules: Seq[Rule]
@@ -51,7 +51,7 @@ class BNF extends Exp {
    req topRule isin rules
 
    fun parse( string: String ): ParseTree {
-       ParseTree(string: string, rule: topRule)
+       ParseTree(string:: string, rule:: topRule)
    }
 
    fun ruleNames(): Set[String] {
@@ -65,10 +65,10 @@ class BNF extends Exp {
    tokens = Seq{S(text:: "grammar"), S(text:: name), S(text:: ";")}.addAll(rules)
 }
 
-==========
-A test instantiation of a BNF for a simple grammar, G, and a ParseTree for a simple
-string in G.
-==========
+-- ==========
+-- A test instantiation of a BNF for a simple grammar, G, and a ParseTree for a simple
+-- string in G.
+-- ==========
 class TestBnf {
    var bnf: BNF
    req bnf.string = "grammar G; r1: 'I am' r2; r2: ' parseable';"
@@ -76,9 +76,9 @@ class TestBnf {
    var tree: ParseTree = bnf.parse( "I am parseable" )
 }
 
-==========
-The ParseTree constrains an input string to a rule, both
-==========
+-- ==========
+-- The ParseTree constrains an input string to a rule, both
+-- ==========
 class ParseTree {
    -- input variables
    var string: String
@@ -98,11 +98,16 @@ class ParseTree {
    req forall r: Exp :- r isin rule.tokens
 }
 
+-- Simple string token; can be anything
+class S extends Exp {
+   req tokens.size = 0
+}
+
 class Whitespace extends S {
-   forall i : Int :- i isin Set{0 .. text.length()-1} => Character.isWhitespace(text.charAt(i))
+   req forall i : Int :- i isin Set{0 .. text.length-1} => Character.isWhitespace(text.charAt(i))
 }
 class RequiredWhitespace extends Whitespace {
-   req text.size() > 0
+   req text.size > 0
 }
 
 class Rule extends Exp {
@@ -110,7 +115,7 @@ class Rule extends Exp {
    var expression : RuleExp
    -- var childRules : Set[Rule] = Set{ x : Exp :- x isin tokens
 
-   req tokens = Seq{S(text:: name), S{text, ":"), expression, S(text:: ";")}
+   req tokens = Seq{S(text:: name), S(text:: ":"), expression, S(text:: ";")}
 }
 
 -- an expression on the right hand side of of a rule
@@ -120,18 +125,12 @@ class RuleExp extends Exp {
     -- the rule matched to this expression
     var rule: Rule
 
-    var childRuleNames : Set[String] = Set{ x.text : Exp :- x isin tokens && x is Identifier }
-    var childRules : Set[RuleExp] = Set{ x : RuleExp :- x.name isin childRuleNames }
+    var childRuleNames : Set[String] = Set{ x.text | x: Exp :- x isin tokens && x is Identifier }
+    var childRules : Set[RuleExp] = Set{ x | x: RuleExp :- x.name isin childRuleNames }
 
     -- An expression induced by the interpretation of the BNF rule
     fun inducedExp( string: String ) : Exp
     -- var bnfExp: Exp
-}
-
-
--- Simple string token; can be anything
-class S extends Exp {
-   req tokens.size() = 0
 }
 
 class Literal extends RuleExp {
@@ -148,9 +147,9 @@ class Literal extends RuleExp {
 }
 
 class Identifier extends RuleExp {
-   req text.length() > 0 &&
-   req Character.isJavaIdentifierStart(text.charAt(0)) &&
-   req forall i : Int :- i isin Set{0 .. text.length()-1} => Character.isJavaIdentifierPart(text.charAt(i))
+   req text.length > 0
+   req Character.isJavaIdentifierStart(text.charAt(0))
+   req forall i : Int :- i isin Set{0 .. text.length-1} => Character.isJavaIdentifierPart(text.charAt(i))
    req rule = bnf.ruleForName(text)
 
    -- An expression induced by the interpretation of the BNF rule
@@ -162,16 +161,16 @@ class Identifier extends RuleExp {
    -- bnfExp = bnf.ruleForName(text).expression.bnfExp
 }
 
-===== We are using RuleExp superclass to identify a set of classes that may be
-      BNF rules, so we can't include this; otherwise this would match operator to anything.
-      I guess this is a good reason to include abstract classes in K.
-class BinaryRuleExp extends RuleExp {
-    var left: RuleExp
-    var right: RuleExp
-    var operator: String
-    tokens = Seq{left, S(text:: operator), right}
-}
-=====
+-- ===== We are using RuleExp superclass to identify a set of classes that may be
+--       BNF rules, so we can't include this; otherwise this would match operator to anything.
+--       I guess this is a good reason to include abstract classes in K.
+-- class BinaryRuleExp extends RuleExp {
+--     var left: RuleExp
+--     var right: RuleExp
+--     var operator: String
+--     tokens = Seq{left, S(text:: operator), right}
+-- }
+-- =====
 
 class AndExp extends RuleExp {
     var left: RuleExp
@@ -184,12 +183,12 @@ class AndExp extends RuleExp {
        var s1 : String = s.substring(0,i)
        var s2 : String = s.substring(i)
        var i : Int
-       req i isin Set{0 .. s.length()}
+       req i isin Set{0 .. s.length}
        req exp.tokens = Seq{left.inducedExp(s1), right.inducedExp(s2)}
     }
    -- An expression induced by the interpretation of the BNF rule
    fun inducedExp( s: String ) : Exp {
-        IE(s:s).exp
+        IE(s::s).exp
         -- if left.inducedExp(s) is Exp then left.inducedExp(s) else right.inducedExp(s)
    }
 }
@@ -218,7 +217,7 @@ class ParenExp extends RuleExp {
 
    -- An expression induced by the interpretation of the BNF rule
    fun inducedExp( s: String ) : Exp {
-        ParenExp(text: s).inner
+        ParenExp(text:: s).inner
    }
 }
 
@@ -272,15 +271,15 @@ class OneOrMoreExp extends RuleExp {
 
 class CharSet extends RuleExp {
     req text.substring(0,1) = "["
-    req text.substring(text.length()-1) = "]"
-    req !text.substring(1, text.length()-1).contains("[")
-    req !text.substring(1, text.length()-1).contains("]")
+    req text.substring(text.length-1) = "]"
+    req !text.substring(1, text.length-1).contains("[")
+    req !text.substring(1, text.length-1).contains("]")
 }
 class NegCharSet extends RuleExp {
     req text.substring(0,2) = "~["
-    req text.substring(text.length()-1) = "]"
-    req !text.substring(2, text.length()-1).contains("[")
-    req !text.substring(2, text.length()-1).contains("]")
+    req text.substring(text.length-1) = "]"
+    req !text.substring(2, text.length-1).contains("[")
+    req !text.substring(2, text.length-1).contains("]")
 }
 
 

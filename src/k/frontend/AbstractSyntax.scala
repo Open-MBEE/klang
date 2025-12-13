@@ -982,6 +982,11 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     result1 += ")\n"
     result1 += "\n"
     result1 += "(declare-const heap (Array Ref Any))\n"
+    // Declare NULL$ constant for null literal comparisons
+    // NULL$ is a special value that represents null in equality comparisons
+    result1 += "(declare-const NULL$ String)\n"  // For String null comparisons
+    result1 += "(declare-const NULL$Ref Ref)\n"  // For reference null comparisons (use -1 for null ref)
+    result1 += "(assert (= NULL$Ref (- 1)))\n"   // Null refs are represented as -1
     result1 += "\n"
     result1 += "(define-fun deref ((ref Ref)) Any\n"
     result1 += "  (select heap ref)\n"
@@ -2410,6 +2415,13 @@ case class IdentExp(ident: String) extends Exp {
     if (substitution contains ident) substitution(ident).copyType(this) else this
 
   override def toSMT(className: String, subTyping: Boolean): String = {
+    // Check if this is an external Java class reference (e.g., "Character" in Character.isDigit)
+    val myType = TypeChecker.exp2Type.get(this)
+    if (myType != null && myType.isInstanceOf[ExternalType]) {
+      // For external classes, return the class name as a constant
+      // This is used as a qualifier for static method calls
+      return ident
+    }
     if (isLocal(this) || UtilSMT.isCreatedLocal(ident))
       ident
     else if (UtilSMT.isGlobal(this) && className != UtilSMT.Names.mainClass) {
@@ -3545,9 +3557,32 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
       if (UtilSMT.isConstructorPredicate(this)) {
         s"(= (deref $exp1SMT) $exp2SMT)"
       } else {
+        // Helper to get correct null constant based on the non-null operand's type
+        def getNullConstant(nonNullExp: Exp): String = {
+          TypeChecker.exp2Type.get(nonNullExp) match {
+            case StringType => "NULL$"
+            case IdentType(_, _) => "NULL$Ref"
+            case _ => "NULL$Ref"  // Default to ref for unknown types
+          }
+        }
+        
         op match {
+          case EQ =>
+            // Handle null comparisons - use appropriate null constant based on type
+            (exp1, exp2) match {
+              case (NullLiteral, NullLiteral) => "true"
+              case (NullLiteral, _) => s"(= ${getNullConstant(exp2)} $exp2SMT)"
+              case (_, NullLiteral) => s"(= $exp1SMT ${getNullConstant(exp1)})"
+              case _ => s"(= $exp1SMT $exp2SMT)"
+            }
           case NEQ =>
-            s"(not (= $exp1SMT $exp2SMT))"
+            // Handle null comparisons - use appropriate null constant based on type
+            (exp1, exp2) match {
+              case (NullLiteral, NullLiteral) => "false"
+              case (NullLiteral, _) => s"(not (= ${getNullConstant(exp2)} $exp2SMT))"
+              case (_, NullLiteral) => s"(not (= $exp1SMT ${getNullConstant(exp1)}))"
+              case _ => s"(not (= $exp1SMT $exp2SMT))"
+            }
           case TUPLEINDEX =>
             assert(exp2.isInstanceOf[IntegerLiteral], "Tuple index must be an integer literal!")
             val indexFunSMT = s"_$exp2SMT"
@@ -5282,6 +5317,10 @@ case object NullLiteral extends Literal {
   }
   
   override def toString = "null"
+  
+  // In SMT, null is represented as a special constant.
+  // For equality comparisons, we use a distinct constant "NULL$"
+  override def toSMT(className: String, subTyping: Boolean): String = "NULL$"
 
   override def toJson1 = {
     new JSONObject().put("type", "NullLiteral")
@@ -5408,6 +5447,17 @@ case class SumType(ty: List[Type]) extends PrimitiveType {
 case object AnyType extends Type {
   override def toJson1 = null
   override def toJson2 = null
+}
+
+/**
+ * Represents the type of null literals.
+ * NullType is compatible with any reference type (class/object types).
+ */
+case object NullType extends Type {
+  override def toSMT: String = "null"  // Represented as a special constant
+  override def toString = "Null"
+  override def toJson1 = new JSONObject().put("type", "NullType")
+  override def toJson2 = new JSONObject().put("type", "NullType")
 }
 
 /**
