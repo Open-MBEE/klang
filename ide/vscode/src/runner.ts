@@ -15,7 +15,7 @@ function getOutputChannel(): vscode.OutputChannel {
 /**
  * Find the K installation path from configuration or common locations
  */
-async function findKInstallation(): Promise<string | undefined> {
+export async function findKInstallation(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('k');
     const configuredPath = config.get<string>('installation.path');
 
@@ -237,5 +237,262 @@ export async function runKFileWithArgs(fileUri?: vscode.Uri): Promise<void> {
 
     // For now, just run without args - extend later as needed
     await runKFile(fileUri);
+}
+
+/**
+ * Run K file with Java debug agent attached (for stepping into external functions)
+ */
+export async function runKFileWithDebug(fileUri?: vscode.Uri, debugPort: number = 5005): Promise<cp.ChildProcess | undefined> {
+    // Get the file to run
+    let filePath: string;
+
+    if (fileUri) {
+        filePath = fileUri.fsPath;
+    } else if (vscode.window.activeTextEditor?.document.languageId === 'k') {
+        filePath = vscode.window.activeTextEditor.document.uri.fsPath;
+    } else {
+        vscode.window.showErrorMessage('No K file selected');
+        return undefined;
+    }
+
+    // Save the file first
+    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    if (doc?.isDirty) {
+        await doc.save();
+    }
+
+    // Find K installation
+    const kScript = await findKInstallation();
+
+    if (!kScript) {
+        vscode.window.showErrorMessage('K language installation not found');
+        return undefined;
+    }
+
+    const kInstallDir = path.dirname(path.dirname(kScript));
+
+    const env: NodeJS.ProcessEnv = { ...process.env };
+
+    const javaHome = getJavaHome();
+    if (javaHome) {
+        env.JAVA_HOME = javaHome;
+        env.PATH = `${path.join(javaHome, 'bin')}:${env.PATH}`;
+    }
+
+    // Add Java debug agent
+    env.JAVA_TOOL_OPTIONS = `-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${debugPort}`;
+
+    const output = getOutputChannel();
+    output.show(true);
+
+    output.appendLine(`\n${'='.repeat(60)}`);
+    output.appendLine(`Running (DEBUG MODE): ${path.basename(filePath)}`);
+    output.appendLine(`Debug port: ${debugPort}`);
+    output.appendLine(`${'='.repeat(60)}\n`);
+    output.appendLine(`Java debug agent attached on port ${debugPort}`);
+    output.appendLine(`Attach your debugger to localhost:${debugPort}\n`);
+
+    const startTime = Date.now();
+
+    const child = cp.spawn(kScript, [filePath], {
+        cwd: kInstallDir,
+        env,
+        shell: true
+    });
+
+    child.stdout?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.on('close', (code: number | null) => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        output.appendLine(`\n${'='.repeat(60)}`);
+        if (code === 0) {
+            output.appendLine(`✓ Debug session completed in ${elapsed}s`);
+        } else {
+            output.appendLine(`✗ Debug session exited with code ${code} in ${elapsed}s`);
+        }
+        output.appendLine(`${'='.repeat(60)}\n`);
+    });
+
+    return child;
+}
+
+/**
+ * Run K file with Python debugging enabled
+ *
+ * Since K calls Python via subprocess, we need to:
+ * 1. Set PYTHONBREAKPOINT to enable debugpy
+ * 2. Configure Python to listen on a debug port
+ */
+export async function runKFileWithPythonDebug(fileUri?: vscode.Uri, debugPort: number = 5678): Promise<cp.ChildProcess | undefined> {
+    let filePath: string;
+
+    if (fileUri) {
+        filePath = fileUri.fsPath;
+    } else if (vscode.window.activeTextEditor?.document.languageId === 'k') {
+        filePath = vscode.window.activeTextEditor.document.uri.fsPath;
+    } else {
+        vscode.window.showErrorMessage('No K file selected');
+        return undefined;
+    }
+
+    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    if (doc?.isDirty) {
+        await doc.save();
+    }
+
+    const kScript = await findKInstallation();
+
+    if (!kScript) {
+        vscode.window.showErrorMessage('K language installation not found');
+        return undefined;
+    }
+
+    const kInstallDir = path.dirname(path.dirname(kScript));
+
+    const env: NodeJS.ProcessEnv = { ...process.env };
+
+    const javaHome = getJavaHome();
+    if (javaHome) {
+        env.JAVA_HOME = javaHome;
+        env.PATH = `${path.join(javaHome, 'bin')}:${env.PATH}`;
+    }
+
+    // Set up Python debugging via debugpy
+    // K's PythonExternalFunctions will inherit this environment
+    env.K_PYTHON_DEBUG = '1';
+    env.K_PYTHON_DEBUG_PORT = String(debugPort);
+
+    // Tell Python to use debugpy when starting
+    env.PYTHONBREAKPOINT = 'debugpy.breakpoint';
+
+    const output = getOutputChannel();
+    output.show(true);
+
+    output.appendLine(`\n${'='.repeat(60)}`);
+    output.appendLine(`Running (PYTHON DEBUG MODE): ${path.basename(filePath)}`);
+    output.appendLine(`Python debug port: ${debugPort}`);
+    output.appendLine(`${'='.repeat(60)}\n`);
+    output.appendLine(`Note: Python functions called by K will be debuggable.`);
+    output.appendLine(`Make sure 'debugpy' is installed: pip install debugpy\n`);
+
+    const startTime = Date.now();
+
+    const child = cp.spawn(kScript, [filePath], {
+        cwd: kInstallDir,
+        env,
+        shell: true
+    });
+
+    child.stdout?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.on('close', (code: number | null) => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        output.appendLine(`\n${'='.repeat(60)}`);
+        if (code === 0) {
+            output.appendLine(`✓ Python debug session completed in ${elapsed}s`);
+        } else {
+            output.appendLine(`✗ Python debug session exited with code ${code} in ${elapsed}s`);
+        }
+        output.appendLine(`${'='.repeat(60)}\n`);
+    });
+
+    return child;
+}
+
+/**
+ * Run K file with both Java and Python debugging enabled
+ */
+export async function runKFileWithFullDebug(fileUri?: vscode.Uri): Promise<cp.ChildProcess | undefined> {
+    let filePath: string;
+
+    if (fileUri) {
+        filePath = fileUri.fsPath;
+    } else if (vscode.window.activeTextEditor?.document.languageId === 'k') {
+        filePath = vscode.window.activeTextEditor.document.uri.fsPath;
+    } else {
+        vscode.window.showErrorMessage('No K file selected');
+        return undefined;
+    }
+
+    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath);
+    if (doc?.isDirty) {
+        await doc.save();
+    }
+
+    const kScript = await findKInstallation();
+
+    if (!kScript) {
+        vscode.window.showErrorMessage('K language installation not found');
+        return undefined;
+    }
+
+    const kInstallDir = path.dirname(path.dirname(kScript));
+
+    const env: NodeJS.ProcessEnv = { ...process.env };
+
+    const javaHome = getJavaHome();
+    if (javaHome) {
+        env.JAVA_HOME = javaHome;
+        env.PATH = `${path.join(javaHome, 'bin')}:${env.PATH}`;
+    }
+
+    // Java debug on port 5005
+    env.JAVA_TOOL_OPTIONS = '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005';
+
+    // Python debug on port 5678
+    env.K_PYTHON_DEBUG = '1';
+    env.K_PYTHON_DEBUG_PORT = '5678';
+    env.PYTHONBREAKPOINT = 'debugpy.breakpoint';
+
+    const output = getOutputChannel();
+    output.show(true);
+
+    output.appendLine(`\n${'='.repeat(60)}`);
+    output.appendLine(`Running (FULL DEBUG MODE): ${path.basename(filePath)}`);
+    output.appendLine(`${'='.repeat(60)}\n`);
+    output.appendLine(`Java debug:   localhost:5005`);
+    output.appendLine(`Python debug: localhost:5678`);
+    output.appendLine(`\nYou can attach debuggers for both languages.\n`);
+
+    const startTime = Date.now();
+
+    const child = cp.spawn(kScript, [filePath], {
+        cwd: kInstallDir,
+        env,
+        shell: true
+    });
+
+    child.stdout?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+        output.append(data.toString());
+    });
+
+    child.on('close', (code: number | null) => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        output.appendLine(`\n${'='.repeat(60)}`);
+        if (code === 0) {
+            output.appendLine(`✓ Full debug session completed in ${elapsed}s`);
+        } else {
+            output.appendLine(`✗ Full debug session exited with code ${code} in ${elapsed}s`);
+        }
+        output.appendLine(`${'='.repeat(60)}\n`);
+    });
+
+    return child;
 }
 

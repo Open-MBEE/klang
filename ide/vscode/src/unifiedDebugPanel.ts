@@ -1299,10 +1299,11 @@ export class KDebugPanel {
 
     /**
      * Step into an external Python function
+     * Uses Py4J bridge with debugpy for debugging
      */
     public async stepIntoPythonFunction(func: ExternalFunction): Promise<void> {
-        if (func.language !== 'python' || !func.sourceFile) {
-            vscode.window.showErrorMessage('Cannot find Python source file for ' + func.name);
+        if (func.language !== 'python') {
+            vscode.window.showErrorMessage('This is not a Python function');
             return;
         }
 
@@ -1319,51 +1320,34 @@ export class KDebugPanel {
             return;
         }
 
-        // Open the source file
-        const doc = await vscode.workspace.openTextDocument(func.sourceFile);
-        const editor = await vscode.window.showTextDocument(doc);
+        // Open source file and set breakpoint if we can find it
+        if (func.sourceFile) {
+            const doc = await vscode.workspace.openTextDocument(func.sourceFile);
+            const editor = await vscode.window.showTextDocument(doc);
 
-        // Find the function and set a breakpoint
-        if (func.methodName) {
-            const funcLine = this.findPythonFunctionLine(doc, func.methodName);
-            if (funcLine !== undefined) {
-                const bp = new vscode.SourceBreakpoint(
-                    new vscode.Location(doc.uri, new vscode.Position(funcLine, 0))
-                );
-                vscode.debug.addBreakpoints([bp]);
-                editor.revealRange(new vscode.Range(funcLine, 0, funcLine + 10, 0));
+            if (func.methodName) {
+                const funcLine = this.findPythonFunctionLine(doc, func.methodName);
+                if (funcLine !== undefined) {
+                    const bp = new vscode.SourceBreakpoint(
+                        new vscode.Location(doc.uri, new vscode.Position(funcLine, 0))
+                    );
+                    vscode.debug.addBreakpoints([bp]);
+                    editor.revealRange(new vscode.Range(funcLine, 0, funcLine + 10, 0));
+                    vscode.window.showInformationMessage(`Breakpoint set at ${func.name}.${func.methodName}()`);
+                }
             }
         }
 
-        // Create debug configuration for Python
-        const debugConfig: vscode.DebugConfiguration = {
-            type: 'python',
-            name: 'K Debug - Python',
-            request: 'attach',
-            connect: {
-                host: 'localhost',
-                port: 5678 // Standard debugpy port
-            }
-        };
-
-        vscode.window.showInformationMessage(
-            'To debug Python code, ensure your K application is running with debugpy: ' +
-            'python -m debugpy --listen 5678 --wait-for-client your_script.py'
-        );
-
-        const session = this.getActiveSession();
-        if (session) {
-            try {
-                const started = await vscode.debug.startDebugging(
-                    vscode.workspace.workspaceFolders?.[0],
-                    debugConfig
-                );
-                if (started) {
-                    session.pythonDebugSession = vscode.debug.activeDebugSession;
-                }
-            } catch (error) {
-                console.error('Failed to start Python debugger:', error);
-            }
+        // Start K with Python debug enabled (uses Py4J bridge with debugpy)
+        try {
+            await vscode.commands.executeCommand('k.runWithPythonDebug');
+        } catch (error) {
+            vscode.window.showInformationMessage(
+                'To debug Python functions:\n' +
+                '1. Install: pip install py4j debugpy\n' +
+                '2. Run K with K_PYTHON_DEBUG=1\n' +
+                '3. Attach VS Code to localhost:5678'
+            );
         }
     }
 

@@ -204,6 +204,13 @@
             <version>1.2.16</version>
         </dependency>
 
+        <!-- Py4J for Java-Python bridge (external Python functions) -->
+        <dependency>
+            <groupId>net.sf.py4j</groupId>
+            <artifactId>py4j</artifactId>
+            <version>0.10.9.7</version>
+        </dependency>
+
 <!-- 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
