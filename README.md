@@ -1,4 +1,4 @@
-# Klang 3/7/2016
+# K language
 
 K is a textual language intended to be used by modelers, programmers,
 system designers, and specification writers. The motivation for K is
