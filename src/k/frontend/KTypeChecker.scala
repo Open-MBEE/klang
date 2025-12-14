@@ -651,87 +651,114 @@ object KTypeChecker {
   }
   
   /**
-   * Run K to solve type constraints
+   * Run K to solve type constraints (in-process, no subprocess)
    */
   private def runKTypeCheck(kProgram: String, ctx: KTypeContext): TypeCheckResult = {
-    import java.io._
-    import scala.sys.process._
-    
-    // Write K program to temp file
-    val tmpDir = new File(".tmp")
-    if (!tmpDir.exists()) tmpDir.mkdirs()
-    val tmpFile = new File(tmpDir, s"typecheck_${System.currentTimeMillis()}.k")
-    
     try {
-      val writer = new PrintWriter(tmpFile)
-      writer.write(kProgram)
-      writer.close()
+      // Save current state to restore later
+      val savedSilent = TypeChecker.silent
+      val savedK2Z3Silent = K2Z3.silent
       
-      // Run K on the type checking program
-      val kScript = "./export/k"
-      val result = new StringBuilder
-      val errors = new StringBuilder
+      // Suppress output during type checking
+      TypeChecker.silent = true
+      K2Z3.silent = true
       
-      val exitCode = Process(Seq(kScript, tmpFile.getAbsolutePath)).!(
-        ProcessLogger(
-          line => result.append(line).append("\n"),
-          line => errors.append(line).append("\n")
-        )
-      )
-      
-      if (exitCode == 0) {
-        // Parse the result to extract type assignments
-        val inferredTypes = parseKResult(result.toString, ctx)
-        TypeCheckResult(
-          success = true,
-          inferredTypes = inferredTypes,
-          errors = List(),
-          kProgram = kProgram
-        )
-      } else {
-        // Check if it's UNSAT (type error) or other error
-        val output = result.toString + errors.toString
-        if (output.contains("unsatisfiable") || output.contains("UNSAT")) {
-          TypeCheckResult(
+      try {
+        // Reset state for fresh type checking
+        TypeChecker.reset()
+        UtilSMT.reset
+        K2Z3.reset()
+        
+        // Parse the generated K type program
+        val typeModel = Frontend.getModelFromString(kProgram)
+        
+        if (typeModel == null) {
+          return TypeCheckResult(
             success = false,
             inferredTypes = Map(),
-            errors = List("Type constraints are unsatisfiable - type error in program"),
+            errors = List("Failed to parse type checking K program"),
+            kProgram = kProgram
+          )
+        }
+        
+        // Type check the type program (using traditional type checker)
+        val tc = new TypeChecker(typeModel)
+        tc.smtCheck
+        
+        // Generate SMT and solve
+        val smtModel = typeModel.toSMT
+        K2Z3.solveSMT(typeModel, smtModel, printModel = false)
+        
+        // Extract results
+        val allValues = K2Z3.getAllVariableValues()
+        val inferredTypes = parseKResultFromValues(allValues, ctx)
+        
+        // Check if satisfiable by looking at z3Model
+        if (K2Z3.z3Model != null) {
+          TypeCheckResult(
+            success = true,
+            inferredTypes = inferredTypes,
+            errors = List(),
             kProgram = kProgram
           )
         } else {
           TypeCheckResult(
             success = false,
             inferredTypes = Map(),
-            errors = List(s"K execution failed: $output"),
+            errors = List("Type constraints are unsatisfiable - type error in program"),
             kProgram = kProgram
           )
         }
+      } finally {
+        // Restore state
+        TypeChecker.silent = savedSilent
+        K2Z3.silent = savedK2Z3Silent
       }
-    } finally {
-      // Clean up temp file
-      tmpFile.delete()
+    } catch {
+      case e: TypeCheckException.type =>
+        TypeCheckResult(
+          success = false,
+          inferredTypes = Map(),
+          errors = List("Type checking of type constraints failed"),
+          kProgram = kProgram
+        )
+      case e: K2Z3Exception.type =>
+        // UNSAT or solver error - likely a type error
+        TypeCheckResult(
+          success = false,
+          inferredTypes = Map(),
+          errors = List("Type constraints are unsatisfiable - type error in program"),
+          kProgram = kProgram
+        )
+      case e: Exception =>
+        TypeCheckResult(
+          success = false,
+          inferredTypes = Map(),
+          errors = List(s"Type checking failed: ${e.getMessage}"),
+          kProgram = kProgram
+        )
     }
   }
   
   /**
-   * Parse K output to extract inferred types
+   * Parse type results from K2Z3 variable values
    */
-  private def parseKResult(output: String, ctx: KTypeContext): Map[String, Type] = {
+  private def parseKResultFromValues(values: Map[String, String], ctx: KTypeContext): Map[String, Type] = {
     val typeIdToType = ctx.getAllTypes.map(_.swap)
     val varMapping = ctx.getVarMapping
     val inferredTypes = mutable.Map[String, Type]()
     
-    // Parse lines like "_ty_x = 1" to extract type assignments
-    val pattern = """(_ty_\w+)\s*=\s*(\d+)""".r
-    
-    pattern.findAllMatchIn(output).foreach { m =>
-      val typeVar = m.group(1)
-      val typeId = m.group(2).toInt
-      
-      // Find the original variable name
-      varMapping.find(_._2 == typeVar).foreach { case (varName, _) =>
-        typeIdToType.get(typeId).foreach { ty =>
-          inferredTypes(varName) = ty
+    values.foreach { case (varName, value) =>
+      if (varName.startsWith("_ty_")) {
+        try {
+          val typeId = value.toInt
+          varMapping.find(_._2 == varName).foreach { case (origName, _) =>
+            typeIdToType.get(typeId).foreach { ty =>
+              inferredTypes(origName) = ty
+            }
+          }
+        } catch {
+          case _: NumberFormatException => // Ignore non-integer values
         }
       }
     }
