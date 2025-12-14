@@ -620,15 +620,19 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var typeParams: List[TypeParam] =
       if (ctx.typeParameters() == null) Nil
       else visit(ctx.typeParameters()).asInstanceOf[List[TypeParam]]
-    var extending: List[Type] =
-      if (ctx.extending() == null) Nil
-      else visit(ctx.extending()).asInstanceOf[List[Type]]
+    var extending: List[Type] = Nil
+    var inheritanceModifiers: List[InheritanceModifier] = Nil
+    if (ctx.extending() != null) {
+      val extResult = visit(ctx.extending()).asInstanceOf[(List[Type], List[InheritanceModifier])]
+      extending = extResult._1
+      inheritanceModifiers = extResult._2
+    }
     var members: List[MemberDecl] =
       if (ctx.block() != null)
         visit(ctx.block()).asInstanceOf[List[MemberDecl]]
       else
         Nil
-    val e = EntityDecl(null, entityToken, keyword, ident, null, typeParams, extending, members)
+    val e = EntityDecl(null, entityToken, keyword, ident, null, typeParams, extending, inheritanceModifiers, members)
     val line = ctx.getStart().getLine()
     val char = ctx.getStart().getCharPositionInLine()
     declToPosition += (e -> (line, char))
@@ -814,7 +818,22 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitExtending(ctx: ModelParser.ExtendingContext): AnyRef = {
-    ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
+    val types = ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
+    val modifiers = ctx.inheritanceModifier().asScala.toList.map(visit(_)).asInstanceOf[List[InheritanceModifier]]
+    (types, modifiers)
+  }
+  
+  override def visitShareClause(ctx: ModelParser.ShareClauseContext): AnyRef = {
+    val types = ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
+    ShareClause(types)
+  }
+  
+  override def visitRenameClause(ctx: ModelParser.RenameClauseContext): AnyRef = {
+    val fromClass = visit(ctx.qualifiedName()).asInstanceOf[QualifiedName]
+    val identifiers = ctx.Identifier().asScala.toList
+    val fromField = identifiers(0).getText()
+    val toField = identifiers(1).getText()
+    RenameClause(fromClass, fromField, toField)
   }
 
   override def visitClassIdentifier(ctx: ModelParser.ClassIdentifierContext): AnyRef = {

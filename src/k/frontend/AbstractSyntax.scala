@@ -502,7 +502,7 @@ object UtilSMT {
     // This prevents duplicate TopLevelDeclarations in nested package structures
     val entityDeclsWithMain = 
       if (memberDecls.nonEmpty && packages.isEmpty) {
-        val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, memberDecls)
+        val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, Nil, memberDecls)
         mainClass :: entityDeclsSorted
       } else {
         entityDeclsSorted
@@ -1336,10 +1336,24 @@ trait TopDecl extends HasChildren {
   def toJson2: JSONObject
 }
 
-case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, keyword: Option[String], ident: String, var fqName: String, typeParams: List[TypeParam], extending: List[Type], members: List[MemberDecl]) extends MemberDecl(_annotations) {
+case class EntityDecl(
+  _annotations: List[Annotation], 
+  entityToken: EntityToken, 
+  keyword: Option[String], 
+  ident: String, 
+  var fqName: String, 
+  typeParams: List[TypeParam], 
+  extending: List[Type], 
+  inheritanceModifiers: List[InheritanceModifier] = Nil,
+  members: List[MemberDecl]
+) extends MemberDecl(_annotations) {
 
   override def children: List[TopDecl] = members
-
+  
+  // Helper methods for inheritance modifiers
+  def shareTypes: List[Type] = inheritanceModifiers.collect { case ShareClause(types) => types }.flatten
+  def renames: List[RenameClause] = inheritanceModifiers.collect { case r: RenameClause => r }
+  
   override def statistics() {
     UtilSMT.statistics.CLASSDEF += 1
     UtilSMT.statistics.EXTENSION += extending.length
@@ -1798,6 +1812,28 @@ case class TypeBound(types: List[Type]) {
     typebound.put("types", theTypes)
   }
 
+}
+
+/**
+ * Inheritance modifiers for resolving diamond inheritance and field shadowing.
+ */
+sealed trait InheritanceModifier
+
+/**
+ * Share clause for diamond inheritance - indicates that the specified types
+ * should be shared (single instance) rather than duplicated.
+ * Example: class B extends A, C share D { ... }
+ */
+case class ShareClause(types: List[Type]) extends InheritanceModifier {
+  override def toString = s"share ${types.mkString(", ")}"
+}
+
+/**
+ * Rename clause for resolving field name conflicts.
+ * Example: class B extends A rename A::x as parentX { ... }
+ */
+case class RenameClause(fromClass: QualifiedName, fromField: String, toField: String) extends InheritanceModifier {
+  override def toString = s"rename $fromClass::$fromField as $toField"
 }
 
 abstract class MemberDecl(var annotations: List[Annotation] = Nil) extends TopDecl {

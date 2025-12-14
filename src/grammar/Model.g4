@@ -66,7 +66,12 @@ typeBound:
 ;
       
 extending:
-  'extends' type (',' type)*
+  'extends' type (',' type)* inheritanceModifier*
+;
+
+inheritanceModifier:
+  'share' type (',' type)*                                    # shareClause
+| 'rename' qualifiedName '::' Identifier 'as' Identifier      # renameClause
 ;
 
 block: 
