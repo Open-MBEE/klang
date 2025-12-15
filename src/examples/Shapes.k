@@ -52,7 +52,6 @@ class  Equilateral extends Triangle {
 }
 
 class Obtuse extends Triangle {
-  a > 1
   req a.value > 90 || b.value > 90 || c.value > 90
 }
  

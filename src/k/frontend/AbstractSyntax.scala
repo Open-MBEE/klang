@@ -3700,15 +3700,23 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
             val indexFunSMT = s"_$exp2SMT"
             s"($indexFunSMT $exp1SMT)"
           case ISIN =>
-            // @@@\
-            // s"(select $exp2SMT $exp1SMT)"
-            if (true)
-              s"(select $exp2SMT $exp1SMT)"
-            else
-              s"(seq.contains $exp2SMT (seq.unit $exp1SMT))"
-            // @@@/
+            // Use seq.contains for Seq types, select for Set/Array types
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            exp2Type match {
+              case IdentType(QualifiedName(List("Seq")), _) =>
+                s"(seq.contains $exp2SMT (seq.unit $exp1SMT))"
+              case _ =>
+                s"(select $exp2SMT $exp1SMT)"
+            }
           case NOTISIN =>
-            s"(not (select $exp2SMT $exp1SMT))"
+            // Use seq.contains for Seq types, select for Set/Array types
+            val exp2Type = TypeChecker.exp2Type.get(exp2)
+            exp2Type match {
+              case IdentType(QualifiedName(List("Seq")), _) =>
+                s"(not (seq.contains $exp2SMT (seq.unit $exp1SMT)))"
+              case _ =>
+                s"(not (select $exp2SMT $exp1SMT))"
+            }
           case PSUBSET =>
             s"(and (subset $exp1SMT $exp2SMT) (not (= $exp1SMT $exp2SMT)))"
           case ADD =>
