@@ -1638,11 +1638,38 @@ case class EntityDecl(
 
   def getPropertyDecls: List[PropertyDecl] =
     for (m <- members if m.isInstanceOf[PropertyDecl] && !UtilSMT.ignoreMember(m)) yield m.asInstanceOf[PropertyDecl]
+  
+  /** Get shadow declarations that create new fields */
+  def getShadowDecls: List[ShadowDecl] =
+    for (m <- members if m.isInstanceOf[ShadowDecl]) yield m.asInstanceOf[ShadowDecl]
+  
+  /** Get rename declarations */
+  def getRenameDecls: List[RenameDecl] =
+    for (m <- members if m.isInstanceOf[RenameDecl]) yield m.asInstanceOf[RenameDecl]
 
   def getAllPropertyDecls: List[PropertyDecl] = {
+    // Get renames and shadows for this class
+    val renameMap = getRenameDecls.map(r => r.fromField -> r.toField).toMap
+    val shadowedFields = getShadowDecls.map(_.name).toSet
+    
+    // Get properties from superclasses, applying renames and excluding shadowed
     val propertyDeclsOfSuperClasses: List[PropertyDecl] =
       (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getPropertyDecls).flatten
-    propertyDeclsOfSuperClasses ++ getPropertyDecls
+        .filterNot(p => shadowedFields.contains(p.name))  // Exclude shadowed fields
+        .map { p =>
+          // Apply rename if applicable
+          renameMap.get(p.name) match {
+            case Some(newName) => PropertyDecl(p.modifiers, newName, p.ty, p.multiplicity, p.assignment, p.expr)
+            case None => p
+          }
+        }
+    
+    // Shadow declarations create synthetic properties
+    val shadowProperties: List[PropertyDecl] = getShadowDecls.map { sd =>
+      PropertyDecl(Nil, sd.name, Some(sd.ty), None, None, None)
+    }
+    
+    propertyDeclsOfSuperClasses ++ getPropertyDecls ++ shadowProperties
   }
 
   def getExpressionDecls: List[ExpressionDecl] =
