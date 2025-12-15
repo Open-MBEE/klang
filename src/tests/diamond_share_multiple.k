@@ -18,7 +18,8 @@ class D extends A, B {
 }
 
 -- Both A and B are shared ancestors
-class E extends C, D share A, B {
+class E extends C, D {
+  share A, B;
   eVal : Int
 }
 

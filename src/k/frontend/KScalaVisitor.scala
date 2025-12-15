@@ -586,6 +586,9 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     else if (ctx.functionDeclaration() != null) visit(ctx.functionDeclaration())
     else if (ctx.constraint() != null) visit(ctx.constraint())
     else if (ctx.optimizeDeclaration() != null) visit(ctx.optimizeDeclaration())
+    else if (ctx.shareDeclaration() != null) visit(ctx.shareDeclaration())
+    else if (ctx.renameDeclaration() != null) visit(ctx.renameDeclaration())
+    else if (ctx.shadowDeclaration() != null) visit(ctx.shadowDeclaration())
     else if (ctx.expression() != null) ExpressionDecl(visit(ctx.expression()).asInstanceOf[Exp])
     else null
   }
@@ -620,19 +623,15 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     var typeParams: List[TypeParam] =
       if (ctx.typeParameters() == null) Nil
       else visit(ctx.typeParameters()).asInstanceOf[List[TypeParam]]
-    var extending: List[Type] = Nil
-    var inheritanceModifiers: List[InheritanceModifier] = Nil
-    if (ctx.extending() != null) {
-      val extResult = visit(ctx.extending()).asInstanceOf[(List[Type], List[InheritanceModifier])]
-      extending = extResult._1
-      inheritanceModifiers = extResult._2
-    }
+    var extending: List[Type] =
+      if (ctx.extending() == null) Nil
+      else visit(ctx.extending()).asInstanceOf[List[Type]]
     var members: List[MemberDecl] =
       if (ctx.block() != null)
         visit(ctx.block()).asInstanceOf[List[MemberDecl]]
       else
         Nil
-    val e = EntityDecl(null, entityToken, keyword, ident, null, typeParams, extending, inheritanceModifiers, members)
+    val e = EntityDecl(null, entityToken, keyword, ident, null, typeParams, extending, members)
     val line = ctx.getStart().getLine()
     val char = ctx.getStart().getCharPositionInLine()
     declToPosition += (e -> (line, char))
@@ -818,22 +817,26 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitExtending(ctx: ModelParser.ExtendingContext): AnyRef = {
-    val types = ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
-    val modifiers = ctx.inheritanceModifier().asScala.toList.map(visit(_)).asInstanceOf[List[InheritanceModifier]]
-    (types, modifiers)
+    ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
   }
   
-  override def visitShareClause(ctx: ModelParser.ShareClauseContext): AnyRef = {
+  override def visitShareDeclaration(ctx: ModelParser.ShareDeclarationContext): AnyRef = {
     val types = ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
-    ShareClause(types)
+    ShareDecl(types)
   }
   
-  override def visitRenameClause(ctx: ModelParser.RenameClauseContext): AnyRef = {
+  override def visitRenameDeclaration(ctx: ModelParser.RenameDeclarationContext): AnyRef = {
     val fromClass = visit(ctx.qualifiedName()).asInstanceOf[QualifiedName]
     val identifiers = ctx.Identifier().asScala.toList
     val fromField = identifiers(0).getText()
     val toField = identifiers(1).getText()
-    RenameClause(fromClass, fromField, toField)
+    RenameDecl(fromClass, fromField, toField)
+  }
+  
+  override def visitShadowDeclaration(ctx: ModelParser.ShadowDeclarationContext): AnyRef = {
+    val ty = visit(ctx.`type`()).asInstanceOf[Type]
+    val name = ctx.Identifier().getText()
+    ShadowDecl(ty, name)
   }
 
   override def visitClassIdentifier(ctx: ModelParser.ClassIdentifierContext): AnyRef = {

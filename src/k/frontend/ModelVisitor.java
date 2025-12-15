@@ -95,20 +95,6 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExtending(ModelParser.ExtendingContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code shareClause}
-	 * labeled alternative in {@link ModelParser#inheritanceModifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitShareClause(ModelParser.ShareClauseContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code renameClause}
-	 * labeled alternative in {@link ModelParser#inheritanceModifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitRenameClause(ModelParser.RenameClauseContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link ModelParser#block}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -126,6 +112,24 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMemberDeclaration(ModelParser.MemberDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#shareDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShareDeclaration(ModelParser.ShareDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#renameDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRenameDeclaration(ModelParser.RenameDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#shadowDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShadowDeclaration(ModelParser.ShadowDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ModelParser#optimizeDeclaration}.
 	 * @param ctx the parse tree

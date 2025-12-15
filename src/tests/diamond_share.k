@@ -14,7 +14,8 @@ class Right extends Base {
 }
 
 -- Without 'share Base', this would error due to diamond inheritance
-class Diamond extends Left, Right share Base {
+class Diamond extends Left, Right {
+  share Base;
   diamondVal : Int
 }
 

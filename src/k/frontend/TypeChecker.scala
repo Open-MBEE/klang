@@ -221,12 +221,14 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
    * @param shareTypes Types that should be shared (single instance from diamond)
    * @param renames Field renames (from -> to)
    * @param sharedFields Fields that have already been included via share
+   * @param shadowedFields Fields that are shadowed (parent field should be dropped)
    */
   def union2WithModifiers(
     te: TypeEnv, 
     shareTypes: Set[String], 
     renames: Map[String, String],
-    sharedFields: scala.collection.mutable.Set[String]
+    sharedFields: scala.collection.mutable.Set[String],
+    shadowedFields: Set[String] = Set()
   ): TypeEnv = {
     var newMap = Map[String, TypeInfo]()
     map.foreach { kv => newMap += (kv._1 -> kv._2) }
@@ -245,45 +247,50 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
             }
             newMap += (kv._1 -> kv._2)
           case (pname, pti @ PropertyTypeInfo(pdecl, global, classMember, powner)) =>
-            // Check if this field should be renamed
-            val effectiveName = renames.getOrElse(pname, pname)
-            
-            // Check if this is a shared field from a shared type
-            val ownerClass = if (powner != null) powner.ident else ""
-            val isFromSharedType = shareTypes.contains(ownerClass)
-            
-            if (map.contains(effectiveName)) {
-              if (!map(effectiveName).isInstanceOf[PropertyTypeInfo]) {
-                error(s"$effectiveName overloaded. Currently not supported.")
-              }
-              val opti = map(effectiveName).asInstanceOf[PropertyTypeInfo]
-              if (opti.global && pti.global && opti != pti) {
-                error(s"$effectiveName has been declared multiple times in the global scope.")
-              }
-              if (opti.global && !pti.global) {
+            // Check if this field is shadowed (intentionally hidden)
+            if (shadowedFields.contains(pname)) {
+              // Don't add the parent's field - it's being shadowed
+            } else {
+              // Check if this field should be renamed
+              val effectiveName = renames.getOrElse(pname, pname)
+              
+              // Check if this is a shared field from a shared type
+              val ownerClass = if (powner != null) powner.ident else ""
+              val isFromSharedType = shareTypes.contains(ownerClass)
+              
+              if (map.contains(effectiveName)) {
+                if (!map(effectiveName).isInstanceOf[PropertyTypeInfo]) {
+                  error(s"$effectiveName overloaded. Currently not supported.")
+                }
+                val opti = map(effectiveName).asInstanceOf[PropertyTypeInfo]
+                if (opti.global && pti.global && opti != pti) {
+                  error(s"$effectiveName has been declared multiple times in the global scope.")
+                }
+                if (opti.global && !pti.global) {
+                  newMap += (effectiveName -> pti)
+                }
+                if (pti.global && !opti.global) {
+                  newMap += (effectiveName -> opti)
+                }
+                if (!pti.global && !opti.global) {
+                  // Diamond case: check if this is a shared field
+                  if (isFromSharedType && sharedFields.contains(pname)) {
+                    // Already included via share - skip duplicate
+                  } else if (isFromSharedType) {
+                    // First time seeing this shared field - include it
+                    sharedFields += pname
+                    newMap += (effectiveName -> pti)
+                  } else {
+                    error(s"$pname declared multiple times. Use 'shadow $pname;' or 'rename ...::$pname as newName;' to resolve.")
+                  }
+                }
+              } else {
+                // Track shared fields
+                if (isFromSharedType) {
+                  sharedFields += pname
+                }
                 newMap += (effectiveName -> pti)
               }
-              if (pti.global && !opti.global) {
-                newMap += (effectiveName -> opti)
-              }
-              if (!pti.global && !opti.global) {
-                // Diamond case: check if this is a shared field
-                if (isFromSharedType && sharedFields.contains(pname)) {
-                  // Already included via share - skip duplicate
-                } else if (isFromSharedType) {
-                  // First time seeing this shared field - include it
-                  sharedFields += pname
-                  newMap += (effectiveName -> pti)
-                } else {
-                  error(s"$pname declared multiple times.")
-                }
-              }
-            } else {
-              // Track shared fields
-              if (isFromSharedType) {
-                sharedFields += pname
-              }
-              newMap += (effectiveName -> pti)
             }
           case _ => newMap += (kv._1 -> kv._2)
         }
@@ -375,7 +382,7 @@ object ClassHierarchy {
     var processedEntities = Set[EntityDecl]()
     
     def processEntityDecls(decls: List[TopDecl]): Unit = {
-      for (ed @ EntityDecl(_, _, _, _, _, _, _, _, _) <- decls) {
+      for (ed @ EntityDecl(_, _, _, _, _, _, _, _) <- decls) {
         // Only process if we haven't seen this entity declaration before
         if (!processedEntities.contains(ed)) {
           processedEntities += ed
@@ -496,7 +503,7 @@ class TypeChecker(model: Model) {
     val typeParams : List[TypeParam] = Nil
     val extending : List[Type] = Nil
     val members : List[MemberDecl] = Nil
-    val entityDecl = EntityDecl(Nil, ClassToken, None, name, null, typeParams, extending, Nil, members)
+    val entityDecl = EntityDecl(Nil, ClassToken, None, name, null, typeParams, extending, members)
     return entityDecl
   }
 
@@ -743,7 +750,7 @@ class TypeChecker(model: Model) {
     def processDecls(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
-          case ed @ EntityDecl(_, _, _, ident, _, _, _, _, _) =>
+          case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
             // Only process if we haven't seen this entity name before
             // Also check if it's already in the globalTypeEnv to handle parser duplicates
             if (!processedEntityNames.contains(ident) && !globalTypeEnv.map.contains(ident)) {
@@ -833,7 +840,7 @@ class TypeChecker(model: Model) {
     def processClassPropertiesExplicit(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
-          case ed @ EntityDecl(_, token, _, ident, _, _, _, _, _) if token != AssocToken =>
+          case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
             // add 'this' to the type env
             var classTypeEnv = TypeEnv(ed, globalTypeEnv.map + ("this" -> ClassTypeInfo(ed)))
             ed.members.foreach { m =>
@@ -856,7 +863,7 @@ class TypeChecker(model: Model) {
             }
             decl2TypeEnvi += (d -> classTypeEnv)
             origTypeEnvironments += (d -> classTypeEnv)
-        case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _, _, _) =>
+        case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _, _) =>
 
           // only support 2 members in associations
           if (ed.members.length != 2)
@@ -891,7 +898,7 @@ class TypeChecker(model: Model) {
           val cte0 =
             decl2TypeEnvi.find(p =>
               p._1 match {
-                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _, _) if t != AssocToken =>
+                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
                   if (ed1.ident.equals(m1.getTypeOrError.toString)) true
                   else false
                 case _ =>
@@ -901,7 +908,7 @@ class TypeChecker(model: Model) {
           val cte1 =
             decl2TypeEnvi.find(p =>
               p._1 match {
-                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _, _) if t != AssocToken =>
+                case ed1 @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
                   if (ed1.ident.equals(m2.getTypeOrError.toString)) true
                   true
                 case _ =>
@@ -946,7 +953,7 @@ class TypeChecker(model: Model) {
     def processClassPropertiesInferred(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
-          case ed @ EntityDecl(_, token, _, ident, _, _, _, _, _) if token != AssocToken =>
+          case ed @ EntityDecl(_, token, _, ident, _, _, _, _) if token != AssocToken =>
             var classTypeEnv = decl2TypeEnvi(d)
             ed.members.foreach { m =>
               m match {
@@ -1018,23 +1025,22 @@ class TypeChecker(model: Model) {
     def processInheritance(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
       d match {
-        case ed @ EntityDecl(_, t, _, ident, _, _, _, inheritMods, _) if t != AssocToken =>
+        case ed @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
           logDebug(s"Processing $ident")
           val classTypeEnv = decl2TypeEnvi(d)
           val extending = ClassHierarchy.parentsTransitive(ed)
           
-          // Extract share and rename modifiers
-          val shareTypes = inheritMods.collect { 
-            case ShareClause(types) => types.map {
-              case it: IdentType => it.ident.toString
-              case _ => ""
-            }
-          }.flatten.toSet
+          // Extract share and rename modifiers from members
+          val shareTypes = ed.shareTypes.map {
+            case it: IdentType => it.ident.toString
+            case _ => ""
+          }.toSet
           
-          val renames = inheritMods.collect {
-            case RenameClause(fromClass, fromField, toField) =>
-              fromField -> toField
+          val renames = ed.renames.map { r =>
+            r.fromField -> r.toField
           }.toMap
+          
+          val shadowedFields = ed.shadows.map(_.name).toSet
           
           // Detect diamond ancestors
           val diamondAncestors = ClassHierarchy.findDiamondAncestors(ed)
@@ -1051,7 +1057,7 @@ class TypeChecker(model: Model) {
                     case (fname, _: PropertyTypeInfo) => fname
                   }
                   if (fieldNames.nonEmpty) {
-                    error(s"Diamond inheritance: ${fieldNames.mkString(", ")} inherited multiple times from $ancestorName. Use 'share $ancestorName' to resolve.")
+                    error(s"Diamond inheritance: ${fieldNames.mkString(", ")} inherited multiple times from $ancestorName. Use 'share $ancestorName;' to resolve.")
                   }
                 }
               }
@@ -1064,9 +1070,9 @@ class TypeChecker(model: Model) {
             val extendingEnv = extending.foldLeft(TypeEnv(ed, Map[String, TypeInfo]())) {
               (res, ex) =>
                 origTypeEnvironments(classes(ex.asInstanceOf[IdentType].ident.toString))
-                  .union2WithModifiers(res, shareTypes, renames, sharedFields)
+                  .union2WithModifiers(res, shareTypes, renames, sharedFields, shadowedFields)
             }
-            classTypeEnv.union2WithModifiers(extendingEnv, shareTypes, renames, sharedFields)
+            classTypeEnv.union2WithModifiers(extendingEnv, shareTypes, renames, sharedFields, shadowedFields)
           }
           decl2TypeEnvi += (d -> newClassTypeEnv)
         case _ => ()
@@ -1147,7 +1153,7 @@ class TypeChecker(model: Model) {
     model.decls.foreach { d =>
       d match {
         case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
-        case ed @ EntityDecl(_, _, _, ident, _, _, _, _, _) =>
+        case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
           ed.members.foreach { m =>
             m match {
               case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(decl2TypeEnvi(ed), exp, ed))
@@ -1171,7 +1177,7 @@ class TypeChecker(model: Model) {
           exp2Type.put(exp, ty)
         case fd @ FunDecl(_, _, _, _, _, _) =>
           processFunction(fd, globalTypeEnv, null)
-        case ed @ EntityDecl(_, token, _, ident, _, _, _, _, _) =>
+        case ed @ EntityDecl(_, token, _, ident, _, _, _, _) =>
           val entityTypeEnv = decl2TypeEnvi(ed)
 
           ed.annotations.foreach { a =>
