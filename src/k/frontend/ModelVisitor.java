@@ -1,4 +1,4 @@
-// Generated from /Users/bclement/git/klang/src/grammar/Model.g4 by ANTLR 4.7
+// Generated from /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/src/grammar/Model.g4 by ANTLR 4.7
 package k.frontend;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -112,6 +112,24 @@ public interface ModelVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMemberDeclaration(ModelParser.MemberDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#shareDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShareDeclaration(ModelParser.ShareDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#renameDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRenameDeclaration(ModelParser.RenameDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ModelParser#shadowDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShadowDeclaration(ModelParser.ShadowDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ModelParser#optimizeDeclaration}.
 	 * @param ctx the parse tree

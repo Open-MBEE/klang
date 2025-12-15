@@ -1,0 +1,48 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/diamond_share_multiple.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class A { (block (blockDeclaration (memberDeclaration (propertyDeclaration aVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class B { (block (blockDeclaration (memberDeclaration (propertyDeclaration bVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class C (extending extends (type (classIdentifier (qualifiedName A))) , (type (classIdentifier (qualifiedName B)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration cVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class D (extending extends (type (classIdentifier (qualifiedName A))) , (type (classIdentifier (qualifiedName B)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration dVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class E (extending extends (type (classIdentifier (qualifiedName C))) , (type (classIdentifier (qualifiedName D)))) { (block (blockDeclaration (memberDeclaration (shareDeclaration share (type (classIdentifier (qualifiedName A))) , (type (classIdentifier (qualifiedName B))) ;))) (blockDeclaration (memberDeclaration (propertyDeclaration eVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration e : (type (classIdentifier (qualifiedName E))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression e) . aVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression e) . bVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression e) . cVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression e) . dVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression e) . eVal) > (expression (literal 0)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 5
+        class extensions         : 6
+        properties               : 6
+        constraints              : 5
+        --- types: -------------------
+        ref types                : 1
+        int types                : 5
+        --- expressions: -------------
+        dot exp                  : 5
+        dot exp max              : 1
+        binary exp               : 5
+        int literal exp          : 5
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+-----------------------------------------------------------+
+	|Variable|Ref  |Value                                                      |
+	+--------+-----+-----------------------------------------------------------+
+	|e       |Ref 2|E(aVal::1, bVal::7720, cVal::21239, dVal::2438, eVal::8856)|
+	+--------+-----+-----------------------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+----------------------------------------------+
+	|Variable|Ref  |Value                                         |
+	+--------+-----+----------------------------------------------+
+	|        |Ref 4|B(bVal::0)                                    |
+	|        |Ref 5|C(aVal::0, bVal::0, cVal::0)                  |
+	|        |Ref 3|A(aVal::0)                                    |
+	|        |Ref 6|D(aVal::0, bVal::0, dVal::0)                  |
+	|        |Ref 1|E(aVal::0, bVal::0, cVal::0, dVal::0, eVal::0)|
+	+--------+-----+----------------------------------------------+
+

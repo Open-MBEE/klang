@@ -586,6 +586,9 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     else if (ctx.functionDeclaration() != null) visit(ctx.functionDeclaration())
     else if (ctx.constraint() != null) visit(ctx.constraint())
     else if (ctx.optimizeDeclaration() != null) visit(ctx.optimizeDeclaration())
+    else if (ctx.shareDeclaration() != null) visit(ctx.shareDeclaration())
+    else if (ctx.renameDeclaration() != null) visit(ctx.renameDeclaration())
+    else if (ctx.shadowDeclaration() != null) visit(ctx.shadowDeclaration())
     else if (ctx.expression() != null) ExpressionDecl(visit(ctx.expression()).asInstanceOf[Exp])
     else null
   }
@@ -815,6 +818,25 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
 
   override def visitExtending(ctx: ModelParser.ExtendingContext): AnyRef = {
     ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
+  }
+  
+  override def visitShareDeclaration(ctx: ModelParser.ShareDeclarationContext): AnyRef = {
+    val types = ctx.`type`().asScala.toList.map(visit(_)).asInstanceOf[List[Type]]
+    ShareDecl(types)
+  }
+  
+  override def visitRenameDeclaration(ctx: ModelParser.RenameDeclarationContext): AnyRef = {
+    val fromClass = visit(ctx.qualifiedName()).asInstanceOf[QualifiedName]
+    val identifiers = ctx.Identifier().asScala.toList
+    val fromField = identifiers(0).getText()
+    val toField = identifiers(1).getText()
+    RenameDecl(fromClass, fromField, toField)
+  }
+  
+  override def visitShadowDeclaration(ctx: ModelParser.ShadowDeclarationContext): AnyRef = {
+    val ty = visit(ctx.`type`()).asInstanceOf[Type]
+    val name = ctx.Identifier().getText()
+    ShadowDecl(ty, name)
   }
 
   override def visitClassIdentifier(ctx: ModelParser.ClassIdentifierContext): AnyRef = {

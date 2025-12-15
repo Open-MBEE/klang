@@ -214,6 +214,97 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
    * Does not allow function overloading
    * Uses decl from this 
    */
+  /**
+   * Union with another TypeEnv, respecting inheritance modifiers.
+   * 
+   * @param te The other TypeEnv to merge
+   * @param shareTypes Types that should be shared (single instance from diamond)
+   * @param renames Field renames keyed by (sourceClass, fieldName) -> newName
+   * @param sharedFields Fields that have already been included via share
+   * @param shadowedFields Fields that are shadowed (parent field should be dropped)
+   * @param sourceClassName The class we're inheriting from (for rename lookups)
+   */
+  def union2WithModifiers(
+    te: TypeEnv, 
+    shareTypes: Set[String], 
+    renames: Map[(String, String), String],
+    sharedFields: scala.collection.mutable.Set[String],
+    shadowedFields: Set[String] = Set(),
+    sourceClassName: String = ""
+  ): TypeEnv = {
+    // Start with te (accumulator) as the base
+    var newMap = Map[String, TypeInfo]()
+    te.map.foreach { kv => newMap += (kv._1 -> kv._2) }
+    
+    // Merge this.map (parent's fields) into newMap, applying renames
+    map.foreach {
+      kv =>
+        (kv._1, kv._2) match {
+          case (functionName, FunctionTypeInfo(fdecl, fowner)) =>
+            if (newMap.contains(functionName)) {
+              val ofdecl = newMap(functionName).asInstanceOf[FunctionTypeInfo].decl
+              val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
+              val areParamsEqual = ofdecl.params.length == fdecl.params.length && (ofdecl.params zip fdecl.params).forall { p => areTypesEqual(p._1.ty, p._2.ty, false) }
+              val onlySecondHasBody = !fdecl.body.isEmpty
+              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && onlySecondHasBody) {
+                error(s"${fdecl.ident} redefined.")
+              }
+            }
+            newMap += (kv._1 -> kv._2)
+          case (pname, pti @ PropertyTypeInfo(pdecl, global, classMember, powner)) =>
+            // Check if this field is shadowed (intentionally hidden)
+            if (shadowedFields.contains(pname)) {
+              // Don't add the parent's field - it's being shadowed
+            } else {
+              // Check if this field should be renamed (lookup by source class and field name)
+              val effectiveName = renames.getOrElse((sourceClassName, pname), pname)
+              
+              // Debug output
+              
+              // Check if this is a shared field from a shared type
+              val ownerClass = if (powner != null) powner.ident else ""
+              val isFromSharedType = shareTypes.contains(ownerClass)
+              
+              if (newMap.contains(effectiveName)) {
+                if (!newMap(effectiveName).isInstanceOf[PropertyTypeInfo]) {
+                  error(s"$effectiveName overloaded. Currently not supported.")
+                }
+                val opti = newMap(effectiveName).asInstanceOf[PropertyTypeInfo]
+                if (opti.global && pti.global && opti != pti) {
+                  error(s"$effectiveName has been declared multiple times in the global scope.")
+                }
+                if (opti.global && !pti.global) {
+                  newMap += (effectiveName -> pti)
+                }
+                if (pti.global && !opti.global) {
+                  newMap += (effectiveName -> opti)
+                }
+                if (!pti.global && !opti.global) {
+                  // Diamond case: check if this is a shared field
+                  if (isFromSharedType && sharedFields.contains(pname)) {
+                    // Already included via share - skip duplicate
+                  } else if (isFromSharedType) {
+                    // First time seeing this shared field - include it
+                    sharedFields += pname
+                    newMap += (effectiveName -> pti)
+                  } else {
+                    error(s"$pname declared multiple times. Use 'shadow $pname;' or 'rename ...::$pname as newName;' to resolve.")
+                  }
+                }
+              } else {
+                // Track shared fields
+                if (isFromSharedType) {
+                  sharedFields += pname
+                }
+                newMap += (effectiveName -> pti)
+              }
+            }
+          case _ => newMap += (kv._1 -> kv._2)
+        }
+    }
+    TypeEnv(decl, newMap)
+  }
+  
   def union2(te: TypeEnv): TypeEnv = {
     var newMap = Map[String, TypeInfo]()
     map.foreach { kv => newMap += (kv._1 -> kv._2) }
@@ -356,6 +447,27 @@ object ClassHierarchy {
         parentsTransitive(type2Decl(p).asInstanceOf[EntityDecl], visited + declType) ++ (p :: res)
     }
     iParents.distinct
+  }
+  
+  /**
+   * Find diamond patterns in inheritance hierarchy.
+   * Returns a set of class names that appear multiple times through different inheritance paths.
+   */
+  def findDiamondAncestors(e: EntityDecl): Set[String] = {
+    val immediateParents = parents.getOrElse(e, Nil).toList
+    if (immediateParents.size <= 1) return Set()
+    
+    // For each immediate parent, find all ancestors
+    val ancestorSets = immediateParents.map { p =>
+      val parentDecl = type2Decl(p).asInstanceOf[EntityDecl]
+      (parentsTransitive(parentDecl).map(_.toString) :+ p.toString).toSet
+    }
+    
+    // Find ancestors that appear in multiple paths (intersection of 2+ sets)
+    if (ancestorSets.size < 2) return Set()
+    
+    val commonAncestors = ancestorSets.reduce(_ intersect _)
+    commonAncestors
   }
 
   def buildHierarchy(d: EntityDecl, types: Map[Type, TopDecl], visited: Set[EntityDecl]): Set[Type] = {
@@ -753,6 +865,13 @@ class TypeChecker(model: Model) {
                   }
                 case fd @ FunDecl(_, _, _, _, _, _) =>
                   classTypeEnv = classTypeEnv.union(fd.ident -> FunctionTypeInfo(fd, ed))
+                case sd @ ShadowDecl(ty, name) =>
+                  // Shadow declaration creates a new property that shadows the parent's
+                  if (!doesTypeExist(classTypeEnv, ty))
+                    error(s"Specified type $ty in shadow declaration does not exist.")
+                  // Create a synthetic PropertyDecl for the shadow field
+                  val syntheticProp = PropertyDecl(Nil, name, Some(ty), None, None, None)
+                  classTypeEnv = classTypeEnv.overwrite(name -> PropertyTypeInfo(syntheticProp, false, true, ed))
                 case _ => ()
               }
             }
@@ -922,14 +1041,77 @@ class TypeChecker(model: Model) {
       d match {
         case ed @ EntityDecl(_, t, _, ident, _, _, _, _) if t != AssocToken =>
           logDebug(s"Processing $ident")
-          val classTypeEnv = decl2TypeEnvi(d)
-          val extending = ClassHierarchy.parentsTransitive(ed)
-          val newClassTypeEnv = {
-            val extendingEnv = extending.foldLeft(TypeEnv(ed, Map[String, TypeInfo]())) {
-              (res, ex) =>
-                origTypeEnvironments(classes(ex.asInstanceOf[IdentType].ident.toString)).union2(res)
+          // Use origTypeEnvironments for direct fields (not updated during inheritance)
+          val classTypeEnv = origTypeEnvironments.getOrElse(d, TypeEnv(ed, Map()))
+          // Use immediate parents only (not transitive) for proper rename handling
+          val immediateParents = ed.extending.map {
+            case it: IdentType => it.ident.toString
+            case _ => ""
+          }.filter(_.nonEmpty)
+          
+          
+          // Extract share and rename modifiers from members
+          val shareTypes = ed.shareTypes.map {
+            case it: IdentType => it.ident.toString
+            case _ => ""
+          }.toSet
+          
+          // Renames are keyed by (fromClass, fromField) -> toField
+          val renames = ed.renames.map { r =>
+            (r.fromClass.toString, r.fromField) -> r.toField
+          }.toMap
+          
+          // For diamond resolution, check if all fields from a diamond ancestor are renamed
+          val renamesByClass = ed.renames.groupBy(_.fromClass.toString)
+          
+          val shadowedFields = ed.shadows.map(_.name).toSet
+          
+          // Detect diamond ancestors
+          val diamondAncestors = ClassHierarchy.findDiamondAncestors(ed)
+          
+          // Check that all diamond ancestors have share modifier or renamed fields
+          val unsharedDiamonds = diamondAncestors -- shareTypes
+          if (unsharedDiamonds.nonEmpty) {
+            // Get immediate parents for rename checking
+            val immediateParents = ClassHierarchy.parents.getOrElse(ed, Set()).map(_.toString).toList
+            
+            // Get fields from the unshared diamond ancestors
+            unsharedDiamonds.foreach { ancestorName =>
+              if (classes.contains(ancestorName)) {
+                val ancestorDecl = classes(ancestorName)
+                // Get only the directly declared property fields from the ancestor
+                val fieldNames = ancestorDecl.getPropertyDecls.map(_.name).toSet
+                
+                // Check if all fields are renamed from all parent paths
+                // For rename to resolve diamond, each parent path must have a rename for each field
+                val allFieldsRenamed = fieldNames.forall { fname =>
+                  immediateParents.forall { parentName =>
+                    renames.contains((parentName, fname))
+                  }
+                }
+                
+                if (fieldNames.nonEmpty && !allFieldsRenamed) {
+                  error(s"Diamond inheritance: ${fieldNames.mkString(", ")} inherited multiple times from $ancestorName. Use 'share $ancestorName;' or rename from each parent path to resolve.")
+                }
+              }
             }
-            classTypeEnv.union2(extendingEnv)
+          }
+          
+          val sharedFields = scala.collection.mutable.Set[String]()
+          
+          val newClassTypeEnv = {
+            // Merge from immediate parents only - each parent has inherited fields from their ancestors
+            val extendingEnv = immediateParents.foldLeft(TypeEnv(ed, Map[String, TypeInfo]())) {
+              (res, parentName) =>
+                if (classes.contains(parentName)) {
+                  // Use decl2TypeEnvi which has the full inherited type env
+                  val parentEnv = decl2TypeEnvi(classes(parentName))
+                  parentEnv.union2WithModifiers(res, shareTypes, renames, sharedFields, shadowedFields, parentName)
+                } else {
+                  res
+                }
+            }
+            classTypeEnv.union2WithModifiers(extendingEnv, shareTypes, renames, sharedFields, shadowedFields, "")
           }
           decl2TypeEnvi += (d -> newClassTypeEnv)
         case _ => ()
@@ -938,7 +1120,18 @@ class TypeChecker(model: Model) {
     }
     
     def processModelInheritance(m: Model): Unit = {
-      processInheritance(m.decls)
+      // Process multiple times to handle dependencies (parents before children)
+      // This is a simple fixed-point iteration
+      var changed = true
+      var iterations = 0
+      val maxIterations = 10
+      while (changed && iterations < maxIterations) {
+        val beforeEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
+        processInheritance(m.decls)
+        val afterEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
+        changed = beforeEnvs != afterEnvs
+        iterations += 1
+      }
       m.packages.foreach { pkg =>
         processModelInheritance(pkg.model)
       }

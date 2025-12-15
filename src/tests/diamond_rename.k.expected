@@ -1,0 +1,47 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/diamond_rename.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class D { (block (blockDeclaration (memberDeclaration (propertyDeclaration x : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class B (extending extends (type (classIdentifier (qualifiedName D)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration bVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class C (extending extends (type (classIdentifier (qualifiedName D)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration cVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class A (extending extends (type (classIdentifier (qualifiedName B))) , (type (classIdentifier (qualifiedName C)))) { (block (blockDeclaration (memberDeclaration (renameDeclaration rename (qualifiedName B) :: x as bx ;))) (blockDeclaration (memberDeclaration (renameDeclaration rename (qualifiedName C) :: x as cx ;))) (blockDeclaration (memberDeclaration (propertyDeclaration aVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration a : (type (classIdentifier (qualifiedName A))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . bx) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . cx) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . bVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . cVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . aVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . bx) = (expression (literal 10))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . cx) = (expression (literal 20)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 4
+        class extensions         : 4
+        properties               : 5
+        constraints              : 7
+        --- types: -------------------
+        ref types                : 1
+        int types                : 4
+        --- expressions: -------------
+        dot exp                  : 7
+        dot exp max              : 1
+        binary exp               : 7
+        int literal exp          : 7
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+---------------------------------------------------+
+	|Variable|Ref  |Value                                              |
+	+--------+-----+---------------------------------------------------+
+	|a       |Ref 2|A(bx::10, bVal::1, cx::20, cVal::7720, aVal::21239)|
+	+--------+-----+---------------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+------------------------------------------+
+	|Variable|Ref  |Value                                     |
+	+--------+-----+------------------------------------------+
+	|        |Ref 4|C(x::0, cVal::0)                          |
+	|        |Ref 5|D(x::0)                                   |
+	|        |Ref 1|A(bx::0, bVal::0, cx::0, cVal::0, aVal::0)|
+	|        |Ref 3|B(x::0, bVal::0)                          |
+	+--------+-----+------------------------------------------+
+

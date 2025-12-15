@@ -84,8 +84,23 @@ memberDeclaration:
   | functionDeclaration
   | constraint 
   | optimizeDeclaration
+  | shareDeclaration
+  | renameDeclaration
+  | shadowDeclaration
   | expression
   ;
+
+shareDeclaration:
+  'share' type (',' type)* ';'?
+;
+
+renameDeclaration:
+  'rename' qualifiedName '::' Identifier 'as' Identifier ';'?
+;
+
+shadowDeclaration:
+  'shadow' type Identifier ';'?
+;
 
 optimizeDeclaration:
   ('minimize' | 'maximize') expression ('weight' IntegerLiteral)?

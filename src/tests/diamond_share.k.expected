@@ -1,0 +1,47 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/diamond_share.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class Base { (block (blockDeclaration (memberDeclaration (propertyDeclaration baseVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class Left (extending extends (type (classIdentifier (qualifiedName Base)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration leftVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class Right (extending extends (type (classIdentifier (qualifiedName Base)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration rightVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class Diamond (extending extends (type (classIdentifier (qualifiedName Left))) , (type (classIdentifier (qualifiedName Right)))) { (block (blockDeclaration (memberDeclaration (shareDeclaration share (type (classIdentifier (qualifiedName Base))) ;))) (blockDeclaration (memberDeclaration (propertyDeclaration diamondVal : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration d : (type (classIdentifier (qualifiedName Diamond))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression d) . baseVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression d) . leftVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression d) . rightVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression d) . diamondVal) > (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression d) . baseVal) = (expression (literal 10)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 4
+        class extensions         : 4
+        properties               : 5
+        constraints              : 5
+        --- types: -------------------
+        ref types                : 1
+        int types                : 4
+        --- expressions: -------------
+        dot exp                  : 5
+        dot exp max              : 1
+        binary exp               : 5
+        int literal exp          : 5
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+-------------------------------------------------------------------+
+	|Variable|Ref  |Value                                                              |
+	+--------+-----+-------------------------------------------------------------------+
+	|d       |Ref 4|Diamond(baseVal::10, leftVal::1, rightVal::7720, diamondVal::21239)|
+	+--------+-----+-------------------------------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+-----------------------------------------------------------+
+	|Variable|Ref  |Value                                                      |
+	+--------+-----+-----------------------------------------------------------+
+	|        |Ref 5|Right(baseVal::0, rightVal::0)                             |
+	|        |Ref 1|Left(baseVal::0, leftVal::0)                               |
+	|        |Ref 2|Base(baseVal::0)                                           |
+	|        |Ref 3|Diamond(baseVal::0, leftVal::0, rightVal::0, diamondVal::0)|
+	+--------+-----+-----------------------------------------------------------+
+

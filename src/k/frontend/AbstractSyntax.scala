@@ -1336,10 +1336,24 @@ trait TopDecl extends HasChildren {
   def toJson2: JSONObject
 }
 
-case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, keyword: Option[String], ident: String, var fqName: String, typeParams: List[TypeParam], extending: List[Type], members: List[MemberDecl]) extends MemberDecl(_annotations) {
+case class EntityDecl(
+  _annotations: List[Annotation], 
+  entityToken: EntityToken, 
+  keyword: Option[String], 
+  ident: String, 
+  var fqName: String, 
+  typeParams: List[TypeParam], 
+  extending: List[Type], 
+  members: List[MemberDecl]
+) extends MemberDecl(_annotations) {
 
   override def children: List[TopDecl] = members
-
+  
+  // Helper methods for inheritance modifiers (extracted from members)
+  def shareTypes: List[Type] = members.collect { case ShareDecl(types) => types }.flatten
+  def renames: List[RenameDecl] = members.collect { case r: RenameDecl => r }
+  def shadows: List[ShadowDecl] = members.collect { case s: ShadowDecl => s }
+  
   override def statistics() {
     UtilSMT.statistics.CLASSDEF += 1
     UtilSMT.statistics.EXTENSION += extending.length
@@ -1624,11 +1638,55 @@ case class EntityDecl(_annotations: List[Annotation], entityToken: EntityToken, 
 
   def getPropertyDecls: List[PropertyDecl] =
     for (m <- members if m.isInstanceOf[PropertyDecl] && !UtilSMT.ignoreMember(m)) yield m.asInstanceOf[PropertyDecl]
+  
+  /** Get shadow declarations that create new fields */
+  def getShadowDecls: List[ShadowDecl] =
+    for (m <- members if m.isInstanceOf[ShadowDecl]) yield m.asInstanceOf[ShadowDecl]
+  
+  /** Get rename declarations */
+  def getRenameDecls: List[RenameDecl] =
+    for (m <- members if m.isInstanceOf[RenameDecl]) yield m.asInstanceOf[RenameDecl]
 
   def getAllPropertyDecls: List[PropertyDecl] = {
-    val propertyDeclsOfSuperClasses: List[PropertyDecl] =
-      (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getPropertyDecls).flatten
-    propertyDeclsOfSuperClasses ++ getPropertyDecls
+    // Get renames keyed by (sourceClass, fieldName) and shadows for this class
+    val renameMap = getRenameDecls.map(r => (r.fromClass.toString, r.fromField) -> r.toField).toMap
+    val shadowedFields = getShadowDecls.map(_.name).toSet
+    
+    // Get immediate parent names
+    val immediateParents = extending.collect { case it: IdentType => it.ident.toString }
+    
+    // For diamond with rename, we need to get properties from immediate parents only
+    // (not transitive), since each parent path may have different renames
+    val propertyDeclsOfSuperClasses: List[PropertyDecl] = if (renameMap.nonEmpty) {
+      // With renames: only use immediate parents
+      immediateParents.flatMap { parentName =>
+        if (classes.contains(parentName)) {
+          classes(parentName).getAllPropertyDecls
+            .filterNot(p => shadowedFields.contains(p.name))
+            .map { p =>
+              // Apply rename if applicable
+              renameMap.get((parentName, p.name)) match {
+                case Some(newName) => PropertyDecl(p.modifiers, newName, p.ty, p.multiplicity, p.assignment, p.expr)
+                case None => p
+              }
+            }
+        } else {
+          Nil
+        }
+      }
+    } else {
+      // Without renames: use all superclasses (original behavior)
+      getSuperClasses(ident).flatMap { superClass =>
+        classes(superClass).getPropertyDecls.filterNot(p => shadowedFields.contains(p.name))
+      }
+    }
+    
+    // Shadow declarations create synthetic properties
+    val shadowProperties: List[PropertyDecl] = getShadowDecls.map { sd =>
+      PropertyDecl(Nil, sd.name, Some(sd.ty), None, None, None)
+    }
+    
+    propertyDeclsOfSuperClasses ++ getPropertyDecls ++ shadowProperties
   }
 
   def getExpressionDecls: List[ExpressionDecl] =
@@ -1798,6 +1856,58 @@ case class TypeBound(types: List[Type]) {
     typebound.put("types", theTypes)
   }
 
+}
+
+/**
+ * Share declaration for diamond inheritance - indicates that the specified types
+ * should be shared (single instance) rather than duplicated.
+ * Example: share D;
+ */
+case class ShareDecl(types: List[Type]) extends MemberDecl(Nil) {
+  override def toString = s"share ${types.mkString(", ")};"
+  override def children: List[AnyRef] = types
+  override def toJson1 = {
+    val obj = new JSONObject()
+    obj.put("type", "ShareDecl")
+    obj.put("types", types.map(_.toString))
+    obj
+  }
+  override def toJson2 = toJson1
+}
+
+/**
+ * Rename declaration for resolving field name conflicts.
+ * Example: rename A::x as parentX;
+ */
+case class RenameDecl(fromClass: QualifiedName, fromField: String, toField: String) extends MemberDecl(Nil) {
+  override def toString = s"rename $fromClass::$fromField as $toField;"
+  override def children: List[AnyRef] = List(fromClass)
+  override def toJson1 = {
+    val obj = new JSONObject()
+    obj.put("type", "RenameDecl")
+    obj.put("fromClass", fromClass.toString)
+    obj.put("fromField", fromField)
+    obj.put("toField", toField)
+    obj
+  }
+  override def toJson2 = toJson1
+}
+
+/**
+ * Shadow declaration for intentionally hiding a parent's field.
+ * Example: shadow Int x;
+ */
+case class ShadowDecl(ty: Type, name: String) extends MemberDecl(Nil) {
+  override def toString = s"shadow $ty $name;"
+  override def children: List[AnyRef] = List(ty)
+  override def toJson1 = {
+    val obj = new JSONObject()
+    obj.put("type", "ShadowDecl")
+    obj.put("fieldType", ty.toString)
+    obj.put("name", name)
+    obj
+  }
+  override def toJson2 = toJson1
 }
 
 abstract class MemberDecl(var annotations: List[Annotation] = Nil) extends TopDecl {
