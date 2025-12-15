@@ -713,150 +713,84 @@ object K2Z3 {
 
       var rows: List[List[String]] = List(List("Variable", "Ref", "Value"))
       var extraRows: List[List[String]] = List(List("Variable", "Ref", "Value"))
-      var heapDecl = z3Model.getDecls.find { _.getName.toString.equals("heap") }
+      val heapDecl = z3Model.getDecls.find { _.getName.toString.equals("heap") }
 
       if (heapDecl.isEmpty) {
         error(s"FATAL INTERNAL ERROR! Could not find a heap declaration for printing the model.")
       }
 
-      // In Z3 4.13.0, the heap is represented as an array with store operations
-      // Parse the model string directly to extract heap entries
+      // Extract heap entries using Z3 API directly (more robust than string parsing)
       var heapMap = Map[String, String]()
       
-      val modelStr = z3Model.toString
+      try {
+        // Get the heap array interpretation
+        val heapExpr = z3Model.getConstInterp(heapDecl.get)
+        if (heapExpr != null) {
+          // Get the list of refs from heapInitializerConstants
+          val knownRefs = UtilSMT.heapInitializerConstants.map(_._1)
+          val maxRef = if (knownRefs.nonEmpty) knownRefs.max else 0
 
-      // Z3 4.13.0 format: store operations like: store <var> <ref> (lift-ClassName (mk-...))
-      // Normalize whitespace to make regex easier
-      val normalizedStr = modelStr.replaceAll("\\s+", " ")
-      if (debug) {
-        // Print all store operations to understand patterns
-        val allStores = """store\s+\S+\s+\d+\s+\(lift-\w+[^}]{0,100}""".r
-        logDebug("All store patterns found:")
-        for (m <- allStores.findAllMatchIn(normalizedStr).take(15)) {
-          logDebug(s"  ${m.matched}")
-        }
-      }
-      
-      // Pattern 1: Full store operations: store <var> <ref> (lift-ClassName (mk-...))
-      val storePattern = """store\s+(\S+)\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
-      
-      for (m <- storePattern.findAllMatchIn(normalizedStr)) {
-        val ref = m.group(2)
-        val className = m.group(3)
-        val value = "(" + m.group(4) + ")"
-        heapMap += (ref -> s"(lift-$className $value)")
-        if (debug) logDebug(s"Extracted ref $ref: $className = $value")
-      }
-      
-      // Pattern 1b: Const array initialization: store ((as const...) null) <ref> (lift-ClassName (mk-...))
-      // Match: (store ((as const (Array Int Any)) null) 0 (lift-TopLevelDeclarations (mk-TopLevelDeclarations ...)))
-      val constArrayPattern = """store\s+\(\(as\s+const\s+\(Array[^)]+\)\)\s+null\)\s+(\d+)\s+\(lift-(\w+)\s+\((mk-[\w\s\d]+)\)\)""".r
-      
-      if (debug) {
-        val testStr = normalizedStr.substring(normalizedStr.indexOf("store ((as const"), 
-                                               Math.min(normalizedStr.indexOf("store ((as const") + 200, normalizedStr.length))
-        logDebug(s"Looking for const-init pattern in: $testStr")
-      }
-      
-      for (m <- constArrayPattern.findAllMatchIn(normalizedStr)) {
-        val ref = m.group(1)
-        if (!heapMap.contains(ref)) {
-          val className = m.group(2)
-          val value = "(" + m.group(3) + ")"
-          heapMap += (ref -> s"(lift-$className $value)")
-          if (debug) logDebug(s"Extracted ref $ref (const-init): $className = $value")
-        }
-      }
-
-      // Pattern 1c: Z3 4.13+ with let-expressions using a!N for sequence values
-      // (store ((as const (Array Int Any)) null) 0 a!1))) where a!1 is defined above
-      // First find the let definition for a!1
-      val letPattern = """\(let\s+\(\(a!1\s+\(lift-(\w+)\s+\((mk-\w+)\s+([^)]+\))\)\)\)""".r
-      for (m <- letPattern.findAllMatchIn(normalizedStr)) {
-        if (!heapMap.contains("0")) {
-          val className = m.group(1)
-          val constructor = m.group(2)
-          val seqValue = m.group(3)
-          heapMap += ("0" -> s"(lift-$className ($constructor $seqValue)")
-          if (debug) logDebug(s"Extracted ref 0 (let): $className = $constructor $seqValue")
-        }
-      }
-
-      // Pattern 1d: Direct extraction from mk-TopLevelDeclarations
-      // Need to capture ALL content (potentially multiple sequences)
-      val mkTopLevelIdx = normalizedStr.indexOf("mk-TopLevelDeclarations")
-      if (mkTopLevelIdx >= 0 && !heapMap.contains("0")) {
-        // Find the full constructor call by matching from mk- to the closing paren
-        // The format is: (mk-TopLevelDeclarations content1 content2 ... contentN)
-        // We need to find the matching close paren for the opening paren before mk-
-        val mkStart = normalizedStr.lastIndexOf("(", mkTopLevelIdx)
-        if (mkStart >= 0) {
-          var depth = 0
-          var endIdx = mkStart
-          var foundStart = false
-          for (i <- mkStart until normalizedStr.length if endIdx == mkStart) {
-            normalizedStr(i) match {
-              case '(' => depth += 1; foundStart = true
-              case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = i + 1
-              case _ =>
+          // Query each ref using model.eval(select(heap, ref))
+          // Check refs 0 to maxRef + some buffer for dynamically created objects
+          for (ref <- 0 to (maxRef + 10)) {
+            try {
+              val refExpr = ctx.mkInt(ref).asInstanceOf[Expr[Sort]]
+              val selectExpr = ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], refExpr)
+              val value = z3Model.eval(selectExpr, true)
+              if (value != null) {
+                val valueStr = value.toString.replaceAll("\\s+", " ")
+                // Only include non-null values that have lift- (actual objects)
+                if (valueStr != "null" && valueStr.contains("lift-")) {
+                  heapMap += (ref.toString -> valueStr)
+                  if (debug) logDebug(s"[API] Extracted ref $ref: $valueStr")
+                }
+              }
+            } catch {
+              case e: Throwable =>
+                if (debug) logDebug(s"[API] Error evaluating ref $ref: ${e.getMessage}")
             }
           }
-          if (endIdx > mkStart) {
-            val fullMk = normalizedStr.substring(mkStart, endIdx)
-            heapMap += ("0" -> s"(lift-TopLevelDeclarations $fullMk)")
-            if (debug) logDebug(s"Extracted ref 0 (full-mk): TopLevelDeclarations = $fullMk")
+        }
+      } catch {
+        case e: Throwable =>
+          if (debug) logDebug(s"[API] Error accessing heap via API: ${e.getMessage}")
+          // Fall back to string parsing if API access fails
+          val modelStr = z3Model.toString
+          val normalizedStr = modelStr.replaceAll("\\s+", " ")
+
+          // Fallback: Extract heap entries using string patterns
+          val liftPattern = """(\d+)\s+\(lift-(\w+)\s+\(mk-""".r
+          for (m <- liftPattern.findAllMatchIn(normalizedStr)) {
+            val ref = m.group(1)
+            if (!heapMap.contains(ref)) {
+              val startIdx = m.start(0) + m.group(1).length
+              val liftStart = normalizedStr.indexOf("(lift-", startIdx)
+              if (liftStart >= 0) {
+                var depth = 0
+                var endIdx = liftStart
+                var foundStart = false
+                for (i <- liftStart until Math.min(normalizedStr.length, liftStart + 500) if endIdx == liftStart) {
+                  normalizedStr(i) match {
+                    case '(' => depth += 1; foundStart = true
+                    case ')' => depth -= 1; if (foundStart && depth == 0) endIdx = i + 1
+                    case _ =>
+                  }
+                }
+                if (endIdx > liftStart) {
+                  heapMap += (ref -> normalizedStr.substring(liftStart, endIdx))
+                }
+              }
+            }
           }
-        }
       }
 
-      // Pattern 2: Continuation patterns (part of outer store after nested store closes)
-      // These appear as: ))) <ref> (lift-ClassName (mk-...)) or )) <ref> (lift-...)
-      val contPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+\(([^)]+)\)\)""".r
-      
-      for (m <- contPattern.findAllMatchIn(normalizedStr)) {
-        val ref = m.group(1)
-        if (!heapMap.contains(ref)) {
-          val className = m.group(2)
-          val value = "(" + m.group(3) + ")"
-          heapMap += (ref -> s"(lift-$className $value)")
-          if (debug) logDebug(s"Extracted ref $ref (cont): $className = $value")
-        }
-      }
-      
-      // Pattern 3: Const names without mk- constructor (e.g., TopLevelDeclarations!val!0)
-      val storeConstPattern = """store\s+\S+\s+(\d+)\s+\(lift-(\w+)\s+([\w!]+)\)""".r
-      
-      for (m <- storeConstPattern.findAllMatchIn(normalizedStr)) {
-        val ref = m.group(1)
-        if (!heapMap.contains(ref)) {
-          val className = m.group(2)
-          val constName = m.group(3)
-          heapMap += (ref -> s"(lift-$className ($constName))")
-          if (debug) logDebug(s"Extracted ref $ref (const): $className = $constName")
-        }
-      }
-      
-      // Pattern 4: Continuation with const names
-      val contConstPattern = """\)\)+\s+(\d+)\s+\(lift-(\w+)\s+([\w!]+)\)""".r
-      
-      for (m <- contConstPattern.findAllMatchIn(normalizedStr)) {
-        val ref = m.group(1)
-        if (!heapMap.contains(ref)) {
-          val className = m.group(2)
-          val constName = m.group(3)
-          heapMap += (ref -> s"(lift-$className ($constName))")
-          if (debug) logDebug(s"Extracted ref $ref (cont-const): $className = $constName")
-        }
-      }
-      
-
-      
       // Add else/default case
       heapMap += ("else" -> "null")
 
       var visited = Set[String]()
       
-      // walk through heap and  print entries
+      // walk through heap and print entries
+      // Note: When using API (model.eval with completion=true), const references are already resolved
       heapMap.foreach { kv =>
 
         val key = kv._1
@@ -864,8 +798,12 @@ object K2Z3 {
         val value = kv._2.replace("- ", "-")
         if (value != "null") {
           val className = value.subSequence(1, value.indexOf(' ', 1)).toString.replace("lift-", "").trim
-          if (value.contains("mk-")) {
-            val objectValues = value.subSequence(value.indexOf("mk-"), value.length - 2).toString
+
+          // Values from model.eval should already be resolved, but handle const refs just in case
+          val resolvedValue = value
+
+          if (resolvedValue.contains("mk-")) {
+            val objectValues = resolvedValue.subSequence(resolvedValue.indexOf("mk-"), resolvedValue.length - 2).toString
               .split(' ').map(_.trim).filterNot { _.isEmpty }
 
             className == "TopLevelDeclarations" match {
@@ -873,7 +811,9 @@ object K2Z3 {
                 // Recursively collect top-level properties from model and all packages
                 // Returns (name, isPrimitive, isCollection)
                 def collectTopLevelProperties(m: Model): List[(String, Boolean, Boolean)] = {
+                  if (debug) logDebug(s"[collectTopLevelProperties] model.decls has ${m.decls.size} entries: ${m.decls.map(_.getClass.getSimpleName).mkString(", ")}")
                   val localProps = m.decls.foldLeft(List[(String, Boolean, Boolean)]()) { (res, d) =>
+                    if (debug) logDebug(s"[collectTopLevelProperties] Examining decl: ${d.getClass.getSimpleName}")
                     d match {
                       case pd @ PropertyDecl(_, _, _, _, _, _) =>
                         val ty = pd.getTypeOrError
@@ -919,7 +859,7 @@ object K2Z3 {
                   seqs
                 }
 
-                val allSeqValues = extractAllSequenceValues(value)
+                val allSeqValues = extractAllSequenceValues(resolvedValue)
                 var seqIndex = 0
 
                 var topLevelVariables = collectTopLevelProperties(model)
@@ -2086,7 +2026,7 @@ object K2Z3 {
         // There are two ways to construct quantified expressions in Z3
         // one is by using named constants
         // the other is by de-Brujin indexed variables.
-        // We have to be careful, because there are no checks for actually 
+        // we have to be careful, because there are no checks for actually
         // checking if you are mixing the two and doing it incorrectly
         // The following uses de-Brujin indexed variables for forall
         // and named constants for exists. 
