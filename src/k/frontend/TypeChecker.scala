@@ -858,6 +858,13 @@ class TypeChecker(model: Model) {
                   }
                 case fd @ FunDecl(_, _, _, _, _, _) =>
                   classTypeEnv = classTypeEnv.union(fd.ident -> FunctionTypeInfo(fd, ed))
+                case sd @ ShadowDecl(ty, name) =>
+                  // Shadow declaration creates a new property that shadows the parent's
+                  if (!doesTypeExist(classTypeEnv, ty))
+                    error(s"Specified type $ty in shadow declaration does not exist.")
+                  // Create a synthetic PropertyDecl for the shadow field
+                  val syntheticProp = PropertyDecl(Nil, name, Some(ty), None, None, None)
+                  classTypeEnv = classTypeEnv.overwrite(name -> PropertyTypeInfo(syntheticProp, false, true, ed))
                 case _ => ()
               }
             }
