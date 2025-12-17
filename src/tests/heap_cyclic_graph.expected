@@ -1,0 +1,55 @@
+DIR = /Users/bclement/git/klang/export
+PROJECT_ROOT = /Users/bclement/git/klang
+[main] Processing src/tests/heap_cyclic_graph.k
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class GraphNode { (block (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) id : (type (primitiveType Int))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) next1 : (type (classIdentifier (qualifiedName GraphNode)))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) next2 : (type (classIdentifier (qualifiedName GraphNode))))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) a : (type (classIdentifier (qualifiedName GraphNode))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) b : (type (classIdentifier (qualifiedName GraphNode))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) c : (type (classIdentifier (qualifiedName GraphNode))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression a) != (expression b)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression b) != (expression c)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression a) != (expression c)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . id) = (expression (literal 1))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression b) . id) = (expression (literal 2))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression c) . id) = (expression (literal 3))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . next1) = (expression b)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression b) . next1) = (expression c)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression c) . next1) = (expression a)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . next2) = (expression c)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression b) . next2) = (expression a)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression c) . next2) = (expression b))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 1
+        properties               : 6
+        constraints              : 12
+        --- types: -------------------
+        ref types                : 5
+        int types                : 1
+        --- expressions: -------------
+        dot exp                  : 9
+        dot exp max              : 1
+        binary exp               : 12
+        int literal exp          : 3
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+------+------------------------------------------------+
+	|Variable|Ref   |Value                                           |
+	+--------+------+------------------------------------------------+
+	|a       |Ref 11|GraphNode(id::1, next1:: Ref 7, next2:: Ref 10) |
+	|        |Ref 10|GraphNode(id::3, next1:: Ref 11, next2:: Ref 7) |
+	|        |Ref 7 |GraphNode(id::2, next1:: Ref 10, next2:: Ref 11)|
+	|        |Ref 11|GraphNode(id::1, next1:: Ref 7, next2:: Ref 10) |
+	|b       |Ref 7 |GraphNode(id::2, next1:: Ref 10, next2:: Ref 11)|
+	|c       |Ref 10|GraphNode(id::3, next1:: Ref 11, next2:: Ref 7) |
+	+--------+------+------------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+------+-------------------------------------------------+
+	|Variable|Ref   |Value                                            |
+	+--------+------+-------------------------------------------------+
+	|        |Ref 12|GraphNode(id::21, next1:: Ref 10, next2:: Ref 12)|
+	|        |Ref 8 |GraphNode(id::14, next1:: Ref 12, next2:: Ref 12)|
+	|        |Ref 4 |GraphNode(id::17, next1:: Ref 10, next2:: Ref 11)|
+	|        |Ref 5 |GraphNode(id::16, next1:: Ref 7, next2:: Ref 12) |
+	|        |Ref 2 |GraphNode(id::19, next1:: Ref 12, next2:: Ref 10)|
+	|        |Ref 3 |GraphNode(id::18, next1:: Ref 12, next2:: Ref 11)|
+	|        |Ref 9 |GraphNode(id::13, next1:: Ref 12, next2:: Ref 12)|
+	|        |Ref 6 |GraphNode(id::15, next1:: Ref 12, next2:: Ref 11)|
+	|        |Ref 1 |GraphNode(id::20, next1:: Ref 12, next2:: Ref 12)|
+	+--------+------+-------------------------------------------------+
+

@@ -1,0 +1,48 @@
+DIR = /Users/bclement/git/klang/export
+PROJECT_ROOT = /Users/bclement/git/klang
+[main] Processing src/tests/heap_binary_search.k
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class BSTNode { (block (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) value : (type (primitiveType Int))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) left : (type (classIdentifier (qualifiedName BSTNode)))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) right : (type (classIdentifier (qualifiedName BSTNode))))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) root : (type (classIdentifier (qualifiedName BSTNode))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression root) . value) = (expression (literal 10))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression (expression root) . left) . value) = (expression (literal 5))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression (expression root) . right) . value) = (expression (literal 15))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression (expression root) . left) . value) < (expression (expression root) . value)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression (expression root) . right) . value) > (expression (expression root) . value)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression root) != (expression (expression root) . left)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression root) != (expression (expression root) . right)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression root) . left) != (expression (expression root) . right))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 1
+        properties               : 4
+        constraints              : 8
+        --- types: -------------------
+        ref types                : 3
+        int types                : 1
+        --- expressions: -------------
+        dot exp                  : 11
+        dot exp long             : 4
+        dot exp max              : 2
+        binary exp               : 8
+        int literal exp          : 3
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+-----------------------------------------------+
+	|Variable|Ref  |Value                                          |
+	+--------+-----+-----------------------------------------------+
+	|root    |Ref 4|BSTNode(value::10, left:: Ref 5, right:: Ref 3)|
+	|        |Ref 3|BSTNode(value::15, left:: Ref 6, right:: Ref 6)|
+	|        |Ref 6|BSTNode(value::9, left:: Ref 6, right:: Ref 6) |
+	|        |Ref 5|BSTNode(value::5, left:: Ref 1, right:: Ref 5) |
+	|        |Ref 1|BSTNode(value::8, left:: Ref 5, right:: Ref 4) |
+	|        |Ref 4|BSTNode(value::10, left:: Ref 5, right:: Ref 3)|
+	+--------+-----+-----------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+----------------------------------------------+
+	|Variable|Ref  |Value                                         |
+	+--------+-----+----------------------------------------------+
+	|        |Ref 2|BSTNode(value::7, left:: Ref 6, right:: Ref 6)|
+	+--------+-----+----------------------------------------------+
+

@@ -4,14 +4,13 @@
 -- External function calls verified against actual implementation
 
 x : Int
-y : Int
 
 req x >= 0
 req x <= 10
 
--- Call external sqrt (this would trigger CEGAR verification)
+-- Call external abs (this would trigger CEGAR verification)
 -- For now, we just test the constraint encoding
-y = java.lang.Math.abs(x - 5)
+var y : Int = java.lang.Math.abs(x - 5)
 
 req y <= 3
 

@@ -1,0 +1,38 @@
+DIR = /Users/bclement/git/klang/export
+PROJECT_ROOT = /Users/bclement/git/klang
+[main] Processing src/tests/cegar1.k
+(model (modelThings (modelThing (topDeclaration (memberDeclaration (propertyDeclaration x : (type (primitiveType Int)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression x) >= (expression (literal 0))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression x) <= (expression (literal 10))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) y : (type (primitiveType Int)) = (expression (expression (expression (expression (expression (importLanguage java)) . lang) . Math) . abs) ( (argumentList (positionalArgumentList (expression (expression x) - (expression (literal 5))))) )))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression y) <= (expression (literal 3)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        properties               : 2
+        constraints              : 4
+        --- types: -------------------
+        int types                : 2
+        --- expressions: -------------
+        dot exp                  : 1
+        dot exp long             : 1
+        dot exp max              : 3
+        fun appl exp             : 1
+        binary exp               : 4
+        int literal exp          : 4
+        ------------------------------
+
+[CEGAR] Could not find variable _arg_java_lang_Math_abs_0
+
+	Top level objects created:
+
+	+--------+---+-----+
+	|Variable|Ref|Value|
+	+--------+---+-----+
+	|x       |-  |0    |
+	|y       |-  |0    |
+	+--------+---+-----+
+
+	No extra objects.
+

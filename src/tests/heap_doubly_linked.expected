@@ -1,0 +1,55 @@
+DIR = /Users/bclement/git/klang/export
+PROJECT_ROOT = /Users/bclement/git/klang
+[main] Processing src/tests/heap_doubly_linked.k
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class DLLNode { (block (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) value : (type (primitiveType Int))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) prev : (type (classIdentifier (qualifiedName DLLNode)))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) next : (type (classIdentifier (qualifiedName DLLNode))))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) head : (type (classIdentifier (qualifiedName DLLNode))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) middle : (type (classIdentifier (qualifiedName DLLNode))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) tail : (type (classIdentifier (qualifiedName DLLNode))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression head) != (expression middle)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression middle) != (expression tail)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression head) != (expression tail)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression head) . value) = (expression (literal 1))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression middle) . value) = (expression (literal 2))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression tail) . value) = (expression (literal 3))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression head) . next) = (expression middle)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression middle) . next) = (expression tail)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression middle) . prev) = (expression head)))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression tail) . prev) = (expression middle))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 1
+        properties               : 6
+        constraints              : 10
+        --- types: -------------------
+        ref types                : 5
+        int types                : 1
+        --- expressions: -------------
+        dot exp                  : 7
+        dot exp max              : 1
+        binary exp               : 10
+        int literal exp          : 3
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+------+------------------------------------------------+
+	|Variable|Ref   |Value                                           |
+	+--------+------+------------------------------------------------+
+	|head    |Ref 11|DLLNode(value::1, prev:: Ref 11, next:: Ref 10) |
+	|        |Ref 10|DLLNode(value::2, prev:: Ref 11, next:: Ref 1)  |
+	|        |Ref 1 |DLLNode(value::3, prev:: Ref 10, next:: Ref 12) |
+	|        |Ref 12|DLLNode(value::21, prev:: Ref 11, next:: Ref 12)|
+	|        |Ref 11|DLLNode(value::1, prev:: Ref 11, next:: Ref 10) |
+	|middle  |Ref 10|DLLNode(value::2, prev:: Ref 11, next:: Ref 1)  |
+	|tail    |Ref 1 |DLLNode(value::3, prev:: Ref 10, next:: Ref 12) |
+	+--------+------+------------------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+------------------------------------------------+
+	|Variable|Ref  |Value                                           |
+	+--------+-----+------------------------------------------------+
+	|        |Ref 8|DLLNode(value::13, prev:: Ref 12, next:: Ref 12)|
+	|        |Ref 4|DLLNode(value::17, prev:: Ref 11, next:: Ref 10)|
+	|        |Ref 5|DLLNode(value::16, prev:: Ref 9, next:: Ref 12) |
+	|        |Ref 9|DLLNode(value::20, prev:: Ref 12, next:: Ref 12)|
+	|        |Ref 2|DLLNode(value::19, prev:: Ref 12, next:: Ref 11)|
+	|        |Ref 7|DLLNode(value::14, prev:: Ref 11, next:: Ref 10)|
+	|        |Ref 3|DLLNode(value::18, prev:: Ref 12, next:: Ref 11)|
+	|        |Ref 6|DLLNode(value::15, prev:: Ref 12, next:: Ref 12)|
+	+--------+-----+------------------------------------------------+
+
