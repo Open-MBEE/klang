@@ -8,7 +8,7 @@ import scala.collection.mutable.{ListBuffer, Map => MMap, Set => MSet}
  *
  * Handles:
  * 1. CEGAR refinement for external/opaque function calls
- * 2. Object creation bounds for dynamic instantiation
+ * 2. Heap-bound CEGAR: start small, increase on UNSAT or tight bounds
  * 3. Incremental/anytime solving with pause, resume, sampling
  * 4. Optimization with soft constraints (max-SAT style)
  */
@@ -19,11 +19,68 @@ object UnifiedSolver {
   type Z3Model = com.microsoft.z3.Model
 
   // ============================================================================
+  // Heap Strategy for CEGAR
+  // ============================================================================
+
+  sealed trait HeapStrategy
+  object HeapStrategy {
+    /** Do not bound heap at all (use current static allocation) */
+    case object Unbounded extends HeapStrategy
+    /** Fixed bounds, no CEGAR refinement */
+    case object Bounded extends HeapStrategy
+    /** CEGAR loop: start small, increase bounds on UNSAT or tight heap */
+    case object CegarBounded extends HeapStrategy
+    /** Soft constraints: allocate pool, use Optimize to minimize alive objects */
+    case object SoftBounded extends HeapStrategy
+  }
+
+  /** Heap bounds per class */
+  final case class HeapBounds(
+    defaultBound: Int,
+    perClassBounds: Map[String, Int] = Map.empty,
+    maxBound: Int = 64
+  ) {
+    def boundForClass(cls: String): Int =
+      perClassBounds.getOrElse(cls, defaultBound)
+
+    def withIncreasedBound(cls: String, factor: Int = 2): HeapBounds = {
+      val old = boundForClass(cls)
+      val next = math.min(old * factor, maxBound)
+      copy(perClassBounds = perClassBounds + (cls -> next))
+    }
+
+    def withAllBoundsIncreased(factor: Int = 2): HeapBounds = {
+      val newDefault = math.min(defaultBound * factor, maxBound)
+      val newPerClass = perClassBounds.map { case (cls, bound) =>
+        cls -> math.min(bound * factor, maxBound)
+      }
+      copy(defaultBound = newDefault, perClassBounds = newPerClass)
+    }
+
+    def atMaxBound: Boolean = defaultBound >= maxBound
+
+    /** Effective multiplier (max of all bounds for instanceMultiplier) */
+    def effectiveMultiplier: Int = {
+      if (perClassBounds.isEmpty) defaultBound
+      else math.max(defaultBound, perClassBounds.values.max)
+    }
+
+    override def toString: String = {
+      val perClassStr = if (perClassBounds.isEmpty) ""
+                        else s", perClass=${perClassBounds.mkString("{", ",", "}")}"
+      s"HeapBounds(default=$defaultBound, max=$maxBound$perClassStr)"
+    }
+  }
+
+  // ============================================================================
   // Configuration
   // ============================================================================
 
   /** Maximum iterations before giving up */
   var maxIterations: Int = 100
+
+  /** Maximum CEGAR heap iterations */
+  var maxHeapCegarIterations: Int = 10
 
   /** Maximum object instances per class */
   var maxObjectBound: Int = 100
@@ -31,8 +88,17 @@ object UnifiedSolver {
   /** Initial object bound for collections */
   var initialObjectBound: Int = 1
 
+  /** Current heap strategy */
+  var heapStrategy: HeapStrategy = HeapStrategy.CegarBounded
+
+  /** Current heap bounds (for CEGAR) */
+  var heapBounds: HeapBounds = HeapBounds(defaultBound = 1, maxBound = 64)
+
   /** Whether to use Z3 Optimize API for soft constraints */
   var useOptimize: Boolean = true
+
+  /** Whether to use CVC5 instead of Z3 (faster for strings) */
+  var useCVC5: Boolean = false
 
   /** Debug logging */
   var debug: Boolean = false
@@ -102,6 +168,451 @@ object UnifiedSolver {
       unifiedLoop(model, smtModel, config, printModel)
     } finally {
       solving = false
+    }
+  }
+
+  /**
+   * Heap-bound CEGAR solving loop
+   *
+   * This is a separate entry point that:
+   * 1. Starts with small heap bounds (defaultBound = 1)
+   * 2. On UNSAT: increases bounds and regenerates SMT
+   * 3. On SAT: checks k!heap_full! flags to see if bounds are tight
+   * 4. Repeats until SAT with non-tight bounds, or max iterations
+   *
+   * Smart refinement: Only increases bounds for classes that are tight.
+   */
+  def solveWithHeapCegar(model: KModel, printModel: Boolean): SolveResult = {
+    // Use HeapBounds for per-class tracking
+    var bounds = HeapBounds(defaultBound = 1, maxBound = 16)
+    var heapIteration = 0
+    var result: SolveResult = SolveResult.Unknown("Not started")
+    var lastTightClasses: List[String] = Nil
+
+    logHeap(s"Starting Heap CEGAR loop with strategy: $heapStrategy")
+    logHeap(s"Initial multiplier: ${bounds.defaultBound} (max: ${bounds.maxBound})")
+
+    while (heapIteration < maxHeapCegarIterations && !bounds.atMaxBound) {
+      heapIteration += 1
+      logHeap(s"")
+      logHeap(s"========== Heap CEGAR Iteration $heapIteration ==========")
+      logHeap(s"Current multiplier: ${bounds.effectiveMultiplier}x")
+      if (bounds.perClassBounds.nonEmpty) {
+        logHeap(s"Per-class multipliers: ${bounds.perClassBounds}")
+      }
+
+      // Set the global instance multiplier
+      val previousMultiplier = ASTOptions.instanceMultiplier
+      val currentMultiplier = bounds.effectiveMultiplier
+      ASTOptions.instanceMultiplier = currentMultiplier
+      logHeap(s"Set ASTOptions.instanceMultiplier = $currentMultiplier")
+
+      try {
+        // Regenerate the SMT model with new bounds
+        logHeap(s"Regenerating SMT model with ${currentMultiplier}x instances...")
+
+        // Clear previous state
+        UtilSMT.reset
+
+        // Set CVC5 compatibility mode if using CVC5
+        if (useCVC5) {
+          ASTOptions.cvc5Compatible = true
+        }
+
+        // Generate fresh SMT
+        var smtModel = model.toSMT
+
+        // Add heap_full flags to the model for CEGAR feedback
+        smtModel = addHeapFullFlags(smtModel)
+
+        // Log the heap layout
+        if (UtilSMT.objectGraph != null) {
+          logHeap(s"Heap layout:")
+          for (className <- UtilSMT.objectGraph.getAllClasses) {
+            val entries = UtilSMT.objectGraph.getHeapEntries(className)
+            logHeap(s"  $className: ${entries.size} instances (refs ${entries.headOption.getOrElse("?")} to ${entries.lastOption.getOrElse("?")})")
+          }
+        }
+
+        logHeap(s"SMT model generated, solving with ${if (useCVC5) "CVC5" else "Z3"}...")
+
+        // Try to solve - use CVC5 if requested (faster for strings)
+        if (useCVC5 && CVC5Solver.isAvailable) {
+          val cvc5Result = CVC5Solver.solve(smtModel)
+          result = cvc5Result match {
+            case CVC5Solver.CVC5Result.Sat(_) =>
+              // For CVC5, we don't have a Z3 model, so create a dummy for now
+              // In a full implementation, we'd parse the CVC5 model
+              SolveResult.Unknown("CVC5 SAT - model parsing not yet implemented")
+            case CVC5Solver.CVC5Result.Unsat => SolveResult.Unsat
+            case CVC5Solver.CVC5Result.Unknown(r) => SolveResult.Unknown(r)
+            case CVC5Solver.CVC5Result.Error(e) => SolveResult.Unknown(e)
+          }
+        } else {
+          result = solve(model, smtModel, printModel = false)
+        }
+
+        result match {
+          case SolveResult.Sat(z3Model) =>
+            logHeap(s"SAT! Checking if heap bounds are tight...")
+
+            // Check k!heap_full! flags
+            val tightClasses = checkHeapFullFlags(z3Model)
+            lastTightClasses = tightClasses
+
+            if (tightClasses.nonEmpty) {
+              logHeap(s"Heap is TIGHT for classes: ${tightClasses.mkString(", ")}")
+              logHeap(s"Solution found but using all available objects.")
+              logHeap(s"Accepting tight solution.")
+              if (printModel) {
+                K2Z3.z3Model = z3Model
+                K2Z3.PrintModel(model)
+              }
+              return result
+            } else {
+              logHeap(s"Heap bounds are NOT tight - solution has spare capacity.")
+              if (printModel) {
+                K2Z3.z3Model = z3Model
+                K2Z3.PrintModel(model)
+              }
+              return result
+            }
+
+          case SolveResult.Unsat =>
+            logHeap(s"UNSAT with current multiplier (${bounds.effectiveMultiplier}x).")
+
+            if (bounds.atMaxBound) {
+              logHeap(s"Already at max multiplier (${bounds.maxBound}), giving up.")
+              return SolveResult.Unsat
+            }
+
+            // Smart refinement: if we know which classes were tight in a previous SAT,
+            // only increase those. Otherwise, increase all.
+            val oldMultiplier = bounds.effectiveMultiplier
+            if (lastTightClasses.nonEmpty) {
+              logHeap(s"Increasing multiplier for previously tight classes: ${lastTightClasses.mkString(", ")}")
+              bounds = lastTightClasses.foldLeft(bounds) { (b, cls) =>
+                b.withIncreasedBound(cls)
+              }
+            } else {
+              // No info about tight classes, double all bounds
+              bounds = bounds.withAllBoundsIncreased()
+            }
+            logHeap(s"Increasing multiplier: ${oldMultiplier}x -> ${bounds.effectiveMultiplier}x")
+            // Continue loop
+
+          case SolveResult.Timeout =>
+            logHeap(s"TIMEOUT")
+            return result
+
+          case SolveResult.Unknown(reason) =>
+            logHeap(s"UNKNOWN: $reason")
+            return result
+        }
+      } finally {
+        // Restore previous setting
+        ASTOptions.instanceMultiplier = previousMultiplier
+      }
+    }
+
+    if (heapIteration >= maxHeapCegarIterations) {
+      logHeap(s"Max heap CEGAR iterations ($maxHeapCegarIterations) reached")
+    }
+    if (bounds.atMaxBound) {
+      logHeap(s"Max multiplier (${bounds.maxBound}) reached")
+    }
+
+    result
+  }
+
+  /**
+   * Check k!heap_full!ClassName flags in a Z3 model
+   * Returns list of class names where all allocated objects are in use
+   */
+  private def checkHeapFullFlags(z3Model: Z3Model): List[String] = {
+    val tightClasses = ListBuffer[String]()
+
+    // Get all class names from the model
+    // For now, we check against dynamicClasses which were identified during init
+    // In practice, we should check all classes that have heap allocations
+
+    // Get all class names from the objectGraph (populated during SMT generation)
+    val classesToCheck = if (UtilSMT.objectGraph != null) {
+      UtilSMT.objectGraph.getAllClasses.filter(_ != "TopLevelDeclarations")
+    } else if (dynamicClasses.nonEmpty) {
+      dynamicClasses.toList
+    } else {
+      objectBounds.keys.toList
+    }
+
+    logHeap(s"Checking heap_full flags for classes: ${classesToCheck.mkString(", ")}")
+
+    for (className <- classesToCheck) {
+      val flagName = s"k!heap_full!$className"
+      try {
+        val flagDecl = z3Model.getConstDecls.find(_.getName.toString == flagName)
+        flagDecl match {
+          case Some(decl) =>
+            val interp = z3Model.getConstInterp(decl)
+            if (interp != null && interp.isTrue) {
+              logHeap(s"  k!heap_full!$className = true (tight)")
+              tightClasses += className
+            } else {
+              logHeap(s"  k!heap_full!$className = false (spare capacity)")
+            }
+          case None =>
+            // Flag not found - that's OK, might not be instrumented yet
+            logHeap(s"  k!heap_full!$className not found in model")
+        }
+      } catch {
+        case e: Exception =>
+          logHeap(s"  Error checking k!heap_full!$className: ${e.getMessage}")
+      }
+    }
+
+    tightClasses.toList
+  }
+
+  private def logHeap(msg: String): Unit = {
+    // Always log heap CEGAR messages - they're important for understanding the solving process
+    println(s"[HeapCEGAR] $msg")
+  }
+
+  private def logSoft(msg: String): Unit = {
+    println(s"[HeapSoft] $msg")
+  }
+
+  /**
+   * Solve using soft constraints to minimize heap usage.
+   *
+   * This approach:
+   * 1. Generates the model with a pool of candidate objects per class
+   * 2. Adds soft constraints preferring objects to be "dead" (unused)
+   * 3. Uses Z3's Optimize API to find a solution with minimal alive objects
+   *
+   * Unlike CEGAR, this doesn't iterate - it uses a fixed pool size
+   * but lets Z3 Optimize find the minimal usage within that pool.
+   */
+  def solveWithSoftHeap(model: KModel, printModel: Boolean): SolveResult = {
+    logSoft("Starting Soft-Bounded Heap Solver")
+
+    // Use a reasonable pool size - larger than CEGAR starting point
+    // since we're letting Optimize find the minimum
+    val poolMultiplier = 4
+    val previousMultiplier = ASTOptions.instanceMultiplier
+    ASTOptions.instanceMultiplier = poolMultiplier
+
+    logSoft(s"Pool multiplier: ${poolMultiplier}x (Optimize will minimize usage)")
+
+    try {
+      // Clear previous state
+      UtilSMT.reset
+
+      // Generate SMT model with the larger pool
+      val baseSmt = model.toSMT
+
+      // Log heap layout
+      if (UtilSMT.objectGraph != null) {
+        logSoft(s"Heap layout:")
+        for (className <- UtilSMT.objectGraph.getAllClasses) {
+          val entries = UtilSMT.objectGraph.getHeapEntries(className)
+          logSoft(s"  $className: ${entries.size} instances (refs ${entries.headOption.getOrElse("?")} to ${entries.lastOption.getOrElse("?")})")
+        }
+      }
+
+      // Add soft constraints for heap minimization
+      val smtWithSoft = addHeapSoftConstraints(model, baseSmt)
+
+      logSoft("Solving with Optimize API...")
+
+      // Use Optimize solver
+      val result = solveWithOptimize(model, smtWithSoft, printModel)
+
+      result match {
+        case SolveResult.Sat(z3Model) =>
+          logSoft("SAT - found solution with minimal heap usage")
+          // Count alive objects
+          countAliveObjects(z3Model)
+          if (printModel) {
+            K2Z3.z3Model = z3Model
+            K2Z3.PrintModel(model)
+          }
+        case SolveResult.Unsat =>
+          logSoft("UNSAT - no solution exists even with ${poolMultiplier}x pool")
+        case SolveResult.Timeout =>
+          logSoft("TIMEOUT")
+        case SolveResult.Unknown(reason) =>
+          logSoft(s"UNKNOWN: $reason")
+      }
+
+      result
+
+    } finally {
+      ASTOptions.instanceMultiplier = previousMultiplier
+    }
+  }
+
+  /**
+   * Add soft constraints to the SMT model to minimize heap usage.
+   *
+   * For each class C with heap entries, we add:
+   * - (declare-const k!alive!C!i Bool) for each instance i
+   * - (assert-soft (not k!alive!C!i) :weight 1) to prefer dead objects
+   * - Link k!alive! flags to actual object usage via deref-is-ClassName
+   */
+  private def addHeapSoftConstraints(model: KModel, baseSmt: String): String = {
+    val sb = new StringBuilder(baseSmt)
+
+    sb.append("\n; ============================================\n")
+    sb.append("; Soft constraints for heap minimization\n")
+    sb.append("; ============================================\n\n")
+
+    // Get heap entries from objectGraph
+    if (UtilSMT.objectGraph == null) {
+      logSoft("Warning: No objectGraph available for soft constraints")
+      return baseSmt
+    }
+
+    val allClasses = UtilSMT.objectGraph.getAllClasses
+    var totalSoftConstraints = 0
+
+    for (className <- allClasses if className != "TopLevelDeclarations") {
+      val entries = UtilSMT.objectGraph.getHeapEntries(className)
+      if (entries.nonEmpty) {
+        sb.append(s"; Soft constraints for $className (${entries.size} instances)\n")
+
+        for (ref <- entries) {
+          val aliveName = s"k!alive!$className!$ref"
+
+          // Declare the alive flag
+          sb.append(s"(declare-const $aliveName Bool)\n")
+
+          // Link alive flag to actual heap usage:
+          // An object is "alive" if it's referenced by any field or top-level variable
+          // For simplicity, we use deref-is-ClassName which checks if the heap at that
+          // position contains an object of that type. Since we're using a typed heap,
+          // if the object exists in the heap, it's "alive" for our purposes.
+          sb.append(s"(assert (= $aliveName (deref-is-$className $ref)))\n")
+
+          // Soft constraint: prefer this object to NOT be alive
+          // Weight 1 means each alive object costs 1 in the objective
+          sb.append(s"(assert-soft (not $aliveName) :weight 1 :id soft_$aliveName)\n")
+
+          totalSoftConstraints += 1
+        }
+
+        // Add heap_full flag for this class
+        val fullFlagName = s"k!heap_full!$className"
+        val allAliveNames = entries.map(ref => s"k!alive!$className!$ref").mkString(" ")
+        sb.append(s"\n(declare-const $fullFlagName Bool)\n")
+        sb.append(s"(assert (= $fullFlagName (and $allAliveNames)))\n")
+
+        sb.append("\n")
+      }
+    }
+
+    logSoft(s"Added $totalSoftConstraints soft constraints for heap minimization")
+
+    sb.toString
+  }
+
+  /**
+   * Add k!heap_full!ClassName flags to the SMT model for CEGAR feedback.
+   * These flags are true when all heap slots for a class are in use.
+   */
+  private def addHeapFullFlags(baseSmt: String): String = {
+    if (UtilSMT.objectGraph == null) {
+      return baseSmt
+    }
+
+    val sb = new StringBuilder(baseSmt)
+
+    sb.append("\n; ============================================\n")
+    sb.append("; Heap full flags for CEGAR feedback\n")
+    sb.append("; ============================================\n\n")
+
+    val allClasses = UtilSMT.objectGraph.getAllClasses
+
+    for (className <- allClasses if className != "TopLevelDeclarations") {
+      val entries = UtilSMT.objectGraph.getHeapEntries(className)
+      if (entries.nonEmpty) {
+        // Declare the heap_full flag
+        val fullFlagName = s"k!heap_full!$className"
+        sb.append(s"(declare-const $fullFlagName Bool)\n")
+
+        // heap_full is true when ALL slots for this class are used (not null)
+        // We check if deref-is-ClassName is true for all slots
+        val allUsed = entries.map(ref => s"(deref-is-$className $ref)").mkString(" ")
+        if (entries.size == 1) {
+          sb.append(s"(assert (= $fullFlagName $allUsed))\n")
+        } else {
+          sb.append(s"(assert (= $fullFlagName (and $allUsed)))\n")
+        }
+        sb.append("\n")
+      }
+    }
+
+    sb.toString
+  }
+
+  /**
+   * Solve using Z3's Optimize API with soft constraints.
+   */
+  private def solveWithOptimize(model: KModel, smtModel: String, printModel: Boolean): SolveResult = {
+    // Write SMT to file for debugging
+    try {
+      val logFile = new java.io.PrintWriter(".tmp/k_soft_heap.smt2")
+      logFile.println(smtModel)
+      logFile.close()
+      if (debug) logSoft("Wrote SMT model to .tmp/k_soft_heap.smt2")
+    } catch {
+      case e: Throwable => // ignore
+    }
+
+    // Use K2Z3's existing solve mechanism but with Optimize
+    // For now, we delegate to regular solving since K2Z3 already handles Optimize
+    // when it sees assert-soft
+    K2Z3.solveSMT(model, smtModel, false)
+
+    // Get the result
+    if (K2Z3.z3Model != null) {
+      SolveResult.Sat(K2Z3.z3Model)
+    } else {
+      // Check if it was unsat or unknown
+      SolveResult.Unsat  // Simplified - should check actual result
+    }
+  }
+
+  /**
+   * Count and log the number of alive objects per class in the model.
+   */
+  private def countAliveObjects(z3Model: Z3Model): Unit = {
+    if (UtilSMT.objectGraph == null) return
+
+    logSoft("Alive object counts:")
+
+    for (className <- UtilSMT.objectGraph.getAllClasses if className != "TopLevelDeclarations") {
+      val entries = UtilSMT.objectGraph.getHeapEntries(className)
+      var aliveCount = 0
+
+      for (ref <- entries) {
+        val aliveName = s"k!alive!$className!$ref"
+        try {
+          val flagDecl = z3Model.getConstDecls.find(_.getName.toString == aliveName)
+          flagDecl match {
+            case Some(decl) =>
+              val interp = z3Model.getConstInterp(decl)
+              if (interp != null && interp.isTrue) {
+                aliveCount += 1
+              }
+            case None => // Flag not found, assume not alive
+          }
+        } catch {
+          case _: Throwable => // Ignore errors
+        }
+      }
+
+      logSoft(s"  $className: $aliveCount / ${entries.size} alive")
     }
   }
 

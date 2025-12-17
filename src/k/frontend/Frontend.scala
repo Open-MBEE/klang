@@ -101,6 +101,10 @@ object Frontend {
         parseArgs(map ++ Map('json -> value), tail)
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
       case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
+      case "-heapcegar" :: tail => parseArgs(map ++ Map('heapcegar -> true), tail)
+      case "-heapcegar-cvc5" :: tail => parseArgs(map ++ Map('heapcegar -> true, 'heapcegarcvc5 -> true), tail)
+      case "-heapsoft" :: tail => parseArgs(map ++ Map('heapsoft -> true), tail)
+      case "-cvc5" :: tail => parseArgs(map ++ Map('cvc5 -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
       case "-debug" :: tail =>
@@ -490,6 +494,13 @@ object Frontend {
         tc.smtCheck
         log("Type checking completed. No errors found.")
       }
+
+      // Set CVC5 compatibility flag BEFORE SMT generation if -cvc5 is specified
+      val useCVC5 = options.getOrElse('cvc5, false).asInstanceOf[Boolean]
+      if (useCVC5) {
+        ASTOptions.cvc5Compatible = true
+      }
+
       val beforeLen = smtModel.length
       smtModel += combinedModel.toSMT
       val afterLen = smtModel.length
@@ -504,7 +515,53 @@ object Frontend {
       println(UtilSMT.statistics)
       try {
         val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
-        if (useUnified) {
+        val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
+        // useCVC5 is already defined above
+        if (useCVC5) {
+          println("[main] Using CVC5 Solver")
+          if (!CVC5Solver.isAvailable) {
+            println("[CVC5] WARNING: CVC5 not found. Install it or set CVC5Solver.cvc5Path")
+            println("[CVC5] Falling back to Z3...")
+            val res = runWithTimeout(timeoutValue) {
+              K2Z3.solveSMT(combinedModel, smtModel, true)
+            }
+            if (res.isEmpty) log("Timeout")
+          } else {
+            CVC5Solver.debug = K2Z3.debug
+            CVC5Solver.solveSMT(combinedModel, smtModel, true)
+          }
+        } else if (useHeapCegar) {
+          println("[main] Using Heap CEGAR Solver")
+          val useHeapCegarCVC5 = options.getOrElse('heapcegarcvc5, false).asInstanceOf[Boolean]
+          if (useHeapCegarCVC5) {
+            println("[main] Using CVC5 as backend solver (faster for strings)")
+            UnifiedSolver.useCVC5 = true
+          }
+          val result = UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = true)
+          result match {
+            case UnifiedSolver.SolveResult.Sat(model) =>
+              log("HeapCEGAR: SAT")
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("HeapCEGAR: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("HeapCEGAR: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"HeapCEGAR: UNKNOWN ($reason)")
+          }
+        } else if (options.getOrElse('heapsoft, false).asInstanceOf[Boolean]) {
+          println("[main] Using Soft-Bounded Heap Solver (Optimize API)")
+          val result = UnifiedSolver.solveWithSoftHeap(combinedModel, printModel = true)
+          result match {
+            case UnifiedSolver.SolveResult.Sat(model) =>
+              log("HeapSoft: SAT")
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("HeapSoft: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("HeapSoft: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"HeapSoft: UNKNOWN ($reason)")
+          }
+        } else if (useUnified) {
           log("Using UnifiedSolver")
           val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true)
           result match {
