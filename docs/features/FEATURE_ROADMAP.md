@@ -42,7 +42,7 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | Priority | Complexity | Notes |
 |---------|----------|------------|-------|
-| **Preferred Solver Annotation** | High | Low | `@solver("cvc5")` annotation to specify preferred solver per file |
+| **Preferred Solver Comment** | High | Low | `// @solver: cvc5` comment to specify preferred solver per file |
 | **BAE Solver Integration** | High | Medium | Add kservices BAE as a solver backend |
 | **Solver Performance Annotations** | Medium | Low | Annotate test/example files with preferred solver when one significantly outperforms Z3 |
 
@@ -430,7 +430,7 @@ class TypeConversions {
 
 ---
 
-## Feature: Preferred Solver Annotation
+## Feature: Preferred Solver Specification
 
 ### Motivation
 
@@ -438,10 +438,24 @@ K currently supports multiple solver backends:
 - **Z3** (default) - General-purpose SMT solver
 - **CVC5** - Better performance for string constraints
 - **MiniZinc** - Constraint programming solver
+- **BAE** (planned) - kservices BAE solver
 
 Different problems perform better with different solvers. Users should be able to:
-1. Specify a preferred solver at the file level via annotation
+1. Specify a preferred solver at the file level
 2. Have test/example files annotated when a non-Z3 solver significantly outperforms
+
+### Research: How Other Communities Specify Solver Preferences
+
+| Community | Format | Solver Specification | Notes |
+|-----------|--------|---------------------|-------|
+| **SMT-LIB2** | `;` comments | No standard; `(set-logic X)` specifies theory | Files are solver-agnostic by design |
+| **SMT-COMP** | `;` comments | `; solver: <name>` (informal metadata) | Used in benchmark headers |
+| **DIMACS CNF** | `c` lines | `c solver: kissat` or `c recommended-solver: cadical` | Informal convention |
+| **MiniZinc** | `%` comments | `% @solver gecode` or separate `.mzc` config | IDE/command-line preferred |
+| **PDDL** | `;` comments | `:requirements` section for features | No solver preference standard |
+| **ASP** | `%` comments | `% @solver clingo` | Project-specific |
+
+**Key Finding**: Most communities use **comment-based metadata** rather than language constructs. This keeps the file portable and doesn't affect semantics.
 
 ### Current State
 
@@ -452,10 +466,14 @@ Solver selection is command-line only:
 ./export/k file.k            # Default: Z3
 ```
 
-### Proposed Syntax
+### Proposed Syntax: Comment-Based Metadata
+
+Following the convention of SMT-COMP and DIMACS communities, use a special comment:
 
 ```k
-@solver("cvc5")
+// @solver: cvc5
+// @status: sat
+
 class StringHeavyProblem {
   // CVC5 handles these string constraints much faster
   s1 : String
@@ -463,45 +481,67 @@ class StringHeavyProblem {
   req s1.contains(s2)
   req s1.length > 100
 }
+```
 
-@solver("minizinc")
+**Format**: `// @<key>: <value>` at the start of the file
+
+**Supported metadata keys**:
+- `@solver: z3|cvc5|minizinc|bae` - Preferred solver
+- `@status: sat|unsat|unknown` - Expected result (for testing)
+- `@timeout: <ms>` - Suggested timeout
+
+**Examples**:
+
+```k
+// @solver: minizinc
+// Scheduling problems are faster with constraint programming
+
 class SchedulingProblem {
-  // MiniZinc excels at finite-domain constraint problems
   tasks : Int[10]
-  // ...
-}
-
-@solver("bae")
-class ExternalAPIProblem {
-  // Use BAE (kservices) for problems with external API calls
   // ...
 }
 ```
 
+```k
+// @solver: bae
+// Use BAE for problems with external API integration
+
+class ExternalAPIProblem {
+  // ...
+}
+```
+
+### Why Comments Over Annotations?
+
+1. **Portability** - File remains valid K even if solver isn't available
+2. **Community convention** - Follows SMT-COMP, DIMACS patterns
+3. **Non-semantic** - Solver choice doesn't affect the constraint specification
+4. **Easy tooling** - Simple to parse with grep/sed for benchmarking scripts
+
 ### Implementation Plan
 
-1. **Phase 1: Annotation Support**
-   - Add `@solver` to `ReservedAnnotations.scala`
-   - Parse annotation value in `KScalaVisitor.scala`
-   - Pass solver preference to `Frontend.solve()`
+1. **Phase 1: Parser Support**
+   - Scan first N lines of file for `// @solver:` pattern
+   - Extract solver name in `Frontend.scala` before parsing
+   - Store in options map
 
 2. **Phase 2: Solver Dispatch**
-   - Modify `Frontend.scala` to check class annotation before command-line option
-   - Command-line `-cvc5`/`-minizinc` overrides annotation if specified
+   - Check comment metadata before command-line option
+   - Command-line `-cvc5`/`-minizinc` overrides comment if specified
 
 3. **Phase 3: Annotate Existing Files**
    - Benchmark all tests/examples across solvers
-   - Annotate files where non-Z3 solver is significantly faster (>2x)
+   - Add `// @solver:` comments where non-Z3 solver is significantly faster (>2x)
 
 4. **Phase 4: BAE Integration**
    - Add `BAESolver.scala` to integrate kservices BAE
    - BAE path: `~/git/kservices`
-   - Support `@solver("bae")` annotation
+   - Support `// @solver: bae` comment
 
 ### Solver Selection Priority
 
-1. Command-line flag (highest priority)
-2. `@solver` annotation on class
+1. Command-line flag (highest priority) - explicit override
+2. `// @solver:` comment in file
 3. Default (Z3)
 
 ---
