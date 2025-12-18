@@ -38,6 +38,14 @@ This document tracks features that are missing or incomplete in K relative to SM
 |---------|-----------|----------|------------|-------|
 | **Arrays (direct)** | QF_A | Medium | Medium | Map/lookup table semantics |
 
+### 🚧 Planned Features
+
+| Feature | Priority | Complexity | Notes |
+|---------|----------|------------|-------|
+| **Preferred Solver Annotation** | High | Low | `@solver("cvc5")` annotation to specify preferred solver per file |
+| **BAE Solver Integration** | High | Medium | Add kservices BAE as a solver backend |
+| **Solver Performance Annotations** | Medium | Low | Annotate test/example files with preferred solver when one significantly outperforms Z3 |
+
 ### ✅ Recently Completed (December 2025)
 
 | Feature | Description | Commit |
@@ -419,6 +427,113 @@ class TypeConversions {
 1. **Width checking on narrowing**: `x as Int8` when `x : Int` could optionally constrain values to fit in target type.
 
 2. **Implicit widening support**: Could add automatic widening (Int8 → Int16 → Int32) without explicit casts.
+
+---
+
+## Feature: Preferred Solver Annotation
+
+### Motivation
+
+K currently supports multiple solver backends:
+- **Z3** (default) - General-purpose SMT solver
+- **CVC5** - Better performance for string constraints
+- **MiniZinc** - Constraint programming solver
+
+Different problems perform better with different solvers. Users should be able to:
+1. Specify a preferred solver at the file level via annotation
+2. Have test/example files annotated when a non-Z3 solver significantly outperforms
+
+### Current State
+
+Solver selection is command-line only:
+```bash
+./export/k -cvc5 file.k      # Use CVC5
+./export/k -minizinc file.k  # Use MiniZinc
+./export/k file.k            # Default: Z3
+```
+
+### Proposed Syntax
+
+```k
+@solver("cvc5")
+class StringHeavyProblem {
+  // CVC5 handles these string constraints much faster
+  s1 : String
+  s2 : String
+  req s1.contains(s2)
+  req s1.length > 100
+}
+
+@solver("minizinc")
+class SchedulingProblem {
+  // MiniZinc excels at finite-domain constraint problems
+  tasks : Int[10]
+  // ...
+}
+
+@solver("bae")
+class ExternalAPIProblem {
+  // Use BAE (kservices) for problems with external API calls
+  // ...
+}
+```
+
+### Implementation Plan
+
+1. **Phase 1: Annotation Support**
+   - Add `@solver` to `ReservedAnnotations.scala`
+   - Parse annotation value in `KScalaVisitor.scala`
+   - Pass solver preference to `Frontend.solve()`
+
+2. **Phase 2: Solver Dispatch**
+   - Modify `Frontend.scala` to check class annotation before command-line option
+   - Command-line `-cvc5`/`-minizinc` overrides annotation if specified
+
+3. **Phase 3: Annotate Existing Files**
+   - Benchmark all tests/examples across solvers
+   - Annotate files where non-Z3 solver is significantly faster (>2x)
+
+4. **Phase 4: BAE Integration**
+   - Add `BAESolver.scala` to integrate kservices BAE
+   - BAE path: `~/git/kservices`
+   - Support `@solver("bae")` annotation
+
+### Solver Selection Priority
+
+1. Command-line flag (highest priority)
+2. `@solver` annotation on class
+3. Default (Z3)
+
+---
+
+## Feature: BAE Solver Integration
+
+### Overview
+
+BAE (from kservices at `~/git/kservices`) provides an alternative solving approach that may be better suited for certain problem types, particularly those involving external API integration.
+
+### Implementation Plan
+
+1. **Create BAESolver.scala**
+   - Interface similar to `CVC5Solver.scala` and `MiniZincSolver.scala`
+   - Connect to kservices BAE backend
+
+2. **Add command-line option**
+   - `-bae` flag to use BAE solver
+
+3. **Support `@solver("bae")` annotation**
+
+### Integration Points
+
+```scala
+// BAESolver.scala
+object BAESolver {
+  def solve(model: String): BAEResult = {
+    // Connect to kservices BAE
+    // ...
+  }
+}
+```
 
 ---
 

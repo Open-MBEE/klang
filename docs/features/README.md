@@ -26,6 +26,17 @@ Complete implementation of string types with Z3 string theory integration:
 
 - **[EXTERNAL_FUNCTION_DEBUGGING.md](EXTERNAL_FUNCTION_DEBUGGING.md)** - Debugging external function calls
 
+## Solver Integration
+
+K supports multiple solver backends. See the roadmap for planned improvements:
+
+- **Z3** (default) - General-purpose SMT solver
+- **CVC5** - Better performance for string constraints (`-cvc5` flag)
+- **MiniZinc** - Constraint programming solver (`-minizinc` flag)
+- **BAE** - Planned integration with kservices BAE solver
+
+Planned: `@solver("name")` annotation to specify preferred solver per file.
+
 ## Usage Examples
 
 See the test files in `src/test/` and `src/tests/` for working examples.
