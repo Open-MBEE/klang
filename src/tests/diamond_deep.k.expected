@@ -1,0 +1,48 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/diamond_deep.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class D { (block (blockDeclaration (memberDeclaration (propertyDeclaration dx : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class E { (block (blockDeclaration (memberDeclaration (propertyDeclaration ex : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class B (extending extends (type (classIdentifier (qualifiedName D))) , (type (classIdentifier (qualifiedName E)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration bx : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class C (extending extends (type (classIdentifier (qualifiedName D))) , (type (classIdentifier (qualifiedName E)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration cx : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class A (extending extends (type (classIdentifier (qualifiedName B))) , (type (classIdentifier (qualifiedName C)))) { (block (blockDeclaration (memberDeclaration (shareDeclaration share (type (classIdentifier (qualifiedName D))) ;))) (blockDeclaration (memberDeclaration (shareDeclaration share (type (classIdentifier (qualifiedName E))) ;))) (blockDeclaration (memberDeclaration (propertyDeclaration ax : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration a : (type (classIdentifier (qualifiedName A))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . dx) = (expression (literal 1))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . ex) = (expression (literal 2))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . bx) = (expression (literal 3))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . cx) = (expression (literal 4))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . ax) = (expression (literal 5)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 5
+        class extensions         : 6
+        properties               : 6
+        constraints              : 5
+        --- types: -------------------
+        ref types                : 1
+        int types                : 5
+        --- expressions: -------------
+        dot exp                  : 5
+        dot exp max              : 1
+        binary exp               : 5
+        int literal exp          : 5
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+------------------------------------+
+	|Variable|Ref  |Value                               |
+	+--------+-----+------------------------------------+
+	|a       |Ref 3|A(dx::1, ex::2, bx::3, cx::4, ax::5)|
+	+--------+-----+------------------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+------------------------------------+
+	|Variable|Ref  |Value                               |
+	+--------+-----+------------------------------------+
+	|        |Ref 4|B(dx::0, ex::0, bx::0)              |
+	|        |Ref 5|C(dx::0, ex::0, cx::0)              |
+	|        |Ref 2|A(dx::0, ex::0, bx::0, cx::0, ax::0)|
+	|        |Ref 6|D(dx::0)                            |
+	|        |Ref 1|E(ex::0)                            |
+	+--------+-----+------------------------------------+
+

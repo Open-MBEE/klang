@@ -1,0 +1,46 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/rename_method.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class Parent { (block (blockDeclaration (memberDeclaration (propertyDeclaration x : (type (primitiveType Int))))) (blockDeclaration (memberDeclaration (functionDeclaration fun getValue ( ) : (type (primitiveType Int)) { (block (blockDeclaration (memberDeclaration (expression return (expression x))))) })))) }))) (modelThing (topDeclaration (entityDeclaration class Child (extending extends (type (classIdentifier (qualifiedName Parent)))) { (block (blockDeclaration (memberDeclaration (renameDeclaration rename (qualifiedName Parent) :: x as parentX ;))) (blockDeclaration (memberDeclaration (propertyDeclaration x : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration c : (type (classIdentifier (qualifiedName Child))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression c) . parentX) = (expression (literal 10))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression c) . x) = (expression (literal 20)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 2
+        class extensions         : 1
+        properties               : 3
+        functions                : 1
+        constraints              : 2
+        --- types: -------------------
+        ref types                : 1
+        int types                : 3
+        --- expressions: -------------
+        dot exp                  : 2
+        dot exp max              : 1
+        binary exp               : 2
+        int literal exp          : 2
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+-------------------------+
+	|Variable|Ref  |Value                    |
+	+--------+-----+-------------------------+
+	|c       |Ref 3|Child(parentX::10, x::20)|
+	+--------+-----+-------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+-----------------------+
+	|Variable|Ref  |Value                  |
+	+--------+-----+-----------------------+
+	|        |Ref 1|Parent(x::0)           |
+	|        |Ref 2|Child(parentX::0, x::0)|
+	+--------+-----+-----------------------+
+

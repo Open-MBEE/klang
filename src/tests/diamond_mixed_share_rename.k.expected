@@ -1,0 +1,48 @@
+DIR = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14/export
+PROJECT_ROOT = /Users/bclement/git/klang.worktrees/worktree-2025-12-14T04-01-14
+[main] Processing src/tests/diamond_mixed_share_rename.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class D1 { (block (blockDeclaration (memberDeclaration (propertyDeclaration x : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class D2 { (block (blockDeclaration (memberDeclaration (propertyDeclaration y : (type (primitiveType Int)))))) }))) (modelThing (topDeclaration (entityDeclaration class B (extending extends (type (classIdentifier (qualifiedName D1))) , (type (classIdentifier (qualifiedName D2)))) { block }))) (modelThing (topDeclaration (entityDeclaration class C (extending extends (type (classIdentifier (qualifiedName D1))) , (type (classIdentifier (qualifiedName D2)))) { block }))) (modelThing (topDeclaration (entityDeclaration class A (extending extends (type (classIdentifier (qualifiedName B))) , (type (classIdentifier (qualifiedName C)))) { (block (blockDeclaration (memberDeclaration (shareDeclaration share (type (classIdentifier (qualifiedName D1))) ;))) (blockDeclaration (memberDeclaration (renameDeclaration rename (qualifiedName B) :: y as by ;))) (blockDeclaration (memberDeclaration (renameDeclaration rename (qualifiedName C) :: y as cy ;)))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration a : (type (classIdentifier (qualifiedName A))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . x) = (expression (literal 10))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . by) = (expression (literal 20))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression a) . cy) = (expression (literal 30)))))))) <EOF>)
+CLASSPATH set to: src/tests
+[main] Type checking completed. No errors found.
+[SMT model written to .tmp/k_smt_model.log]
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 5
+        class extensions         : 6
+        properties               : 3
+        constraints              : 3
+        --- types: -------------------
+        ref types                : 1
+        int types                : 2
+        --- expressions: -------------
+        dot exp                  : 3
+        dot exp max              : 1
+        binary exp               : 3
+        int literal exp          : 3
+        ------------------------------
+
+
+	Top level objects created:
+
+	+--------+-----+------------------------+
+	|Variable|Ref  |Value                   |
+	+--------+-----+------------------------+
+	|a       |Ref 3|A(x::10, by::20, cy::30)|
+	+--------+-----+------------------------+
+
+	Extra objects created during analysis:
+
+	+--------+-----+---------------------+
+	|Variable|Ref  |Value                |
+	+--------+-----+---------------------+
+	|        |Ref 4|D1(x::0)             |
+	|        |Ref 5|B(x::0, y::0)        |
+	|        |Ref 2|A(x::0, by::0, cy::0)|
+	|        |Ref 6|C(x::0, y::0)        |
+	|        |Ref 1|D2(y::0)             |
+	+--------+-----+---------------------+
+
