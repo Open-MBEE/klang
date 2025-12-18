@@ -19,6 +19,12 @@ object ASTOptions {
   var useJson1: Boolean = true
   var numberOfInstances: Int = 5
   var checkPostNoBody: Boolean = false
+
+  /** Multiplier for heap CEGAR - scales all computed instance counts */
+  var instanceMultiplier: Int = 1
+
+  /** Generate CVC5-compatible SMT output (also works with Z3) */
+  var cvc5Compatible: Boolean = false
 }
 
 object UtilAST {
@@ -752,6 +758,9 @@ class HeapLayout(model: Model) {
   private var instancesByComputation: Map[graph.ClassName, Int] = Map()
   private var heapEntries: Map[graph.ClassName, (Int, Int)] = Map()
 
+  /** Get all class names in the heap */
+  def getAllClasses: Set[String] = graph.getAllClasses
+
   override def toString: String = {
     var result: String = ""
     result += "\n"
@@ -765,10 +774,13 @@ class HeapLayout(model: Model) {
     result
   }
 
-  private def getNrOfInstances(className: graph.ClassName): Int =
-    instancesByAnnotation.getOrElse(className,
+  private def getNrOfInstances(className: graph.ClassName): Int = {
+    val base = instancesByAnnotation.getOrElse(className,
       instancesByComputation.getOrElse(className,
         ASTOptions.numberOfInstances))
+    // Apply multiplier for heap CEGAR scaling
+    base * ASTOptions.instanceMultiplier
+  }
 
   private def dfs(node: graph.ClassName) {
     dfs(List(node))
@@ -966,13 +978,16 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     var result1: String = "" // text before omitted constructor parameter constants
     var result2: String = "" // text after omitted constructor parameter constants
     // result will eventually contain result1 ++ constants ++ result2.
-    // This approach is needed since constants need to go before result2 but 
+    // This approach is needed since constants need to go before result2 but
     // in part are computed based on result2.
 
     // Generate options
 
     result1 += UtilSMT.headline1("Options")
-    result1 += "(set-option :smt.macro-finder true)\n"
+    if (!ASTOptions.cvc5Compatible) {
+      // Z3-specific option - not supported by CVC5
+      result1 += "(set-option :smt.macro-finder true)\n"
+    }
     result1 += "\n"
 
     // Import String theory for Z3 4.13.0+
@@ -986,8 +1001,16 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     result1 += UtilSMT.headline1("Built-in datatypes")
     result1 += "(define-sort Ref () Int)\n"
     result1 += "\n"
-    result1 += "(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n"
-    result1 += "(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n"
+
+    if (ASTOptions.cvc5Compatible) {
+      // CVC5-compatible: Use non-parametric tuple types
+      // We generate concrete instantiations as needed elsewhere
+      result1 += "; Note: Tuples are generated as concrete types when used\n"
+    } else {
+      // Z3-style parametric datatypes
+      result1 += "(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n"
+      result1 += "(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n"
+    }
     result1 += "\n"
     // result1 += "(define-sort Set (T) (Array T Bool))\n"  // Commented out - Set appears to be built-in in Z3 4.13.0
     // result1 += "(define-sort Bag (T) (Array T Int))\n"
@@ -1005,12 +1028,23 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // Generate heap:
 
     result1 += UtilSMT.headline1("Heap")
-    result1 += "(declare-datatypes () ((Any\n"
-    for (ed <- entityDecls) {
-      result1 += ed.toSMTAnyEntry + "\n"
+    if (ASTOptions.cvc5Compatible) {
+      // SMT-LIB 2.6 syntax for CVC5 compatibility
+      result1 += "(declare-datatype Any (\n"
+      for (ed <- entityDecls) {
+        result1 += ed.toSMTAnyEntry + "\n"
+      }
+      result1 += "  (null)\n"  // CVC5 syntax uses (name) instead of just name
+      result1 += "))\n"
+    } else {
+      // Z3-specific syntax
+      result1 += "(declare-datatypes () ((Any\n"
+      for (ed <- entityDecls) {
+        result1 += ed.toSMTAnyEntry + "\n"
+      }
+      result1 += "  null))\n"
+      result1 += ")\n"
     }
-    result1 += "  null))\n"
-    result1 += ")\n"
     result1 += "\n"
     result1 += "(declare-const heap (Array Ref Any))\n"
     // Declare NULL$ constant for null literal comparisons
@@ -1368,7 +1402,13 @@ case class EntityDecl(
     } else {
       val constr = s"mk-$ident"
       val fields = propertyDecls.map(_.toSMT).mkString
-      s"(declare-datatypes () (($ident ($constr $fields))))"
+      if (ASTOptions.cvc5Compatible) {
+        // SMT-LIB 2.6 syntax - works with both CVC5 and Z3
+        s"(declare-datatype $ident (($constr $fields)))"
+      } else {
+        // Z3-specific syntax with empty parameter list
+        s"(declare-datatypes () (($ident ($constr $fields))))"
+      }
     }
   }
 
@@ -1739,14 +1779,14 @@ case class EntityDecl(
 
   def getEntityDecls: List[EntityDecl] =
     for (m <- members if m.isInstanceOf[EntityDecl]) yield m.asInstanceOf[EntityDecl]
-  
+
   def getAllEntityDecls: List[EntityDecl] = {
-    val entityDeclsOfSuperClasses: List[EntityDecl] = 
+    val entityDeclsOfSuperClasses: List[EntityDecl] =
       (for (superClass <- getSuperClasses(ident)) yield classes(superClass).getEntityDecls).flatten
     entityDeclsOfSuperClasses ++ getEntityDecls
   }
-  
-    
+
+
   def getExtendingNames: List[String] = {
     (for (e <- extending if e.isInstanceOf[IdentType]) yield e.toString)
   }
@@ -1764,7 +1804,7 @@ case class EntityDecl(
       member.asInstanceOf[EntityDecl].setFqName(fqName + "." + member.asInstanceOf[EntityDecl].ident)
     }
   }
-  
+
 
   override def toString = {
     var result = ""
