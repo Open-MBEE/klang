@@ -35,7 +35,7 @@ K supports multiple solver backends. See the roadmap for planned improvements:
 - **MiniZinc** - Constraint programming solver (`-minizinc` flag)
 - **BAE** - Planned integration with kservices BAE solver
 
-Planned: `// @solver: name` comment to specify preferred solver per file (following SMT-COMP/DIMACS conventions).
+Planned: `// @preferred_solver name` comment to specify preferred solver per file (following SMT-COMP/DIMACS conventions).
 
 ## Usage Examples
 

@@ -42,7 +42,7 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | Priority | Complexity | Notes |
 |---------|----------|------------|-------|
-| **Preferred Solver Comment** | High | Low | `// @solver: cvc5` comment to specify preferred solver per file |
+| **Preferred Solver Comment** | High | Low | `// @preferred_solver cvc5` comment to specify preferred solver per file |
 | **BAE Solver Integration** | High | Medium | Add kservices BAE as a solver backend |
 | **Solver Performance Annotations** | Medium | Low | Annotate test/example files with preferred solver when one significantly outperforms Z3 |
 
@@ -471,7 +471,7 @@ Solver selection is command-line only:
 Following the convention of SMT-COMP and DIMACS communities, use a special comment:
 
 ```k
-// @solver: cvc5
+// @preferred_solver cvc5
 // @status: sat
 
 class StringHeavyProblem {
@@ -483,17 +483,22 @@ class StringHeavyProblem {
 }
 ```
 
-**Format**: `// @<key>: <value>` at the start of the file
+**Format**: `// @preferred_solver <name>` or `-- @preferred_solver <name>` at the start of the file
+
+**Comment Style**: Match the existing comment style in the file:
+- If file already has comments, use the same style (`//` or `--`)
+- If file predominantly uses one style, match it
+- Default to `//` for new files
 
 **Supported metadata keys**:
-- `@solver: z3|cvc5|minizinc|bae` - Preferred solver
+- `@preferred_solver z3|cvc5|minizinc` - Preferred solver
 - `@status: sat|unsat|unknown` - Expected result (for testing)
 - `@timeout: <ms>` - Suggested timeout
 
 **Examples**:
 
 ```k
-// @solver: minizinc
+// @preferred_solver minizinc
 // Scheduling problems are faster with constraint programming
 
 class SchedulingProblem {
@@ -503,10 +508,10 @@ class SchedulingProblem {
 ```
 
 ```k
-// @solver: bae
-// Use BAE for problems with external API integration
+-- @preferred_solver cvc5
+-- String-heavy problems benefit from CVC5
 
-class ExternalAPIProblem {
+class StringProblem {
   // ...
 }
 ```
@@ -521,7 +526,7 @@ class ExternalAPIProblem {
 ### Implementation Plan
 
 1. **Phase 1: Parser Support**
-   - Scan first N lines of file for `// @solver:` pattern
+   - Scan first N lines of file for `// @preferred_solver` pattern
    - Extract solver name in `Frontend.scala` before parsing
    - Store in options map
 
@@ -529,14 +534,16 @@ class ExternalAPIProblem {
    - Check comment metadata before command-line option
    - Command-line `-cvc5`/`-minizinc` overrides comment if specified
 
-3. **Phase 3: Annotate Existing Files**
-   - Benchmark all tests/examples across solvers
-   - Add `// @solver:` comments where non-Z3 solver is significantly faster (>2x)
+3. **Phase 3: Benchmark and Annotate Files**
+   - Run `python3 benchmark-solvers.py` to compare solvers
+   - Review `.tmp/solver_benchmark_report.md` for recommendations
+   - Run `python3 benchmark-solvers.py --annotate` to add comments to files
+   - Do NOT add `@preferred_solver bae` (BAE is for benchmarking only)
 
 4. **Phase 4: BAE Integration**
    - Add `BAESolver.scala` to integrate kservices BAE
    - BAE path: `~/git/kservices`
-   - Support `// @solver: bae` comment
+   - Include BAE in benchmarks but don't use for `@preferred_solver`
 
 ### Solver Selection Priority
 
