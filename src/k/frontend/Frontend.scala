@@ -105,6 +105,9 @@ object Frontend {
       case "-heapcegar-cvc5" :: tail => parseArgs(map ++ Map('heapcegar -> true, 'heapcegarcvc5 -> true), tail)
       case "-heapsoft" :: tail => parseArgs(map ++ Map('heapsoft -> true), tail)
       case "-cvc5" :: tail => parseArgs(map ++ Map('cvc5 -> true), tail)
+      case "-minizinc" :: tail => parseArgs(map ++ Map('minizinc -> true), tail)
+      case "-mzn-solver" :: value :: tail => parseArgs(map ++ Map('mznSolver -> value), tail)
+      case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
       case "-debug" :: tail =>
@@ -560,6 +563,59 @@ object Frontend {
               log("HeapSoft: TIMEOUT")
             case UnifiedSolver.SolveResult.Unknown(reason) =>
               log(s"HeapSoft: UNKNOWN ($reason)")
+          }
+        } else if (options.getOrElse('minizinc, false).asInstanceOf[Boolean] ||
+                   options.getOrElse('emitMzn, false).asInstanceOf[Boolean]) {
+          // MiniZinc solver
+          println("[main] Using MiniZinc Solver")
+
+          // Translate K model to MiniZinc
+          val mznResult = K2MiniZinc.translate(combinedModel)
+
+          // Print any warnings
+          if (mznResult.warnings.nonEmpty) {
+            println("[MiniZinc] Warnings:")
+            mznResult.warnings.foreach(w => println(s"  - $w"))
+          }
+
+          // Write MiniZinc model to file
+          val mznFile = new java.io.File(".tmp/model.mzn")
+          val mznWriter = new java.io.PrintWriter(mznFile)
+          mznWriter.write(mznResult.mznCode)
+          mznWriter.close()
+          println(s"[MiniZinc] Model written to ${mznFile.getAbsolutePath}")
+
+          // If -emit-mzn only, just output and exit
+          if (options.getOrElse('emitMzn, false).asInstanceOf[Boolean]) {
+            println("\n=== MiniZinc Model ===")
+            println(mznResult.mznCode)
+            println("======================")
+          } else {
+            // Actually solve with MiniZinc
+            if (!MiniZincSolver.isAvailable) {
+              println("[MiniZinc] WARNING: MiniZinc not found. Install it from https://www.minizinc.org/")
+              println("[MiniZinc] Model saved to .tmp/model.mzn - run manually with: minizinc .tmp/model.mzn")
+            } else {
+              val solver = options.getOrElse('mznSolver, "gecode").asInstanceOf[String]
+              println(s"[MiniZinc] Solving with $solver...")
+              MiniZincSolver.verbose = K2Z3.debug
+              val result = MiniZincSolver.solve(mznResult.mznCode, solver)
+
+              result.status match {
+                case MznSat =>
+                  println("[MiniZinc] SAT")
+                  result.firstSolution.foreach { sol =>
+                    println("Solution:")
+                    println(MiniZincSolver.formatSolution(sol))
+                  }
+                case MznUnsat =>
+                  println("[MiniZinc] UNSAT")
+                case MznUnknown =>
+                  println(s"[MiniZinc] UNKNOWN: ${result.error}")
+                case MznError =>
+                  println(s"[MiniZinc] ERROR: ${result.error}")
+              }
+            }
           }
         } else if (useUnified) {
           log("Using UnifiedSolver")
