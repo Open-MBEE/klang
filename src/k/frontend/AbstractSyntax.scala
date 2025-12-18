@@ -1651,23 +1651,41 @@ case class EntityDecl(
     // Get renames keyed by (sourceClass, fieldName) and shadows for this class
     val renameMap = getRenameDecls.map(r => (r.fromClass.toString, r.fromField) -> r.toField).toMap
     val shadowedFields = getShadowDecls.map(_.name).toSet
+    val sharedTypes = shareTypes.map {
+      case it: IdentType => it.ident.toString
+      case _ => ""
+    }.toSet
     
     // Get immediate parent names
     val immediateParents = extending.collect { case it: IdentType => it.ident.toString }
     
-    // For diamond with rename, we need to get properties from immediate parents only
-    // (not transitive), since each parent path may have different renames
-    val propertyDeclsOfSuperClasses: List[PropertyDecl] = if (renameMap.nonEmpty) {
-      // With renames: only use immediate parents
+    // For diamond with rename or share, we need to get properties from immediate parents only
+    val propertyDeclsOfSuperClasses: List[PropertyDecl] = if (renameMap.nonEmpty || sharedTypes.nonEmpty) {
+      // Track seen fields to deduplicate shared fields
+      val seenFields = scala.collection.mutable.Set[String]()
+      
       immediateParents.flatMap { parentName =>
         if (classes.contains(parentName)) {
           classes(parentName).getAllPropertyDecls
             .filterNot(p => shadowedFields.contains(p.name))
-            .map { p =>
+            .flatMap { p =>
               // Apply rename if applicable
-              renameMap.get((parentName, p.name)) match {
-                case Some(newName) => PropertyDecl(p.modifiers, newName, p.ty, p.multiplicity, p.assignment, p.expr)
-                case None => p
+              val effectiveName = renameMap.get((parentName, p.name)) match {
+                case Some(newName) => newName
+                case None => p.name
+              }
+              
+              // Check if this is a shared field we've already seen
+              if (seenFields.contains(effectiveName)) {
+                None  // Skip duplicate
+              } else {
+                seenFields += effectiveName
+                val newDecl = if (effectiveName != p.name) {
+                  PropertyDecl(p.modifiers, effectiveName, p.ty, p.multiplicity, p.assignment, p.expr)
+                } else {
+                  p
+                }
+                Some(newDecl)
               }
             }
         } else {
@@ -1675,7 +1693,7 @@ case class EntityDecl(
         }
       }
     } else {
-      // Without renames: use all superclasses (original behavior)
+      // Without renames or shares: use all superclasses (original behavior)
       getSuperClasses(ident).flatMap { superClass =>
         classes(superClass).getPropertyDecls.filterNot(p => shadowedFields.contains(p.name))
       }
