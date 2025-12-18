@@ -90,7 +90,23 @@ else
     JAVA="java"
 fi
 
+# Parse arguments - find the .k file and pass other args as flags
+K_FILE=""
+FLAGS=""
+for arg in "$@"; do
+    if [[ "$arg" == *.k ]]; then
+        K_FILE="$arg"
+    else
+        FLAGS="$FLAGS $arg"
+    fi
+done
+
+if [ -z "$K_FILE" ]; then
+    echo "Please provide a .k file."
+    exit -1
+fi
+
 "$JAVA" -Djava.library.path="$DIR/lib" \
      -Djava.awt.headless=true \
      -classpath "$CLASSPATH" \
-     k.frontend.Main -f "$1" $2 $3 $4 $5
+     k.frontend.Main -f "$K_FILE" $FLAGS
