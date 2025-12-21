@@ -1315,12 +1315,15 @@ class TypeChecker(model: Model) {
         // Temporarily save and restore global state to avoid duplicates
         val savedClasses = classes
         val savedGlobalTypeEnv = globalTypeEnv
+        val savedAnnotations = annotations
         classes = Map[String, EntityDecl]()
         globalTypeEnv = TypeEnv(null, Map())
+        annotations = Map[String, AnnotationDecl]()
         t.typeCheck
         // Restore - package classes are already in the parent's scope
         classes = savedClasses
         globalTypeEnv = savedGlobalTypeEnv
+        annotations = savedAnnotations
       }
     }
 

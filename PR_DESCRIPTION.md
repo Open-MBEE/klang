@@ -89,6 +89,14 @@ This PR adds significant solver enhancements to the K language, including:
 - Clean output by default (verbose mode optional)
 - Code completion for K keywords
 
+### 11. Inheritance Error Detection
+- **Field Shadowing Detection**: Compile error when a subclass declares a field with the same name as an inherited field
+  - Error: `Field 'x' in class 'B' shadows inherited field from 'A'. Field shadowing is not allowed.`
+- **Diamond Inheritance Detection**: Compile error when multiple inheritance causes the same field to be inherited via different paths
+  - Error: `Field 'shared' (declared in 'Base') inherited multiple times in class 'Diamond' via different parent paths.`
+- Philosophy: Compiler doesn't guess programmer intent for ambiguous inheritance situations
+- Future: May add `rename` or `share` keywords to resolve conflicts explicitly
+
 ## Test Results
 
 **~125 tests pass (100%)**
@@ -114,6 +122,7 @@ Test performance improvements:
 - `bitvector_real_conversions.k` - Bitvector to Real conversions
 - `numeric_types_test.k` - Fixed-width numeric types
 - `signed_cast_test.k`, `signed_minimal.k`, `unsigned_minimal.k` - Type conversions
+- `tc1.k` - Field shadowing error detection test
 
 ## Breaking Changes
 
@@ -193,3 +202,18 @@ req c = 0b11111111
 cd jupyter && ./install.sh
 jupyter notebook  # Select 'K' kernel
 ```
+
+### Inheritance Errors (Compile-time)
+```k
+-- Field shadowing: ERROR
+class A { x : Int }
+class B extends A { x : Int }  -- Error: shadows inherited field
+
+-- Diamond inheritance: ERROR  
+class Base { shared : Int }
+class Left extends Base {}
+class Right extends Base {}
+class Diamond extends Left, Right {}  -- Error: diamond inheritance conflict
+```
+
+
