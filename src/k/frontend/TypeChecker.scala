@@ -761,7 +761,7 @@ class TypeChecker(model: Model) {
     def processDecls(decls: List[TopDecl]): Unit = {
       decls.foreach { d =>
         d match {
-          case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
+          case ed @ EntityDecl(_, entityToken, _, ident, _, _, _, _) =>
             // Only process if we haven't seen this entity name before
             // Also check if it's already in the globalTypeEnv to handle parser duplicates
             if (!processedEntityNames.contains(ident) && !globalTypeEnv.map.contains(ident)) {
@@ -776,7 +776,18 @@ class TypeChecker(model: Model) {
               }
               type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> dED)
               classes = classes + (ident -> dED)
-              globalTypeEnv = globalTypeEnv.union(ident -> ClassTypeInfo(ed))
+              
+              // For shorthand entity declarations like "event power_on", register as PropertyTypeInfo
+              // so it can be used as both a type (via type2Decl/classes) and a value (via globalTypeEnv)
+              // The entityToken is IdentifierToken for shorthand syntax (vs ClassToken/AssocToken)
+              if (entityToken.isInstanceOf[IdentifierToken]) {
+                // Create a synthetic property declaration for the shorthand entity
+                val syntheticProp = PropertyDecl(Nil, ident, 
+                  Some(IdentType(QualifiedName(List(ident)), List())), None, None, None)
+                globalTypeEnv = globalTypeEnv.union(ident -> PropertyTypeInfo(syntheticProp, true, false, null))
+              } else {
+                globalTypeEnv = globalTypeEnv.union(ident -> ClassTypeInfo(ed))
+              }
             }
           case td @ TypeDecl(ident, _, _) =>
             if (!processedEntityNames.contains(ident) && !globalTypeEnv.map.contains(ident)) {
@@ -1048,10 +1059,14 @@ class TypeChecker(model: Model) {
           // Use origTypeEnvironments for direct fields (not updated during inheritance)
           val classTypeEnv = origTypeEnvironments.getOrElse(d, TypeEnv(ed, Map()))
           // Use immediate parents only (not transitive) for proper rename handling
-          val immediateParents = ed.extending.map {
+          // Include both explicit extends AND implicit parents from keyword mechanism
+          val explicitParents = ed.extending.map {
             case it: IdentType => it.ident.toString
             case _ => ""
           }.filter(_.nonEmpty)
+          // Also get parents from ClassHierarchy which includes keyword-based parents (e.g., "event power_on" extends Event)
+          val keywordParents = ClassHierarchy.parents.getOrElse(ed, Set()).map(_.toString).toList
+          val immediateParents = (explicitParents ++ keywordParents).distinct
           
           
           // Extract share and rename modifiers from members
