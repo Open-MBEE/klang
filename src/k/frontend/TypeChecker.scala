@@ -245,8 +245,10 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
               val ofdecl = newMap(functionName).asInstanceOf[FunctionTypeInfo].decl
               val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
               val areParamsEqual = ofdecl.params.length == fdecl.params.length && (ofdecl.params zip fdecl.params).forall { p => areTypesEqual(p._1.ty, p._2.ty, false) }
-              val onlySecondHasBody = !fdecl.body.isEmpty
-              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && onlySecondHasBody) {
+              // Only error if BOTH functions have bodies (conflicting implementations)
+              // Allow: abstract parent (no body) overridden by concrete child (has body)
+              val bothHaveBodies = !fdecl.body.isEmpty && !ofdecl.body.isEmpty
+              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && bothHaveBodies) {
                 error(s"${fdecl.ident} redefined.")
               }
             }
@@ -316,8 +318,10 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
               val ofdecl = map(functionName).asInstanceOf[FunctionTypeInfo].decl
               val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
               val areParamsEqual = ofdecl.params.length == fdecl.params.length && (ofdecl.params zip fdecl.params).forall { p => areTypesEqual(p._1.ty, p._2.ty, false) }
-              val onlySecondHasBody = !fdecl.body.isEmpty
-              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && onlySecondHasBody) {
+              // Only error if BOTH functions have bodies (conflicting implementations)
+              // Allow: abstract parent (no body) overridden by concrete child (has body)
+              val bothHaveBodies = !fdecl.body.isEmpty && !ofdecl.body.isEmpty
+              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && bothHaveBodies) {
                 error(s"${fdecl.ident} redefined.")
               }
             }

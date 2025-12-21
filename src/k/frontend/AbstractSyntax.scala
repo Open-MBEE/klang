@@ -1346,8 +1346,11 @@ case class ImportDecl(name: QualifiedName, star: Boolean, language: ImportLangua
   /** Check if this is a Python import */
   def isPython: Boolean = language == PythonImport
 
-  /** Check if this is a Java import (explicit or default) */
-  def isJava: Boolean = language == JavaImport || language == DefaultImport
+  /** Check if this is an explicit Java import (import java ...) */
+  def isJava: Boolean = language == JavaImport
+  
+  /** Check if this is a default import (could be K file or Java) */
+  def isDefault: Boolean = language == DefaultImport
 
   def toJson: JSONObject = {
     val importdecl = new JSONObject()
