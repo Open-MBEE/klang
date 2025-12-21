@@ -13,7 +13,7 @@ class Instrument {
   powerConsumption : Real = 1000 
   weight : Real
   currentPowerConsumption : Real 
-  operating : Boolean = false 
+  operating : Bool = false 
     
   fun toggleOperating 
     post(operating = !operating~)
