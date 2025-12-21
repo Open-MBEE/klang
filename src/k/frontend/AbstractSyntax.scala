@@ -485,8 +485,9 @@ object UtilSMT {
 
   def transformModel(model: Model): Model = {
     val Model(packageName: Option[String], packages, imports, annotations, decls) = model
+    // Extract member declarations, but EXCLUDE EntityDecl (they extend MemberDecl but should be handled separately)
     var memberDecls: List[MemberDecl] =
-      for (decl <- decls if decl.isInstanceOf[MemberDecl]) yield decl.asInstanceOf[MemberDecl]
+      for (decl <- decls if decl.isInstanceOf[MemberDecl] && !decl.isInstanceOf[EntityDecl]) yield decl.asInstanceOf[MemberDecl]
     
     // Convert ExpressionDecl to ConstraintDecl (bare expressions are implicit constraints)
     memberDecls = memberDecls.map {
@@ -504,10 +505,11 @@ object UtilSMT {
       for (decl <- decls if decl.isInstanceOf[EntityDecl]) yield decl.asInstanceOf[EntityDecl]
     val entityDeclsSorted = UtilSMT.sortEntityDecls(entityDecls)
     
-    // Only create mainClass if there are member declarations and no packages
-    // This prevents duplicate TopLevelDeclarations in nested package structures
+    // Create mainClass (TopLevelDeclarations) if there are member declarations (properties, constraints, etc.)
+    // This wraps top-level declarations into a synthetic class for SMT generation
+    // Note: We create it even if there are nested packages, as each package level needs its own top-level declarations
     val entityDeclsWithMain = 
-      if (memberDecls.nonEmpty && packages.isEmpty) {
+      if (memberDecls.nonEmpty) {
         val mainClass = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, memberDecls)
         mainClass :: entityDeclsSorted
       } else {
