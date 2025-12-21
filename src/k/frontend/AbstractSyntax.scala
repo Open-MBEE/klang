@@ -196,7 +196,7 @@ object UtilSMT {
 
   def ignoreMember(memberDecl: MemberDecl): Boolean = {
     memberDecl match {
-      case pd @ PropertyDecl(modifiers, name, ty, None, _, exp) =>
+      case pd @ PropertyDecl(modifiers, name, ty, _, _, exp) =>
         !pd.getType.exists(wellFormedType)
     }
   }

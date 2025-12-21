@@ -949,9 +949,10 @@ class TypeChecker(model: Model) {
           origTypeEnvironments += (cte0._1 -> (cte0._2.union((m2.name) -> PropertyTypeInfo(m2, false, true, ed))))
           decl2TypeEnvi += (cte1._1 -> (cte1._2.union((m1.name) -> PropertyTypeInfo(m1, false, true, ed))))
           origTypeEnvironments += (cte1._1 -> (cte1._2.union((m1.name) -> PropertyTypeInfo(m1, false, true, ed))))
+*/
+          // Register the assoc in decl2TypeEnvi so it can be looked up later
           decl2TypeEnvi += (d -> classTypeEnv)
           origTypeEnvironments += (d -> classTypeEnv)
-*/
         case _ => ()
       }
     }
