@@ -628,6 +628,14 @@ object K2Z3 {
         value += " " + objectValuesOrig(i)
         i = i + 1
         value += " " + objectValuesOrig(i)
+      } else if (objectValuesOrig(i) == "(/" || objectValuesOrig(i) == "(-") {
+        // Handle Z3 rational numbers like (/ 3.0 2.0) or negative numbers like (- 5)
+        i = i + 1
+        value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) {
+          value += " " + objectValuesOrig(i)
+        }
       }
       objectValues = value :: objectValues
       i = i + 1
@@ -635,6 +643,28 @@ object K2Z3 {
     objectValues = objectValues.reverse
 
     if (className == "TopLevelDeclarations") return (visited, List(List(name, " - top level -")))
+
+    // Helper to format primitive values, converting Z3 rationals like (/ 3.0 2.0) to decimal
+    def formatPrimitiveValue(v: String): String = {
+      val trimmed = v.trim
+      if (trimmed.startsWith("(/") || trimmed.startsWith("(/ ")) {
+        // Parse rational number (/ num denom)
+        val parts = trimmed.stripPrefix("(/").stripPrefix("(/ ").stripSuffix(")").trim.split("\\s+")
+        if (parts.length == 2) {
+          try {
+            val num = parts(0).toDouble
+            val denom = parts(1).toDouble
+            if (denom != 0) f"${num / denom}%.2f" else trimmed
+          } catch {
+            case _: NumberFormatException => trimmed
+          }
+        } else trimmed
+      } else if (trimmed.startsWith("(-") || trimmed.startsWith("(- ")) {
+        // Parse negative number (- val)
+        val inner = trimmed.stripPrefix("(-").stripPrefix("(- ").stripSuffix(")").trim
+        s"-$inner"
+      } else trimmed
+    }
 
     val properties = classDecl.getAllPropertyDecls
     printList =
@@ -650,7 +680,7 @@ object K2Z3 {
             toPrint = x._2 :: toPrint
             (x._1.name + ":: Ref " + x._2)
           } else {
-            (x._1.name + "::" + x._2)
+            (x._1.name + "::" + formatPrimitiveValue(x._2))
           }
       }.toList
 
