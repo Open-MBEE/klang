@@ -1811,12 +1811,14 @@ class TypeChecker(model: Model) {
                 if (argType != StringType) error(s"matches argument must be String (regex pattern), got $argType")
                 return BoolType
               case "substring" =>
-                // substring(start, end) returns String
-                if (args.length != 2) error(s"substring requires exactly 2 arguments")
+                // substring(start) or substring(start, end) returns String
+                if (args.length < 1 || args.length > 2) error(s"substring requires 1 or 2 arguments")
                 val arg1Type = getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner)
-                val arg2Type = getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner)
-                if (arg1Type != IntType || arg2Type != IntType)
-                  error(s"substring arguments must be Int, got $arg1Type and $arg2Type")
+                if (arg1Type != IntType) error(s"substring first argument must be Int, got $arg1Type")
+                if (args.length == 2) {
+                  val arg2Type = getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner)
+                  if (arg2Type != IntType) error(s"substring second argument must be Int, got $arg2Type")
+                }
                 return StringType
               case "charAt" | "at" =>
                 // charAt(index) returns String (single character)
