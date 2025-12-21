@@ -609,12 +609,17 @@ class TypeChecker(model: Model) {
   private def functionContainsReq(d: FunDecl): Boolean = {
     d.body.foldLeft(false)((res, b) => res || b.isInstanceOf[ConstraintDecl])
   }
+  
+  // Collect all declarations from model and all nested packages
+  private def collectAllDecls(m: Model): List[TopDecl] = {
+    m.decls ++ m.packages.flatMap(pkg => collectAllDecls(pkg.model))
+  }
 
   def smtCheck {
     /*
      * For SMT we disallow statements with side effects and functions returning objects
      */
-    model.decls.foreach { d =>
+    collectAllDecls(model).foreach { d =>
       
       // if property decl, make sure it is not an unsupported collection
       d match {
@@ -833,8 +838,8 @@ class TypeChecker(model: Model) {
 
     // pass: get property info on global level - FIRST PASS: only properties with explicit types
     // This adds explicitly typed properties to globalTypeEnv before class processing
-    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
-    model.decls.foreach { d =>
+    // Process all declarations including those in nested packages
+    collectAllDecls(model).foreach { d =>
       d match {
         case p @ PropertyDecl(_, name, tyOpt, _, _, _) =>
           if ((p.modifiers.contains(Var) && p.modifiers.contains(Val)) ||
@@ -970,7 +975,8 @@ class TypeChecker(model: Model) {
     // pass: process top-level function BODIES to infer return types
     // This must happen after class type environments are built (so we can access class member types)
     // but before property type inference (so that inferred return types are available)
-    model.decls.foreach { d =>
+    // Process all declarations including those in nested packages
+    collectAllDecls(model).foreach { d =>
       d match {
         case fd @ FunDecl(_, _, _, _, _, _) =>
           processFunction(fd, globalTypeEnv, null)
@@ -1026,7 +1032,8 @@ class TypeChecker(model: Model) {
 
     // pass: get property info on global level - SECOND PASS: properties requiring type inference
     // Now that class type environments are built, we can infer types from expressions that reference class members
-    model.decls.foreach { d =>
+    // Process all declarations including those in nested packages
+    collectAllDecls(model).foreach { d =>
       d match {
         case p @ PropertyDecl(_, name, tyOpt, _, _, _) =>
           tyOpt match {
@@ -1142,18 +1149,17 @@ class TypeChecker(model: Model) {
     def processModelInheritance(m: Model): Unit = {
       // Process multiple times to handle dependencies (parents before children)
       // This is a simple fixed-point iteration
+      // Important: must process ALL classes including those in nested packages
+      val allDecls = collectAllDecls(m)
       var changed = true
       var iterations = 0
       val maxIterations = 10
       while (changed && iterations < maxIterations) {
         val beforeEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
-        processInheritance(m.decls)
+        processInheritance(allDecls)
         val afterEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
         changed = beforeEnvs != afterEnvs
         iterations += 1
-      }
-      m.packages.foreach { pkg =>
-        processModelInheritance(pkg.model)
       }
     }
     
@@ -1169,8 +1175,9 @@ class TypeChecker(model: Model) {
 
       // Collect all expressions from constraints and top-level expressions
       // Bare expressions are treated as implicit constraints
+      // Process all declarations including those in nested packages
       val allExpressions = mutable.ListBuffer[Exp]()
-      model.decls.foreach {
+      collectAllDecls(model).foreach {
         case ConstraintDecl(_, exp, _) => allExpressions += exp
         case ExpressionDecl(exp) => allExpressions += exp
         case _ => ()
@@ -1219,8 +1226,8 @@ class TypeChecker(model: Model) {
 
     // pass: build the information for expressions
     // except expressions that are in functions (bodies)
-    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
-    model.decls.foreach { d =>
+    // Process all declarations including those in nested packages
+    collectAllDecls(model).foreach { d =>
       d match {
         case ExpressionDecl(exp) => exp2Type.put(exp, getExpType(globalTypeEnv, exp, null))
         case ed @ EntityDecl(_, _, _, ident, _, _, _, _) =>
@@ -1236,8 +1243,8 @@ class TypeChecker(model: Model) {
     }
 
     // pass: now process function bodies, property initializations etc. etc.
-    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
-    model.decls.foreach { d =>
+    // Process all declarations including those in nested packages
+    collectAllDecls(model).foreach { d =>
       d match {
         case cd @ ConstraintDecl(name, exp, _) =>
           val ty = getExpType(globalTypeEnv, exp, null)
@@ -1316,32 +1323,7 @@ class TypeChecker(model: Model) {
       }
     }
 
-    // Recurse into packages
-    // Note: When packages are processed, their classes are already in the global scope
-    // from the combineModel step, so we don't need to process them again here
-    // This prevents "already defined" errors when classes are in packages
-    val pkgs = model.packages
-    for (p <- pkgs) {
-      var m = p.model
-      if ( m != null ) {
-        // Create a new TypeChecker but don't add classes to global scope again
-        // The classes from packages are already processed when the model is combined
-        // We only need to type-check the package's internal structure
-        var t = new TypeChecker(m)
-        // Temporarily save and restore global state to avoid duplicates
-        val savedClasses = classes
-        val savedGlobalTypeEnv = globalTypeEnv
-        val savedAnnotations = annotations
-        classes = Map[String, EntityDecl]()
-        globalTypeEnv = TypeEnv(null, Map())
-        annotations = Map[String, AnnotationDecl]()
-        t.typeCheck
-        // Restore - package classes are already in the parent's scope
-        classes = savedClasses
-        globalTypeEnv = savedGlobalTypeEnv
-        annotations = savedAnnotations
-      }
-    }
+    // All packages are processed via collectAllDecls - no need for separate TypeCheckers
 
     true
   }
@@ -1635,7 +1617,15 @@ class TypeChecker(model: Model) {
               else if (i == "toString") StringType
               else {
                 // get class type environment
-                val classTypeEnv = decl2TypeEnvi(classes(it.ident.toString))
+                val className = it.ident.toString
+                if (!classes.contains(className)) {
+                  error(s"Class $className not found in classes map")
+                }
+                val classDecl = classes(className)
+                if (!decl2TypeEnvi.contains(classDecl)) {
+                  error(s"Class $className not found in decl2TypeEnvi")
+                }
+                val classTypeEnv = decl2TypeEnvi(classDecl)
                 logDebug(s"classTypeEnv is $classTypeEnv")
                 classTypeEnv(i) match {
                   case pti @ PropertyTypeInfo(decl, _, _, _) => getPropertyDeclType(decl)
