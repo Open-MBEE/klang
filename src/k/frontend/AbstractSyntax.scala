@@ -2797,8 +2797,24 @@ case class DotExp(exp: Exp, ident: String) extends Exp {
           case _ =>
             // Fall through to regular property handling
         }
+      case IdentType(QualifiedName(List("Set")), elemTypes) =>
+        ident match {
+          case "size" | "length" =>
+            // Z3's Set type (backed by Array T Bool) doesn't support cardinality
+            // This would require finite model reasoning or cardinality constraints
+            UtilSMT.error(s"Set cardinality (size/length) is not supported in SMT. " +
+              s"Consider using Seq instead, or reformulating the constraint without cardinality. " +
+              s"Expression: $exp.$ident")
+          case "isEmpty" =>
+            // Empty set check: set equals the empty set
+            val elemType = elemTypes.headOption.getOrElse(IntType)
+            val emptySet = s"((as const (Set ${elemType.toSMT})) false)"
+            return s"(= $expSMT $emptySet)"
+          case _ =>
+            // Fall through to regular property handling
+        }
       case _ =>
-        // Not a sequence, continue below
+        // Not a sequence or set, continue below
     }
 
     val classNameOfExp = expType.toString
@@ -3111,6 +3127,54 @@ trait CallApplExp extends Exp {
                 // Actually, collect alone doesn't make sense to convert to SMT
                 // It should be handled by the collect().sum() pattern above
                 UtilSMT.error(s"collect() must be followed by an aggregate like .sum()")
+              case _ =>
+                // Fall through to regular function handling
+            }
+          case IdentType(QualifiedName(List("Set")), elemTypes) =>
+            // Handle Set method calls
+            val setSMT = seqExp.toSMT(className, subTyping)
+            val elemType = elemTypes.headOption.getOrElse(IntType)
+            methodName match {
+              case "size" | "length" =>
+                // Z3's Set type (backed by Array T Bool) doesn't support cardinality
+                UtilSMT.error(s"Set cardinality (size/length) is not supported in SMT. " +
+                  s"Consider using Seq instead, or reformulating the constraint without cardinality. " +
+                  s"Expression: $seqExp.$methodName()")
+              case "isEmpty" =>
+                // Empty set check: set equals the empty set
+                val emptySet = s"((as const (Set ${elemType.toSMT})) false)"
+                return s"(= $setSMT $emptySet)"
+              case "contains" =>
+                // Check if element is in set
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(select $setSMT $elemSMT)"
+              case "add" | "insert" =>
+                // Add element to set
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(store $setSMT $elemSMT true)"
+              case "remove" | "delete" =>
+                // Remove element from set
+                val elemSMT = args(0).toSMT(className, subTyping)
+                return s"(store $setSMT $elemSMT false)"
+              case "union" =>
+                // Set union
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"((_ map or) $setSMT $otherSMT)"
+              case "intersect" | "intersection" =>
+                // Set intersection
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"((_ map and) $setSMT $otherSMT)"
+              case "diff" | "difference" | "minus" =>
+                // Set difference
+                val otherSMT = args(0).toSMT(className, subTyping)
+                return s"((_ map and) $setSMT ((_ map not) $otherSMT))"
+              case "subsetOf" | "isSubsetOf" =>
+                // Check if this is subset of other
+                val otherSMT = args(0).toSMT(className, subTyping)
+                // A ⊆ B iff A ∩ B = A iff (A ∧ ¬B) = ∅
+                val diff = s"((_ map and) $setSMT ((_ map not) $otherSMT))"
+                val emptySet = s"((as const (Set ${elemType.toSMT})) false)"
+                return s"(= $diff $emptySet)"
               case _ =>
                 // Fall through to regular function handling
             }

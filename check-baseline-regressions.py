@@ -108,12 +108,15 @@ def get_commit_info(commit: str) -> Tuple[str, str]:
     return date, msg
 
 
-def analyze_baseline_history() -> List[BaselineChange]:
+def analyze_baseline_history(since_date: Optional[str] = None) -> List[BaselineChange]:
     """Analyze all commits to baseline.json and find changes"""
     changes = []
     
     # Get all commits that touched baseline.json
-    commits_output = run_git(['log', '--oneline', '--follow', '--', 'src/tests/baseline.json'])
+    if since_date:
+        commits_output = run_git(['log', '--oneline', '--follow', f'--since={since_date}', '--', 'src/tests/baseline.json'])
+    else:
+        commits_output = run_git(['log', '--oneline', '--follow', '--', 'src/tests/baseline.json'])
     commits = [line.split()[0] for line in commits_output.split('\n') if line]
     
     print(f"Found {len(commits)} commits to baseline.json")
@@ -216,6 +219,84 @@ def analyze_baseline_history() -> List[BaselineChange]:
         prev_baseline = curr_baseline
     
     return changes
+
+
+@dataclass
+class FileChange:
+    """Represents a change to a K file"""
+    filepath: str
+    commit: str
+    commit_date: str
+    commit_msg: str
+    change_type: str  # ADDED, MODIFIED, DELETED
+
+
+def analyze_kfile_history(since_date: Optional[str] = None) -> List[FileChange]:
+    """Analyze all commits that changed K files in tests/ and examples/"""
+    changes = []
+    
+    # Get all commits that touched K files
+    patterns = ['src/tests/*.k', 'src/examples/*.k', 'examples/*.k']
+    all_commits = set()
+    
+    for pattern in patterns:
+        if since_date:
+            output = run_git(['log', '--oneline', f'--since={since_date}', '--', pattern])
+        else:
+            output = run_git(['log', '--oneline', '--', pattern])
+        for line in output.split('\n'):
+            if line:
+                all_commits.add(line.split()[0])
+    
+    print(f"Found {len(all_commits)} commits that modified K files")
+    
+    # Get details for each commit
+    for commit in sorted(all_commits, key=lambda c: run_git(['log', '-1', '--format=%ct', c]), reverse=True):
+        date, msg = get_commit_info(commit)
+        files_in_commit = get_files_changed_in_commit(commit)
+        
+        for filepath in files_in_commit:
+            if filepath.endswith('.k') and ('tests/' in filepath or 'examples/' in filepath):
+                # Determine change type
+                parent = f'{commit}^'
+                existed_before = run_git(['ls-tree', '--name-only', parent, filepath]) != ''
+                exists_now = run_git(['ls-tree', '--name-only', commit, filepath]) != ''
+                
+                if not existed_before and exists_now:
+                    change_type = 'ADDED'
+                elif existed_before and not exists_now:
+                    change_type = 'DELETED'
+                else:
+                    change_type = 'MODIFIED'
+                
+                changes.append(FileChange(
+                    filepath=filepath,
+                    commit=commit,
+                    commit_date=date,
+                    commit_msg=msg[:50],
+                    change_type=change_type
+                ))
+    
+    return changes
+
+
+def print_file_changes_table(changes: List[FileChange]):
+    """Print K file changes as a table"""
+    if not changes:
+        print("No K file changes found.")
+        return
+    
+    print("\n" + "=" * 130)
+    print("K FILE CHANGES (modifications to test/example files)")
+    print("=" * 130)
+    print(f"{'File':<45} {'Change':<10} {'Commit':<10} {'Date':<12} {'Message':<50}")
+    print("-" * 130)
+    
+    for c in changes:
+        print(f"{c.filepath:<45} {c.change_type:<10} {c.commit[:8]:<10} {c.commit_date[:10]:<12} {c.commit_msg:<50}")
+    
+    print("-" * 130)
+    print(f"Total: {len(changes)} file changes")
 
 
 def run_k_file(filepath: str) -> Outcome:
@@ -392,18 +473,23 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='Analyze baseline.json regression history')
     parser.add_argument('--changes', action='store_true', help='Show table of baseline changes to investigate')
+    parser.add_argument('--files', action='store_true', help='Show K file changes (tests/examples)')
     parser.add_argument('--inventory', action='store_true', help='Show all K files with baseline status')
     parser.add_argument('--examples', action='store_true', help='Show representative baseline entries (pretty-printed)')
     parser.add_argument('--suspicious', action='store_true', help='Show only suspicious changes (with --changes)')
+    parser.add_argument('--since', type=str, help='Only show changes since date (e.g., 2025-01-01)')
     parser.add_argument('--all', action='store_true', help='Run all reports')
     args = parser.parse_args()
     
     # Default to showing help if no args
-    if not any([args.changes, args.inventory, args.examples, args.all]):
+    if not any([args.changes, args.files, args.inventory, args.examples, args.all]):
         parser.print_help()
         print("\nExamples:")
         print("  python3 check-baseline-regressions.py --changes              # Show baseline change history")
         print("  python3 check-baseline-regressions.py --changes --suspicious # Show only suspicious changes")
+        print("  python3 check-baseline-regressions.py --changes --since 2025-01-01  # Changes since 2025")
+        print("  python3 check-baseline-regressions.py --files                # Show K file changes")
+        print("  python3 check-baseline-regressions.py --files --since 2025-01-01    # K file changes since 2025")
         print("  python3 check-baseline-regressions.py --inventory            # Show all K files")
         print("  python3 check-baseline-regressions.py --examples             # Show sample baselines")
         print("  python3 check-baseline-regressions.py --all                  # Run all reports")
@@ -416,8 +502,13 @@ def main():
     
     if args.changes or args.all:
         print("Analyzing baseline.json git history...")
-        changes = analyze_baseline_history()
+        changes = analyze_baseline_history(since_date=args.since)
         print_changes_table(changes, suspicious_only=args.suspicious)
+    
+    if args.files or args.all:
+        print("\nAnalyzing K file git history...")
+        file_changes = analyze_kfile_history(since_date=args.since)
+        print_file_changes_table(file_changes)
     
     if args.inventory or args.all:
         print("\nBuilding K files inventory (this may take a minute)...")

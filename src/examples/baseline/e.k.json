@@ -1,0 +1,165 @@
+{
+  "name": "e.k",
+  "model": "\npackage e {\n\nimport f\n\nclass E extending F {\n  eint:Int\n}\n\n\npackage f {\n\nclass F {\n  freal:Real\n}\n\n\n}\n\n\n}\n\n",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["e"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "e",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["f"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "E",
+          "typeparams": [],
+          "extending": [{
+            "args": [],
+            "ident": {
+              "names": ["F"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }],
+          "members": [{
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "eint",
+            "ty": {"type": "IntType"}
+          }]
+        }],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["f"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "f",
+            "imports": [],
+            "annotations": [],
+            "decls": [{
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "F",
+              "typeparams": [],
+              "extending": [],
+              "members": [{
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "freal",
+                "ty": {"type": "RealType"}
+              }]
+            }],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["e"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "e",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["f"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "E",
+          "typeparams": [],
+          "extending": [{
+            "type": "ElementValue",
+            "element": "F"
+          }],
+          "members": [{
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "eint",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }]
+        }],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["f"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "f",
+            "imports": [],
+            "annotations": [],
+            "decls": [{
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "F",
+              "typeparams": [],
+              "extending": [],
+              "members": [{
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "freal",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Double"
+                }
+              }]
+            }],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  },
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((E (mk-E (freal Real)(eint Int)))))\n(declare-datatypes () ((F (mk-F (freal Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-E (sel-E E))\n  (lift-F (sel-F F))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-E ((this Ref)) Bool\n  (is-lift-E (deref this))\n)\n\n(define-fun deref-E ((this Ref)) E\n  (sel-E (deref this))\n)\n\n(define-fun deref-is-F ((this Ref)) Bool\n  (is-lift-F (deref this))\n)\n\n(define-fun deref-F ((this Ref)) F\n  (sel-F (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-E ((this Ref)) Bool\n  (deref-is-E this)\n)\n\n(define-fun deref-isa-F ((this Ref)) Bool\n  (or\n    (deref-is-F this)\n    (deref-is-E this)\n  )\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class E:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-E E)\n\n\n\n; --------------------------\n;   Invariant for class F:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-F F)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-E const-1-E))\n        2 (lift-F const-2-F))\n  )\n)\n\n",
+  "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-E () E\n  (mk-E 0.0 0))\n(define-fun const-2-F () F\n  (mk-F 0.0))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null) 1 (lift-E (mk-E 0.0 0)))\n       2\n       (lift-F (mk-F 0.0))))",
+  "typeChecks": true
+}

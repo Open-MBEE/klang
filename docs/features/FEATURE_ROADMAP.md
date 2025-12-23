@@ -584,3 +584,169 @@ object BAESolver {
 
 ---
 
+## Future Work Items (Investigation & Implementation Backlog)
+
+This section tracks items that need investigation or implementation. Items marked with ❓ are questions to discuss.
+
+### Instance Generation & Performance
+
+- [ ] **Add `-addInstancePerClass` option** (default: `false`)
+  - Currently, at least one "extra" object is generated per class even when explicit instances are declared
+  - This slows processing; should be opt-in for cases that need it
+  - Need to investigate how this interacts with CEGAR and other solving modes
+  - Related: The extra `BB` instance (Ref 7) in `b2.k` seems unnecessary when `b1` and `b2` are already declared
+
+- [ ] **Investigate `-instances` option**
+  - Current status: Appears to be ignored (sets `ASTOptions.numberOfInstances` but may not have effect)
+  - Check git history to find what changes removed/broke support for this option
+  - Document what it was supposed to do vs what it does now
+
+### Command-Line Options Audit
+
+- [ ] **Audit all Frontend.scala options**
+  - Review each option in `parseArgs` to determine if it's functional or ignored
+  - Current options to audit:
+    - `-instances` (possibly ignored)
+    - `-timeout`
+    - `-classpath`
+    - `-tests`, `-test`, `-baseline`
+    - `-v`, `-query`, `-stats`, `-dot`, `-latex`, `-scala`
+    - `-json`, `-mmsJson`
+    - `-tc`, `-postnobody`
+    - `-unified`, `-heapcegar`, `-heapcegar-cvc5`, `-heapsoft`
+    - `-cvc5`, `-minizinc`, `-mzn-solver`, `-emit-mzn`
+    - `-batch`, `-timing`, `-debug`
+    - `-ktc`, `-ktc-gen`, `-tc-strict`, `-tc-inferred`, `-tc-ambiguous`, `-tc-flexible`
+  - Document purpose and status of each option
+
+- [ ] **Add `-help` / `--help` option and usage message**
+  - ❓ Is there a reason this wasn't already implemented?
+  - Check if `export/k` or `run-tests.sh` provides any help/usage
+  - If not, implement comprehensive help output in Frontend.scala
+  - Include descriptions of all options with examples
+
+### Documentation
+
+- [ ] **Document all command-line options**
+  - Search through `.md` documents for existing documentation
+  - Search git history for option-related changes
+  - Create or update documentation with:
+    - Option name and syntax
+    - Purpose and behavior
+    - Whether it's currently functional
+    - Examples of usage
+    - Interactions with other options
+
+### Git History Investigation
+
+- [ ] **Find commits that changed `-instances` behavior**
+  - When was it working? When did it stop?
+  - What was the intended behavior?
+
+- [ ] **Review history of option parsing in Frontend.scala**
+  - Identify any other options that may have been disabled or broken
+
+### Set Operations
+
+- [ ] **Implement Set size/length**
+  - Currently gives error: "Set cardinality (size/length) is not supported in SMT"
+  - Z3's `(Set T)` is backed by `(Array T Bool)` which has no cardinality function
+  - Options to implement:
+    1. For finite/bounded heaps: enumerate over all possible refs and count membership
+    2. Use Z3's cardinality extension if available in newer versions
+    3. Track set membership explicitly with auxiliary integer counters
+    4. Require finite enumeration with known bounds (e.g., `Set[1..10]`)
+  - Related: Bank.k example uses `customers.length() >= accounts.length()` which triggered this
+
+### SMT Output & Verbosity
+
+- [ ] **Review SMT output behavior**
+  - SMT translation (input to solver) is currently included in `export/k` output
+  - SMT model output (from solver) is written to `.tmp/k_smt_model.log`
+  - Used to be output to stdout as well - investigate if `-debug` controls this
+  - ❓ Should SMT input/output be suppressed by default? (cleaner user experience)
+  - ❓ Is writing to `.tmp/` directory presumptuous? (may not exist if run from arbitrary location)
+  - Consider: write to current directory, or make output location configurable
+
+- [ ] **Investigate `-debug` option behavior**
+  - Does it control SMT output to stdout?
+  - What else does it enable/disable?
+  - Document all effects of `-debug` flag
+
+- [ ] **Suppress exception stack traces by default**
+  - When errors are handled with a clear error message (like type check errors, K2SMT errors), don't show the Java stack trace
+  - Stack traces clutter output and are not useful for end users
+  - Only show stack traces when `-debug` is enabled
+  - Applies to: `TypeCheckException`, `K2SMTException`, `K2Z3Exception`
+  - Current behavior: always shows stack trace even for expected/handled errors
+
+### Option Syntax Consistency
+
+- [ ] **Unify single-dash vs double-dash option handling**
+  - `Frontend.scala` uses single-dash prefix (e.g., `-instances`, `-debug`)
+  - `run-tests.sh` uses double-dash prefix (e.g., `--timeout`, `--filter`)
+  - Both should be tolerant of either `-` or `--` prefix
+  - Help/usage output should show consistent style
+  - Decide on convention: prefer single-dash (Unix style) or double-dash (GNU style)?
+
+### Test Baselines & Organization
+
+- [ ] **Review baseline representation**
+  - Current: all baselines in one `src/tests/baseline.json` file
+  - Consider: each `.k` file gets its own `.baseline` or `.expected` file
+  - Pros of per-file baselines:
+    - Easier to review changes in PRs (diff per test)
+    - Can add/remove tests without touching shared file
+    - Better for version control (fewer merge conflicts)
+    - Easier to see what a test expects at a glance
+  - Cons:
+    - More files to manage
+    - Need to update tooling (`run-tests.sh`, `check-baseline-regressions.py`)
+  - ❓ What format? JSON, plain text, YAML?
+
+- [ ] **Add baselines for all K files**
+  - `src/tests/` - core regression tests (some have baselines, need full coverage)
+  - `src/examples/` - example K files (currently no baselines)
+  - Audit which files are missing baselines
+  - Generate initial baselines for all existing tests
+
+- [ ] **Import tests from kservices repo**
+  - The `kservices` repository contains additional K test cases
+  - Review and copy over relevant tests
+  - Ensure no duplication with existing tests
+  - May need to update tests for any language changes since they were written
+  - Track provenance (where tests came from)
+
+- [ ] **Test organization review**
+  - `src/tests/` vs `src/test/` - clarify purpose of each
+  - `src/examples/` - should these also be tests? Currently not run by `run-tests.sh`
+  - Consider unified test structure
+
+### Z3 Native Library Management
+
+- [ ] **Fix `select-z3-architecture.sh` reliability**
+  - Script reports success but doesn't always actually copy libraries
+  - Observed: `export/lib/libz3java.dylib` remained x86_64 after script claimed arm64 was configured
+  - Manual `cp -f lib/arm64/libz3*.dylib export/lib/` was required to fix
+  - Issues to investigate:
+    - Does the script verify the copy succeeded?
+    - Does it verify the architecture of the destination file after copy?
+    - Are there permission issues preventing overwrites?
+    - Is the copy source path correct? (script uses `export/lib/$LIB_DIR/` but arm64 libs are in `lib/arm64/`)
+  - Suggested fixes:
+    1. After copy, verify with `file` command that destination has correct architecture
+    2. Add verbose output showing actual files being copied
+    3. Fail if verification shows wrong architecture
+    4. Consider using `cp -f` to force overwrite
+  - Related: `UnsatisfiedLinkError: no libz3java in java.library.path` symptom
+
+### Questions to Resolve (❓)
+
+- ❓ Why was no `-help` option implemented? Was it intentional or oversight?
+- ❓ What should `-instances` actually control? Per-class count? Global count?
+- ❓ How should instance generation interact with CEGAR refinement?
+- ❓ Should there be an annotation alternative to `-addInstancePerClass`? (e.g., `@extraInstances(false)`)
+- ❓ Should SMT output be suppressed by default? What's the intended audience for verbose output?
+- ❓ Where should SMT model output files be written? (`.tmp/`, current dir, configurable?)
+
+---

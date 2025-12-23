@@ -143,17 +143,16 @@ check_baseline() {
         return
     fi
     
-    # Check git history - did this file ever produce SAT/UNSAT?
-    # Look at commits that touched this file
+    # Check commits that touched the test file itself (all history, not limited)
     local commits
-    commits=$(git log --oneline --format="%H" -20 -- "$file" 2>/dev/null) || true
+    commits=$(git log --oneline --format="%H" -- "$file" 2>/dev/null) || true
     
     if [ -z "$commits" ]; then
         echo "NEW"
         return
     fi
     
-    # Check each commit to find when it last passed
+    # Check each commit to find when the test file change broke it
     for commit in $commits; do
         local prev="${commit}^"
         
@@ -162,7 +161,7 @@ check_baseline() {
             continue
         fi
         
-        # Get old version and test it
+        # Get old version and test it with CURRENT compiler
         local old_content old_tmp old_status
         old_content=$(git show "$prev:$file" 2>/dev/null) || continue
         old_tmp=".tmp/baseline_check_$$.k"
@@ -172,22 +171,12 @@ check_baseline() {
         rm -f "$old_tmp"
         
         if [[ "$old_status" == "SAT" || "$old_status" == "UNSAT" ]]; then
-            # Found regression - this commit broke it
+            # Found regression - this commit to the test file broke it
             local short_commit
             short_commit=$(git log -1 --format="%h" "$commit" 2>/dev/null)
             echo "REGRESSED:$short_commit"
             return
         fi
-    done
-    
-    # Check if TypeChecker or grammar changes caused it (not file-specific)
-    # Look at recent commits to TypeChecker.scala
-    local tc_commits
-    tc_commits=$(git log --oneline --format="%H" -10 -- src/k/frontend/TypeChecker.scala src/grammar/Model.g4 2>/dev/null | head -5) || true
-    
-    for commit in $tc_commits; do
-        # This is expensive - skip for now, just mark as unknown cause
-        :
     done
     
     echo "UNKNOWN"

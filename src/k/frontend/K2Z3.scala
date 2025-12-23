@@ -595,7 +595,57 @@ object K2Z3 {
 
     val value = v.trim.replace("- ", "-")
     if (value.indexOf("mk-") < 0) return (visited + name, Nil)
-    val className = value.subSequence(1, value.indexOf(' ', 1)).toString.replace("lift-", "").trim
+    
+    // Handle Z3 let expressions by extracting the actual lift- expression
+    // e.g., (let ((a!1 (mk-Bank ...))) (lift-Bank a!1)) -> extract (lift-Bank ...)
+    val normalizedValue = if (value.startsWith("(let ")) {
+      // Find the lift- expression inside the let
+      val liftIdx = value.indexOf("(lift-")
+      if (liftIdx >= 0) {
+        // Find matching closing paren
+        var depth = 0
+        var endIdx = liftIdx
+        for (i <- liftIdx until value.length if endIdx == liftIdx) {
+          value(i) match {
+            case '(' => depth += 1
+            case ')' => depth -= 1; if (depth == 0) endIdx = i + 1
+            case _ =>
+          }
+        }
+        // The lift expression references a let-bound variable (like a!1)
+        // We need to resolve this to the actual value
+        // For now, extract what we can - the className from (lift-ClassName ...)
+        val liftExpr = value.substring(liftIdx, endIdx)
+        // Extract the mk- definition from the let bindings
+        val mkIdx = value.indexOf("(mk-")
+        if (mkIdx >= 0 && mkIdx < liftIdx) {
+          // Find the class name from lift expression
+          val classNameStart = liftIdx + 6  // after "(lift-"
+          val classNameEnd = liftExpr.indexOf(' ', 6).max(liftExpr.indexOf(')', 6))
+          val liftClassName = liftExpr.substring(6, classNameEnd)
+          // Find the mk- expression
+          var depth2 = 0
+          var mkEnd = mkIdx
+          for (i <- mkIdx until liftIdx if mkEnd == mkIdx) {
+            value(i) match {
+              case '(' => depth2 += 1
+              case ')' => depth2 -= 1; if (depth2 == 0) mkEnd = i + 1
+              case _ =>
+            }
+          }
+          val mkExpr = value.substring(mkIdx, mkEnd)
+          s"(lift-$liftClassName $mkExpr)"
+        } else liftExpr
+      } else value  // No lift found, use original
+    } else value
+    
+    val className = normalizedValue.subSequence(1, normalizedValue.indexOf(' ', 1)).toString.replace("lift-", "").trim
+    
+    // Guard against invalid class names (e.g., from malformed expressions)
+    if (!TypeChecker.classes.contains(className)) {
+      if (debug) logDebug(s"[printObjectValue] Unknown class '$className' in value: $v")
+      return (visited + name, Nil)
+    }
 
     val classDecl = TypeChecker.classes(className)
     val noInstancesForClass =
