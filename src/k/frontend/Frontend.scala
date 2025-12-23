@@ -1,10 +1,5 @@
 package k.frontend
 
-//import com.sksamuel.elastic4s.source._
-//import org.elasticsearch.common.settings.ImmutableSettings
-//import com.sksamuel.elastic4s._
-//import com.sksamuel.elastic4s.ElasticClient
-//import com.sksamuel.elastic4s.ElasticDsl._
 import org.apache.log4j.{Level, Logger}
 
 import scala.util.control.Breaks._
@@ -25,18 +20,7 @@ import k.frontend.ModelParser.ModelContext
 import org.json.JSONTokener
 
 import scala.collection.mutable.{ListBuffer => MList}
-//import scala.concurrent._
-//import Await._
-//import Future._
 import java.nio.file._
- // <<<<<<< HEAD
- // import scala.concurrent.Await
- // import scala.concurrent.duration._
- // import scala.concurrent.Awaitable
- //
- // =======
-//import scala.concurrent.impl.Future
-//>>>>>>> refs/heads/masterIntoDevelop
 
 object Frontend {
 
