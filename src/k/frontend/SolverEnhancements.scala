@@ -211,6 +211,27 @@ class IncrementalSession(ctx: Context, config: SolverConfig = SolverConfig.defau
   }
   
   /**
+   * Get the underlying Z3 solver (for model extraction)
+   */
+  def getSolver: Solver = solver
+  
+  /**
+   * Get current model if satisfiable
+   */
+  def getModel: Option[Z3Model] = {
+    try {
+      val status = solver.check()
+      if (status == Status.SATISFIABLE) {
+        Some(solver.getModel)
+      } else {
+        None
+      }
+    } catch {
+      case _: Throwable => None
+    }
+  }
+  
+  /**
    * Extract unsat core as list of assertion labels
    */
   private def extractUnsatCore(): List[String] = {
@@ -234,11 +255,6 @@ class IncrementalSession(ctx: Context, config: SolverConfig = SolverConfig.defau
       s"Conflicting constraints:\n${coreDescriptions.map(c => s"  - $c").mkString("\n")}"
     }
   }
-  
-  /**
-   * Get the underlying Z3 solver (for advanced usage)
-   */
-  def getSolver: Solver = solver
   
   /**
    * Reset the session
