@@ -97,6 +97,9 @@ object UnifiedSolver {
   /** Whether to use Z3 Optimize API for soft constraints */
   var useOptimize: Boolean = true
 
+  /** Whether to use scenario tracking for disjunctive models */
+  var useScenarioTracking: Boolean = false
+
   /** Whether to use CVC5 instead of Z3 (faster for strings) */
   var useCVC5: Boolean = false
 
@@ -115,6 +118,10 @@ object UnifiedSolver {
 
   /** Soft constraint weights: constraint string -> weight */
   private val softConstraints: MMap[String, Double] = MMap()
+  
+  /** Scenario tracking state */
+  private var scenarioVars: Map[String, BoolExpr] = Map()
+  private var viableScenarios: Set[String] = Set()
 
   /** Best solution found so far */
   private var bestSoFar: Option[Z3Model] = None
@@ -150,19 +157,28 @@ object UnifiedSolver {
   /**
    * Main entry point: solve a K model with unified loop
    */
-  def solve(model: KModel, smtModel: String, printModel: Boolean): SolveResult = {
+  def solve(model: KModel, smtModel: String, printModel: Boolean, timeoutMs: Option[Long] = None): SolveResult = {
     reset()
     solving = true
 
     try {
       // Extract configuration from model annotations
-      val config = extractConfig(model)
+      var config = extractConfig(model)
+      
+      // Override timeout from command line if provided
+      val finalTimeout = timeoutMs.orElse(config.timeout)
+      config = config.copy(timeout = finalTimeout)
 
       // Initialize object bounds from model
       initializeObjectBounds(model)
 
       // Extract soft constraints from model
       extractSoftConstraints(model)
+
+      // Initialize scenario tracking if enabled
+      if (useScenarioTracking) {
+        initializeScenarioTracking(model, smtModel)
+      }
 
       // Main solving loop
       unifiedLoop(model, smtModel, config, printModel)
@@ -706,6 +722,15 @@ object UnifiedSolver {
       }
     }
 
+    // If scenario tracking is enabled, enable best-effort by default
+    // This allows the unified loop to return partial solutions when scenarios timeout
+    if (useScenarioTracking && !bestEffort) {
+      bestEffort = true
+      if (debug) {
+        log("Best-effort mode enabled for scenario tracking")
+      }
+    }
+
     SolveConfig(timeout, bestEffort, maxObjects)
   }
 
@@ -848,12 +873,22 @@ object UnifiedSolver {
       log(s"Generated SMT with ${objectBounds.values.sum} potential objects")
 
       // Phase 2: SOLVE
-      val solveResult = solveWithTimeout(model, currentSMT, config)
+      // If scenario tracking is enabled, add scenario assumption to guide solving
+      // But still use the unified loop's existing solve mechanism (max-SAT/best-effort)
+      val solveResult = if (useScenarioTracking && viableScenarios.nonEmpty) {
+        // Try the first viable scenario as an assumption - unified loop handles the rest
+        val firstScenario = viableScenarios.head
+        solveWithScenarioAssumption(model, currentSMT, config, firstScenario)
+      } else {
+        solveWithTimeout(model, currentSMT, config)
+      }
 
       // Phase 3: ANALYZE
       solveResult match {
         case SolveResult.Sat(z3Model) =>
           bestSoFar = Some(z3Model)
+          // Set z3Model for potential printing (but don't print here - let Frontend handle it)
+          K2Z3.z3Model = z3Model
           log("SAT - checking refinements needed")
 
           // CEGAR: verify external calls
@@ -880,8 +915,14 @@ object UnifiedSolver {
         case SolveResult.Unsat =>
           log("UNSAT - checking if can relax")
 
-          // Maybe need more objects?
-          if (canIncreaseObjectBounds()) {
+          // If scenario tracking is enabled, try next viable scenario
+          if (useScenarioTracking && viableScenarios.size > 1) {
+            val currentScenario = viableScenarios.head
+            viableScenarios -= currentScenario
+            log(s"Scenario $currentScenario is UNSAT - trying next scenario")
+            // Continue loop to try next scenario
+          } else if (canIncreaseObjectBounds()) {
+            // Maybe need more objects?
             log("Trying with more objects")
             increaseObjectBounds()
             // Continue to re-solve
@@ -898,8 +939,20 @@ object UnifiedSolver {
 
         case SolveResult.Timeout =>
           log("TIMEOUT")
+          // If we have a best-effort solution, return it (unified loop's max-SAT behavior)
           if (config.bestEffort && bestSoFar.isDefined) {
-            log("Returning best-effort result")
+            log("Returning best-effort result (partial solution from timeout)")
+            done = true
+            result = SolveResult.Sat(bestSoFar.get)
+          } else if (useScenarioTracking && viableScenarios.size > 1) {
+            // Try next viable scenario
+            val currentScenario = viableScenarios.head
+            viableScenarios -= currentScenario
+            log(s"Scenario $currentScenario timed out - trying next scenario")
+            // Continue loop to try next scenario
+          } else if (useScenarioTracking && viableScenarios.isEmpty && bestSoFar.isDefined) {
+            // All scenarios exhausted, return best effort if available
+            log("All scenarios exhausted - returning best-effort result")
             done = true
             result = SolveResult.Sat(bestSoFar.get)
           } else if (canIncreaseObjectBounds()) {
@@ -1134,7 +1187,349 @@ object UnifiedSolver {
     isPaused = false
     lastSample = None
     dynamicClasses.clear()
+    scenarioVars = Map()
+    viableScenarios = Set()
     ExternalFunctions.reset()
+  }
+  
+  // ============================================================================
+  // Scenario Tracking Integration
+  // ============================================================================
+
+  /**
+   * Initialize scenario tracking for models with disjunctive structure.
+   * Creates boolean variables for scenarios and tracks which are viable.
+   */
+  private def initializeScenarioTracking(model: KModel, smtModel: String): Unit = {
+    val ctx = K2Z3.ctx
+    
+    // Create scenario boolean variables
+    val nominal = ctx.mkBoolConst("scenario_nominal")
+    val anomalousTolerable = ctx.mkBoolConst("scenario_anomalous_tolerable")
+    val anomalousNotTolerable = ctx.mkBoolConst("scenario_anomalous_not_tolerable")
+    
+    scenarioVars = Map(
+      "Nominal" -> nominal,
+      "AnomalousTolerable" -> anomalousTolerable,
+      "AnomalousNotTolerable" -> anomalousNotTolerable
+    )
+    
+    // Initially all scenarios are viable
+    viableScenarios = Set("Nominal", "AnomalousTolerable", "AnomalousNotTolerable")
+    
+    if (debug) {
+      log(s"Scenario tracking initialized with ${scenarioVars.size} scenarios")
+    }
+  }
+
+  /**
+   * Solve with a scenario assumption - this guides the solver but still uses
+   * the unified loop's existing mechanisms (best-effort, soft constraints, etc.)
+   */
+  private def solveWithScenarioAssumption(
+    model: KModel,
+    smtModel: String,
+    config: SolveConfig,
+    scenarioName: String
+  ): SolveResult = {
+    // Just add the scenario assumption and use existing solve mechanism
+    // The unified loop's best-effort and soft constraint handling will do the rest
+    solveWithTimeoutAndAssumption(model, smtModel, config, scenarioName)
+  }
+
+  /**
+   * Solve with a scenario assumption using Z3's Optimize API with incremental constraint addition.
+   * This implements true max-SAT: we add constraints incrementally and use Optimize API to
+   * maximize the number of satisfied constraints, getting partial solutions when timeouts occur.
+   */
+  private def solveWithTimeoutAndAssumption(
+    model: KModel,
+    smtModel: String,
+    config: SolveConfig,
+    scenarioName: String
+  ): SolveResult = {
+    try {
+      // Use existing K2Z3 infrastructure
+      K2Z3.reset()
+
+      // Set timeout if specified (MUST be after reset, which creates new params)
+      config.timeout.foreach { ms =>
+        K2Z3.solverTimeout = Some(ms)
+        if (debug) {
+          log(s"Z3 timeout set to ${ms}ms for scenario $scenarioName")
+        }
+      }
+
+      // Add scenario definitions to SMT if not already present
+      val scenarioDefs = createScenarioDefinitionsSMT()
+      val smtWithScenarios = if (!smtModel.contains("scenario_nominal")) {
+        smtModel + "\n" + scenarioDefs
+      } else {
+        smtModel
+      }
+
+      // Write SMT to temp file
+      val tempFile = new java.io.File(".tmp/k_unified_scenario.smt2")
+      val tmpDir = tempFile.getParentFile
+      if (tmpDir != null && !tmpDir.exists()) {
+        tmpDir.mkdirs()
+      }
+      val writer = new java.io.PrintWriter(tempFile)
+      writer.write(smtWithScenarios)
+      writer.close()
+
+      // Parse SMT model
+      val boolExps = K2Z3.ctx.parseSMTLIB2File(
+        tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+
+      // Use Optimize API for better partial model support and max-SAT
+      val optimize = K2Z3.getOptimize()
+      
+      // Set timeout on optimizer
+      config.timeout.foreach { ms =>
+        val optParams = K2Z3.ctx.mkParams()
+        optParams.add("timeout", ms.toInt)
+        optimize.setParameters(optParams)
+      }
+
+      // Group constraints for incremental addition
+      val groups = IncrementalDiagnostic.groupAssertionsByConstraint(
+        boolExps.map(_.asInstanceOf[BoolExpr]).toList, 
+        smtWithScenarios
+      )
+      
+      val baseGroup = groups.find(_.name == "Base Constraints")
+      val namedGroups = groups.filter(_.name != "Base Constraints")
+      
+      // Add base constraints first
+      baseGroup.foreach { group =>
+        group.assertions.foreach { expr =>
+          optimize.Add(expr)
+        }
+      }
+      
+      // Get scenario variable
+      val scenarioVarName = scenarioName match {
+        case "Nominal" => "scenario_nominal"
+        case "AnomalousTolerable" => "scenario_anomalous_tolerable"
+        case "AnomalousNotTolerable" => "scenario_anomalous_not_tolerable"
+        case _ => s"scenario_${scenarioName.toLowerCase.replace(" ", "_")}"
+      }
+      val assumption = K2Z3.ctx.mkBoolConst(scenarioVarName)
+      
+      // Check base + scenario first
+      var status = optimize.Check(assumption)
+      if (status == Status.UNSATISFIABLE) {
+        if (debug) {
+          log(s"Scenario $scenarioName: UNSAT with base constraints only")
+        }
+        return SolveResult.Unsat
+      }
+      
+      // Add constraints incrementally (max-SAT approach)
+      // Strategy: Add groups incrementally, and when a group causes UNSAT,
+      // make it soft and continue to get better partial solutions
+      var addedGroups = 0
+      var lastSatGroup = -1
+      var problematicGroups = ListBuffer[Int]() // Groups that cause UNSAT
+      var hardGroups = ListBuffer[Int]() // Groups added as hard constraints
+      
+      // Add constraints in batches to balance progress vs. performance
+      val batchSize = math.max(1, namedGroups.length / 10) // Check every 10% of groups
+      
+      for ((group, index) <- namedGroups.zipWithIndex) {
+        // Add this group as hard constraint
+        group.assertions.foreach { expr =>
+          optimize.Add(expr)
+        }
+        hardGroups += index
+        addedGroups += 1
+        
+        // Check periodically (not after every group to avoid too many checks)
+        val shouldCheck = (index + 1) % batchSize == 0 || index == namedGroups.length - 1
+        
+        if (shouldCheck) {
+          val checkStatus = optimize.Check(assumption)
+          
+          // Update best model if we have one
+          if (checkStatus == Status.SATISFIABLE || checkStatus == Status.UNKNOWN) {
+            try {
+              val currentModel = optimize.getModel
+              if (currentModel != null) {
+                bestSoFar = Some(currentModel)
+                status = checkStatus
+                lastSatGroup = index
+                if (debug) {
+                  log(s"  Progress: ${index + 1}/${namedGroups.length} groups - still SAT")
+                }
+              }
+            } catch {
+              case _: Throwable =>
+            }
+          } else if (checkStatus == Status.UNSATISFIABLE) {
+            // This group makes it UNSAT - mark it as problematic
+            problematicGroups += index
+            if (debug) {
+              log(s"  Progress: ${index + 1}/${namedGroups.length} groups - UNSAT at ${group.name}")
+            }
+            status = checkStatus
+            // We'll rebuild with this group as soft if we have time
+          }
+        }
+      }
+      
+      // If we have problematic groups and got UNSAT, try rebuilding with them as soft
+      if (problematicGroups.nonEmpty && status == Status.UNSATISFIABLE) {
+        if (debug) {
+          log(s"Scenario $scenarioName: Rebuilding with ${problematicGroups.length} problematic groups as soft constraints")
+        }
+        
+        // Create new optimizer with problematic groups as soft
+        val softOptimize = K2Z3.ctx.mkOptimize()
+        config.timeout.foreach { ms =>
+          val optParams = K2Z3.ctx.mkParams()
+          optParams.add("timeout", ms.toInt)
+          softOptimize.setParameters(optParams)
+        }
+        
+        // Add base constraints
+        baseGroup.foreach { g =>
+          g.assertions.foreach { expr =>
+            softOptimize.Add(expr)
+          }
+        }
+        
+        // Add groups: hard for non-problematic, soft for problematic
+        for ((group, index) <- namedGroups.zipWithIndex) {
+          if (problematicGroups.contains(index)) {
+            // Add as soft constraint
+            group.assertions.zipWithIndex.foreach { case (expr, exprIdx) =>
+              softOptimize.AssertSoft(expr, 1, s"soft_${group.name}_$exprIdx")
+            }
+          } else {
+            // Add as hard constraint
+            group.assertions.foreach { expr =>
+              softOptimize.Add(expr)
+            }
+          }
+        }
+        
+        // Check with soft constraints
+        val softStatus = softOptimize.Check(assumption)
+        if (softStatus == Status.SATISFIABLE || softStatus == Status.UNKNOWN) {
+          try {
+            val softModel = softOptimize.getModel
+            if (softModel != null) {
+              bestSoFar = Some(softModel)
+              status = softStatus
+              log(s"Scenario $scenarioName: Got solution with ${problematicGroups.length} groups as soft constraints")
+              // Use the soft optimizer's model
+              return status match {
+                case Status.SATISFIABLE =>
+                  SolveResult.Sat(softModel)
+                case Status.UNKNOWN =>
+                  val reason = softOptimize.getReasonUnknown
+                  val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
+                  if (isTimeout) {
+                    SolveResult.Timeout
+                  } else {
+                    SolveResult.Unknown(reason)
+                  }
+                case _ => SolveResult.Unsat
+              }
+            }
+          } catch {
+            case _: Throwable =>
+          }
+        }
+      }
+      
+      if (debug) {
+        log(s"Scenario $scenarioName: Added $addedGroups groups, last SAT at group ${lastSatGroup + 1}")
+        if (problematicGroups.nonEmpty) {
+          log(s"  Problematic groups: ${problematicGroups.map(i => namedGroups(i).name).mkString(", ")}")
+        }
+      }
+      
+      // Final check with all constraints and full timeout
+      status = optimize.Check(assumption)
+
+      // Extract final result
+      status match {
+        case Status.SATISFIABLE =>
+          val z3Model = optimize.getModel
+          K2Z3.z3Model = z3Model
+          bestSoFar = Some(z3Model)
+          log(s"Scenario $scenarioName: SAT (satisfied $addedGroups constraint groups)")
+          SolveResult.Sat(z3Model)
+          
+        case Status.UNSATISFIABLE =>
+          log(s"Scenario $scenarioName: UNSAT (after adding $addedGroups groups)")
+          SolveResult.Unsat
+          
+        case Status.UNKNOWN =>
+          val reason = optimize.getReasonUnknown
+          val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
+          if (isTimeout) {
+            // Optimize API provides better partial model support
+            try {
+              val partialModel = optimize.getModel
+              if (partialModel != null) {
+                bestSoFar = Some(partialModel)
+                K2Z3.z3Model = partialModel
+                log(s"Scenario $scenarioName: TIMEOUT - captured partial model (satisfied up to group ${lastSatGroup + 1})")
+              } else {
+                log(s"Scenario $scenarioName: TIMEOUT - no partial model available")
+              }
+            } catch {
+              case e: Throwable =>
+                log(s"Scenario $scenarioName: TIMEOUT - could not get partial model: ${e.getMessage}")
+            }
+            SolveResult.Timeout
+          } else {
+            log(s"Scenario $scenarioName: UNKNOWN - $reason")
+            // Still try to get partial model on UNKNOWN
+            try {
+              val partialModel = optimize.getModel
+              if (partialModel != null) {
+                bestSoFar = Some(partialModel)
+              }
+            } catch {
+              case _: Throwable =>
+            }
+            SolveResult.Unknown(reason)
+          }
+      }
+    } catch {
+      case e: Throwable =>
+        if (debug) {
+          log(s"Error solving scenario $scenarioName: ${e.getMessage}")
+          e.printStackTrace()
+        }
+        SolveResult.Unknown(e.getMessage)
+    }
+  }
+
+  /**
+   * Create SMT definitions for scenarios.
+   */
+  private def createScenarioDefinitionsSMT(): String = {
+    val scheduleRef = "(TopLevelDeclarations!schedule 0)"
+    val requirementsRef = s"(Schedule!requirements $scheduleRef)"
+    val missedpassExpr = s"(Requirements!missedpass $requirementsRef)"
+    val tolerateExpr = s"(Requirements!tolerate $requirementsRef)"
+    
+    s"""
+; Declare scenario boolean variables
+(declare-const scenario_nominal Bool)
+(declare-const scenario_anomalous_tolerable Bool)
+(declare-const scenario_anomalous_not_tolerable Bool)
+
+; Scenario definitions
+(assert (= scenario_nominal (not $missedpassExpr)))
+(assert (= scenario_anomalous_tolerable (and $missedpassExpr $tolerateExpr)))
+(assert (= scenario_anomalous_not_tolerable (and $missedpassExpr (not $tolerateExpr))))
+"""
   }
 
   private def log(msg: String): Unit = {

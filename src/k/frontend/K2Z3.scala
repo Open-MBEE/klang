@@ -796,7 +796,28 @@ object K2Z3 {
       val heapDecl = z3Model.getDecls.find { _.getName.toString.equals("heap") }
 
       if (heapDecl.isEmpty) {
-        error(s"FATAL INTERNAL ERROR! Could not find a heap declaration for printing the model.")
+        // This can happen with partial models from Optimize API or best-effort results
+        // Try to extract what we can from the partial model
+        if (bestEffortMode || solverTimeout.isDefined) {
+          log("Note: Partial model does not contain heap declaration - attempting to extract available information")
+          
+          // Try to extract top-level variables and constants
+          val availableVars = getAllVariableValues()
+          if (availableVars.nonEmpty) {
+            println()
+            println("\t📊 PARTIAL MODEL - Available Variable Values:")
+            println("\t" + "="*60)
+            availableVars.foreach { case (name, value) =>
+              println(s"\t  $name = $value")
+            }
+            println()
+          } else {
+            log("No variable values could be extracted from partial model")
+          }
+          return
+        } else {
+          error(s"FATAL INTERNAL ERROR! Could not find a heap declaration for printing the model.")
+        }
       }
 
       // Extract heap entries using Z3 API directly (more robust than string parsing)

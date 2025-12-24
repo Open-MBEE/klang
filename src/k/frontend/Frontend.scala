@@ -21,6 +21,7 @@ import org.json.JSONTokener
 
 import scala.collection.mutable.{ListBuffer => MList}
 import java.nio.file._
+import k.frontend.{Satisfiable, Unsatisfiable, Unknown}
 
 object Frontend {
 
@@ -85,9 +86,12 @@ object Frontend {
         parseArgs(map ++ Map('json -> value), tail)
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
       case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
+      case "-unified-scenarios" :: tail => parseArgs(map ++ Map('unifiedScenarios -> true), tail)
       case "-heapcegar" :: tail => parseArgs(map ++ Map('heapcegar -> true), tail)
       case "-heapcegar-cvc5" :: tail => parseArgs(map ++ Map('heapcegar -> true, 'heapcegarcvc5 -> true), tail)
       case "-heapsoft" :: tail => parseArgs(map ++ Map('heapsoft -> true), tail)
+      case "-incremental" :: tail => parseArgs(map ++ Map('incremental -> true), tail)
+      case "-scenario-tracking" :: tail => parseArgs(map ++ Map('scenarioTracking -> true), tail)
       case "-cvc5" :: tail => parseArgs(map ++ Map('cvc5 -> true), tail)
       case "-minizinc" :: tail => parseArgs(map ++ Map('minizinc -> true), tail)
       case "-mzn-solver" :: value :: tail => parseArgs(map ++ Map('mznSolver -> value), tail)
@@ -501,10 +505,48 @@ object Frontend {
       } catch { case e: Throwable => println("[Failed to write SMT model: " + e) }
       println(UtilSMT.statistics)
       try {
+        val useIncremental = options.getOrElse('incremental, false).asInstanceOf[Boolean]
+        val useScenarioTracking = options.getOrElse('scenarioTracking, false).asInstanceOf[Boolean]
         val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
         val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
         // useCVC5 is already defined above
-        if (useCVC5) {
+        if (useScenarioTracking) {
+          println("[main] Using Scenario Tracking Diagnostic")
+          import k.frontend.ScenarioTrackingDiagnostic
+          val results = ScenarioTrackingDiagnostic.diagnoseWithScenarios(combinedModel, smtModel, timeoutValue)
+          println("\n" + "="*70)
+          println("SCENARIO TRACKING SUMMARY")
+          println("="*70)
+          results.foreach { status =>
+            println(s"\nAfter ${status.constraintGroup}:")
+            status.scenarioResults.foreach { case (scenarioName, result) =>
+              val resultStr = result match {
+                case Satisfiable(_, _) => "SAT"
+                case Unsatisfiable(_, _) => "UNSAT"
+                case Unknown(_, _, true) => "TIMEOUT"
+                case Unknown(reason, _, _) => s"UNKNOWN ($reason)"
+              }
+              println(s"  $scenarioName: $resultStr")
+            }
+          }
+          println("="*70)
+        } else if (useIncremental) {
+          println("[main] Using Incremental Solving Diagnostic")
+          val results = IncrementalDiagnostic.diagnoseModel(combinedModel, smtModel, timeoutValue)
+          println("\n" + "="*70)
+          println("DIAGNOSTIC SUMMARY")
+          println("="*70)
+          results.foreach { result =>
+            val status = result.result match {
+              case Satisfiable(_, _) => "SAT"
+              case Unsatisfiable(_, _) => "UNSAT"
+              case Unknown(_, _, true) => "TIMEOUT"
+              case Unknown(reason, _, _) => s"UNKNOWN ($reason)"
+            }
+            println(s"${result.groupName}: $status (${result.timeMs}ms)")
+          }
+          println("="*70)
+        } else if (useCVC5) {
           println("[main] Using CVC5 Solver")
           if (!CVC5Solver.isAvailable) {
             println("[CVC5] WARNING: CVC5 not found. Install it or set CVC5Solver.cvc5Path")
@@ -601,12 +643,43 @@ object Frontend {
               }
             }
           }
+        } else if (options.getOrElse('unifiedScenarios, false).asInstanceOf[Boolean]) {
+          log("Using UnifiedSolver with Scenario Tracking")
+          import k.frontend.UnifiedSolverWithScenarios
+          val result = UnifiedSolverWithScenarios.solve(combinedModel, smtModel, printModel = true, timeoutValue)
+          val shouldPrintModel = !options.getOrElse('batch, false).asInstanceOf[Boolean]
+          result match {
+            case UnifiedSolver.SolveResult.Sat(z3Model) =>
+              log("UnifiedSolver+Scenarios: SAT")
+              K2Z3.z3Model = z3Model
+              // Print model using existing K2Z3 infrastructure
+              if (shouldPrintModel) {
+                K2Z3.PrintModel(combinedModel)
+              }
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("UnifiedSolver+Scenarios: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("UnifiedSolver+Scenarios: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"UnifiedSolver+Scenarios: UNKNOWN ($reason)")
+          }
         } else if (useUnified) {
           log("Using UnifiedSolver")
-          val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true)
+          // Enable scenario tracking for models with disjunctive structure
+          UnifiedSolver.useScenarioTracking = true
+          val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
           result match {
             case UnifiedSolver.SolveResult.Sat(model) =>
               log("UnifiedSolver: SAT")
+              // Try to print model, but don't fail if printing fails
+              try {
+                K2Z3.z3Model = model
+                K2Z3.PrintModel(combinedModel)
+              } catch {
+                case e: Throwable =>
+                  log(s"Note: Could not print model: ${e.getMessage}")
+                  log("Model was found but printing failed (this may be a partial/best-effort solution)")
+              }
             case UnifiedSolver.SolveResult.Unsat =>
               log("UnifiedSolver: UNSAT")
             case UnifiedSolver.SolveResult.Timeout =>
