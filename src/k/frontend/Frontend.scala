@@ -89,8 +89,12 @@ object Frontend {
       case "-heapcegar-cvc5" :: tail => parseArgs(map ++ Map('heapcegar -> true, 'heapcegarcvc5 -> true), tail)
       case "-heapsoft" :: tail => parseArgs(map ++ Map('heapsoft -> true), tail)
       case "-cvc5" :: tail => parseArgs(map ++ Map('cvc5 -> true), tail)
+      case "-yices" :: tail => parseArgs(map ++ Map('yices -> true), tail)
+      case "-mathsat" :: tail => parseArgs(map ++ Map('mathsat -> true), tail)
       case "-minizinc" :: tail => parseArgs(map ++ Map('minizinc -> true), tail)
+      case "-bae" :: tail => parseArgs(map ++ Map('bae -> true), tail)
       case "-mzn-solver" :: value :: tail => parseArgs(map ++ Map('mznSolver -> value), tail)
+      case "-mzn-timeout" :: value :: tail => parseArgs(map ++ Map('mznTimeout -> value.toInt), tail)
       case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
@@ -503,8 +507,41 @@ object Frontend {
       try {
         val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
         val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
+        val useBAE = options.getOrElse('bae, false).asInstanceOf[Boolean]
+        val useYices = options.getOrElse('yices, false).asInstanceOf[Boolean]
+        val useMathSAT = options.getOrElse('mathsat, false).asInstanceOf[Boolean]
         // useCVC5 is already defined above
-        if (useCVC5) {
+        if (useBAE) {
+          println("[main] Using BAE Solver")
+          BAESolver.debug = K2Z3.debug
+          BAESolver.solveSMT(combinedModel, fullFileName, true)
+        } else if (useYices) {
+          println("[main] Using Yices Solver")
+          if (!YicesSolver.isAvailable) {
+            println("[Yices] WARNING: Yices not found. Install it or set YicesSolver.yicesPath")
+            println("[Yices] Falling back to Z3...")
+            val res = runWithTimeout(timeoutValue) {
+              K2Z3.solveSMT(combinedModel, smtModel, true)
+            }
+            if (res.isEmpty) log("Timeout")
+          } else {
+            YicesSolver.debug = K2Z3.debug
+            YicesSolver.solveSMT(combinedModel, smtModel, true)
+          }
+        } else if (useMathSAT) {
+          println("[main] Using MathSAT Solver")
+          if (!MathSATSolver.isAvailable) {
+            println("[MathSAT] WARNING: MathSAT not found. Install it or set MathSATSolver.mathsatPath")
+            println("[MathSAT] Falling back to Z3...")
+            val res = runWithTimeout(timeoutValue) {
+              K2Z3.solveSMT(combinedModel, smtModel, true)
+            }
+            if (res.isEmpty) log("Timeout")
+          } else {
+            MathSATSolver.debug = K2Z3.debug
+            MathSATSolver.solveSMT(combinedModel, smtModel, true)
+          }
+        } else if (useCVC5) {
           println("[main] Using CVC5 Solver")
           if (!CVC5Solver.isAvailable) {
             println("[CVC5] WARNING: CVC5 not found. Install it or set CVC5Solver.cvc5Path")
@@ -581,8 +618,10 @@ object Frontend {
               println("[MiniZinc] Model saved to .tmp/model.mzn - run manually with: minizinc .tmp/model.mzn")
             } else {
               val solver = options.getOrElse('mznSolver, "gecode").asInstanceOf[String]
-              println(s"[MiniZinc] Solving with $solver...")
+              val mznTimeout = options.getOrElse('mznTimeout, timeoutValue).asInstanceOf[Int]
+              println(s"[MiniZinc] Solving with $solver (timeout: ${mznTimeout}ms)...")
               MiniZincSolver.verbose = K2Z3.debug
+              MiniZincSolver.timeout = mznTimeout
               val result = MiniZincSolver.solve(mznResult.mznCode, solver)
 
               result.status match {

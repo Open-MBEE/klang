@@ -114,15 +114,54 @@ object MiniZincSolver {
         println(s"[MiniZinc] Running: ${cmdParts.mkString(" ")}")
       }
 
-      // Run solver
+      // Run solver with timeout support
       val stdout = new StringBuilder
       val stderr = new StringBuilder
-
-      val process = Process(cmdParts.toSeq)
-      val exitCode = process ! ProcessLogger(
+      val processLogger = ProcessLogger(
         line => stdout.append(line + "\n"),
         line => stderr.append(line + "\n")
       )
+
+      val process = Process(cmdParts.toSeq)
+      
+      // Use timeout if specified
+      val exitCode = if (timeout > 0) {
+        try {
+          val proc = process.run(processLogger)
+          val startTime = System.currentTimeMillis()
+          
+          // Wait for process with timeout
+          var finished = false
+          var exitValue = -1
+          
+          while (!finished) {
+            Thread.sleep(100) // Check every 100ms
+            try {
+              exitValue = proc.exitValue() // Non-blocking check
+              finished = true
+            } catch {
+              case _: IllegalThreadStateException =>
+                val elapsed = System.currentTimeMillis() - startTime
+                if (elapsed >= timeout) {
+                  proc.destroy()
+                  stderr.append(s"\n[MiniZinc] Timeout after ${timeout}ms\n")
+                  finished = true
+                  exitValue = -1
+                }
+                // Continue waiting if not timed out
+            }
+          }
+          
+          exitValue
+        } catch {
+          case e: Exception =>
+            stderr.append(s"\n[MiniZinc] Error: ${e.getMessage}\n")
+            -1
+        }
+      } else {
+        // No timeout - run normally
+        process ! processLogger
+      }
 
       if (verbose) {
         println(s"[MiniZinc] Exit code: $exitCode")
@@ -134,13 +173,17 @@ object MiniZincSolver {
 
       // Parse result
       val output = stdout.toString()
+      val errorOutput = stderr.toString()
 
-      if (output.contains("=====UNSATISFIABLE=====")) {
-        MznSolveResult(MznUnsat, Nil, stderr.toString())
+      // Check for timeout
+      if (exitCode == -1 || errorOutput.contains("Timeout") || errorOutput.contains("timeout")) {
+        MznSolveResult(MznUnknown, Nil, s"Timeout after ${timeout}ms")
+      } else if (output.contains("=====UNSATISFIABLE=====")) {
+        MznSolveResult(MznUnsat, Nil, errorOutput)
       } else if (output.contains("=====UNKNOWN=====")) {
-        MznSolveResult(MznUnknown, Nil, stderr.toString())
-      } else if (output.contains("=====ERROR=====") || exitCode != 0) {
-        MznSolveResult(MznError, Nil, stderr.toString())
+        MznSolveResult(MznUnknown, Nil, errorOutput)
+      } else if (output.contains("=====ERROR=====") || (exitCode != 0 && exitCode != -999)) {
+        MznSolveResult(MznError, Nil, if (errorOutput.nonEmpty) errorOutput else output)
       } else {
         // Parse solutions
         val solutions = parseSolutions(output)
