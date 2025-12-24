@@ -8,21 +8,8 @@ set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-# Setup Java from SDKMAN if available and JAVA_HOME not already set
-if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
-    if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
-        # SDKMAN current - need to handle macOS structure
-        if [ -d "$HOME/.sdkman/candidates/java/current/Contents/Home" ]; then
-            export JAVA_HOME="$HOME/.sdkman/candidates/java/current/Contents/Home"
-        else
-            export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-        fi
-        export PATH="$JAVA_HOME/bin:$PATH"
-    elif command -v /usr/libexec/java_home &> /dev/null; then
-        # macOS system Java
-        export JAVA_HOME=$(/usr/libexec/java_home 2>/dev/null) || true
-    fi
-fi
+# Setup Java from SDKMAN or system
+source "$PROJECT_ROOT/setup-java.sh"
 
 echo "K Language Maven Compile"
 echo "========================"

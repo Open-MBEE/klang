@@ -5,19 +5,11 @@
 
 set -e
 
-# Setup Java 21 - handle both Linux and macOS directory structures
-if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
-    if [ -d "$HOME/.sdkman/candidates/java/current/Contents/Home/bin" ]; then
-        # macOS structure
-        export JAVA_HOME="$HOME/.sdkman/candidates/java/current/Contents/Home"
-    else
-        # Linux structure
-        export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-    fi
-    export PATH="$JAVA_HOME/bin:$PATH"
-fi
-
 cd "$(dirname "$0")"
+PROJECT_ROOT="$(pwd)"
+
+# Setup Java 21 - handle both Linux and macOS directory structures
+source "$PROJECT_ROOT/setup-java.sh"
 
 # Check if compiled
 if [ ! -d "target/classes" ]; then
