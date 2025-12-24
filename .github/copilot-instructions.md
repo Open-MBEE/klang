@@ -11,16 +11,17 @@ K is a constraint-based specification language with a Scala frontend that compil
 
 ### Running K Files
 ```bash
-./export/k <file.k>           # Run a single K file
-./run-tests.sh                # Run all tests
-./run-tests.sh -f <pattern>   # Run tests matching pattern
+./run-tests.sh -h             # Look at help menu for options
+./export/k <file.k>           # alternative way to run a single K file, which is more robustly executed with ./run-tests.sh -test <file.k>
 ```
 
 ### Compiling
 ```bash
-mvn compile                   # Compile the project
-./compile.sh                  # Alternative compile script
+./compile.sh                  # Compile project script
+mvn compile                   # more direct, but less robust compile command
 ```
+
+`mvn` should work, in general; if it does not, we might want to fix it
 
 ### Z3 Architecture Issues
 If you encounter Z3 library loading errors (UnsatisfiedLinkError, wrong architecture):
@@ -75,8 +76,9 @@ Most AST nodes have a `toSMT(className: String, subTyping: Boolean): String` met
 ## Don't Forget
 1. Run `./select-z3-architecture.sh` if Z3 fails to load
 2. Use `.tmp/` for temporary test files
-3. Use `./export/k` instead of raw java commands
-4. Check `./run-tests.sh` after making changes
+3. Use `./run-test.sh` instead of raw java commands
+3. Alternatively, use `./export/k` instead of raw java commands
+4. Check `./run-tests.sh -all` after making changes
 
 ## Test Baseline Policy
 
@@ -89,18 +91,18 @@ Most AST nodes have a `toSMT(className: String, subTyping: Boolean): String` met
 
 ### When Tests Fail
 1. First, understand why the test is failing
-2. If it's a legitimate code change, update the test expectations
-3. If it's an unexpected exception, that's likely a bug to fix
-4. Never silently change baselines to "make tests pass"
+2. If it's a legitimate code change, update the test expectations, but check with the project owner to get approval
+3. If it's an unexpected exception, that's likely a bug to fix right away
+4. **NEVER** silently change baselines to "make tests pass"
 
 ## Terminal Command Guidelines
 
 
 ### Avoid Heredocs and Multi-line Strings
-- **DON'T**: Use `cat << EOF` or heredoc syntax - can get stuck in `heredoc>` mode
-- **DON'T**: Use multi-line strings with quotes - can get stuck in `dquote>` mode ; even a `git commit -m "...."` has this problem with a long string
+- At least for Intellij, **DON'T**: Use `cat << EOF` or heredoc syntax - can get stuck in `heredoc>` mode
+- At least for Intellij, **DON'T**: Use multi-line strings with quotes - can get stuck in `dquote>` mode ; even a `git commit -m "...."` has this problem with a long string
 - **DO**: Use `create_file` tool to write file contents
-- **DO**: Use Python one-liners for complex text manipulation: `python3 -c "..."`
+- **DO**: Create your own scripts in .tmp/ or use Python one-liners for complex text manipulation: `python3 -c "..."`
 
 ### Avoid Interactive/Pager Commands
 - **DON'T**: Use `git diff` (enters pager requiring `q` to exit)
@@ -128,5 +130,5 @@ git diff --stat  # summary only
 
 # Temp files - write inside project, not system /tmp
 # DO:    klang/.tmp/test.k
-# DON'T: /tmp/test.k (requires user approval)
+# DON'T: /tmp/test.k (requires user approval, slowing down progress)
 ```
