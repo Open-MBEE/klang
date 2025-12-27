@@ -913,7 +913,7 @@ object UnifiedSolver {
 
   private def increaseObjectBounds(): Boolean = {
     var increased = false
-    
+
     // Use dynamicClasses if populated, otherwise use all classes from objectBounds
     // This allows bound increases when verification fails for non-recursive models
     val classesToIncrease = if (dynamicClasses.nonEmpty) dynamicClasses else objectBounds.keys
@@ -1186,8 +1186,8 @@ object UnifiedSolver {
       case SolveResult.Sat(z3Model) if printModel =>
         if (z3Model != null) {
           try {
-            K2Z3.z3Model = z3Model
-            K2Z3.PrintModel(model)
+        K2Z3.z3Model = z3Model
+        K2Z3.PrintModel(model)
           } catch {
             case e: Throwable =>
               log(s"Error printing model: ${e.getMessage}")
@@ -1507,7 +1507,7 @@ object UnifiedSolver {
                 case _ =>
                   // Other unknown status - return TIMEOUT
                   log(s"Unknown status during incremental solve - returning TIMEOUT")
-                  SolveResult.Timeout
+                    SolveResult.Timeout
               }
             }
           }
@@ -1655,7 +1655,7 @@ object UnifiedSolver {
             bestSoFar.get
           } else {
             try {
-              optimize.getModel
+            optimize.getModel
             } catch {
               case e: Throwable =>
                 if (debug) log(s"Error getting model from optimizer: ${e.getMessage}")
@@ -1676,9 +1676,9 @@ object UnifiedSolver {
             // This is a partial solution that doesn't satisfy all hard constraints
             // Only return it if we're in best-effort mode
             if (config.bestEffort) {
-              log("UNSAT - returning best-effort solution from soft constraints")
-              K2Z3.z3Model = bestSoFar.get
-              SolveResult.Sat(bestSoFar.get)
+            log("UNSAT - returning best-effort solution from soft constraints")
+            K2Z3.z3Model = bestSoFar.get
+            SolveResult.Sat(bestSoFar.get)
             } else {
               log("UNSAT - have best-effort solution but bestEffort=false, returning UNSAT")
               SolveResult.Unsat
@@ -1831,7 +1831,7 @@ object UnifiedSolver {
             val constraintStr = boolExpr.simplify().toString
             println(s"[UnifiedSolver] ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
             failedConstraints += s"${constraintStr.take(200)} (eval returned null)"
-            allSatisfied = false
+              allSatisfied = false
           }
         } catch {
           case e: Throwable =>
@@ -1863,10 +1863,10 @@ object UnifiedSolver {
             if (!isTrue) {
               log(s"  ✗ Scenario assumption not satisfied: $scenarioVarName")
               allSatisfied = false
-            }
+              }
           } else {
             log(s"  ✗ Scenario assumption evaluation returned null: $scenarioVarName")
-            allSatisfied = false
+              allSatisfied = false
           }
         } catch {
           case e: Throwable =>
@@ -1883,7 +1883,7 @@ object UnifiedSolver {
         if (failedConstraints.nonEmpty && failedConstraints.length <= 10) {
           failedConstraints.take(10).foreach { fc =>
             println(s"[UnifiedSolver]     - ${fc.take(150)}")
-          }
+        }
           if (failedConstraints.length > 10) {
             println(s"[UnifiedSolver]     ... and ${failedConstraints.length - 10} more")
           }

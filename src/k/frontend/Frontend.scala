@@ -429,9 +429,10 @@ object Frontend {
             // - -prefer-file-options: file options override CLI
             // - -ignore-file-options: file options are already filtered out above
             
-            // Parse file's preferred timeout and solver
+            // Parse file's preferred timeout and solver options
             var fileTimeout: Option[Int] = None
             var fileUseDsnPass = false
+            var fileUseHeapCegar = false
             val timeoutIdx = preferredOpts.indexOf("-timeout")
             if (timeoutIdx >= 0 && timeoutIdx + 1 < preferredOpts.length) {
               try {
@@ -440,6 +441,9 @@ object Frontend {
             }
             if (preferredOpts.contains("-dsn-pass")) {
               fileUseDsnPass = true
+            }
+            if (preferredOpts.contains("-heapcegar")) {
+              fileUseHeapCegar = true
             }
             
             // Determine effective timeout based on precedence
@@ -454,14 +458,20 @@ object Frontend {
               if (cliHasTimeout) timeoutValue else fileTimeout.getOrElse(timeoutValue)
             }
             
-            // Determine effective solver based on precedence
+            // Determine effective solver options based on precedence
             val cliHasDsnPass = options.getOrElse('dsnPass, false).asInstanceOf[Boolean]
+            val cliHasHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
+            
             val useDsnPass = if (preferFileOptions) {
-              // File wins: use file setting if specified, otherwise CLI
               if (fileUseDsnPass) true else cliHasDsnPass
             } else {
-              // CLI wins (default): use CLI if set, otherwise file
               if (cliHasDsnPass) true else fileUseDsnPass
+            }
+            
+            val useHeapCegar = if (preferFileOptions) {
+              if (fileUseHeapCegar) true else cliHasHeapCegar
+            } else {
+              if (cliHasHeapCegar) true else fileUseHeapCegar
             }
 
             if (!file.exists()) {
@@ -508,6 +518,15 @@ object Frontend {
                           case _ =>
                         }
                       case None => // All scenarios failed
+                    }
+                  }
+                } else if (useHeapCegar) {
+                  // Use Heap CEGAR for dynamic object creation
+                  runWithTimeout(testTimeout) {
+                    val result = UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = false)
+                    result match {
+                      case UnifiedSolver.SolveResult.Sat(model) => K2Z3.z3Model = model
+                      case _ =>
                     }
                   }
                 } else {

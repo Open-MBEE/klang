@@ -1,3 +1,6 @@
+// @preferred_options -heapcegar
+// @expected SAT
+
 class S_Exp {
     var text : String
 

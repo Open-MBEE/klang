@@ -419,8 +419,8 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
 
     echo ""
     if [ "$TOTAL_TESTS" -gt 0 ]; then
-        PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
-        echo "Pass rate: ${PASS_RATE}%"
+    PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
+    echo "Pass rate: ${PASS_RATE}%"
     fi
     if [ "$SAVE_BASELINE" = true ]; then
         echo "Baselines saved to baseline/ subdirectories"
@@ -499,19 +499,19 @@ if [ -n "$EXPECTED" ]; then
 else
     # No expected result - use legacy logic
     if [ "$ACTUAL_RESULT" = "ERROR" ]; then
-        if head -5 "$TEST_FILE" 2>/dev/null | grep -qi "should not type check\|should fail\|expected error\|should not pass\|negative example"; then
-            STATUS="PASSED"; EXTRA="expected type check failure"
-        elif echo "$TEST_NAME" | grep -qi "unsat\|error\|fail"; then
-            STATUS="PASSED"; EXTRA="expected exception"
-        else
-            STATUS="PASSED"; EXTRA="exception expected"
-        fi
+    if head -5 "$TEST_FILE" 2>/dev/null | grep -qi "should not type check\|should fail\|expected error\|should not pass\|negative example"; then
+        STATUS="PASSED"; EXTRA="expected type check failure"
+    elif echo "$TEST_NAME" | grep -qi "unsat\|error\|fail"; then
+        STATUS="PASSED"; EXTRA="expected exception"
+    else
+        STATUS="PASSED"; EXTRA="exception expected"
+    fi
     elif [ "$ACTUAL_RESULT" = "CRASH" ]; then
-        STATUS="CRASHED"
+    STATUS="CRASHED"
     elif [ "$ACTUAL_RESULT" = "SAT" ]; then
-        STATUS="PASSED"
+    STATUS="PASSED"
     elif [ "$ACTUAL_RESULT" = "UNSAT" ]; then
-        STATUS="PASSED"; EXTRA="UNSAT"
+    STATUS="PASSED"; EXTRA="UNSAT"
     elif [ "$ACTUAL_RESULT" = "TIMEOUT" ]; then
         STATUS="PASSED"; EXTRA="TIMEOUT"
     fi
@@ -639,8 +639,8 @@ if [ -n "$SLOW_TESTS" ]; then
 fi
 
 if [ "$TOTAL_TESTS" -gt 0 ]; then
-    PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
-    echo "Pass rate: ${PASS_RATE}%"
+PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
+echo "Pass rate: ${PASS_RATE}%"
 fi
 echo ""
 
