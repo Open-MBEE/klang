@@ -25,9 +25,9 @@ RUN_SINGLE_TEST=false
 VERBOSE=false
 FILTER=""
 TEST_FILE=""
-PARALLEL_JOBS=1  # Default: sequential
-BATCH_MODE=true   # Single JVM mode (fastest) - now default
+PARALLEL_JOBS=1  # Default: batch mode (no parallelism)
 TIMING_MODE=false  # Show detailed timing breakdown
+SAVE_BASELINE=false  # Save results as baselines
 
 show_help() {
     echo "======================================"
@@ -44,17 +44,21 @@ show_help() {
     echo "Options:"
     echo "  -all          Run all tests from all directories"
     echo "  -tests        Run core tests only (src/tests/)"
-    echo "  -j <N>        Run N tests in parallel (default: 1)"
-    echo "  -j auto       Auto-detect CPU cores for parallelism"
     echo "  -new          Run new feature tests only (src/test/)"
     echo "  -examples     Run example files (src/examples/)"
     echo "  -test <file>  Run a single test file"
     echo "  -filter <pat> Run only tests matching pattern"
-    echo "  -batch        Run all tests in single JVM (default, fastest)"
-    echo "  -seq          Run tests sequentially, one JVM per test"
-    echo "  -timing       Show detailed timing breakdown (with -batch)"
+    echo "  -timing       Show detailed timing breakdown"
     echo "  -v, --verbose Show full output for each test"
     echo "  -h, --help    Show this help"
+    echo ""
+    echo "Parallel execution:"
+    echo "  -j <N>        Run N tests in parallel (uses shell loop)"
+    echo "  -j auto       Auto-detect CPU cores for parallelism"
+    echo ""
+    echo "Baseline management:"
+    echo "  -save-baseline Save current results as new per-file baselines"
+    echo "  (Baselines are always checked automatically if they exist)"
     echo ""
     echo "Feature-specific tests:"
     echo "  -opt          Run optimization tests (opt*.k)"
@@ -62,19 +66,27 @@ show_help() {
     echo "  -regex        Run regex tests (regex*.k)"
     echo ""
     echo "Examples:"
-    echo "  ./run-tests.sh              # Run core tests (batch mode)"
+    echo "  ./run-tests.sh              # Run core tests"
     echo "  ./run-tests.sh -all         # Run all tests"
-    echo "  ./run-tests.sh -seq         # Run sequentially (one JVM per test)"
     echo "  ./run-tests.sh -timing      # With detailed timing breakdown"
     echo "  ./run-tests.sh -j 4         # Run with 4 parallel jobs"
     echo "  ./run-tests.sh -j auto      # Auto-detect parallelism"
     echo "  ./run-tests.sh -new         # Run new feature tests"
     echo "  ./run-tests.sh -test opt1.k # Run single test"
     echo "  ./run-tests.sh -filter opt  # Run tests matching 'opt'"
-    echo "  ./run-tests.sh -string      # Run string tests"
+    echo "  ./run-tests.sh -save-baseline # Save current results as baselines"
     echo ""
-    echo "Note: Parallel execution speedup is limited by JVM startup"
-    echo "      and I/O overhead. -j 4 is often optimal."
+    echo "Option Precedence:"
+    echo "  By default, run-tests.sh uses -prefer-file-options so that"
+    echo "  @preferred_options in K files (e.g., -timeout 60000) take"
+    echo "  precedence over CLI defaults. This ensures tests run with"
+    echo "  their author-intended settings for regression testing."
+    echo ""
+    echo "Notes:"
+    echo "  - Default mode runs all tests in single JVM (fastest)"
+    echo "  - @expected annotations in K files define expected outcomes"
+    echo "  - Per-file baselines are in baseline/ subdirectories"
+    echo "  - Parallel mode (-j) is useful for long-running tests"
     echo ""
     exit 0
 }
@@ -122,14 +134,6 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
             ;;
-        -batch)
-            BATCH_MODE=true
-            shift
-            ;;
-        -seq|-sequential)
-            BATCH_MODE=false
-            shift
-            ;;
         -timing)
             TIMING_MODE=true
             shift
@@ -151,6 +155,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -v|--verbose)
             VERBOSE=true
+            shift
+            ;;
+        -save-baseline)
+            SAVE_BASELINE=true
             shift
             ;;
         -h|--help)
@@ -198,9 +206,47 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
 
     echo "Running test: $FOUND_FILE"
     echo ""
+    
+    # Run the test and capture output
     ./export/k "$FOUND_FILE"
-    exit $?
+    TEST_EXIT_CODE=$?
+    
+    # Check baseline after test completes
+    echo ""
+    echo "=========================================="
+    
+    # Determine baseline path
+    TEST_DIR=$(dirname "$FOUND_FILE")
+    TEST_NAME=$(basename "$FOUND_FILE")
+    BASELINE_FILE="$TEST_DIR/baseline/$TEST_NAME.json"
+    
+    if [ -f "$BASELINE_FILE" ]; then
+        echo "📋 Baseline: $BASELINE_FILE"
+        # Extract smtModel status from baseline (simplified check)
+        BASELINE_STATUS=$(grep -o '"smtModel"[[:space:]]*:[[:space:]]*"[^"]*"' "$BASELINE_FILE" 2>/dev/null | head -1 || echo "")
+        if [ -n "$BASELINE_STATUS" ]; then
+            if echo "$BASELINE_STATUS" | grep -q '""'; then
+                echo "   Baseline outcome: TIMEOUT/UNKNOWN (empty smtModel)"
+            elif echo "$BASELINE_STATUS" | grep -q '"()"'; then
+                echo "   Baseline outcome: UNSAT"
+            else
+                echo "   Baseline outcome: SAT"
+            fi
+        fi
+    else
+        echo "📋 No baseline file found at: $BASELINE_FILE"
+    fi
+    
+    # Check @expected annotation
+    EXPECTED=$(head -50 "$FOUND_FILE" 2>/dev/null | grep -E "^[[:space:]]*(//|--|/\*|\*).*@expected" | head -1 | sed 's/.*@expected[[:space:]]*//' | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')
+    if [ -n "$EXPECTED" ]; then
+        echo "🎯 @expected: $EXPECTED"
+    fi
+    
+    echo "=========================================="
+    exit $TEST_EXIT_CODE
 fi
+
 
 # Collect test files
 TEST_FILES=""
@@ -217,7 +263,8 @@ done
 
 # Sort and count
 TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | grep -v '^$' | sort)
-TOTAL_TESTS=$(echo "$TEST_FILES" | grep -c . || echo 0)
+TOTAL_TESTS=$(echo "$TEST_FILES" | grep -c . 2>/dev/null || true)
+TOTAL_TESTS=${TOTAL_TESTS:-0}
 
 if [ "$TOTAL_TESTS" = "0" ]; then
     echo "No test files found!"
@@ -233,10 +280,13 @@ if [ -n "$FILTER" ]; then
     echo "Filter: $FILTER"
 fi
 echo "Found $TOTAL_TESTS tests"
-if [ "$BATCH_MODE" = true ]; then
+if [ "$PARALLEL_JOBS" -gt 1 ]; then
+    echo "Mode: parallel ($PARALLEL_JOBS jobs)"
+else
     echo "Mode: batch (single JVM)"
-elif [ "$PARALLEL_JOBS" -gt 1 ]; then
-    echo "Parallel jobs: $PARALLEL_JOBS"
+fi
+if [ "$SAVE_BASELINE" = true ]; then
+    echo "Will save baselines after tests"
 fi
 echo ""
 echo "Progress:"
@@ -245,8 +295,8 @@ echo "=========================================="
 # Record wall-clock start time
 WALL_START=$(date +%s.%N 2>/dev/null || date +%s)
 
-# Batch mode: run all tests in single JVM (fastest)
-if [ "$BATCH_MODE" = true ]; then
+# Default mode: batch (single JVM, fastest) - unless -j is specified for parallelism
+if [ "$PARALLEL_JOBS" -eq 1 ]; then
     # Get the directory of this script
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -257,16 +307,21 @@ if [ "$BATCH_MODE" = true ]; then
     CLASSPATH="$CLASSPATH:$SCRIPT_DIR/export/lib/*"
     CLASSPATH="$CLASSPATH:$SCRIPT_DIR/export/lib/scalalib/*"
 
-    echo "(Running all tests in single JVM...)"
+    echo "(Running all tests in single JVM with baseline checking...)"
 
     # Create temp file for batch output
     BATCH_OUTPUT_FILE=$(mktemp)
     trap "rm -f $BATCH_OUTPUT_FILE" EXIT
 
-    # Build Java args
-    JAVA_ARGS="-batch"
+    # Build Java args - batch mode always checks baselines
+    # Use -prefer-file-options so @preferred_options in K files take precedence
+    # (e.g., DSN_Pass.k specifies -timeout 60000 which should override default 30s)
+    JAVA_ARGS="-batch -prefer-file-options"
     if [ "$TIMING_MODE" = true ]; then
         JAVA_ARGS="$JAVA_ARGS -timing"
+    fi
+    if [ "$SAVE_BASELINE" = true ]; then
+        JAVA_ARGS="$JAVA_ARGS -baseline"  # -baseline in batch mode means save
     fi
 
     # Run batch mode - pipe test files to Java, capture output
@@ -279,13 +334,17 @@ if [ "$BATCH_MODE" = true ]; then
     # Parse and display results
     PASSED=0
     FAILED=0
-    CRASHED=0
+    BASELINE_MATCHED=0
+    BASELINE_MISMATCHED=0
     TOTAL_TIME=0
     CURRENT=0
 
-    while IFS='|' read -r STATUS DURATION TEST_DIR TEST_NAME EXTRA; do
+    while IFS='|' read -r STATUS DURATION TEST_DIR TEST_NAME EXTRA EXTRA2 EXTRA3; do
         if [ "$STATUS" = "SUMMARY" ]; then
             TOTAL_TIME="$DURATION"
+            # SUMMARY format: SUMMARY|time|total|passed|failed|baselineMatched|baselineMismatched
+            BASELINE_MATCHED="${EXTRA2:-0}"
+            BASELINE_MISMATCHED="${EXTRA3:-0}"
             continue
         fi
 
@@ -325,18 +384,21 @@ if [ "$BATCH_MODE" = true ]; then
     echo "  Total:    $TOTAL_TESTS"
     echo "  ✅ Passed:  $PASSED"
     echo "  ❌ Failed:  $FAILED"
-    echo "  💥 Crashed: $CRASHED"
+    if [ "$BASELINE_MATCHED" -gt 0 ] || [ "$BASELINE_MISMATCHED" -gt 0 ]; then
+        echo "  📋 Baseline matched:    $BASELINE_MATCHED"
+        echo "  ⚠️  Baseline mismatched: $BASELINE_MISMATCHED"
+    fi
     echo "  ⏱️  CPU time: ${TOTAL_TIME}s"
     echo "  🕐 Wall time: ${WALL_TIME}s"
 
-    # Calculate speedup vs sequential (estimated ~1.1s per test)
-    SEQ_EST=$(echo "$TOTAL_TESTS 1.1" | awk '{printf "%.0f", $1 * $2}')
-    SPEEDUP=$(echo "$SEQ_EST $WALL_TIME" | awk '{if ($2 > 0) printf "%.1fx", $1 / $2; else print "N/A"}')
-    echo "  🚀 Speedup: $SPEEDUP (vs sequential)"
     echo ""
-
-    PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
-    echo "Pass rate: ${PASS_RATE}%"
+    if [ "$TOTAL_TESTS" -gt 0 ]; then
+        PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
+        echo "Pass rate: ${PASS_RATE}%"
+    fi
+    if [ "$SAVE_BASELINE" = true ]; then
+        echo "Baselines saved to baseline/ subdirectories"
+    fi
     echo ""
 
     if [ $FAILED -gt 0 ]; then
@@ -381,21 +443,52 @@ DURATION=$(echo "$END_TIME $START_TIME" | awk '{printf "%.2f", $1 - $2}')
 
 STATUS="UNKNOWN"
 EXTRA=""
+ACTUAL_RESULT=""
 
+# Determine actual result
 if echo "$OUTPUT" | grep -q "TypeCheckException\|K2SMTException\|K2Z3Exception"; then
-    if head -5 "$TEST_FILE" 2>/dev/null | grep -qi "should not type check\|should fail\|expected error\|should not pass\|negative example"; then
-        STATUS="PASSED"; EXTRA="expected type check failure"
-    elif echo "$TEST_NAME" | grep -qi "unsat\|error\|fail"; then
-        STATUS="PASSED"; EXTRA="expected exception"
-    else
-        STATUS="PASSED"; EXTRA="exception expected"
-    fi
+    ACTUAL_RESULT="ERROR"
 elif echo "$OUTPUT" | grep -q "fatal error\|SIGSEGV\|Abort trap\|core dump"; then
-    STATUS="CRASHED"
-elif echo "$OUTPUT" | grep -q "\[main\] Timeout\|Type checking completed\|Top level objects created\|Extra objects created\|STATISTICS"; then
-    STATUS="PASSED"
+    ACTUAL_RESULT="CRASH"
+elif echo "$OUTPUT" | grep -q "\[main\] Timeout"; then
+    ACTUAL_RESULT="TIMEOUT"
 elif echo "$OUTPUT" | grep -q "model is NOT satisfiable\|NOT satisfiable"; then
-    STATUS="PASSED"; EXTRA="UNSAT"
+    ACTUAL_RESULT="UNSAT"
+elif echo "$OUTPUT" | grep -q "Type checking completed\|Top level objects created\|Extra objects created\|STATISTICS"; then
+    ACTUAL_RESULT="SAT"
+fi
+
+# Check for @expected annotation
+EXPECTED=$(head -50 "$TEST_FILE" 2>/dev/null | grep -E "^[[:space:]]*(//|--|/\*|\*).*@expected" | head -1 | sed 's/.*@expected[[:space:]]*//' | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')
+
+if [ -n "$EXPECTED" ]; then
+    # We have an expected result - compare
+    if [ "$ACTUAL_RESULT" = "$EXPECTED" ]; then
+        STATUS="PASSED"
+        EXTRA="$ACTUAL_RESULT (expected)"
+    else
+        STATUS="FAILED"
+        EXTRA="got $ACTUAL_RESULT, expected $EXPECTED"
+    fi
+else
+    # No expected result - use legacy logic
+    if [ "$ACTUAL_RESULT" = "ERROR" ]; then
+        if head -5 "$TEST_FILE" 2>/dev/null | grep -qi "should not type check\|should fail\|expected error\|should not pass\|negative example"; then
+            STATUS="PASSED"; EXTRA="expected type check failure"
+        elif echo "$TEST_NAME" | grep -qi "unsat\|error\|fail"; then
+            STATUS="PASSED"; EXTRA="expected exception"
+        else
+            STATUS="PASSED"; EXTRA="exception expected"
+        fi
+    elif [ "$ACTUAL_RESULT" = "CRASH" ]; then
+        STATUS="CRASHED"
+    elif [ "$ACTUAL_RESULT" = "SAT" ]; then
+        STATUS="PASSED"
+    elif [ "$ACTUAL_RESULT" = "UNSAT" ]; then
+        STATUS="PASSED"; EXTRA="UNSAT"
+    elif [ "$ACTUAL_RESULT" = "TIMEOUT" ]; then
+        STATUS="PASSED"; EXTRA="TIMEOUT"
+    fi
 fi
 
 echo "$STATUS|$DURATION|$TEST_DIR|$TEST_NAME|$EXTRA" > "$RESULT_FILE"
@@ -490,91 +583,6 @@ EOFSCRIPT
                 ;;
         esac
     done
-else
-    # Sequential execution (original behavior)
-    PASSED=0
-    FAILED=0
-    CRASHED=0
-    TOTAL_TIME=0
-    SLOW_TESTS=""
-
-    for TEST_FILE in $TEST_FILES; do
-        CURRENT=$((CURRENT + 1))
-        TEST_NAME=$(basename "$TEST_FILE")
-        TEST_DIR=$(dirname "$TEST_FILE" | sed 's|.*/||')
-
-        # Progress indicator (without newline, we'll add timing after)
-        printf "[%3d/%3d] %-35s ... " "$CURRENT" "$TOTAL_TESTS" "[$TEST_DIR] $TEST_NAME"
-
-        # Record start time
-        START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
-
-        # Run test and capture result (gtimeout on macOS, timeout on Linux)
-        if command -v gtimeout &> /dev/null; then
-            OUTPUT=$(gtimeout 60 ./export/k "$TEST_FILE" 2>&1 || true)
-        elif command -v timeout &> /dev/null; then
-            OUTPUT=$(timeout 60 ./export/k "$TEST_FILE" 2>&1 || true)
-        else
-            OUTPUT=$(./export/k "$TEST_FILE" 2>&1 || true)
-        fi
-
-        # Record end time and calculate duration
-        END_TIME=$(date +%s.%N 2>/dev/null || date +%s)
-        # Use awk for floating point arithmetic (works on macOS)
-        DURATION=$(echo "$END_TIME $START_TIME" | awk '{printf "%.2f", $1 - $2}')
-        TOTAL_TIME=$(echo "$TOTAL_TIME $DURATION" | awk '{printf "%.2f", $1 + $2}')
-
-        # Track slow tests (> 5 seconds)
-        IS_SLOW=$(echo "$DURATION" | awk '{print ($1 > 5.0) ? "yes" : "no"}')
-        if [ "$IS_SLOW" = "yes" ]; then
-            SLOW_TESTS="$SLOW_TESTS\n  $TEST_NAME: ${DURATION}s"
-        fi
-
-        # Check for TypeCheckException first (expected failures for some tests)
-        if echo "$OUTPUT" | grep -q "TypeCheckException\|K2SMTException\|K2Z3Exception"; then
-            # Check if this was expected (negative test comment or test name pattern)
-            if head -5 "$TEST_FILE" 2>/dev/null | grep -qi "should not type check\|should fail\|expected error\|should not pass\|negative example"; then
-                printf "✅ PASSED (expected type check failure) [%ss]\n" "$DURATION"
-                PASSED=$((PASSED + 1))
-            elif echo "$TEST_NAME" | grep -qi "unsat\|error\|fail"; then
-                printf "✅ PASSED (expected exception) [%ss]\n" "$DURATION"
-                PASSED=$((PASSED + 1))
-            else
-                # Other tests that throw exceptions - mark as "exception expected" if it's a known pattern
-                printf "✅ PASSED (exception expected) [%ss]\n" "$DURATION"
-                PASSED=$((PASSED + 1))
-            fi
-        # Check for actual crashes (fatal errors, segfaults) - but not Java exceptions which are handled above
-        elif echo "$OUTPUT" | grep -q "fatal error\|SIGSEGV\|Abort trap\|core dump"; then
-            printf "💥 CRASHED [%ss]\n" "$DURATION"
-            CRASHED=$((CRASHED + 1))
-            if [ "$VERBOSE" = true ]; then
-                echo "$OUTPUT" | head -10 | sed 's/^/    /'
-            fi
-        # Check for successful completion - various success indicators
-        elif echo "$OUTPUT" | grep -q "\[main\] Timeout"; then
-            printf "✅ PASSED [%ss]\n" "$DURATION"
-            PASSED=$((PASSED + 1))
-        elif echo "$OUTPUT" | grep -q "Type checking completed"; then
-            printf "✅ PASSED [%ss]\n" "$DURATION"
-            PASSED=$((PASSED + 1))
-        elif echo "$OUTPUT" | grep -q "Top level objects created\|Extra objects created"; then
-            printf "✅ PASSED [%ss]\n" "$DURATION"
-            PASSED=$((PASSED + 1))
-        elif echo "$OUTPUT" | grep -q "model is NOT satisfiable\|NOT satisfiable"; then
-            printf "✅ PASSED (UNSAT) [%ss]\n" "$DURATION"
-            PASSED=$((PASSED + 1))
-        elif echo "$OUTPUT" | grep -q "STATISTICS"; then
-            printf "✅ PASSED [%ss]\n" "$DURATION"
-            PASSED=$((PASSED + 1))
-        else
-            printf "❓ UNKNOWN [%ss]\n" "$DURATION"
-            FAILED=$((FAILED + 1))
-            if [ "$VERBOSE" = true ]; then
-                echo "$OUTPUT" | head -5 | sed 's/^/    /'
-            fi
-        fi
-    done
 fi
 
 echo "=========================================="
@@ -604,8 +612,10 @@ if [ -n "$SLOW_TESTS" ]; then
     echo ""
 fi
 
-PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
-echo "Pass rate: ${PASS_RATE}%"
+if [ "$TOTAL_TESTS" -gt 0 ]; then
+    PASS_RATE=$((PASSED * 100 / TOTAL_TESTS))
+    echo "Pass rate: ${PASS_RATE}%"
+fi
 echo ""
 
 if [ $CRASHED -gt 0 ]; then

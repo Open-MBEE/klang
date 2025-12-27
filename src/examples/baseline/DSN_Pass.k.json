@@ -1,0 +1,17 @@
+{
+  "name": "DSN_Pass.k",
+  "model": "",
+  "json1": "",
+  "json2": "",
+  "smt": "",
+  "smtModel": "",
+  "typeChecks": true,
+  "_comment": "DSN_Pass.k requires -dsn-pass solver flag with extended timeout. Standard GenerateBaseline times out.",
+  "_preferredOptions": "-dsn-pass -timeout 60000",
+  "_expectedResult": "SAT",
+  "_notes": [
+    "Uses scenario-based incremental solving",
+    "3 scenarios: Nominal (missedpass=false), AnomalousTolerable, AnomalousNotTolerable",
+    "Nominal scenario typically solves fastest"
+  ]
+}

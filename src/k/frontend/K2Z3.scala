@@ -824,34 +824,85 @@ object K2Z3 {
       var heapMap = Map[String, String]()
       
       try {
-        // Get the heap array interpretation
+        // Get the heap array interpretation from the model
+        // Use getConstInterp first (this works for Optimize API models - matches UnifiedSolver approach)
+        // If that doesn't work or returns a default constant, fall back to direct select evaluation
         val heapExpr = z3Model.getConstInterp(heapDecl.get)
-        if (heapExpr != null) {
-          // Get the list of refs from heapInitializerConstants
-          val knownRefs = UtilSMT.heapInitializerConstants.map(_._1)
-          val maxRef = if (knownRefs.nonEmpty) knownRefs.max else 0
+        if (debug) {
+          logDebug(s"[PrintModel] heapExpr from getConstInterp: ${if (heapExpr != null) heapExpr.toString.take(200) else "null"}")
+        }
+        
+        // Get the list of refs from heapInitializerConstants
+        val knownRefs = UtilSMT.heapInitializerConstants.map(_._1)
+        val maxRef = if (knownRefs.nonEmpty) knownRefs.max else 0
 
-          // Query each ref using model.eval(select(heap, ref))
-          // Check refs 0 to maxRef + some buffer for dynamically created objects
-          for (ref <- 0 to (maxRef + 10)) {
-            try {
-              val refExpr = ctx.mkInt(ref).asInstanceOf[Expr[Sort]]
-              val selectExpr = ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], refExpr)
+        // Query each ref using model.eval(select(heap, ref))
+        // Check refs 0 to maxRef + some buffer for dynamically created objects
+        // Always check ref 0 first as it contains TopLevelDeclarations
+        for (ref <- 0 to (maxRef + 10)) {
+          try {
+            val refExpr = ctx.mkInt(ref).asInstanceOf[Expr[Sort]]
+            
+            // Create select(heap, ref) expression
+            // Use heapExpr from getConstInterp if available (matches UnifiedSolver's approach)
+            // Even if it's a default constant, mkSelect + eval should work correctly
+            val selectExpr = if (heapExpr != null) {
+              ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], refExpr)
+            } else {
+              // Fallback: create from declaration if getConstInterp returned null
+              val heapConstExpr = heapDecl.get.apply().asInstanceOf[ArrayExpr[Sort, Sort]]
+              ctx.mkSelect(heapConstExpr, refExpr)
+            }
+              
+              // Debug: Log select expression for ref 0
+              if (debug && ref == 0) {
+                logDebug(s"[PrintModel] selectExpr: ${selectExpr.toString.take(200)}")
+              }
+              
               val value = z3Model.eval(selectExpr, true)
               if (value != null) {
                 val valueStr = value.toString.replaceAll("\\s+", " ")
+                if (debug && ref == 0) {
+                  logDebug(s"[PrintModel] Ref 0 value: $valueStr")
+                  // Also try evaluating without model completion
+                  try {
+                    val valueNoCompletion = z3Model.eval(selectExpr, false)
+                    logDebug(s"[PrintModel] Ref 0 value (no completion): ${if (valueNoCompletion != null) valueNoCompletion.toString else "null"}")
+                  } catch {
+                    case e: Throwable =>
+                      logDebug(s"[PrintModel] Error evaluating ref 0 without completion: ${e.getMessage}")
+                  }
+                }
                 // Only include non-null values that have lift- (actual objects)
+                // Note: Ref 0 should always contain TopLevelDeclarations if there are top-level variables
+                // If ref 0 is null, it means TopLevelDeclarations wasn't allocated, which can happen
+                // with partial models from Optimize API when soft constraints minimize heap usage
                 if (valueStr != "null" && valueStr.contains("lift-")) {
                   heapMap += (ref.toString -> valueStr)
                   if (debug) logDebug(s"[API] Extracted ref $ref: $valueStr")
+                } else if (ref == 0) {
+                  // Ref 0 is null or doesn't contain lift- - this means no TopLevelDeclarations was allocated
+                  // This can happen with partial models. We'll check if there are actually top-level variables
+                  // that need to be printed, and if so, this indicates a model extraction issue
+                  if (debug) logDebug(s"[API] Ref 0 value doesn't match expected format (null or no lift-): $valueStr")
+                }
+              } else if (ref == 0) {
+                // Ref 0 is null - TopLevelDeclarations wasn't allocated in this model
+                // This is OK if there are no top-level variables, but indicates an issue if there are
+                if (debug) {
+                  logDebug(s"[API] Ref 0 value is null - TopLevelDeclarations not allocated")
                 }
               }
             } catch {
               case e: Throwable =>
-                if (debug) logDebug(s"[API] Error evaluating ref $ref: ${e.getMessage}")
+                if (debug) {
+                  logDebug(s"[API] Error evaluating ref $ref: ${e.getMessage}")
+                  if (ref == 0) {
+                    e.printStackTrace()
+                  }
+                }
             }
           }
-        }
       } catch {
         case e: Throwable =>
           if (debug) logDebug(s"[API] Error accessing heap via API: ${e.getMessage}")
@@ -888,6 +939,9 @@ object K2Z3 {
       // Add else/default case
       heapMap += ("else" -> "null")
 
+      if (debug) logDebug(s"[PrintModel] heapMap keys: ${heapMap.keys.mkString(", ")}")
+      if (debug && heapMap.contains("0")) logDebug(s"[PrintModel] ref 0 value: ${heapMap("0")}")
+
       var visited = Set[String]()
       
       // walk through heap and print entries
@@ -911,8 +965,31 @@ object K2Z3 {
               case true =>
                 // Recursively collect top-level properties from model and all packages
                 // Returns (name, isPrimitive, isCollection)
+                // Note: After transformModel, top-level properties are wrapped in TopLevelDeclarations EntityDecl
                 def collectTopLevelProperties(m: Model): List[(String, Boolean, Boolean)] = {
                   if (debug) logDebug(s"[collectTopLevelProperties] model.decls has ${m.decls.size} entries: ${m.decls.map(_.getClass.getSimpleName).mkString(", ")}")
+                  
+                  // First, try to find TopLevelDeclarations EntityDecl in model.decls
+                  // After transformModel, top-level PropertyDecl entries are moved into TopLevelDeclarations
+                  val propsFromTopLevelEntity = m.decls.foldLeft(List[(String, Boolean, Boolean)]()) { (res, d) =>
+                    d match {
+                      case ed: EntityDecl if ed.ident == UtilSMT.Names.mainClass =>
+                        // Extract PropertyDecl from TopLevelDeclarations member declarations
+                        ed.members.foldLeft(res) { (res2, md) =>
+                          md match {
+                            case pd @ PropertyDecl(_, _, _, _, _, _) =>
+                              val ty = pd.getTypeOrError
+                              val isPrim = TypeChecker.isPrimitiveType(ty)
+                              val isColl = Misc.isCollection(ty)
+                              (pd.name, isPrim, isColl) :: res2
+                            case _ => res2
+                          }
+                        }
+                      case _ => res
+                    }
+                  }
+                  
+                  // Also check model.decls directly for PropertyDecl (backwards compatibility or if not transformed)
                   val localProps = m.decls.foldLeft(List[(String, Boolean, Boolean)]()) { (res, d) =>
                     if (debug) logDebug(s"[collectTopLevelProperties] Examining decl: ${d.getClass.getSimpleName}")
                     d match {
@@ -921,11 +998,13 @@ object K2Z3 {
                         val isPrim = TypeChecker.isPrimitiveType(ty)
                         val isColl = Misc.isCollection(ty)
                         (pd.name, isPrim, isColl) :: res
-                      case _                                   => res
+                      case _ => res
                     }
                   }
+                  
                   val packageProps = m.packages.flatMap(pkg => collectTopLevelProperties(pkg.model)).toList
-                  localProps ++ packageProps
+                  // Combine and deduplicate (prefer propsFromTopLevelEntity if there are duplicates)
+                  (propsFromTopLevelEntity ++ localProps ++ packageProps).distinct
                 }
                 
                 // Extract all sequence values from the value string for collections
@@ -964,6 +1043,8 @@ object K2Z3 {
                 var seqIndex = 0
 
                 var topLevelVariables = collectTopLevelProperties(model)
+                if (debug) logDebug(s"[PrintModel] Found ${topLevelVariables.size} top-level variables: ${topLevelVariables.map(_._1).mkString(", ")}")
+                if (debug) logDebug(s"[PrintModel] objectValues length: ${objectValues.length}, objectValues: ${objectValues.mkString(", ")}")
                 topLevelVariables.reverse.foreach { k =>
                   val (name, isPrim, isColl) = k
                   if (isPrim) {

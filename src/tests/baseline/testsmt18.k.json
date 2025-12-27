@@ -1,0 +1,794 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Body",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "mass",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Body"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "Planet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "distanceToEarth",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Body"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "Moon",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "planet",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Planet"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "assignment": false,
+        "expr": {
+          "args": [
+            {
+              "exp": {
+                "i": 50000,
+                "type": "LiteralInteger"
+              },
+              "ident": "mass",
+              "type": "NamedArgument"
+            },
+            {
+              "exp": {
+                "i": 588000000,
+                "type": "LiteralInteger"
+              },
+              "ident": "distanceToEarth",
+              "type": "NamedArgument"
+            }
+          ],
+          "exp1": {
+            "ident": "Planet",
+            "type": "IdentExp"
+          },
+          "type": "FunApplExp"
+        },
+        "modifiers": [],
+        "name": "jupiter",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "Planet"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "assignment": false,
+        "expr": {
+          "args": [
+            {
+              "exp": {
+                "i": 1,
+                "type": "LiteralInteger"
+              },
+              "ident": "mass",
+              "type": "NamedArgument"
+            },
+            {
+              "exp": {
+                "ident": "jupiter",
+                "type": "IdentExp"
+              },
+              "ident": "planet",
+              "type": "NamedArgument"
+            }
+          ],
+          "exp1": {
+            "ident": "Moon",
+            "type": "IdentExp"
+          },
+          "type": "FunApplExp"
+        },
+        "modifiers": [],
+        "name": "europa",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "Moon"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "body": [
+          {
+            "exp": {
+              "exp": {
+                "ident": "moon",
+                "type": "IdentExp"
+              },
+              "ident": "planet",
+              "type": "DotExp"
+            },
+            "type": "ExpressionDecl"
+          }
+        ],
+        "ident": "getPlanet",
+        "params": [
+          {
+            "name": "moon",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Moon"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "Param"
+          }
+        ],
+        "spec": [],
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "Planet"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "FunDecl",
+        "typeParams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Trip",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "missionStudy",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Body"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "ident": "europa",
+              "type": "IdentExp"
+            },
+            "modifiers": [],
+            "name": "firstStop",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Body"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "args": [
+                {
+                  "exp": {
+                    "ident": "firstStop",
+                    "type": "IdentExp"
+                  },
+                  "type": "PositionalArgument"
+                }
+              ],
+              "exp1": {
+                "ident": "getPlanet",
+                "type": "IdentExp"
+              },
+              "type": "FunApplExp"
+            },
+            "modifiers": [],
+            "name": "secondStop",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Body"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "missionStudy",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "europa",
+                "type": "IdentExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "trip",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "Trip"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Body",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "mass",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Body"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "Planet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "distanceToEarth",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Body"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "Moon",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "planet",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Planet"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "assignment": false,
+        "expr": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "FunApplExp"
+            },
+            {
+              "element": "Planet",
+              "type": "ElementValue"
+            },
+            {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "NamedArgument"
+                },
+                "mass",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    50000
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "NamedArgument"
+                },
+                "distanceToEarth",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    588000000
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            }
+          ],
+          "type": "Expression"
+        },
+        "modifiers": [],
+        "name": "jupiter",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "Planet"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "assignment": false,
+        "expr": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "FunApplExp"
+            },
+            {
+              "element": "Moon",
+              "type": "ElementValue"
+            },
+            {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "NamedArgument"
+                },
+                "mass",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    1
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "NamedArgument"
+                },
+                "planet",
+                {
+                  "element": "jupiter",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            }
+          ],
+          "type": "Expression"
+        },
+        "modifiers": [],
+        "name": "europa",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "Moon"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "body": [
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "DotExp"
+                },
+                {
+                  "element": "moon",
+                  "type": "ElementValue"
+                },
+                "planet"
+              ],
+              "type": "Expression"
+            },
+            "type": "ExpressionDecl"
+          }
+        ],
+        "ident": "getPlanet",
+        "params": [
+          {
+            "name": "moon",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Moon"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "Param"
+          }
+        ],
+        "spec": [],
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "Planet"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "FunDecl",
+        "typeParams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Trip",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "missionStudy",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Body"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "element": "europa",
+              "type": "ElementValue"
+            },
+            "modifiers": [],
+            "name": "firstStop",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Body"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "FunApplExp"
+                },
+                {
+                  "element": "getPlanet",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "PositionalArgument"
+                    },
+                    {
+                      "element": "firstStop",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "modifiers": [],
+            "name": "secondStop",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Body"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "missionStudy",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "europa",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "trip",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "Trip"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nclass Body {\n  mass:Int\n}\n\nclass Planet extending Body {\n  distanceToEarth:Int\n}\n\nclass Moon extending Body {\n  planet:Planet\n}\n\njupiter:Planet = Planet(mass :: 50000,distanceToEarth :: 588000000)\n\neuropa:Moon = Moon(mass :: 1,planet :: jupiter)\n\nfun getPlanet(moon:Moon) : Planet\n{\n  moon.planet\n}\n\nclass Trip {\n  missionStudy:Body\n  firstStop:Body = europa\n  secondStop:Body = getPlanet(firstStop)\n\n  req missionStudy = europa\n}\n\ntrip:Trip\n\n",
+  "name": "testsmt18.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (jupiter Ref)(europa Ref)(trip Ref)))))\n(declare-datatypes () ((Body (mk-Body (mass Int)))))\n(declare-datatypes () ((Planet (mk-Planet (mass Int)(distanceToEarth Int)))))\n(declare-datatypes () ((Moon (mk-Moon (mass Int)(planet Ref)))))\n(declare-datatypes () ((Trip (mk-Trip (missionStudy Ref)(firstStop Ref)(secondStop Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Body (sel-Body Body))\n  (lift-Planet (sel-Planet Planet))\n  (lift-Moon (sel-Moon Moon))\n  (lift-Trip (sel-Trip Trip))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Body ((this Ref)) Bool\n  (is-lift-Body (deref this))\n)\n\n(define-fun deref-Body ((this Ref)) Body\n  (sel-Body (deref this))\n)\n\n(define-fun deref-is-Planet ((this Ref)) Bool\n  (is-lift-Planet (deref this))\n)\n\n(define-fun deref-Planet ((this Ref)) Planet\n  (sel-Planet (deref this))\n)\n\n(define-fun deref-is-Moon ((this Ref)) Bool\n  (is-lift-Moon (deref this))\n)\n\n(define-fun deref-Moon ((this Ref)) Moon\n  (sel-Moon (deref this))\n)\n\n(define-fun deref-is-Trip ((this Ref)) Bool\n  (is-lift-Trip (deref this))\n)\n\n(define-fun deref-Trip ((this Ref)) Trip\n  (sel-Trip (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Body ((this Ref)) Bool\n  (or\n    (deref-is-Body this)\n    (deref-is-Planet this)\n    (deref-is-Moon this)\n  )\n)\n\n(define-fun deref-isa-Planet ((this Ref)) Bool\n  (deref-is-Planet this)\n)\n\n(define-fun deref-isa-Moon ((this Ref)) Bool\n  (deref-is-Moon this)\n)\n\n(define-fun deref-isa-Trip ((this Ref)) Bool\n  (deref-is-Trip this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.jupiter: ---\n\n(define-fun TopLevelDeclarations!jupiter ((this Ref)) Ref\n  (jupiter (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.europa: ---\n\n(define-fun TopLevelDeclarations!europa ((this Ref)) Ref\n  (europa (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.trip: ---\n\n(define-fun TopLevelDeclarations!trip ((this Ref)) Ref\n  (trip (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------\n;   Getters for class Moon:\n; ---------------------------\n\n; --- getters for Moon.planet: ---\n\n(define-fun Moon.planet ((this Ref)) Ref\n  (planet (deref-Moon this))\n)\n\n(define-fun Moon!planet ((this Ref)) Ref\n  (planet (deref-Moon this))\n)\n\n; ---------------------------\n;   Getters for class Trip:\n; ---------------------------\n\n; --- getters for Trip.missionStudy: ---\n\n(define-fun Trip!missionStudy ((this Ref)) Ref\n  (missionStudy (deref-Trip this))\n)\n\n; --- getters for Trip.firstStop: ---\n\n(define-fun Trip!firstStop ((this Ref)) Ref\n  (firstStop (deref-Trip this))\n)\n\n; --- getters for Trip.secondStop: ---\n\n(define-fun Trip!secondStop ((this Ref)) Ref\n  (secondStop (deref-Trip this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; -------------------------------------------\n;   Methods for class TopLevelDeclarations:\n; -------------------------------------------\n\n(define-fun TopLevelDeclarations.getPlanet ((this Ref)(moon Ref)) Ref\n  (Moon.planet moon)\n)\n\n(define-fun TopLevelDeclarations!getPlanet ((this Ref)(moon Ref)) Ref\n  (Moon.planet moon)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!jupiter this)) (lift-Planet (mk-Planet 50000 588000000)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert307))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!europa this)) (lift-Moon (mk-Moon 1 (TopLevelDeclarations!jupiter this))))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert308))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-Planet (TopLevelDeclarations!jupiter this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert309))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (deref-isa-Moon (TopLevelDeclarations!europa this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert310))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (deref-isa-Trip (TopLevelDeclarations!trip this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert311))\n\n\n\n; -----------------------------\n;   Invariant for class Body:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-9-Body Body)\n(declare-const const-10-Body Body)\n(declare-const const-11-Body Body)\n(declare-const const-12-Body Body)\n(declare-const const-13-Body Body)\n(declare-const const-14-Body Body)\n(declare-const const-15-Body Body)\n\n\n\n; -------------------------------\n;   Invariant for class Planet:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Planet Planet)\n(declare-const const-2-Planet Planet)\n(declare-const const-3-Planet Planet)\n(declare-const const-4-Planet Planet)\n\n\n\n; -----------------------------\n;   Invariant for class Moon:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-Moon Moon)\n(declare-const const-8-Moon Moon)\n\n; --- Invariant 1: ---\n\n(define-fun Moon.inv1 ((this Ref)) Bool\n  (deref-isa-Planet (Moon!planet this))\n)\n\n(assert (! (Moon.inv1 7) :named _xkassert312))\n(assert (! (Moon.inv1 8) :named _xkassert313))\n\n\n\n; -----------------------------\n;   Invariant for class Trip:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-Trip Trip)\n(declare-const const-6-Trip Trip)\n\n; --- Invariant 1: ---\n\n(define-fun Trip.inv1 ((this Ref)) Bool\n  (= (Trip!firstStop this) (TopLevelDeclarations!europa 0))\n)\n\n(assert (! (Trip.inv1 5) :named _xkassert314))\n(assert (! (Trip.inv1 6) :named _xkassert315))\n\n; --- Invariant 2: ---\n\n(define-fun Trip.inv2 ((this Ref)) Bool\n  (= (Trip!secondStop this) (TopLevelDeclarations!getPlanet 0 (Trip!firstStop this)))\n)\n\n(assert (! (Trip.inv2 5) :named _xkassert316))\n(assert (! (Trip.inv2 6) :named _xkassert317))\n\n; --- Invariant 3: ---\n\n(define-fun Trip.inv3 ((this Ref)) Bool\n  (deref-isa-Body (Trip!missionStudy this))\n)\n\n(assert (! (Trip.inv3 5) :named _xkassert318))\n(assert (! (Trip.inv3 6) :named _xkassert319))\n\n; --- Invariant 4: ---\n\n(define-fun Trip.inv4 ((this Ref)) Bool\n  (deref-isa-Body (Trip!firstStop this))\n)\n\n(assert (! (Trip.inv4 5) :named _xkassert320))\n(assert (! (Trip.inv4 6) :named _xkassert321))\n\n; --- Invariant 5: ---\n\n(define-fun Trip.inv5 ((this Ref)) Bool\n  (deref-isa-Body (Trip!secondStop this))\n)\n\n(assert (! (Trip.inv5 5) :named _xkassert322))\n(assert (! (Trip.inv5 6) :named _xkassert323))\n\n; --- Invariant 6: ---\n\n(define-fun Trip.inv6 ((this Ref)) Bool\n  (= (Trip!missionStudy this) (TopLevelDeclarations!europa 0))\n)\n\n(assert (! (Trip.inv6 5) :named _xkassert324))\n(assert (! (Trip.inv6 6) :named _xkassert325))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        9 (lift-Body const-9-Body))\n        10 (lift-Body const-10-Body))\n        11 (lift-Body const-11-Body))\n        12 (lift-Body const-12-Body))\n        13 (lift-Body const-13-Body))\n        14 (lift-Body const-14-Body))\n        15 (lift-Body const-15-Body))\n        1 (lift-Planet const-1-Planet))\n        2 (lift-Planet const-2-Planet))\n        3 (lift-Planet const-3-Planet))\n        4 (lift-Planet const-4-Planet))\n        7 (lift-Moon const-7-Moon))\n        8 (lift-Moon const-8-Moon))\n        5 (lift-Trip const-5-Trip))\n        6 (lift-Trip const-6-Trip))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-Planet () Planet\n  (mk-Planet 50000 588000000))\n(define-fun const-15-Body () Body\n  (mk-Body 22))\n(define-fun const-4-Planet () Planet\n  (mk-Planet 28 29))\n(define-fun const-8-Moon () Moon\n  (mk-Moon 27 4))\n(define-fun const-12-Body () Body\n  (mk-Body 19))\n(define-fun const-1-Planet () Planet\n  (mk-Planet 23 24))\n(define-fun const-11-Body () Body\n  (mk-Body 18))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 3 7 5))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!16))\n(define-fun const-13-Body () Body\n  (mk-Body 20))\n(define-fun const-7-Moon () Moon\n  (mk-Moon 1 3))\n(define-fun const-2-Planet () Planet\n  (mk-Planet 25 26))\n(define-fun const-5-Trip () Trip\n  (mk-Trip 7 7 3))\n(define-fun const-6-Trip () Trip\n  (mk-Trip 7 7 3))\n(define-fun const-10-Body () Body\n  (mk-Body 17))\n(define-fun const-9-Body () Body\n  (mk-Body 16))\n(define-fun const-14-Body () Body\n  (mk-Body 21))\n(define-fun k!7 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null))))))))\n(define-fun k!12 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 4) (lift-Planet (mk-Planet 28 29))\n    null)))))))))))))\n(define-fun k!1 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n    null))\n(define-fun k!6 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null)))))))\n(define-fun k!11 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null))))))))))))\n(define-fun k!0 ((x!1 Int)) Any\n  null)\n(define-fun k!16 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 5) (lift-Trip (mk-Trip 7 7 3))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 4) (lift-Planet (mk-Planet 28 29))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 8) (lift-Moon (mk-Moon 27 4))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 7) (lift-Moon (mk-Moon 1 3))\n  (ite (= x!1 6) (lift-Trip (mk-Trip 7 7 3))\n    null)))))))))))))))))\n(define-fun k!5 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null))))))\n(define-fun k!10 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null)))))))))))\n(define-fun k!15 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Trip (mk-Trip 7 7 3))\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 4) (lift-Planet (mk-Planet 28 29))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 8) (lift-Moon (mk-Moon 27 4))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 7) (lift-Moon (mk-Moon 1 3))\n    null))))))))))))))))\n(define-fun k!4 ((x!1 Int)) Any\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null)))))\n(define-fun k!9 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null))))))))))\n(define-fun k!14 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 4) (lift-Planet (mk-Planet 28 29))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 8) (lift-Moon (mk-Moon 27 4))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 7) (lift-Moon (mk-Moon 1 3))\n    null)))))))))))))))\n(define-fun k!3 ((x!1 Int)) Any\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null))))\n(define-fun k!8 ((x!1 Int)) Any\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n    null)))))))))\n(define-fun k!13 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Planet (mk-Planet 50000 588000000))\n  (ite (= x!1 12) (lift-Body (mk-Body 19))\n  (ite (= x!1 11) (lift-Body (mk-Body 18))\n  (ite (= x!1 14) (lift-Body (mk-Body 21))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n  (ite (= x!1 13) (lift-Body (mk-Body 20))\n  (ite (= x!1 15) (lift-Body (mk-Body 22))\n  (ite (= x!1 2) (lift-Planet (mk-Planet 25 26))\n  (ite (= x!1 10) (lift-Body (mk-Body 17))\n  (ite (= x!1 1) (lift-Planet (mk-Planet 23 24))\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 7) (lift-Moon (mk-Moon 1 3))\n  (ite (= x!1 4) (lift-Planet (mk-Planet 28 29))\n    null))))))))))))))\n(define-fun k!2 ((x!1 Int)) Any\n  (ite (= x!1 9) (lift-Body (mk-Body 16))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3 7 5))\n    null)))",
+  "typeChecks": true
+}

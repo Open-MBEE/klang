@@ -1,3 +1,4 @@
+-- @expected SAT
 
 ==============
 Original spec:

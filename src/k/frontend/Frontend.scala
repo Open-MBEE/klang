@@ -42,6 +42,82 @@ object Frontend {
     parseCache.clear()
   }
 
+  /**
+   * Parse annotations from K file comments.
+   * Supports:
+   *   // @preferred_options -dsn-pass -timeout 60000
+   *   // @expected SAT|UNSAT|TIMEOUT|ERROR
+   * Returns a map of annotation name -> value
+   */
+  def parseAnnotations(filepath: String): Map[String, String] = {
+    try {
+      val file = new java.io.File(filepath)
+      if (!file.exists()) return Map.empty
+      
+      val result = scala.collection.mutable.Map[String, String]()
+      val source = scala.io.Source.fromFile(file)
+      try {
+        val lines = source.getLines().take(50).toList // Only check first 50 lines
+        for (line <- lines) {
+          val trimmed = line.trim
+          // Support both // and /* */ style comments and -- style comments
+          if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*") || trimmed.startsWith("--")) {
+            val cleanedLine = trimmed
+              .stripPrefix("//")
+              .stripPrefix("/*")
+              .stripPrefix("--")
+              .stripPrefix("*")
+              .stripSuffix("*/")
+              .trim
+            
+            if (cleanedLine.startsWith("@preferred_options")) {
+              val optString = cleanedLine.stripPrefix("@preferred_options").trim
+              result("preferred_options") = optString
+            } else if (cleanedLine.startsWith("@expected")) {
+              val expected = cleanedLine.stripPrefix("@expected").trim.toUpperCase
+              result("expected") = expected
+            } else if (cleanedLine.startsWith("@timeout")) {
+              val timeout = cleanedLine.stripPrefix("@timeout").trim
+              result("timeout") = timeout
+            }
+          }
+        }
+        result.toMap
+      } finally {
+        source.close()
+      }
+    } catch {
+      case e: Exception =>
+        log(s"Warning: Could not parse annotations from $filepath: ${e.getMessage}")
+        Map.empty
+    }
+  }
+  
+  /**
+   * Parse @preferred_options annotation from K file comments.
+   * Example: // @preferred_options -dsn-pass -timeout 60000
+   * Returns a list of additional command-line args to apply.
+   */
+  def parsePreferredOptions(filepath: String): List[String] = {
+    val annotations = parseAnnotations(filepath)
+    annotations.get("preferred_options") match {
+      case Some(opts) =>
+        val optList = opts.split("\\s+").toList.filter(_.nonEmpty)
+        if (optList.nonEmpty) log(s"Found @preferred_options: $optList")
+        optList
+      case None => Nil
+    }
+  }
+  
+  /**
+   * Parse @expected annotation from K file comments.
+   * Example: // @expected SAT
+   * Returns the expected result or None if not specified.
+   */
+  def parseExpectedResult(filepath: String): Option[String] = {
+    val annotations = parseAnnotations(filepath)
+    annotations.get("expected")
+  }
 
   type OptionMap = Map[Symbol, Any]
 
@@ -63,7 +139,7 @@ object Frontend {
         parseArgs(map ++ Map('instances -> value.toInt), tail)
       case "-timeout" :: value :: tail =>
         timeoutValue = value.toInt
-        parseArgs(map, tail)
+        parseArgs(map ++ Map('timeout -> value.toInt), tail)
       case "-classpath" :: value :: tail =>
         classpath = value.replace("\"", "").split(File.pathSeparator).toSet
         parseArgs(map, tail)
@@ -87,6 +163,8 @@ object Frontend {
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
       case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
       case "-unified-scenarios" :: tail => parseArgs(map ++ Map('unifiedScenarios -> true), tail)
+      case "-dsn-pass" :: tail => parseArgs(map ++ Map('dsnPass -> true), tail) // DSN_Pass.k solver (scenario-based incremental)
+      case "-legacy" :: tail => parseArgs(map ++ Map('legacy -> true, 'unified -> false), tail)
       case "-heapcegar" :: tail => parseArgs(map ++ Map('heapcegar -> true), tail)
       case "-heapcegar-cvc5" :: tail => parseArgs(map ++ Map('heapcegar -> true, 'heapcegarcvc5 -> true), tail)
       case "-heapsoft" :: tail => parseArgs(map ++ Map('heapsoft -> true), tail)
@@ -98,6 +176,8 @@ object Frontend {
       case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
+      case "-prefer-file-options" :: tail => parseArgs(map ++ Map('preferFileOptions -> true), tail)
+      case "-ignore-file-options" :: tail => parseArgs(map ++ Map('ignoreFileOptions -> true), tail)
       case "-debug" :: tail =>
         K2Z3.debug = true
         UnifiedSolver.debug = true
@@ -205,7 +285,47 @@ object Frontend {
   }
 
   def scala_main(args: Array[String]): Unit = {
-    val options = parseArgs(Map(), args.toList)
+    // First, do a preliminary parse to find the model file and option precedence flags
+    val prelimOptions = parseArgs(Map(), args.toList)
+    
+    // Check option precedence mode:
+    // - Default: CLI wins (file options are defaults that CLI can override)
+    // - -prefer-file-options: File @preferred_options win over CLI
+    // - -ignore-file-options: Completely ignore @preferred_options
+    val preferFileOptions = prelimOptions.getOrElse('preferFileOptions, false).asInstanceOf[Boolean]
+    val ignoreFileOptions = prelimOptions.getOrElse('ignoreFileOptions, false).asInstanceOf[Boolean]
+    
+    // If a model file is specified, check for @preferred_options annotations
+    val annotationArgs: List[String] = if (ignoreFileOptions) {
+      Nil  // Ignore file options entirely
+    } else {
+      prelimOptions.get('modelFile) match {
+        case Some(f: String) =>
+          val opts = parsePreferredOptions(f)
+          if (opts.nonEmpty) {
+            val mode = if (preferFileOptions) "file wins" else "CLI wins"
+            log(s"Found @preferred_options in $f: ${opts.mkString(" ")} (mode: $mode)")
+          }
+          opts
+        case _ => Nil
+      }
+    }
+    
+    // Apply option precedence based on mode:
+    // - Default (CLI wins): prepend annotation args so CLI args come after and override
+    // - -prefer-file-options: append annotation args so they override CLI args
+    val options = if (annotationArgs.nonEmpty) {
+      if (preferFileOptions) {
+        // File options win: append them so they override CLI
+        parseArgs(Map(), args.toList ++ annotationArgs)
+      } else {
+        // CLI wins (default): prepend file options so CLI overrides them
+        parseArgs(Map(), annotationArgs ++ args.toList)
+      }
+    } else {
+      prelimOptions
+    }
+    
     var model: Model = null
     var filename: String = null
     var fullFileName: String = null
@@ -253,13 +373,17 @@ object Frontend {
     }
 
     // Batch mode: process multiple files from stdin sequentially in single JVM
+    // Always checks @expected annotations and baselines
     options.get('batch) match {
       case Some(true) =>
         K2Z3.silent = true  // Suppress verbose K2Z3 output
         val showTiming = options.get('timing).contains(true)
+        val saveBaseline = options.get('baseline).contains(true)
         val startTime = System.nanoTime()
         var passed = 0
         var failed = 0
+        var baselineMatched = 0
+        var baselineMismatched = 0
         var total = 0
 
         // Read file paths from stdin, one per line
@@ -269,21 +393,76 @@ object Frontend {
           val testStart = System.nanoTime()
           var status = "UNKNOWN"
           var extra = ""
+          var outcome = "UNKNOWN"  // SAT, UNSAT, ERROR, TIMEOUT
+          var typeChecked = false
+
+          val file = new File(testFile.trim)
+          val testName = file.getName
+          val testDirName = Option(file.getParent).map(p => new File(p).getName).getOrElse(".")
+          
+          // Load @expected annotation, @preferred_options, and baseline
+          val expectedOpt = parseExpectedResult(testFile.trim)
+          val preferredOpts = if (ignoreFileOptions) Nil else parsePreferredOptions(testFile.trim)
+          val baselineOpt = loadPerFileBaseline(file)
+          
+          // Determine if ERROR is expected (from annotation or baseline)
+          val errorExpected = expectedOpt.contains("ERROR") || 
+            baselineOpt.exists(b => !b.optBoolean("typeChecks", true))
 
           try {
-            // Reset all state for each test (with optional timing)
+            // Reset all state for each test
             var t0, t1, tReset, tParse, tCombine, tTypeCheck, tSMTGen, tSolve: Long = 0
 
             t0 = System.nanoTime()
             TypeChecker.reset()
-            UtilSMT.reset  // This also calls ExternalFunctions.reset()
+            UtilSMT.reset
             K2Z3.reset()
             t1 = System.nanoTime()
             tReset = t1 - t0
+            
+            // Apply @preferred_options for this test based on precedence mode:
+            // - Default (CLI wins): file options only apply if CLI didn't set them
+            // - -prefer-file-options: file options override CLI
+            // - -ignore-file-options: file options are already filtered out above
+            
+            // Parse file's preferred timeout and solver
+            var fileTimeout: Option[Int] = None
+            var fileUseDsnPass = false
+            val timeoutIdx = preferredOpts.indexOf("-timeout")
+            if (timeoutIdx >= 0 && timeoutIdx + 1 < preferredOpts.length) {
+              try {
+                fileTimeout = Some(preferredOpts(timeoutIdx + 1).toInt)
+              } catch { case _: NumberFormatException => }
+            }
+            if (preferredOpts.contains("-dsn-pass")) {
+              fileUseDsnPass = true
+            }
+            
+            // Determine effective timeout based on precedence
+            // CLI timeout is in timeoutValue (set by -timeout flag in parseArgs)
+            // The default timeoutValue is 30000
+            val cliHasTimeout = options.contains('timeout) || timeoutValue != 30000
+            val testTimeout = if (preferFileOptions) {
+              // File wins: use file timeout if specified, otherwise CLI
+              fileTimeout.getOrElse(timeoutValue)
+            } else {
+              // CLI wins (default): use CLI timeout if explicitly set, otherwise file
+              if (cliHasTimeout) timeoutValue else fileTimeout.getOrElse(timeoutValue)
+            }
+            
+            // Determine effective solver based on precedence
+            val cliHasDsnPass = options.getOrElse('dsnPass, false).asInstanceOf[Boolean]
+            val useDsnPass = if (preferFileOptions) {
+              // File wins: use file setting if specified, otherwise CLI
+              if (fileUseDsnPass) true else cliHasDsnPass
+            } else {
+              // CLI wins (default): use CLI if set, otherwise file
+              if (cliHasDsnPass) true else fileUseDsnPass
+            }
 
-            val file = new File(testFile.trim)
             if (!file.exists()) {
               status = "NOTFOUND"
+              outcome = "ERROR"
             } else {
               t0 = System.nanoTime()
               val testModel = getModelFromFile(testFile.trim)
@@ -305,6 +484,7 @@ object Frontend {
                 tc.smtCheck
                 t1 = System.nanoTime()
                 tTypeCheck = t1 - t0
+                typeChecked = true
 
                 t0 = System.nanoTime()
                 val smtStr = combinedModel.toSMT
@@ -312,35 +492,147 @@ object Frontend {
                 tSMTGen = t1 - t0
 
                 t0 = System.nanoTime()
-                K2Z3.solveSMT(combinedModel, smtStr, false)
+                val solveResult = if (useDsnPass) {
+                  // Use DSN_Pass solver for scenario-based incremental solving
+                  runWithTimeout(testTimeout) {
+                    import k.frontend.DSNPassSolver
+                    val result = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtStr, testTimeout)
+                    result match {
+                      case Some(scenarioResult) =>
+                        scenarioResult.result match {
+                          case Satisfiable(model, _) => K2Z3.z3Model = model
+                          case _ =>
+                        }
+                      case None => // All scenarios failed
+                    }
+                  }
+                } else {
+                  runWithTimeout(testTimeout) {
+                    K2Z3.solveSMT(combinedModel, smtStr, false)
+                  }
+                }
                 t1 = System.nanoTime()
                 tSolve = t1 - t0
 
-                status = "PASSED"
-                passed += 1
+                // Determine outcome from solve result
+                if (solveResult.isEmpty) {
+                  outcome = "TIMEOUT"
+                } else if (K2Z3.z3Model != null && K2Z3.z3Model.toString != "()") {
+                  outcome = "SAT"
+                } else {
+                  outcome = "UNSAT"
+                }
+
+                // Check against @expected
+                expectedOpt match {
+                  case Some(expected) if expected == outcome =>
+                    status = "PASSED"
+                    extra = s"$outcome (expected)"
+                    passed += 1
+                  case Some(expected) =>
+                    status = "FAILED"
+                    extra = s"got $outcome, expected $expected"
+                    failed += 1
+                  case None =>
+                    // No @expected - pass if it completed without crash
+                    status = "PASSED"
+                    extra = outcome
+                    passed += 1
+                }
+
+                // Check against baseline if it exists
+                baselineOpt.foreach { baseline =>
+                  val baselineOutcome = getOutcomeFromResult(baseline)
+                  if (baselineOutcome == outcome) {
+                    baselineMatched += 1
+                  } else {
+                    baselineMismatched += 1
+                    if (status == "PASSED" && expectedOpt.isEmpty) {
+                      // Baseline mismatch without @expected - warn but don't fail
+                      extra = s"$outcome (baseline was $baselineOutcome)"
+                    }
+                  }
+                }
+
+                // Save baseline if requested
+                if (saveBaseline) {
+                  val resultJson = new JSONObject()
+                  resultJson.put("name", testName)
+                  resultJson.put("typeChecks", typeChecked)
+                  resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
+                  resultJson.put("smt", smtStr)
+                  resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
+                  // Skip json1/json2 for speed in batch mode
+                  resultJson.put("json1", "")
+                  resultJson.put("json2", "")
+                  savePerFileBaseline(file, resultJson)
+                }
 
                 // Add timing breakdown if requested
                 if (showTiming) {
-                  extra = f"reset=${tReset/1e6}%.0f,parse=${tParse/1e6}%.0f,combine=${tCombine/1e6}%.0f,tc=${tTypeCheck/1e6}%.0f,smt=${tSMTGen/1e6}%.0f,solve=${tSolve/1e6}%.0f"
+                  extra = f"$extra reset=${tReset/1e6}%.0f,parse=${tParse/1e6}%.0f,combine=${tCombine/1e6}%.0f,tc=${tTypeCheck/1e6}%.0f,smt=${tSMTGen/1e6}%.0f,solve=${tSolve/1e6}%.0f"
                 }
               }
             }
           } catch {
             case TypeCheckException =>
-              // Many tests intentionally trigger type check exceptions
-              // Only fail if the test name explicitly indicates it should pass
-              status = "PASSED"
-              extra = "type check exception"
-              passed += 1
+              outcome = "ERROR"
+              // Check if ERROR was expected (via @expected or baseline)
+              if (errorExpected) {
+                status = "PASSED"
+                extra = "ERROR (expected)"
+                passed += 1
+              } else {
+                expectedOpt match {
+                  case Some(expected) =>
+                    status = "FAILED"
+                    extra = s"got ERROR (type check), expected $expected"
+                    failed += 1
+                  case None =>
+                    // No expectation - this is unexpected
+                    status = "FAILED"
+                    extra = "ERROR (type check) - no @expected"
+                    failed += 1
+                }
+              }
             case K2SMTException =>
-              status = "PASSED"
-              extra = "K2SMT exception"
-              passed += 1
+              outcome = "ERROR"
+              if (errorExpected) {
+                status = "PASSED"
+                extra = "ERROR (expected)"
+                passed += 1
+              } else {
+                expectedOpt match {
+                  case Some(expected) =>
+                    status = "FAILED"
+                    extra = s"got ERROR (K2SMT), expected $expected"
+                    failed += 1
+                  case None =>
+                    status = "FAILED"
+                    extra = "ERROR (K2SMT) - no @expected"
+                    failed += 1
+                }
+              }
             case K2Z3Exception =>
-              status = "PASSED"
-              extra = "K2Z3 exception"
-              passed += 1
+              outcome = "ERROR"
+              if (errorExpected) {
+                status = "PASSED"
+                extra = "ERROR (expected)"
+                passed += 1
+              } else {
+                expectedOpt match {
+                  case Some(expected) =>
+                    status = "FAILED"
+                    extra = s"got ERROR (K2Z3), expected $expected"
+                    failed += 1
+                  case None =>
+                    status = "FAILED"
+                    extra = "ERROR (K2Z3) - no @expected"
+                    failed += 1
+                }
+              }
             case e: Throwable =>
+              outcome = "ERROR"
               status = "FAILED"
               extra = e.getClass.getSimpleName + ": " + Option(e.getMessage).getOrElse("").take(50)
               failed += 1
@@ -348,17 +640,15 @@ object Frontend {
 
           val testEnd = System.nanoTime()
           val duration = (testEnd - testStart) / 1e9
-          val testName = new File(testFile).getName
 
           // Output pipe-delimited: status|duration|dir|name|extra
-          val testDir = Option(new File(testFile).getParent).map(p => new File(p).getName).getOrElse(".")
-          println(f"$status|$duration%.2f|$testDir|$testName|$extra")
+          println(f"$status|$duration%.2f|$testDirName|$testName|$extra")
           System.out.flush()
         }
 
         val totalTime = (System.nanoTime() - startTime) / 1e9
-        // Output summary line
-        println(f"SUMMARY|$totalTime%.2f|$total|$passed|$failed")
+        // Output summary line with baseline stats
+        println(f"SUMMARY|$totalTime%.2f|$total|$passed|$failed|$baselineMatched|$baselineMismatched")
         System.out.flush()
         return
 
@@ -507,10 +797,30 @@ object Frontend {
       try {
         val useIncremental = options.getOrElse('incremental, false).asInstanceOf[Boolean]
         val useScenarioTracking = options.getOrElse('scenarioTracking, false).asInstanceOf[Boolean]
-        val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]
+        val useLegacy = options.getOrElse('legacy, false).asInstanceOf[Boolean] // Legacy solver (old path)
+        val useDsnPass = options.getOrElse('dsnPass, false).asInstanceOf[Boolean] // DSN_Pass.k solver (scenario-based incremental)
+        val useUnifiedScenarios = options.getOrElse('unifiedScenarios, false).asInstanceOf[Boolean] // Scenario-based unified solver
+        val useUnified = !useLegacy && !useUnifiedScenarios && !useDsnPass && options.getOrElse('unified, true).asInstanceOf[Boolean] // Default to unified unless other modes specified
         val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
         // useCVC5 is already defined above
-        if (useScenarioTracking) {
+        if (useDsnPass) {
+          // DSN_Pass.k-specific solver with scenario-based incremental solving
+          println("[main] Using DSN_Pass Solver (scenario-based incremental)")
+          import k.frontend.DSNPassSolver
+          val result = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtModel, timeoutValue)
+          result match {
+            case Some(scenarioResult) =>
+              log(s"DSNPassSolver: SAT (${scenarioResult.scenario.name})")
+              scenarioResult.result match {
+                case Satisfiable(model, _) =>
+                  K2Z3.z3Model = model
+                  K2Z3.PrintModel(combinedModel)
+                case _ =>
+              }
+            case None =>
+              log("DSNPassSolver: UNSAT or all scenarios failed")
+          }
+        } else if (useScenarioTracking) {
           println("[main] Using Scenario Tracking Diagnostic")
           import k.frontend.ScenarioTrackingDiagnostic
           val results = ScenarioTrackingDiagnostic.diagnoseWithScenarios(combinedModel, smtModel, timeoutValue)
@@ -546,26 +856,67 @@ object Frontend {
             println(s"${result.groupName}: $status (${result.timeMs}ms)")
           }
           println("="*70)
+        } else if (useUnified) {
+          log("Using UnifiedSolver")
+          // Scenario tracking is disabled by default - enable only when explicitly requested
+          // (It can be enabled via -unified-scenarios flag or detected automatically for disjunctive models)
+          UnifiedSolver.useScenarioTracking = false
+          // Note: CVC5 compatibility is already set via ASTOptions.cvc5Compatible above if -cvc5 is used
+          // The unified solver uses Z3's API directly (via K2Z3 infrastructure)
+          val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
+          result match {
+            case UnifiedSolver.SolveResult.Sat(model) =>
+              log("UnifiedSolver: SAT")
+              // Model is already printed by UnifiedSolver when printModel=true, so we don't need to print again
+              // Just set it for other potential uses
+              K2Z3.z3Model = model
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("UnifiedSolver: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("UnifiedSolver: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"UnifiedSolver: UNKNOWN ($reason)")
+          }
         } else if (useCVC5) {
           println("[main] Using CVC5 Solver")
           if (!CVC5Solver.isAvailable) {
             println("[CVC5] WARNING: CVC5 not found. Install it or set CVC5Solver.cvc5Path")
-            println("[CVC5] Falling back to Z3...")
-            val res = runWithTimeout(timeoutValue) {
-              K2Z3.solveSMT(combinedModel, smtModel, true)
+            println("[CVC5] Falling back to unified solver...")
+            // Fall back to unified solver when CVC5 is not available
+            UnifiedSolver.useScenarioTracking = false
+            val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
+            result match {
+              case UnifiedSolver.SolveResult.Sat(model) =>
+                log("UnifiedSolver: SAT")
+                try {
+                  K2Z3.z3Model = model
+                  K2Z3.PrintModel(combinedModel)
+                } catch {
+                  case e: Throwable =>
+                    log(s"Note: Could not print model: ${e.getMessage}")
+                }
+              case UnifiedSolver.SolveResult.Unsat =>
+                log("UnifiedSolver: UNSAT")
+              case UnifiedSolver.SolveResult.Timeout =>
+                log("UnifiedSolver: TIMEOUT")
+              case UnifiedSolver.SolveResult.Unknown(reason) =>
+                log(s"UnifiedSolver: UNKNOWN ($reason)")
             }
-            if (res.isEmpty) log("Timeout")
           } else {
             CVC5Solver.debug = K2Z3.debug
             CVC5Solver.solveSMT(combinedModel, smtModel, true)
           }
+        } else if (useLegacy) {
+          // Legacy solver path (old behavior) - only used when -legacy flag is specified
+          log("Using legacy solver")
+          val res = runWithTimeout(timeoutValue) {
+            K2Z3.solveSMT(combinedModel, smtModel, true)
+          }
+          if (res.isEmpty) log("Timeout")
         } else if (useHeapCegar) {
           println("[main] Using Heap CEGAR Solver")
-          val useHeapCegarCVC5 = options.getOrElse('heapcegarcvc5, false).asInstanceOf[Boolean]
-          if (useHeapCegarCVC5) {
-            println("[main] Using CVC5 as backend solver (faster for strings)")
-            UnifiedSolver.useCVC5 = true
-          }
+          // CVC5 compatibility is already set via ASTOptions.cvc5Compatible above if -cvc5 or -heapcegar-cvc5 is used
+          // The heap CEGAR solver uses the standard solve method which works with both Z3 and CVC5-compatible SMT
           val result = UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = true)
           result match {
             case UnifiedSolver.SolveResult.Sat(model) =>
@@ -662,30 +1013,6 @@ object Frontend {
               log("UnifiedSolver+Scenarios: TIMEOUT")
             case UnifiedSolver.SolveResult.Unknown(reason) =>
               log(s"UnifiedSolver+Scenarios: UNKNOWN ($reason)")
-          }
-        } else if (useUnified) {
-          log("Using UnifiedSolver")
-          // Enable scenario tracking for models with disjunctive structure
-          UnifiedSolver.useScenarioTracking = true
-          val result = UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
-          result match {
-            case UnifiedSolver.SolveResult.Sat(model) =>
-              log("UnifiedSolver: SAT")
-              // Try to print model, but don't fail if printing fails
-              try {
-                K2Z3.z3Model = model
-                K2Z3.PrintModel(combinedModel)
-              } catch {
-                case e: Throwable =>
-                  log(s"Note: Could not print model: ${e.getMessage}")
-                  log("Model was found but printing failed (this may be a partial/best-effort solution)")
-              }
-            case UnifiedSolver.SolveResult.Unsat =>
-              log("UnifiedSolver: UNSAT")
-            case UnifiedSolver.SolveResult.Timeout =>
-              log("UnifiedSolver: TIMEOUT")
-            case UnifiedSolver.SolveResult.Unknown(reason) =>
-              log(s"UnifiedSolver: UNKNOWN ($reason)")
           }
         } else {
           val res = runWithTimeout(timeoutValue) {
@@ -911,60 +1238,152 @@ object Frontend {
     Some(Await.result(Future(f), Duration.create(timeoutMs, "ms")))
   }
 
-  def doTests(saveBaseline: Boolean): Unit = {
+  /**
+   * Load a per-file baseline from the baseline/ subdirectory.
+   * Returns None if the baseline file doesn't exist.
+   */
+  def loadPerFileBaseline(kFile: File): Option[JSONObject] = {
+    val baselineDir = new File(kFile.getParentFile, "baseline")
+    val baselineFile = new File(baselineDir, kFile.getName + ".json")
+    if (baselineFile.exists) {
+      try {
+        val json = scala.io.Source.fromFile(baselineFile).mkString
+        val tokener = new JSONTokener(json)
+        Some(new JSONObject(tokener))
+      } catch {
+        case e: Exception =>
+          log(s"Warning: Could not load baseline for ${kFile.getName}: ${e.getMessage}")
+          None
+      }
+    } else {
+      None
+    }
+  }
+  
+  /**
+   * Save a per-file baseline to the baseline/ subdirectory.
+   */
+  def savePerFileBaseline(kFile: File, baseline: JSONObject): Unit = {
+    val baselineDir = new File(kFile.getParentFile, "baseline")
+    if (!baselineDir.exists) baselineDir.mkdirs()
+    val baselineFile = new File(baselineDir, kFile.getName + ".json")
+    val fw = new FileWriter(baselineFile)
+    fw.write(baseline.toString(2))
+    fw.close()
+    log(s"Baseline saved: ${baselineFile.getPath}")
+  }
+  
+  /**
+   * Get expected result from @expected annotation in K file.
+   * Returns one of: "SAT", "UNSAT", "ERROR", "TIMEOUT", or None if not specified.
+   */
+  def getExpectedFromFile(kFile: File): Option[String] = {
+    parseExpectedResult(kFile.getPath)
+  }
+  
+  /**
+   * Determine outcome category from a baseline/test result.
+   * Returns: "SAT", "UNSAT", "ERROR", or "UNKNOWN"
+   */
+  def getOutcomeFromResult(result: JSONObject): String = {
+    val typeChecks = result.optBoolean("typeChecks", false)
+    val smtModel = result.optString("smtModel", "")
+    
+    if (!typeChecks) "ERROR"
+    else if (smtModel == "()" || smtModel == "()\\n") "UNSAT"
+    else if (smtModel != null && smtModel.nonEmpty) "SAT"
+    else "UNKNOWN"
+  }
+  
+  /**
+   * Check consistency between @expected annotation and baseline.
+   * Returns (isConsistent, message)
+   */
+  def checkExpectedConsistency(kFile: File, baseline: JSONObject): (Boolean, String) = {
+    val expected = getExpectedFromFile(kFile)
+    val baselineOutcome = getOutcomeFromResult(baseline)
+    
+    expected match {
+      case Some(exp) if exp != baselineOutcome =>
+        (false, s"@expected=$exp but baseline=$baselineOutcome")
+      case Some(exp) =>
+        (true, s"@expected=$exp matches baseline")
+      case None =>
+        (true, "no @expected annotation")
+    }
+  }
 
-    var resultRows: List[List[String]] = List(List("Name", "TypeChecksEq (TypeChecks)", "ModelEqual", "JSON1Equal", "JSON2Equal", "SMTEqual", "SMTModelEqual"))
+  def doTests(saveBaseline: Boolean): Unit = {
+    // Extended header with @expected consistency column
+    var resultRows: List[List[String]] = List(List("Name", "TypeChecks", "Model", "JSON1", "JSON2", "SMT", "SMTModel", "@expected"))
     val testsDir = new File(new File(new File(".").getAbsolutePath, "src"), "tests")
     var kFiles = getFileTree(testsDir).filter(_.getName.endsWith(".k"))
-    val baselineFile = new File(testsDir, "baseline.json")
-    val baselineObject =
-      if (baselineFile.exists) {
-        val json = scala.io.Source.fromFile(baselineFile).mkString
-        var tokener: JSONTokener = new JSONTokener(json)
-        var jsonObject: JSONObject = new JSONObject(tokener)
-        jsonObject
-      } else {
-        new JSONObject()
-      }
-    val currentResultsObject = new JSONObject()
+    
     var testsRun: Int = 0
     var testsMatched: Int = 0
+    var expectedMismatches: Int = 0
 
     kFiles.foreach { file =>
       try {
         testsRun = testsRun + 1
         val currentTestJsonObject = doTest(file, false)
-
-        currentResultsObject.put(file.getName, currentTestJsonObject)
-
-        if (baselineObject.has(file.getName)) {
-          val result = compareResult(baselineObject.getJSONObject(file.getName), currentTestJsonObject)
-          resultRows = result._2 :: resultRows
-          if (result._1) testsMatched = testsMatched + 1
-        } else {
-          resultRows = List(file.getName + "*", "New", "test", "case", "", "", "") :: resultRows
+        
+        // Load per-file baseline
+        val baselineOpt = loadPerFileBaseline(file)
+        
+        // Check @expected consistency
+        val (expectedConsistent, expectedMsg) = baselineOpt match {
+          case Some(baseline) => checkExpectedConsistency(file, baseline)
+          case None => 
+            val expected = getExpectedFromFile(file)
+            val currentOutcome = getOutcomeFromResult(currentTestJsonObject)
+            expected match {
+              case Some(exp) if exp != currentOutcome => 
+                expectedMismatches += 1
+                (false, s"@expected=$exp but got $currentOutcome")
+              case Some(exp) => (true, s"@expected=$exp ✓")
+              case None => (true, "-")
+            }
+        }
+        
+        baselineOpt match {
+          case Some(baseline) =>
+            val result = compareResult(baseline, currentTestJsonObject)
+            val expectedCol = if (expectedConsistent) expectedMsg else s"⚠ $expectedMsg"
+            resultRows = (result._2 :+ expectedCol) :: resultRows
+            if (result._1 && expectedConsistent) testsMatched = testsMatched + 1
+            if (!expectedConsistent) expectedMismatches += 1
+          case None =>
+            val expectedCol = if (expectedConsistent) expectedMsg else s"⚠ $expectedMsg"
+            resultRows = List(file.getName + "*", "New", "test", "case", "", "", "", expectedCol) :: resultRows
+        }
+        
+        // Save baseline if requested
+        if (saveBaseline) {
+          savePerFileBaseline(file, currentTestJsonObject)
         }
 
       } catch {
-        case K2SMTException => resultRows = List(file.getName + "*", "K2SMT", "error", "", "", "", "") :: resultRows
-        case K2Z3Exception => resultRows = List(file.getName + "*", "K2Z3", "error", "", "", "", "") :: resultRows
+        case K2SMTException => resultRows = List(file.getName + "*", "K2SMT", "error", "", "", "", "", "-") :: resultRows
+        case K2Z3Exception => resultRows = List(file.getName + "*", "K2Z3", "error", "", "", "", "", "-") :: resultRows
         case e: Throwable =>
           log("Exception: " + e.toString)
-          resultRows = List(file.getName + "*", "-", "-", "-", "-", "-", "-") :: resultRows
+          resultRows = List(file.getName + "*", "-", "-", "-", "-", "-", "-", "-") :: resultRows
       }
     }
-    if (saveBaseline) {
-      val fw = new FileWriter(baselineFile)
-      fw.write(currentResultsObject.toString)
-      fw.close
-      log("Baseline saved.")
-    }
+    
     println
     log("Results:")
     println
     println(Tabulator.format(resultRows.reverse))
     println
-    println(s"\t$testsMatched/$testsRun tests matched the stored baseline.")
+    println(s"\t$testsMatched/$testsRun tests matched baseline")
+    if (expectedMismatches > 0) {
+      println(s"\t⚠ $expectedMismatches @expected annotation mismatches")
+    }
+    if (saveBaseline) {
+      println(s"\tBaselines saved to src/tests/baseline/")
+    }
   }
 
   def compareSingleResultDetail(bo: JSONObject, co: JSONObject, testDir: File): Unit = {
@@ -2249,3 +2668,4 @@ object Frontend {
 
   }
 }
+

@@ -1,0 +1,3574 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Sets",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "s1",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exps": [
+                  {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  },
+                  {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  },
+                  {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                ],
+                "kind": "Set",
+                "type": "CollectionEnumExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r01",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 1,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "op": "IsIn",
+              "type": "BinExp"
+            },
+            "name": "r02",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 4,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "op": "NotIn",
+              "type": "BinExp"
+            },
+            "name": "r03",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exps": [],
+                "kind": "Set",
+                "type": "CollectionEnumExp"
+              },
+              "op": "NotEQ",
+              "type": "BinExp"
+            },
+            "name": "r04",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s2",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exps": [],
+                "kind": "Set",
+                "type": "CollectionEnumExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r05",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "s2",
+                "type": "IdentExp"
+              },
+              "op": "NotEQ",
+              "type": "BinExp"
+            },
+            "name": "r06",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s3",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s3",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp1": {
+                  "i": 3,
+                  "type": "LiteralInteger"
+                },
+                "exp2": {
+                  "i": 5,
+                  "type": "LiteralInteger"
+                },
+                "kind": "Set",
+                "type": "CollectionRangeExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r07",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s4",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s4",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp1": {
+                  "ident": "s1",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "s3",
+                  "type": "IdentExp"
+                },
+                "op": "Inter",
+                "type": "BinExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r08",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s4",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "op": "Subset",
+              "type": "BinExp"
+            },
+            "name": "r09",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s4",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "s1",
+                "type": "IdentExp"
+              },
+              "op": "PSubset",
+              "type": "BinExp"
+            },
+            "name": "r10",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s5",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp1": {
+                      "i": 10,
+                      "type": "LiteralInteger"
+                    },
+                    "exp2": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "op": "LTE",
+                    "type": "BinExp"
+                  },
+                  "exp2": {
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 15,
+                      "type": "LiteralInteger"
+                    },
+                    "op": "LTE",
+                    "type": "BinExp"
+                  },
+                  "op": "And",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r11",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 10,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "op": "IsIn",
+              "type": "BinExp"
+            },
+            "name": "r12",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 9,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "op": "NotIn",
+              "type": "BinExp"
+            },
+            "name": "r13",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "exp1": {
+                  "i": 11,
+                  "type": "LiteralInteger"
+                },
+                "exp2": {
+                  "i": 13,
+                  "type": "LiteralInteger"
+                },
+                "kind": "Set",
+                "type": "CollectionRangeExp"
+              },
+              "exp2": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "op": "Subset",
+              "type": "BinExp"
+            },
+            "name": "r14",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s6",
+            "ty": {
+              "args": [
+                {
+                  "type": "IntType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s6",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "s5",
+                      "type": "IdentExp"
+                    },
+                    "op": "IsIn",
+                    "type": "BinExp"
+                  },
+                  "exp2": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 15,
+                      "type": "LiteralInteger"
+                    },
+                    "op": "LT",
+                    "type": "BinExp"
+                  },
+                  "op": "And",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r15",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s6",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "op": "PSubset",
+              "type": "BinExp"
+            },
+            "name": "r16",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s6",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "op": "NotEQ",
+              "type": "BinExp"
+            },
+            "name": "r17",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s5",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp1": {
+                      "i": 9,
+                      "type": "LiteralInteger"
+                    },
+                    "exp2": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "op": "LT",
+                    "type": "BinExp"
+                  },
+                  "exp2": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "exp1": {
+                        "i": 17,
+                        "type": "LiteralInteger"
+                      },
+                      "exp2": {
+                        "i": 1,
+                        "type": "LiteralInteger"
+                      },
+                      "op": "Minus",
+                      "type": "BinExp"
+                    },
+                    "op": "LT",
+                    "type": "BinExp"
+                  },
+                  "op": "And",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r18",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s6",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "y",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s5",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "Subset",
+              "type": "BinExp"
+            },
+            "name": "r19",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s6",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "y",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s5",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "PSubset",
+              "type": "BinExp"
+            },
+            "name": "r20",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s6",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "y",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "s5",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "NotEQ",
+              "type": "BinExp"
+            },
+            "name": "r21",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 12,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "s5",
+                      "type": "IdentExp"
+                    },
+                    "op": "IsIn",
+                    "type": "BinExp"
+                  },
+                  "exp2": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 15,
+                      "type": "LiteralInteger"
+                    },
+                    "op": "LT",
+                    "type": "BinExp"
+                  },
+                  "op": "And",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "IsIn",
+              "type": "BinExp"
+            },
+            "name": "r22",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "i": 15,
+                "type": "LiteralInteger"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "IntType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "y",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "s5",
+                      "type": "IdentExp"
+                    },
+                    "op": "IsIn",
+                    "type": "BinExp"
+                  },
+                  "exp2": {
+                    "exp1": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 15,
+                      "type": "LiteralInteger"
+                    },
+                    "op": "LT",
+                    "type": "BinExp"
+                  },
+                  "op": "And",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "NotIn",
+              "type": "BinExp"
+            },
+            "name": "r23",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "min",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "max",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "exp1": {
+                  "ident": "min",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 9,
+                  "type": "LiteralInteger"
+                },
+                "op": "EQ",
+                "type": "BinExp"
+              },
+              "exp2": {
+                "exp1": {
+                  "ident": "max",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 14,
+                  "type": "LiteralInteger"
+                },
+                "op": "EQ",
+                "type": "BinExp"
+              },
+              "op": "And",
+              "type": "BinExp"
+            },
+            "name": "r24",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s5",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "min",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  },
+                  "op": "Plus",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "max",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  },
+                  "op": "Plus",
+                  "type": "BinExp"
+                },
+                "kind": "Set",
+                "type": "CollectionRangeExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r25",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s7",
+            "ty": {
+              "args": [
+                {
+                  "type": "BoolType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "s7",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "bindings": [
+                  {
+                    "collection": {
+                      "ty": {
+                        "type": "BoolType"
+                      },
+                      "type": "TypeCollection"
+                    },
+                    "patterns": [
+                      {
+                        "ident": "x",
+                        "type": "IdentPattern"
+                      }
+                    ],
+                    "type": "RngBinding"
+                  }
+                ],
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "exp": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "op": "Not",
+                  "type": "UnaryExp"
+                },
+                "kind": "Set",
+                "type": "CollectionComprExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "name": "r26",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "b": false,
+                "type": "LiteralBoolean"
+              },
+              "exp2": {
+                "ident": "s7",
+                "type": "IdentExp"
+              },
+              "op": "IsIn",
+              "type": "BinExp"
+            },
+            "name": "r27",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "b": true,
+                "type": "LiteralBoolean"
+              },
+              "exp2": {
+                "ident": "s7",
+                "type": "IdentExp"
+              },
+              "op": "NotIn",
+              "type": "BinExp"
+            },
+            "name": "r28",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s8",
+            "ty": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "type": "IntType"
+                    }
+                  ],
+                  "ident": {
+                    "names": [
+                      "Set"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "exps": [
+                  {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  },
+                  {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  },
+                  {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                ],
+                "kind": "Set",
+                "type": "CollectionEnumExp"
+              },
+              "exp2": {
+                "ident": "s8",
+                "type": "IdentExp"
+              },
+              "op": "IsIn",
+              "type": "BinExp"
+            },
+            "name": "r29",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "Sets"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Sets",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "s1",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionEnumExp"
+                    },
+                    "Set",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        1
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        2
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        3
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r01",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "IsIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    1
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r02",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    4
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r03",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotEQ",
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionEnumExp"
+                    },
+                    "Set"
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r04",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s2",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s2",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionEnumExp"
+                    },
+                    "Set"
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r05",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotEQ",
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "s2",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r06",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s3",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s3",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionRangeExp"
+                    },
+                    "Set",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        3
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        5
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r07",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s4",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s4",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Inter",
+                    {
+                      "element": "s1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "s3",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r08",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "Subset",
+                {
+                  "element": "s4",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r09",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "PSubset",
+                {
+                  "element": "s4",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "s1",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r10",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s5",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LTE",
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                10
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "x",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LTE",
+                            {
+                              "element": "x",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                15
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r11",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "IsIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    10
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r12",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    9
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r13",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "Subset",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionRangeExp"
+                    },
+                    "Set",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        11
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        13
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r14",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s6",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s6",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "IsIn",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "s5",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LT",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                15
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r15",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "PSubset",
+                {
+                  "element": "s6",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r16",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotEQ",
+                {
+                  "element": "s6",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r17",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s5",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LT",
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                9
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LT",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "Minus",
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "IntegerLiteral"
+                                    },
+                                    17
+                                  ],
+                                  "type": "Expression"
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "IntegerLiteral"
+                                    },
+                                    1
+                                  ],
+                                  "type": "Expression"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r18",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "Subset",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s6",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "y",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s5",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r19",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "PSubset",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s6",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "y",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s5",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r20",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotEQ",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s6",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "y",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "s5",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r21",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "IsIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    12
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "IsIn",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "s5",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LT",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                15
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r22",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    15
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "IsIn",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "s5",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "LT",
+                            {
+                              "element": "y",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntegerLiteral"
+                                },
+                                15
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "IntType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "y"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r23",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "min",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "max",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "And",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "EQ",
+                    {
+                      "element": "min",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        9
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "EQ",
+                    {
+                      "element": "max",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        14
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r24",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s5",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionRangeExp"
+                    },
+                    "Set",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "Plus",
+                        {
+                          "element": "min",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IntegerLiteral"
+                            },
+                            1
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "Plus",
+                        {
+                          "element": "max",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IntegerLiteral"
+                            },
+                            1
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r25",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s7",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BoolType"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "element": "s7",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionComprExp"
+                    },
+                    "Set",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "UnaryExp"
+                        },
+                        "Not",
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "TypeCollection"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BoolType"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "x"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r26",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "IsIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BooleanLiteral"
+                    },
+                    false
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s7",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r27",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BooleanLiteral"
+                    },
+                    true
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s7",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r28",
+            "type": "ConstraintDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "s8",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Set"
+                      ],
+                      "type": "QualifiedName"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntType"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "IsIn",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionEnumExp"
+                    },
+                    "Set",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        1
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        2
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        3
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "s8",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r29",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "main",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "Sets"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nclass Sets {\n  s1:Set[Int]\n\n  req r01: s1 = Set{1,2,3}\n\n  req r02: 1 isin s1\n\n  req r03: 4 !isin s1\n\n  req r04: s1 != Set{}\n  s2:Set[Int]\n\n  req r05: s2 = Set{}\n\n  req r06: s1 != s2\n  s3:Set[Int]\n\n  req r07: s3 = Set{3 .. 5}\n  s4:Set[Int]\n\n  req r08: s4 = s1 inter s3\n\n  req r09: s4 subset s1\n\n  req r10: s4 psubset s1\n  s5:Set[Int]\n\n  req r11: s5 = Set{x | x : Int . 10 <= x && x <= 15}\n\n  req r12: 10 isin s5\n\n  req r13: 9 !isin s5\n\n  req r14: Set{11 .. 13} subset s5\n  s6:Set[Int]\n\n  req r15: s6 = Set{y | y : Int . y isin s5 && y < 15}\n\n  req r16: s6 psubset s5\n\n  req r17: s6 != s5\n\n  req r18: Set{x | x : Int . x isin s5} = Set{y | y : Int . 9 < y && y < 17 - 1}\n\n  req r19: Set{x | x : Int . x isin s6} subset Set{y | y : Int . y isin s5}\n\n  req r20: Set{x | x : Int . x isin s6} psubset Set{y | y : Int . y isin s5}\n\n  req r21: Set{x | x : Int . x isin s6} != Set{y | y : Int . y isin s5}\n\n  req r22: 12 isin Set{y | y : Int . y isin s5 && y < 15}\n\n  req r23: 15 !isin Set{y | y : Int . y isin s5 && y < 15}\n  min:Int\n  max:Int\n\n  req r24: min = 9 && max = 14\n\n  req r25: s5 = Set{min + 1 .. max + 1}\n  s7:Set[Bool]\n\n  req r26: s7 = Set{x | x : Bool . !x}\n\n  req r27: false isin s7\n\n  req r28: true !isin s7\n  s8:Set[Set[Int]]\n\n  req r29: Set{1,2,3} isin s8\n}\n\nmain:Sets\n\n",
+  "name": "testsets1.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((Sets (mk-Sets (s1 (Set Int))(s2 (Set Int))(s3 (Set Int))(s4 (Set Int))(s5 (Set Int))(s6 (Set Int))(min Int)(max Int)(s7 (Set Bool))(s8 (Set (Set Int)))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Sets (sel-Sets Sets))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Sets ((this Ref)) Bool\n  (is-lift-Sets (deref this))\n)\n\n(define-fun deref-Sets ((this Ref)) Sets\n  (sel-Sets (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Sets ((this Ref)) Bool\n  (deref-is-Sets this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------\n;   Getters for class Sets:\n; ---------------------------\n\n; --- getters for Sets.s1: ---\n\n(define-fun Sets!s1 ((this Ref)) (Set Int)\n  (s1 (deref-Sets this))\n)\n\n; --- getters for Sets.s2: ---\n\n(define-fun Sets!s2 ((this Ref)) (Set Int)\n  (s2 (deref-Sets this))\n)\n\n; --- getters for Sets.s3: ---\n\n(define-fun Sets!s3 ((this Ref)) (Set Int)\n  (s3 (deref-Sets this))\n)\n\n; --- getters for Sets.s4: ---\n\n(define-fun Sets!s4 ((this Ref)) (Set Int)\n  (s4 (deref-Sets this))\n)\n\n; --- getters for Sets.s5: ---\n\n(define-fun Sets!s5 ((this Ref)) (Set Int)\n  (s5 (deref-Sets this))\n)\n\n; --- getters for Sets.s6: ---\n\n(define-fun Sets!s6 ((this Ref)) (Set Int)\n  (s6 (deref-Sets this))\n)\n\n; --- getters for Sets.min: ---\n\n(define-fun Sets!min ((this Ref)) Int\n  (min (deref-Sets this))\n)\n\n; --- getters for Sets.max: ---\n\n(define-fun Sets!max ((this Ref)) Int\n  (max (deref-Sets this))\n)\n\n; --- getters for Sets.s7: ---\n\n(define-fun Sets!s7 ((this Ref)) (Set Bool)\n  (s7 (deref-Sets this))\n)\n\n; --- getters for Sets.s8: ---\n\n(define-fun Sets!s8 ((this Ref)) (Set (Set Int))\n  (s8 (deref-Sets this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Sets (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert174))\n\n\n\n; -----------------------------\n;   Invariant for class Sets:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Sets Sets)\n(declare-const const-2-Sets Sets)\n\n; --- Invariant 1: ---\n\n(define-fun Sets.inv1 ((this Ref)) Bool\n  (= (Sets!s1 this) (store (store (store ((as const (Set Int)) false) 1 true) 2 true) 3 true))\n)\n\n(assert (! (Sets.inv1 1) :named _xkassert175))\n(assert (! (Sets.inv1 2) :named _xkassert176))\n\n; --- Invariant 2: ---\n\n(define-fun Sets.inv2 ((this Ref)) Bool\n  (select (Sets!s1 this) 1)\n)\n\n(assert (! (Sets.inv2 1) :named _xkassert177))\n(assert (! (Sets.inv2 2) :named _xkassert178))\n\n; --- Invariant 3: ---\n\n(define-fun Sets.inv3 ((this Ref)) Bool\n  (not (select (Sets!s1 this) 4))\n)\n\n(assert (! (Sets.inv3 1) :named _xkassert179))\n(assert (! (Sets.inv3 2) :named _xkassert180))\n\n; --- Invariant 4: ---\n\n(define-fun Sets.inv4 ((this Ref)) Bool\n  (not (= (Sets!s1 this) ((as const (Set Int)) false)))\n)\n\n(assert (! (Sets.inv4 1) :named _xkassert181))\n(assert (! (Sets.inv4 2) :named _xkassert182))\n\n; --- Invariant 5: ---\n\n(define-fun Sets.inv5 ((this Ref)) Bool\n  (= (Sets!s2 this) ((as const (Set Int)) false))\n)\n\n(assert (! (Sets.inv5 1) :named _xkassert183))\n(assert (! (Sets.inv5 2) :named _xkassert184))\n\n; --- Invariant 6: ---\n\n(define-fun Sets.inv6 ((this Ref)) Bool\n  (not (= (Sets!s1 this) (Sets!s2 this)))\n)\n\n(assert (! (Sets.inv6 1) :named _xkassert185))\n(assert (! (Sets.inv6 2) :named _xkassert186))\n\n; --- Invariant 7: ---\n\n(define-fun Sets.inv7 ((this Ref)) Bool\n  (= (Sets!s3 this) (store (store (store ((as const (Set Int)) false) 3 true) 4 true) 5 true))\n)\n\n(assert (! (Sets.inv7 1) :named _xkassert187))\n(assert (! (Sets.inv7 2) :named _xkassert188))\n\n; --- Invariant 8: ---\n\n(define-fun Sets.inv8 ((this Ref)) Bool\n  (= (Sets!s4 this) (intersect (Sets!s1 this) (Sets!s3 this)))\n)\n\n(assert (! (Sets.inv8 1) :named _xkassert189))\n(assert (! (Sets.inv8 2) :named _xkassert190))\n\n; --- Invariant 9: ---\n\n(define-fun Sets.inv9 ((this Ref)) Bool\n  (subset (Sets!s4 this) (Sets!s1 this))\n)\n\n(assert (! (Sets.inv9 1) :named _xkassert191))\n(assert (! (Sets.inv9 2) :named _xkassert192))\n\n; --- Invariant 10: ---\n\n(define-fun Sets.inv10 ((this Ref)) Bool\n  (and (subset (Sets!s4 this) (Sets!s1 this)) (not (= (Sets!s4 this) (Sets!s1 this))))\n)\n\n(assert (! (Sets.inv10 1) :named _xkassert193))\n(assert (! (Sets.inv10 2) :named _xkassert194))\n\n; --- Invariant 11: ---\n\n(define-fun Sets.inv11 ((this Ref)) Bool\n  (forall ((var_1 Int)) (= (select (Sets!s5 this) var_1) (and (<= 10 var_1) (<= var_1 15))))\n)\n\n(assert (! (Sets.inv11 1) :named _xkassert195))\n(assert (! (Sets.inv11 2) :named _xkassert196))\n\n; --- Invariant 12: ---\n\n(define-fun Sets.inv12 ((this Ref)) Bool\n  (select (Sets!s5 this) 10)\n)\n\n(assert (! (Sets.inv12 1) :named _xkassert197))\n(assert (! (Sets.inv12 2) :named _xkassert198))\n\n; --- Invariant 13: ---\n\n(define-fun Sets.inv13 ((this Ref)) Bool\n  (not (select (Sets!s5 this) 9))\n)\n\n(assert (! (Sets.inv13 1) :named _xkassert199))\n(assert (! (Sets.inv13 2) :named _xkassert200))\n\n; --- Invariant 14: ---\n\n(define-fun Sets.inv14 ((this Ref)) Bool\n  (subset (store (store (store ((as const (Set Int)) false) 11 true) 12 true) 13 true) (Sets!s5 this))\n)\n\n(assert (! (Sets.inv14 1) :named _xkassert201))\n(assert (! (Sets.inv14 2) :named _xkassert202))\n\n; --- Invariant 15: ---\n\n(define-fun Sets.inv15 ((this Ref)) Bool\n  (forall ((var_2 Int)) (= (select (Sets!s6 this) var_2) (and (select (Sets!s5 this) var_2) (< var_2 15))))\n)\n\n(assert (! (Sets.inv15 1) :named _xkassert203))\n(assert (! (Sets.inv15 2) :named _xkassert204))\n\n; --- Invariant 16: ---\n\n(define-fun Sets.inv16 ((this Ref)) Bool\n  (and (subset (Sets!s6 this) (Sets!s5 this)) (not (= (Sets!s6 this) (Sets!s5 this))))\n)\n\n(assert (! (Sets.inv16 1) :named _xkassert205))\n(assert (! (Sets.inv16 2) :named _xkassert206))\n\n; --- Invariant 17: ---\n\n(define-fun Sets.inv17 ((this Ref)) Bool\n  (not (= (Sets!s6 this) (Sets!s5 this)))\n)\n\n(assert (! (Sets.inv17 1) :named _xkassert207))\n(assert (! (Sets.inv17 2) :named _xkassert208))\n\n; --- Invariant 18: ---\n\n(define-fun Sets.inv18 ((this Ref)) Bool\n  (forall ((var_3 Int)) (= (select (Sets!s5 this) var_3) (and (< 9 var_3) (< var_3 (- 17 1)))))\n)\n\n(assert (! (Sets.inv18 1) :named _xkassert209))\n(assert (! (Sets.inv18 2) :named _xkassert210))\n\n; --- Invariant 19: ---\n\n(define-fun Sets.inv19 ((this Ref)) Bool\n  (forall ((var_4 Int)) (=> (select (Sets!s6 this) var_4) (select (Sets!s5 this) var_4)))\n)\n\n(assert (! (Sets.inv19 1) :named _xkassert211))\n(assert (! (Sets.inv19 2) :named _xkassert212))\n\n; --- Invariant 20: ---\n\n(define-fun Sets.inv20 ((this Ref)) Bool\n  (and (forall ((var_5 Int)) (=> (select (Sets!s6 this) var_5) (select (Sets!s5 this) var_5))) (exists ((var_5 Int)) (and (not (select (Sets!s6 this) var_5)) (select (Sets!s5 this) var_5))))\n)\n\n(assert (! (Sets.inv20 1) :named _xkassert213))\n(assert (! (Sets.inv20 2) :named _xkassert214))\n\n; --- Invariant 21: ---\n\n(define-fun Sets.inv21 ((this Ref)) Bool\n  (not (forall ((var_6 Int)) (= (select (Sets!s6 this) var_6) (select (Sets!s5 this) var_6))))\n)\n\n(assert (! (Sets.inv21 1) :named _xkassert215))\n(assert (! (Sets.inv21 2) :named _xkassert216))\n\n; --- Invariant 22: ---\n\n(define-fun Sets.inv22 ((this Ref)) Bool\n  (and (select (Sets!s5 this) 12) (< 12 15))\n)\n\n(assert (! (Sets.inv22 1) :named _xkassert217))\n(assert (! (Sets.inv22 2) :named _xkassert218))\n\n; --- Invariant 23: ---\n\n(define-fun Sets.inv23 ((this Ref)) Bool\n  (not (and (select (Sets!s5 this) 15) (< 15 15)))\n)\n\n(assert (! (Sets.inv23 1) :named _xkassert219))\n(assert (! (Sets.inv23 2) :named _xkassert220))\n\n; --- Invariant 24: ---\n\n(define-fun Sets.inv24 ((this Ref)) Bool\n  (and (= (Sets!min this) 9) (= (Sets!max this) 14))\n)\n\n(assert (! (Sets.inv24 1) :named _xkassert221))\n(assert (! (Sets.inv24 2) :named _xkassert222))\n\n; --- Invariant 25: ---\n\n(define-fun Sets.inv25 ((this Ref)) Bool\n  (forall ((var_7 Int)) (= (select (Sets!s5 this) var_7) (and (<= (+ (Sets!min this) 1) var_7) (<= var_7 (+ (Sets!max this) 1)))))\n)\n\n(assert (! (Sets.inv25 1) :named _xkassert223))\n(assert (! (Sets.inv25 2) :named _xkassert224))\n\n; --- Invariant 26: ---\n\n(define-fun Sets.inv26 ((this Ref)) Bool\n  (forall ((var_8 Bool)) (= (select (Sets!s7 this) var_8) (not var_8)))\n)\n\n(assert (! (Sets.inv26 1) :named _xkassert225))\n(assert (! (Sets.inv26 2) :named _xkassert226))\n\n; --- Invariant 27: ---\n\n(define-fun Sets.inv27 ((this Ref)) Bool\n  (select (Sets!s7 this) false)\n)\n\n(assert (! (Sets.inv27 1) :named _xkassert227))\n(assert (! (Sets.inv27 2) :named _xkassert228))\n\n; --- Invariant 28: ---\n\n(define-fun Sets.inv28 ((this Ref)) Bool\n  (not (select (Sets!s7 this) true))\n)\n\n(assert (! (Sets.inv28 1) :named _xkassert229))\n(assert (! (Sets.inv28 2) :named _xkassert230))\n\n; --- Invariant 29: ---\n\n(define-fun Sets.inv29 ((this Ref)) Bool\n  (select (Sets!s8 this) (store (store (store ((as const (Set Int)) false) 1 true) 2 true) 3 true))\n)\n\n(assert (! (Sets.inv29 1) :named _xkassert231))\n(assert (! (Sets.inv29 2) :named _xkassert232))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Sets const-1-Sets))\n        2 (lift-Sets const-2-Sets))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-Sets () Sets\n  (mk-Sets (_ as-array k!5)\n         (_ as-array k!12)\n         (_ as-array k!11)\n         (_ as-array k!10)\n         (_ as-array k!9)\n         (_ as-array k!8)\n         9\n         14\n         (_ as-array k!7)\n         (_ as-array k!6)))\n(define-fun const-1-Sets () Sets\n  (mk-Sets (_ as-array k!5)\n         (_ as-array k!12)\n         (_ as-array k!11)\n         (_ as-array k!10)\n         (_ as-array k!9)\n         (_ as-array k!8)\n         9\n         14\n         (_ as-array k!7)\n         (_ as-array k!24)))\n(define-fun var_6!2 () Int\n  15)\n(define-fun var_5!0 () Int\n  15)\n(define-fun var_5!1 () Int\n  15)\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!26))\n(define-fun var_6!3 () Int\n  15)\n(define-fun k!23 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1))\n    null))\n(define-fun k!24 ((x!1 (Array Int Bool))) Bool\n  (ite (= x!1 (_ as-array k!5)) true\n  (ite (= x!1 (_ as-array k!4)) true\n    false)))\n(define-fun k!12 ((x!1 Int)) Bool\n  false)\n(define-fun k!17 ((x!1 Int)) Bool\n  (ite (= x!1 3) false\n  (ite (= x!1 2) false\n  (ite (= x!1 1) false\n    true))))\n(define-fun k!7 ((x!1 Bool)) Bool\n  (ite (= x!1 false) true\n    false))\n(define-fun k!22 ((x!1 Int)) Any\n  null)\n(define-fun k!11 ((x!1 Int)) Bool\n  (ite (= x!1 5) true\n  (ite (= x!1 3) true\n  (ite (= x!1 4) true\n    false))))\n(define-fun k!16 ((x!1 Int)) Bool\n  (ite (= x!1 3) true\n  (ite (= x!1 4) true\n    false)))\n(define-fun k!5 ((x!1 Int)) Bool\n  (ite (= x!1 3) true\n  (ite (= x!1 2) true\n  (ite (= x!1 1) true\n    false))))\n(define-fun k!6 ((x!1 (Array Int Bool))) Bool\n  (ite (= x!1 (_ as-array k!5)) true\n    false))\n(define-fun k!10 ((x!1 Int)) Bool\n  (ite (= x!1 3) true\n    false))\n(define-fun k!21 ((x!1 Int)) Bool\n  (ite (= x!1 15) false\n  (ite (= x!1 12) false\n  (ite (= x!1 13) false\n  (ite (= x!1 14) false\n  (ite (= x!1 11) false\n  (ite (= x!1 10) false\n    true)))))))\n(define-fun k!15 ((x!1 Int)) Bool\n  (ite (= x!1 3) true\n    false))\n(define-fun k!26 ((x!1 Int)) Any\n  (ite (= x!1 2)\n    (lift-Sets (mk-Sets (_ as-array k!5)\n                        (_ as-array k!12)\n                        (_ as-array k!11)\n                        (_ as-array k!10)\n                        (_ as-array k!9)\n                        (_ as-array k!8)\n                        9\n                        14\n                        (_ as-array k!7)\n                        (_ as-array k!6)))\n  (ite (= x!1 1)\n    (lift-Sets (mk-Sets (_ as-array k!5)\n                        (_ as-array k!12)\n                        (_ as-array k!11)\n                        (_ as-array k!10)\n                        (_ as-array k!9)\n                        (_ as-array k!8)\n                        9\n                        14\n                        (_ as-array k!7)\n                        (_ as-array k!24)))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1))\n    null))))\n(define-fun k!4 ((x!1 Int)) Bool\n  false)\n(define-fun k!20 ((x!1 Int)) Bool\n  (ite (= x!1 12) true\n  (ite (= x!1 11) true\n  (ite (= x!1 13) true\n    false))))\n(define-fun k!9 ((x!1 Int)) Bool\n  (ite (= x!1 15) true\n  (ite (= x!1 12) true\n  (ite (= x!1 14) true\n  (ite (= x!1 13) true\n  (ite (= x!1 11) true\n  (ite (= x!1 10) true\n    false)))))))\n(define-fun k!25 ((x!1 Int)) Any\n  (ite (= x!1 1)\n    (lift-Sets (mk-Sets (_ as-array k!5)\n                        (_ as-array k!12)\n                        (_ as-array k!11)\n                        (_ as-array k!10)\n                        (_ as-array k!9)\n                        (_ as-array k!8)\n                        9\n                        14\n                        (_ as-array k!7)\n                        (_ as-array k!24)))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1))\n    null)))\n(define-fun k!14 ((x!1 Int)) Bool\n  (ite (= x!1 2) true\n  (ite (= x!1 1) true\n    false)))\n(define-fun k!19 ((x!1 Int)) Bool\n  (ite (= x!1 12) true\n  (ite (= x!1 11) true\n    false)))\n(define-fun k!8 ((x!1 Int)) Bool\n  (ite (= x!1 12) true\n  (ite (= x!1 14) true\n  (ite (= x!1 13) true\n  (ite (= x!1 11) true\n  (ite (= x!1 10) true\n    false))))))\n(define-fun k!13 ((x!1 Int)) Bool\n  (ite (= x!1 1) true\n    false))\n(define-fun k!18 ((x!1 Int)) Bool\n  (ite (= x!1 11) true\n    false))",
+  "typeChecks": true
+}

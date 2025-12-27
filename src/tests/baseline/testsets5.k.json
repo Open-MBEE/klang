@@ -1,0 +1,753 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "assignment": false,
+        "expr": {
+          "i": 0,
+          "type": "LiteralInteger"
+        },
+        "modifiers": [],
+        "name": "Null",
+        "ty": {
+          "type": "IntType"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Car",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "vin",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Car"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "Honda",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "streetValue",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Garage",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "cars",
+            "ty": {
+              "args": [
+                {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "Car"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "bindings": [
+                {
+                  "collection": {
+                    "exp": {
+                      "ident": "Car",
+                      "type": "IdentExp"
+                    },
+                    "type": "ExpCollection"
+                  },
+                  "patterns": [
+                    {
+                      "ident": "c",
+                      "type": "IdentPattern"
+                    }
+                  ],
+                  "type": "RngBinding"
+                }
+              ],
+              "exp": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "c",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "cars",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp": {
+                      "ident": "c",
+                      "type": "IdentExp"
+                    },
+                    "ident": "vin",
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "Null",
+                    "type": "IdentExp"
+                  },
+                  "op": "NotEQ",
+                  "type": "BinExp"
+                },
+                "op": "Implies",
+                "type": "BinExp"
+              },
+              "quant": {
+                "element": "Forall",
+                "type": "Quantifier"
+              },
+              "type": "QuantifiedExp"
+            },
+            "name": "r2",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Garage"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "ChopShop",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "goodCars",
+            "ty": {
+              "args": [
+                {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "Honda"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "goodCars",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "cars",
+                "type": "IdentExp"
+              },
+              "op": "Subset",
+              "type": "BinExp"
+            },
+            "name": "r4",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "bindings": [
+                {
+                  "collection": {
+                    "exp": {
+                      "ident": "Honda",
+                      "type": "IdentExp"
+                    },
+                    "type": "ExpCollection"
+                  },
+                  "patterns": [
+                    {
+                      "ident": "gc",
+                      "type": "IdentPattern"
+                    }
+                  ],
+                  "type": "RngBinding"
+                }
+              ],
+              "exp": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "gc",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "goodCars",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp": {
+                      "ident": "gc",
+                      "type": "IdentExp"
+                    },
+                    "ident": "streetValue",
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "i": 5000,
+                    "type": "LiteralInteger"
+                  },
+                  "op": "GT",
+                  "type": "BinExp"
+                },
+                "op": "Implies",
+                "type": "BinExp"
+              },
+              "quant": {
+                "element": "Forall",
+                "type": "Quantifier"
+              },
+              "type": "QuantifiedExp"
+            },
+            "name": "r5",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "assignment": false,
+        "expr": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IntegerLiteral"
+            },
+            0
+          ],
+          "type": "Expression"
+        },
+        "modifiers": [],
+        "name": "Null",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IntType"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Car",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "vin",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Car"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "Honda",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "streetValue",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Garage",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "cars",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Car"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "QuantifiedExp"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "Forall"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "bindings": [
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "ExpCollection"
+                            },
+                            {
+                              "element": "Car",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "c"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Implies",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "c",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "cars",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "NotEQ",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "DotExp"
+                            },
+                            {
+                              "element": "c",
+                              "type": "ElementValue"
+                            },
+                            "vin"
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "Null",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r2",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Garage"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "ChopShop",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "goodCars",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Honda"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "Subset",
+                {
+                  "element": "goodCars",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "cars",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r4",
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "QuantifiedExp"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "Forall"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "bindings": [
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "ExpCollection"
+                            },
+                            {
+                              "element": "Honda",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "gc"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Implies",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "gc",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "goodCars",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "GT",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "DotExp"
+                            },
+                            {
+                              "element": "gc",
+                              "type": "ElementValue"
+                            },
+                            "streetValue"
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IntegerLiteral"
+                            },
+                            5000
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "name": "r5",
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nNull:Int = 0\n\nclass Car {\n  vin:Int\n}\n\nclass Honda extending Car {\n  streetValue:Int\n}\n\nclass Garage {\n  cars:Set[Car]\n\n  req r2: forall c : Car . c isin cars => c.vin != Null\n}\n\nclass ChopShop extending Garage {\n  goodCars:Set[Honda]\n\n  req r4: goodCars subset cars\n\n  req r5: forall gc : Honda . gc isin goodCars => gc.streetValue > 5000\n}\n\n",
+  "name": "testsets5.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (Null Int)))))\n(declare-datatypes () ((Car (mk-Car (vin Int)))))\n(declare-datatypes () ((Garage (mk-Garage (cars (Set Ref))))))\n(declare-datatypes () ((Honda (mk-Honda (vin Int)(streetValue Int)))))\n(declare-datatypes () ((ChopShop (mk-ChopShop (cars (Set Ref))(goodCars (Set Ref))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Car (sel-Car Car))\n  (lift-Garage (sel-Garage Garage))\n  (lift-Honda (sel-Honda Honda))\n  (lift-ChopShop (sel-ChopShop ChopShop))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Car ((this Ref)) Bool\n  (is-lift-Car (deref this))\n)\n\n(define-fun deref-Car ((this Ref)) Car\n  (sel-Car (deref this))\n)\n\n(define-fun deref-is-Garage ((this Ref)) Bool\n  (is-lift-Garage (deref this))\n)\n\n(define-fun deref-Garage ((this Ref)) Garage\n  (sel-Garage (deref this))\n)\n\n(define-fun deref-is-Honda ((this Ref)) Bool\n  (is-lift-Honda (deref this))\n)\n\n(define-fun deref-Honda ((this Ref)) Honda\n  (sel-Honda (deref this))\n)\n\n(define-fun deref-is-ChopShop ((this Ref)) Bool\n  (is-lift-ChopShop (deref this))\n)\n\n(define-fun deref-ChopShop ((this Ref)) ChopShop\n  (sel-ChopShop (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Car ((this Ref)) Bool\n  (or\n    (deref-is-Car this)\n    (deref-is-Honda this)\n  )\n)\n\n(define-fun deref-isa-Garage ((this Ref)) Bool\n  (or\n    (deref-is-Garage this)\n    (deref-is-ChopShop this)\n  )\n)\n\n(define-fun deref-isa-Honda ((this Ref)) Bool\n  (deref-is-Honda this)\n)\n\n(define-fun deref-isa-ChopShop ((this Ref)) Bool\n  (deref-is-ChopShop this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.Null: ---\n\n(define-fun TopLevelDeclarations!Null ((this Ref)) Int\n  (Null (deref-TopLevelDeclarations this))\n)\n\n; --------------------------\n;   Getters for class Car:\n; --------------------------\n\n; --- getters for Car.vin: ---\n\n(define-fun Car.vin ((this Ref)) Int\n  (ite (deref-is-Car this) (vin (deref-Car this))\n  (vin (deref-Honda this)))\n)\n\n; -----------------------------\n;   Getters for class Garage:\n; -----------------------------\n\n; --- getters for Garage.cars: ---\n\n(define-fun Garage!cars ((this Ref)) (Set Ref)\n  (cars (deref-Garage this))\n)\n\n; ----------------------------\n;   Getters for class Honda:\n; ----------------------------\n\n; --- getters for Honda.streetValue: ---\n\n(define-fun Honda.streetValue ((this Ref)) Int\n  (streetValue (deref-Honda this))\n)\n\n; -------------------------------\n;   Getters for class ChopShop:\n; -------------------------------\n\n; --- getters for ChopShop.cars: ---\n\n(define-fun ChopShop!cars ((this Ref)) (Set Ref)\n  (cars (deref-ChopShop this))\n)\n\n; --- getters for ChopShop.goodCars: ---\n\n(define-fun ChopShop!goodCars ((this Ref)) (Set Ref)\n  (goodCars (deref-ChopShop this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (TopLevelDeclarations!Null this) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert248))\n\n\n\n; ----------------------------\n;   Invariant for class Car:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-Car Car)\n\n\n\n; -------------------------------\n;   Invariant for class Garage:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Garage Garage)\n\n; --- Invariant 1: ---\n\n(define-fun Garage.inv1 ((this Ref)) Bool\n  (forall ((c Ref)) (=> (select (Garage!cars this) c) (not (= (Car.vin c) (TopLevelDeclarations!Null 0)))))\n)\n\n(assert (! (Garage.inv1 2) :named _xkassert249))\n\n\n\n; ------------------------------\n;   Invariant for class Honda:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Honda Honda)\n\n\n\n; ---------------------------------\n;   Invariant for class ChopShop:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-ChopShop ChopShop)\n\n; --- Invariant 1: ---\n\n(define-fun ChopShop.inv1 ((this Ref)) Bool\n  (forall ((c Ref)) (=> (select (ChopShop!cars this) c) (not (= (Car.vin c) (TopLevelDeclarations!Null 0)))))\n)\n\n(assert (! (ChopShop.inv1 3) :named _xkassert250))\n\n; --- Invariant 2: ---\n\n(define-fun ChopShop.inv2 ((this Ref)) Bool\n  (subset (ChopShop!goodCars this) (ChopShop!cars this))\n)\n\n(assert (! (ChopShop.inv2 3) :named _xkassert251))\n\n; --- Invariant 3: ---\n\n(define-fun ChopShop.inv3 ((this Ref)) Bool\n  (forall ((gc Ref)) (=> (select (ChopShop!goodCars this) gc) (> (Honda.streetValue gc) 5000)))\n)\n\n(assert (! (ChopShop.inv3 3) :named _xkassert252))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        4 (lift-Car const-4-Car))\n        2 (lift-Garage const-2-Garage))\n        1 (lift-Honda const-1-Honda))\n        3 (lift-ChopShop const-3-ChopShop))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-4-Car () Car\n  (mk-Car 5))\n(define-fun const-3-ChopShop () ChopShop\n  (mk-ChopShop (_ as-array k!75) (_ as-array k!75)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 0))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!83))\n(define-fun const-2-Garage () Garage\n  (mk-Garage (_ as-array k!75)))\n(define-fun const-1-Honda () Honda\n  (mk-Honda 6 7578))\n(define-fun k!79 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 0))\n    null))\n(define-fun k!76 ((x!1 Int)) Bool\n  true)\n(define-fun k!81 ((x!1 Int)) Any\n  (ite (= x!1 2) (lift-Garage (mk-Garage (_ as-array k!75)))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 0))\n  (ite (= x!1 4) (lift-Car (mk-Car 5))\n    null))))\n(define-fun k!78 ((x!1 Int)) Any\n  null)\n(define-fun k!75 ((x!1 Int)) Bool\n  false)\n(define-fun k!83 ((x!1 Int)) Any\n  (ite (= x!1 3)\n    (lift-ChopShop (mk-ChopShop (_ as-array k!75) (_ as-array k!75)))\n  (ite (= x!1 2) (lift-Garage (mk-Garage (_ as-array k!75)))\n  (ite (= x!1 1) (lift-Honda (mk-Honda 6 7578))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 0))\n  (ite (= x!1 4) (lift-Car (mk-Car 5))\n    null))))))\n(define-fun k!80 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 0))\n  (ite (= x!1 4) (lift-Car (mk-Car 5))\n    null)))\n(define-fun k!77 ((x!1 Int)) Bool\n  false)\n(define-fun k!82 ((x!1 Int)) Any\n  (ite (= x!1 2) (lift-Garage (mk-Garage (_ as-array k!75)))\n  (ite (= x!1 1) (lift-Honda (mk-Honda 6 7578))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 0))\n  (ite (= x!1 4) (lift-Car (mk-Car 5))\n    null)))))",
+  "typeChecks": true
+}

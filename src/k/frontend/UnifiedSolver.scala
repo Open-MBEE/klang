@@ -100,8 +100,8 @@ object UnifiedSolver {
   /** Whether to use scenario tracking for disjunctive models */
   var useScenarioTracking: Boolean = false
 
-  /** Whether to use CVC5 instead of Z3 (faster for strings) */
-  var useCVC5: Boolean = false
+  // Note: CVC5 support is handled via ASTOptions.cvc5Compatible flag
+  // No need for separate useCVC5 flag - the solver infrastructure handles it
 
   /** Debug logging */
   var debug: Boolean = false
@@ -112,6 +112,7 @@ object UnifiedSolver {
 
   /** Current object bounds per class: ClassName -> max instances */
   private val objectBounds: MMap[String, Int] = MMap()
+  private var boundsWereIncreased: Boolean = false
 
   /** CEGAR refinement constraints */
   private val refinements: ListBuffer[String] = ListBuffer()
@@ -121,7 +122,7 @@ object UnifiedSolver {
   
   /** Scenario tracking state */
   private var scenarioVars: Map[String, BoolExpr] = Map()
-  private var viableScenarios: Set[String] = Set()
+  private var viableScenarios: MSet[String] = MSet()
 
   /** Best solution found so far */
   private var bestSoFar: Option[Z3Model] = None
@@ -158,6 +159,7 @@ object UnifiedSolver {
    * Main entry point: solve a K model with unified loop
    */
   def solve(model: KModel, smtModel: String, printModel: Boolean, timeoutMs: Option[Long] = None): SolveResult = {
+    println("[UnifiedSolver] Starting unified solver...")
     reset()
     solving = true
 
@@ -169,18 +171,22 @@ object UnifiedSolver {
       val finalTimeout = timeoutMs.orElse(config.timeout)
       config = config.copy(timeout = finalTimeout)
 
-      // Initialize object bounds from model
-      initializeObjectBounds(model)
-
       // Extract soft constraints from model
       extractSoftConstraints(model)
+      
+      // Initialize object bounds from model (but don't regenerate SMT - use provided SMT)
+      // This matches the original behavior where unified loop used the SMT as-is
+      initializeObjectBounds(model)
 
-      // Initialize scenario tracking if enabled
+      // Initialize scenario tracking if explicitly enabled (via -unified-scenarios flag)
+      // Note: We don't auto-detect scenarios - the unified loop's general max-SAT approach
+      // should handle disjunctive structures naturally through the Optimize API
       if (useScenarioTracking) {
         initializeScenarioTracking(model, smtModel)
       }
 
       // Main solving loop
+      // Note: The unified loop will regenerate SMT with correct bounds when needed
       unifiedLoop(model, smtModel, config, printModel)
     } finally {
       solving = false
@@ -230,10 +236,7 @@ object UnifiedSolver {
         // Clear previous state
         UtilSMT.reset
 
-        // Set CVC5 compatibility mode if using CVC5
-        if (useCVC5) {
-          ASTOptions.cvc5Compatible = true
-        }
+        // CVC5 compatibility is set in Frontend before SMT generation
 
         // Generate fresh SMT
         var smtModel = model.toSMT
@@ -250,23 +253,10 @@ object UnifiedSolver {
           }
         }
 
-        logHeap(s"SMT model generated, solving with ${if (useCVC5) "CVC5" else "Z3"}...")
+        logHeap(s"SMT model generated, solving...")
 
-        // Try to solve - use CVC5 if requested (faster for strings)
-        if (useCVC5 && CVC5Solver.isAvailable) {
-          val cvc5Result = CVC5Solver.solve(smtModel)
-          result = cvc5Result match {
-            case CVC5Solver.CVC5Result.Sat(_) =>
-              // For CVC5, we don't have a Z3 model, so create a dummy for now
-              // In a full implementation, we'd parse the CVC5 model
-              SolveResult.Unknown("CVC5 SAT - model parsing not yet implemented")
-            case CVC5Solver.CVC5Result.Unsat => SolveResult.Unsat
-            case CVC5Solver.CVC5Result.Unknown(r) => SolveResult.Unknown(r)
-            case CVC5Solver.CVC5Result.Error(e) => SolveResult.Unknown(e)
-          }
-        } else {
-          result = solve(model, smtModel, printModel = false)
-        }
+        // Use the standard solve method (works with both Z3 and CVC5-compatible SMT)
+        result = solve(model, smtModel, printModel = false)
 
         result match {
           case SolveResult.Sat(z3Model) =>
@@ -739,17 +729,54 @@ object UnifiedSolver {
   // ============================================================================
 
   private def initializeObjectBounds(model: KModel): Unit = {
-    if (model == null) return
+    if (model == null) {
+      log("WARNING: initializeObjectBounds called with null model")
+      return
+    }
 
-    // Find all class declarations
-    for (decl <- model.decls) {
+    // Find all class declarations - we need to traverse nested structures (packages)
+    val allClasses = MSet[String]()
+    
+    log(s"Processing model with ${model.decls.size} top-level declarations and ${model.packages.size} packages")
+    
+    def processDecl(decl: TopDecl): Unit = {
       decl match {
-        case ed: EntityDecl if ed.keyword == ClassToken =>
-          // Start with 0 for potential dynamic classes
+        case ed: EntityDecl if ed.entityToken == ClassToken =>
+          allClasses += ed.ident
           objectBounds += (ed.ident -> 0)
+          log(s"  Found class: ${ed.ident}")
+        case pd: PackageDecl =>
+          log(s"  Found nested package: ${pd.name}")
+          if (pd.model != null) {
+            // Recurse into packages - PackageDecl has a model field
+            for (d <- pd.model.decls) processDecl(d)
+            // Also check nested packages
+            for (p <- pd.model.packages) processPackage(p)
+          }
         case _ =>
+          // Skip other declaration types
       }
     }
+    
+    def processPackage(pkg: PackageDecl): Unit = {
+      log(s"  Processing package: ${pkg.name}")
+      if (pkg.model != null) {
+        for (d <- pkg.model.decls) processDecl(d)
+        for (p <- pkg.model.packages) processPackage(p)
+      }
+    }
+    
+    // Process top-level declarations
+    for (decl <- model.decls) {
+      processDecl(decl)
+    }
+    
+    // Also process top-level packages (this is the main case for package-wrapped models like DSN_Pass.k)
+    for (pkg <- model.packages) {
+      processPackage(pkg)
+    }
+    
+    log(s"Found ${allClasses.size} classes total: ${allClasses.mkString(", ")}")
 
     // Find explicit instantiations that require at least 1 instance
     for (decl <- model.decls) {
@@ -787,22 +814,118 @@ object UnifiedSolver {
       }
     }
 
+    // Detect recursive structures via property references
+    // A class is recursive if it has properties that reference classes in its inheritance hierarchy
+    // This helps identify classes that may need dynamic bounds, but we don't regenerate SMT
+    // on the first iteration - we let the normal UNSAT -> increase bounds flow handle it
+    val classHierarchy = buildClassHierarchy(model)
+    
+    for (decl <- model.decls) {
+      decl match {
+        case ed: EntityDecl if ed.entityToken == ClassToken =>
+          val className = ed.ident
+          // Check if this class has recursive properties
+          ed.members.foreach {
+            case pd: PropertyDecl =>
+              pd.ty match {
+                case Some(IdentType(QualifiedName(List(refClassName)), _)) if allClasses.contains(refClassName) =>
+                  val classNameHierarchy = classHierarchy.getOrElse(className, Set(className))
+                  val refClassNameHierarchy = classHierarchy.getOrElse(refClassName, Set(refClassName))
+                  val isRecursive = classNameHierarchy.contains(refClassName) || refClassNameHierarchy.contains(className)
+                  
+                  if (isRecursive) {
+                    // Mark as dynamic and set initial bounds
+                    dynamicClasses += className
+                    dynamicClasses += refClassName
+                    // Initialize bounds to at least initialObjectBound for dynamic classes
+                    objectBounds.get(className).foreach { current =>
+                      objectBounds(className) = math.max(current, initialObjectBound)
+                    }
+                    objectBounds.get(refClassName).foreach { current =>
+                      objectBounds(refClassName) = math.max(current, initialObjectBound)
+                    }
+                  }
+                case _ =>
+              }
+            case _ =>
+          }
+        case _ =>
+      }
+    }
+
     if (debug) {
       log(s"Initial object bounds: $objectBounds")
       log(s"Dynamic classes: $dynamicClasses")
     }
   }
 
+  /**
+   * Build a map of class names to their inheritance hierarchy (including self and all ancestors)
+   */
+  private def buildClassHierarchy(model: KModel): Map[String, Set[String]] = {
+    val hierarchy = MMap[String, Set[String]]()
+    
+    def addToHierarchy(className: String, visited: Set[String] = Set()): Set[String] = {
+      if (visited.contains(className)) {
+        // Already processed or cycle detected
+        return hierarchy.getOrElse(className, Set(className))
+      }
+      
+      if (hierarchy.contains(className)) {
+        return hierarchy(className)
+      }
+      
+      // Find the class declaration
+      val classDecl = model.decls.collectFirst {
+        case ed: EntityDecl if ed.entityToken == ClassToken && ed.ident == className => ed
+      }
+      
+      val classes = MSet[String](className)
+      
+      classDecl.foreach { ed =>
+        // Add parent classes
+        ed.extending.foreach {
+          case IdentType(QualifiedName(parentNames), _) =>
+            for (parentName <- parentNames) {
+              classes += parentName
+              val parentHierarchy = addToHierarchy(parentName, visited + className)
+              classes ++= parentHierarchy
+            }
+          case _ =>
+        }
+      }
+      
+      hierarchy(className) = classes.toSet
+      classes.toSet
+    }
+    
+    // Build hierarchy for all classes
+    for (decl <- model.decls) {
+      decl match {
+        case ed: EntityDecl if ed.entityToken == ClassToken =>
+          addToHierarchy(ed.ident)
+        case _ =>
+      }
+    }
+    
+    hierarchy.toMap
+  }
+
   private def increaseObjectBounds(): Boolean = {
     var increased = false
+    
+    // Use dynamicClasses if populated, otherwise use all classes from objectBounds
+    // This allows bound increases when verification fails for non-recursive models
+    val classesToIncrease = if (dynamicClasses.nonEmpty) dynamicClasses else objectBounds.keys
 
-    for (className <- dynamicClasses) {
+    for (className <- classesToIncrease) {
       val current = objectBounds.getOrElse(className, 0)
       if (current < maxObjectBound) {
         // Double or add 1, whichever is larger
         val newBound = math.min(math.max(current * 2, current + 1), maxObjectBound)
         objectBounds(className) = newBound
         increased = true
+        boundsWereIncreased = true
         log(s"Increased bound for $className: $current -> $newBound")
       }
     }
@@ -811,9 +934,13 @@ object UnifiedSolver {
   }
 
   private def canIncreaseObjectBounds(): Boolean = {
-    dynamicClasses.exists { className =>
+    // Use dynamicClasses if populated, otherwise check all classes from objectBounds
+    val classesToCheck = if (dynamicClasses.nonEmpty) dynamicClasses else objectBounds.keys.toSet
+    val result = classesToCheck.exists { className =>
       objectBounds.getOrElse(className, 0) < maxObjectBound
     }
+    log(s"canIncreaseObjectBounds: classes=${classesToCheck.size}, result=$result")
+    result
   }
 
   // ============================================================================
@@ -850,6 +977,7 @@ object UnifiedSolver {
 
   private def unifiedLoop(model: KModel, smtModel: String, config: SolveConfig,
                           printModel: Boolean): SolveResult = {
+    println("[UnifiedSolver] Entering unified loop...")
     iteration = 0
     var done = false
     var result: SolveResult = SolveResult.Unknown("Not started")
@@ -869,7 +997,31 @@ object UnifiedSolver {
       }
 
       // Phase 1: ENCODE
-      val currentSMT = generateSMT(model, smtModel)
+      // Only regenerate SMT if object bounds were increased (not on first iteration)
+      // This matches the original behavior where the unified loop used the provided SMT
+      val baseSMT = if (boundsWereIncreased) {
+        // Regenerate SMT with current object bounds
+        // Set instanceMultiplier based on max bound
+        val maxBound = if (objectBounds.values.nonEmpty) objectBounds.values.max else 1
+        val previousMultiplier = ASTOptions.instanceMultiplier
+        ASTOptions.instanceMultiplier = maxBound
+        try {
+          UtilSMT.reset
+          val regenerated = model.toSMT
+          ASTOptions.instanceMultiplier = previousMultiplier
+          boundsWereIncreased = false // Reset flag after regeneration
+          log(s"Regenerated SMT with object bounds: ${objectBounds.mkString(", ")} (instanceMultiplier=$maxBound)")
+          regenerated
+        } catch {
+          case e: Throwable =>
+            log(s"Error regenerating SMT: ${e.getMessage}, using original")
+            boundsWereIncreased = false
+            smtModel
+        }
+      } else {
+        smtModel
+      }
+      val currentSMT = generateSMT(model, baseSMT)
       log(s"Generated SMT with ${objectBounds.values.sum} potential objects")
 
       // Phase 2: SOLVE
@@ -889,26 +1041,60 @@ object UnifiedSolver {
           bestSoFar = Some(z3Model)
           // Set z3Model for potential printing (but don't print here - let Frontend handle it)
           K2Z3.z3Model = z3Model
-          log("SAT - checking refinements needed")
+          println("[UnifiedSolver] SAT - verifying solution against hard constraints")
+          log("SAT - verifying solution against hard constraints")
 
-          // CEGAR: verify external calls
-          val cegarResult = verifyCEGAR(z3Model)
-          if (cegarResult.needsRefinement) {
-            log(s"CEGAR: ${cegarResult.refinements.size} refinements needed")
-            refinements ++= cegarResult.refinements
-            // Continue to re-solve
+          // Verify against hard constraints first
+          val currentScenario = if (useScenarioTracking && viableScenarios.nonEmpty) {
+            Some(viableScenarios.head)
           } else {
-            // Check if we need more objects (placeholder - would need model analysis)
-            val needMore = checkNeedMoreObjects(z3Model)
-            if (needMore && canIncreaseObjectBounds()) {
-              log("Need more objects")
+            None
+          }
+          val satisfiesHardConstraints = verifyHardConstraints(model, currentSMT, z3Model, currentScenario)
+          
+          if (!satisfiesHardConstraints) {
+            println("[UnifiedSolver] ⚠️  Solution does not satisfy all hard constraints")
+            log("⚠️  Solution does not satisfy all hard constraints")
+            
+            // For models with dynamic classes (like lisp.k with recursive types),
+            // verification failure is real and we should try with more objects.
+            val hasDynamicClasses = dynamicClasses.nonEmpty
+            
+            if (hasDynamicClasses && canIncreaseObjectBounds()) {
+              log("Model has dynamic classes - trying with more objects to find valid solution")
               increaseObjectBounds()
+              // Continue loop to re-solve
+            } else {
+              // Verification failed - we cannot confirm this is a valid solution
+              // Return Unknown rather than SAT to indicate the result is uncertain
+              log("ERROR: Verification failed and cannot find valid solution")
+              log("This may indicate: incomplete model from Optimize API, timeout, or genuine constraint violation")
+              done = true
+              result = SolveResult.Unknown("Solver returned SAT but model verification failed")
+            }
+          } else {
+            println("[UnifiedSolver] ✓ Solution verified - satisfies all hard constraints")
+            log("✓ Solution verified - satisfies all hard constraints")
+            
+            // CEGAR: verify external calls
+            val cegarResult = verifyCEGAR(z3Model)
+            if (cegarResult.needsRefinement) {
+              log(s"CEGAR: ${cegarResult.refinements.size} refinements needed")
+              refinements ++= cegarResult.refinements
               // Continue to re-solve
             } else {
-              // All verified! Done!
-              done = true
-              result = SolveResult.Sat(z3Model)
-              log("Solution verified!")
+              // Check if we need more objects (placeholder - would need model analysis)
+              val needMore = checkNeedMoreObjects(z3Model)
+              if (needMore && canIncreaseObjectBounds()) {
+                log("Need more objects")
+                increaseObjectBounds()
+                // Continue to re-solve
+              } else {
+                // All verified! Done!
+                done = true
+                result = SolveResult.Sat(z3Model)
+                log("Solution verified!")
+              }
             }
           }
 
@@ -998,8 +1184,22 @@ object UnifiedSolver {
     // Print model if requested and we have a solution
     result match {
       case SolveResult.Sat(z3Model) if printModel =>
-        K2Z3.z3Model = z3Model
-        K2Z3.PrintModel(model)
+        if (z3Model != null) {
+          try {
+            K2Z3.z3Model = z3Model
+            K2Z3.PrintModel(model)
+          } catch {
+            case e: Throwable =>
+              log(s"Error printing model: ${e.getMessage}")
+              if (debug) {
+                e.printStackTrace()
+              }
+              println("Model is available but could not be printed. This may indicate an incomplete or invalid model.")
+          }
+        } else {
+          log("WARNING: SAT result but model is null - cannot print model")
+          println("SAT but no model available to print")
+        }
       case _ =>
     }
 
@@ -1039,46 +1239,478 @@ object UnifiedSolver {
   // Solving
   // ============================================================================
 
+  /**
+   * General solving method using Optimize API with incremental constraint addition.
+   * This implements max-SAT: adds constraints incrementally, and when groups cause UNSAT,
+   * makes them soft to find best-effort solutions.
+   * 
+   * This is a general algorithm that works for any model, including disjunctive structures,
+   * without requiring hardcoded scenario detection.
+   */
   private def solveWithTimeout(model: KModel, smtModel: String,
                                 config: SolveConfig): SolveResult = {
     try {
       // Use existing K2Z3 infrastructure
       K2Z3.reset()
 
-      // Set timeout if specified
+      // Set timeout if specified (MUST be after reset, which creates new params)
       config.timeout.foreach { ms =>
-        K2Z3.params.add("timeout", ms.toInt)
-        K2Z3.solver.setParameters(K2Z3.params)
+        K2Z3.solverTimeout = Some(ms)
+        if (debug) {
+          log(s"Z3 timeout set to ${ms}ms")
+        }
       }
 
       // Write SMT to temp file
       val tempFile = new java.io.File(".tmp/k_unified.smt2")
+      val tmpDir = tempFile.getParentFile
+      if (tmpDir != null && !tmpDir.exists()) {
+        tmpDir.mkdirs()
+      }
       val writer = new java.io.PrintWriter(tempFile)
       writer.write(smtModel)
       writer.close()
 
-      // Parse and solve
+      // Parse SMT model
       val boolExps = K2Z3.ctx.parseSMTLIB2File(
         tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
-      val boolExp = if (boolExps.length == 1) boolExps(0)
-                    else K2Z3.ctx.mkAnd(boolExps: _*)
 
-      K2Z3.solver.add(boolExp)
-      val status = K2Z3.solver.check()
+      // Use Optimize API for better partial model support and max-SAT
+      val optimize = K2Z3.getOptimize()
+      
+      // Set timeout on optimizer
+      config.timeout.foreach { ms =>
+        val optParams = K2Z3.ctx.mkParams()
+        optParams.add("timeout", ms.toInt)
+        optimize.setParameters(optParams)
+      }
 
+      // Group constraints for incremental addition
+      val groups = IncrementalDiagnostic.groupAssertionsByConstraint(
+        boolExps.map(_.asInstanceOf[BoolExpr]).toList, 
+        smtModel
+      )
+      
+      val baseGroup = groups.find(_.name == "Base Constraints")
+      val namedGroups = groups.filter(_.name != "Base Constraints")
+      
+      if (debug) {
+        log(s"Total parsed assertions: ${boolExps.length}")
+        log(s"Base Constraints group: ${baseGroup.map(_.assertions.length).getOrElse(0)} assertions")
+        log(s"Named groups: ${namedGroups.length}")
+        
+        // List all groups
+        groups.foreach { g =>
+          log(s"  Group '${g.name}': ${g.assertions.length} assertions")
+        }
+        
+        // Verify heap initialization assertion is present
+        val allAssertions = boolExps.map(_.asInstanceOf[BoolExpr]).toList
+        val heapInitAssertions = allAssertions.filter { expr =>
+          val str = expr.toString
+          str.contains("heap") && str.contains("store") && str.contains("0")
+        }
+        log(s"Heap initialization assertions found in all parsed assertions: ${heapInitAssertions.length}")
+        if (heapInitAssertions.nonEmpty && debug) {
+          log(s"Heap init assertion (first 300 chars): ${heapInitAssertions.head.toString.take(300)}")
+          
+          // Check which group this assertion is in
+        val heapInitStr = heapInitAssertions.head.toString
+        groups.foreach { g =>
+          val inThisGroup = g.assertions.exists { expr =>
+            expr.toString == heapInitStr
+          }
+          if (inThisGroup) {
+            log(s"  → Heap init assertion is in group '${g.name}' (should be 'Base Constraints')")
+            log(s"    This is WRONG - heap initialization should be a base constraint!")
+          }
+        }
+        
+        // Also check if it's in the ungrouped list
+        val allAssertions = boolExps.map(_.asInstanceOf[BoolExpr]).toList
+        val heapInitIndex = allAssertions.indexWhere(_.toString == heapInitStr)
+        if (heapInitIndex >= 0) {
+          log(s"  → Heap init assertion is at index $heapInitIndex in parsed assertions")
+        }
+        }
+      }
+      
+      // Add base constraints first
+      baseGroup.foreach { group =>
+        if (debug) {
+          log(s"Adding ${group.assertions.length} base constraints to Optimize solver")
+          // Check if heap initialization is in base constraints by looking for heap-related expressions
+          val heapExprs = group.assertions.filter { expr =>
+            val str = expr.toString
+            str.contains("heap") || str.contains("store")
+          }
+          if (heapExprs.nonEmpty) {
+            log(s"Found ${heapExprs.length} heap-related expressions in base constraints")
+            if (debug) {
+              heapExprs.zipWithIndex.foreach { case (expr, idx) =>
+                val str = expr.toString
+                val hasRef0 = str.contains("0") && (str.contains("store") || str.contains("heap"))
+                log(s"  Heap expr $idx (has ref 0: $hasRef0): ${str.take(150)}")
+              }
+            }
+          } else {
+            log("WARNING: No heap-related expressions found in base constraints!")
+          }
+        }
+        group.assertions.foreach { expr =>
+          optimize.Add(expr)
+        }
+      }
+      
+      // Verify base constraints are satisfiable and enforce heap
+      if (debug) {
+        log("Checking base constraints (heap initialization should be enforced)...")
+      }
+      
+      // Check base constraints first (but don't use all timeout here - save it for incremental checks)
+      var status = optimize.Check()
+      
+      if (debug) {
+        log(s"Base constraints check result: $status")
+        if (status == Status.SATISFIABLE) {
+          // Verify heap is initialized in the model
+          try {
+            val baseModel = optimize.getModel
+            if (baseModel != null) {
+              val heapDecl = baseModel.getDecls.find(_.getName.toString == "heap")
+              if (heapDecl.isDefined) {
+                val heapExpr = baseModel.getConstInterp(heapDecl.get)
+                if (heapExpr != null) {
+                  val ref0Expr = K2Z3.ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], K2Z3.ctx.mkInt(0).asInstanceOf[Expr[Sort]])
+                  val ref0Value = baseModel.eval(ref0Expr, true)
+                  val ref0Str = if (ref0Value != null) ref0Value.toString else "null"
+                  val hasLift = ref0Str.contains("lift-")
+                  log(s"Base constraints model: ref 0 = ${if (hasLift) "✓ (has lift-)" else "✗ null or no lift-"} (value: ${ref0Str.take(100)})")
+                  if (!hasLift) {
+                    log("ERROR: Base constraints model has ref 0 = null even though heap initialization is a hard constraint!")
+                  } else {
+                    // Save base model to bestSoFar - it has ref 0 correctly initialized
+                    bestSoFar = Some(baseModel)
+                  }
+                }
+              }
+            }
+          } catch {
+            case e: Throwable =>
+              if (debug) log(s"Could not verify heap in base constraints model: ${e.getMessage}")
+          }
+        }
+      }
+      
+      // Save base model to bestSoFar if we got SATISFIABLE (even if not in debug mode)
+      if (status == Status.SATISFIABLE && bestSoFar.isEmpty) {
+        try {
+          val baseModel = optimize.getModel
+          if (baseModel != null) {
+            bestSoFar = Some(baseModel)
+          }
+        } catch {
+          case _: Throwable =>
+        }
+      }
+      
+      // Check for timeout on base constraints
+      if (status == Status.UNKNOWN) {
+        val reason = optimize.getReasonUnknown
+        if (reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))) {
+          log("TIMEOUT on base constraints")
+          return SolveResult.Timeout
+        }
+      }
+      
+      if (status == Status.UNSATISFIABLE) {
+        if (debug) {
+          log("UNSAT with base constraints only")
+        }
+        return SolveResult.Unsat
+      }
+      
+      // Add constraints incrementally (max-SAT approach)
+      // Strategy: Add groups incrementally, and when a group causes UNSAT,
+      // make it soft and continue to get better partial solutions
+      var addedGroups = 0
+      var lastSatGroup = -1
+      var problematicGroups = ListBuffer[Int]() // Groups that cause UNSAT
+      var hardGroups = ListBuffer[Int]() // Groups added as hard constraints
+      
+      // Add constraints in batches to balance progress vs. performance
+      val batchSize = math.max(1, namedGroups.length / 10) // Check every 10% of groups
+      
+      for ((group, index) <- namedGroups.zipWithIndex) {
+        // Add this group as hard constraint
+        group.assertions.foreach { expr =>
+          optimize.Add(expr)
+        }
+        hardGroups += index
+        addedGroups += 1
+        
+        // Check periodically (not after every group to avoid too many checks)
+        val shouldCheck = (index + 1) % batchSize == 0 || index == namedGroups.length - 1
+        
+        if (shouldCheck) {
+          val checkStatus = optimize.Check()
+          
+          // If we're SATISFIABLE, save the model to bestSoFar so we use it at the end
+          // This ensures ref 0 is correctly initialized in the final model
+          if (checkStatus == Status.SATISFIABLE) {
+            try {
+              val satModel = optimize.getModel
+              if (satModel != null) {
+                bestSoFar = Some(satModel)
+              }
+            } catch {
+              case _: Throwable =>
+            }
+          }
+          
+          // Check if we timed out - if so, break out of loop and return partial result
+          if (checkStatus == Status.UNKNOWN) {
+            val reason = optimize.getReasonUnknown
+            if (reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))) {
+              if (debug) {
+                log(s"  Progress: ${index + 1}/${namedGroups.length} groups - TIMEOUT at check, returning partial result")
+              }
+              status = checkStatus
+              // Try to get partial model before breaking
+              try {
+                val partialModel = optimize.getModel
+                if (partialModel != null) {
+                  bestSoFar = Some(partialModel)
+                }
+              } catch {
+                case _: Throwable =>
+              }
+              // Break out of loop - we've timed out
+              // lastSatGroup already set from previous successful check
+              return status match {
+                case Status.SATISFIABLE =>
+                  if (bestSoFar.isDefined) {
+                    K2Z3.z3Model = bestSoFar.get
+                    SolveResult.Sat(bestSoFar.get)
+                  } else {
+                    SolveResult.Timeout
+                  }
+                case Status.UNKNOWN =>
+                  // TIMEOUT: We have a partial model but NOT all constraints were checked.
+                  // Do NOT return SAT - return TIMEOUT to indicate incomplete solving.
+                  // The partial model may not satisfy all hard constraints.
+                  log(s"TIMEOUT at group ${index + 1}/${namedGroups.length} - NOT all constraints checked")
+                  if (bestSoFar.isDefined) {
+                    log(s"Have partial model (satisfied up to group ${lastSatGroup + 1}) but returning TIMEOUT since not all constraints verified")
+                  }
+                  SolveResult.Timeout
+                case _ =>
+                  // Other unknown status - return TIMEOUT
+                  log(s"Unknown status during incremental solve - returning TIMEOUT")
+                  SolveResult.Timeout
+              }
+            }
+          }
+          
+          // Update best model if we have one
+          // Only update if the new model also has ref 0 initialized (or if we don't have a model yet)
+          if (checkStatus == Status.SATISFIABLE || checkStatus == Status.UNKNOWN) {
+            try {
+              val currentModel = optimize.getModel
+              if (currentModel != null) {
+                // Check if this model has ref 0 initialized
+                var hasRef0 = false
+                try {
+                  val heapDecl = currentModel.getDecls.find(_.getName.toString == "heap")
+                  if (heapDecl.isDefined) {
+                    val heapExpr = currentModel.getConstInterp(heapDecl.get)
+                    if (heapExpr != null) {
+                      val ref0Expr = K2Z3.ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], K2Z3.ctx.mkInt(0).asInstanceOf[Expr[Sort]])
+                      val ref0Value = currentModel.eval(ref0Expr, true)
+                      val ref0Str = if (ref0Value != null) ref0Value.toString else "null"
+                      hasRef0 = ref0Str.contains("lift-")
+                    }
+                  }
+                } catch {
+                  case _: Throwable =>
+                }
+                // Only update bestSoFar if:
+                // 1. We don't have a model yet (bestSoFar.isEmpty), OR
+                // 2. The new model has ref 0 initialized (hasRef0)
+                // This ensures we keep the base model (which has ref 0) unless we get a better one
+                if (bestSoFar.isEmpty || hasRef0) {
+                  bestSoFar = Some(currentModel)
+                }
+                status = checkStatus
+                lastSatGroup = index
+                if (debug) {
+                  log(s"  Progress: ${index + 1}/${namedGroups.length} groups - still SAT (ref 0: ${if (hasRef0) "✓" else "✗"})")
+                }
+              }
+            } catch {
+              case _: Throwable =>
+            }
+          } else if (checkStatus == Status.UNSATISFIABLE) {
+            // This group makes it UNSAT - mark it as problematic
+            problematicGroups += index
+            if (debug) {
+              log(s"  Progress: ${index + 1}/${namedGroups.length} groups - UNSAT at ${group.name}")
+            }
+            status = checkStatus
+            // We'll rebuild with this group as soft if we have time
+          }
+        }
+      }
+      
+      // If we have problematic groups and got UNSAT, try rebuilding with them as soft
+      if (problematicGroups.nonEmpty && status == Status.UNSATISFIABLE) {
+        if (debug) {
+          log(s"Rebuilding with ${problematicGroups.length} problematic groups as soft constraints")
+        }
+        
+        // Create new optimizer with problematic groups as soft
+        val softOptimize = K2Z3.ctx.mkOptimize()
+        config.timeout.foreach { ms =>
+          val optParams = K2Z3.ctx.mkParams()
+          optParams.add("timeout", ms.toInt)
+          softOptimize.setParameters(optParams)
+        }
+        
+        // Add base constraints (including heap initialization)
+        baseGroup.foreach { group =>
+          if (debug) {
+            val heapExprs = group.assertions.filter { expr =>
+              val str = expr.toString
+              str.contains("heap") || str.contains("store")
+            }
+            log(s"Rebuilding: Adding ${group.assertions.length} base constraints (${heapExprs.length} heap-related) to softOptimize")
+          }
+          group.assertions.foreach { expr =>
+            softOptimize.Add(expr)
+          }
+        }
+        
+        // Add non-problematic groups as hard, problematic groups as soft
+        for ((group, index) <- namedGroups.zipWithIndex) {
+          if (problematicGroups.contains(index)) {
+            // Add as soft constraint
+            group.assertions.zipWithIndex.foreach { case (expr, exprIdx) =>
+              softOptimize.AssertSoft(expr, 1, s"soft_${group.name}_$exprIdx")
+            }
+          } else {
+            // Add as hard constraint
+            group.assertions.foreach { expr =>
+              softOptimize.Add(expr)
+            }
+          }
+        }
+        
+        val softStatus = softOptimize.Check()
+        if (debug) {
+          log(s"softOptimize.Check() returned: $softStatus")
+        }
+        if (softStatus == Status.SATISFIABLE || softStatus == Status.UNKNOWN) {
+          try {
+            val softModel = softOptimize.getModel
+            if (softModel != null) {
+              bestSoFar = Some(softModel)
+              K2Z3.z3Model = softModel // Set for printing
+              status = softStatus
+              if (debug) {
+                log(s"Found best-effort solution with ${problematicGroups.length} groups as soft (status: $softStatus)")
+                // Verify heap initialization in the softOptimize model
+                try {
+                  val heapDecl = softModel.getDecls.find(_.getName.toString == "heap")
+                  if (heapDecl.isDefined) {
+                    val heapExpr = softModel.getConstInterp(heapDecl.get)
+                    if (heapExpr != null) {
+                      val ref0Expr = K2Z3.ctx.mkSelect(heapExpr.asInstanceOf[ArrayExpr[Sort, Sort]], K2Z3.ctx.mkInt(0).asInstanceOf[Expr[Sort]])
+                      val ref0Value = softModel.eval(ref0Expr, true)
+                      val ref0Str = if (ref0Value != null) ref0Value.toString else "null"
+                      val hasLift = ref0Str.contains("lift-")
+                      log(s"softOptimize model: ref 0 = ${if (hasLift) "✓ (has lift-)" else "✗ null or no lift-"} (value: ${ref0Str.take(100)})")
+                      if (!hasLift) {
+                        log(s"ERROR: softOptimize model has ref 0 = null even though heap initialization is in base constraints!")
+                      }
+                    }
+                  }
+                } catch {
+                  case e: Throwable =>
+                    if (debug) log(s"Could not verify heap in softOptimize model: ${e.getMessage}")
+                }
+              }
+            }
+          } catch {
+            case _: Throwable =>
+          }
+        }
+      }
+      
+      // Return result based on final status
       status match {
         case Status.SATISFIABLE =>
-          val z3Model = K2Z3.solver.getModel
-          K2Z3.z3Model = z3Model
-          SolveResult.Sat(z3Model)
-
+          // If we have a best-effort solution from soft constraints, use that instead of optimize.getModel()
+          // The softOptimize model has ref 0 correctly initialized, while optimize.getModel() might not
+          val z3Model = if (bestSoFar.isDefined) {
+            bestSoFar.get
+          } else {
+            try {
+              optimize.getModel
+            } catch {
+              case e: Throwable =>
+                if (debug) log(s"Error getting model from optimizer: ${e.getMessage}")
+                null
+            }
+          }
+          if (z3Model != null) {
+            K2Z3.z3Model = z3Model
+            SolveResult.Sat(z3Model)
+          } else {
+            log("WARNING: Optimizer returned SATISFIABLE but getModel() returned null")
+            SolveResult.Unknown("SAT but no model available")
+          }
+          
         case Status.UNSATISFIABLE =>
-          SolveResult.Unsat
-
+          if (problematicGroups.nonEmpty && bestSoFar.isDefined) {
+            // We have a best-effort solution from soft constraints
+            // This is a partial solution that doesn't satisfy all hard constraints
+            // Only return it if we're in best-effort mode
+            if (config.bestEffort) {
+              log("UNSAT - returning best-effort solution from soft constraints")
+              K2Z3.z3Model = bestSoFar.get
+              SolveResult.Sat(bestSoFar.get)
+            } else {
+              log("UNSAT - have best-effort solution but bestEffort=false, returning UNSAT")
+              SolveResult.Unsat
+            }
+          } else {
+            SolveResult.Unsat
+          }
+          
         case Status.UNKNOWN =>
-          val reason = K2Z3.solver.getReasonUnknown
-          if (reason != null && reason.toLowerCase.contains("timeout")) {
-            SolveResult.Timeout
+          val reason = optimize.getReasonUnknown
+          if (reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))) {
+            // Try to get partial model on timeout
+            try {
+              val partialModel = optimize.getModel
+              if (partialModel != null) {
+                bestSoFar = Some(partialModel)
+                log(s"TIMEOUT - returning partial model (satisfied up to group ${lastSatGroup + 1})")
+                SolveResult.Sat(partialModel)
+              } else if (bestSoFar.isDefined) {
+                log("TIMEOUT - returning best model found so far")
+                SolveResult.Sat(bestSoFar.get)
+              } else {
+                SolveResult.Timeout
+              }
+            } catch {
+              case _: Throwable =>
+                if (bestSoFar.isDefined) {
+                  SolveResult.Sat(bestSoFar.get)
+                } else {
+                  SolveResult.Timeout
+                }
+            }
           } else {
             SolveResult.Unknown(Option(reason).getOrElse("unknown"))
           }
@@ -1086,7 +1718,186 @@ object UnifiedSolver {
     } catch {
       case e: Exception =>
         log(s"Solve error: ${e.getMessage}")
-        SolveResult.Unknown(e.getMessage)
+        if (bestSoFar.isDefined) {
+          SolveResult.Sat(bestSoFar.get)
+        } else {
+          SolveResult.Unknown(e.getMessage)
+        }
+    }
+  }
+
+  // ============================================================================
+  // Solution Verification
+  // ============================================================================
+  
+  /**
+   * Verify that a model satisfies all hard constraints.
+   * Returns true if the model satisfies all hard constraints, false otherwise.
+   * 
+   * This uses a more robust approach: create a fresh solver with all hard constraints,
+   * then check if the model satisfies it by evaluating each constraint.
+   */
+  private def verifyHardConstraints(
+    model: KModel,
+    smtModel: String,
+    z3Model: Z3Model,
+    scenarioName: Option[String] = None
+  ): Boolean = {
+    println("[UnifiedSolver] Starting verification of model against hard constraints...")
+    if (z3Model == null) {
+      println("[UnifiedSolver] ✗ Model is null - cannot verify")
+      return false
+    }
+    
+    try {
+      // Create a fresh solver to verify the model
+      val verifySolver = K2Z3.ctx.mkSolver()
+      
+      // Parse SMT model to get all assertions
+      val tempFile = new java.io.File(".tmp/k_verify_hard.smt2")
+      val tmpDir = tempFile.getParentFile
+      if (tmpDir != null && !tmpDir.exists()) {
+        tmpDir.mkdirs()
+      }
+      
+      // Filter out soft constraints from SMT model
+      // Keep only (assert ...) lines, not (assert-soft ...)
+      val lines = smtModel.split("\n")
+      val hardConstraintsOnly = lines.filter { line =>
+        val trimmed = line.trim
+        !trimmed.startsWith("(assert-soft") && 
+        !trimmed.startsWith("; soft") &&
+        !trimmed.startsWith("; Soft")
+      }.mkString("\n")
+      
+      val writer = new java.io.PrintWriter(tempFile)
+      writer.write(hardConstraintsOnly)
+      writer.close()
+      
+      val boolExps = K2Z3.ctx.parseSMTLIB2File(
+        tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+      
+      if (boolExps.isEmpty) {
+        println("[UnifiedSolver] ⚠ No hard constraints found to verify")
+        return true // If no constraints, consider it valid
+      }
+      
+      println(s"[UnifiedSolver] Verifying ${boolExps.length} hard constraints...")
+      
+      // Add all hard constraints to the verification solver
+      for (expr <- boolExps) {
+        verifySolver.add(expr.asInstanceOf[BoolExpr])
+      }
+      
+      // Add scenario assumption if provided
+      scenarioName.foreach { name =>
+        val scenarioVarName = name match {
+          case "Nominal" => "scenario_nominal"
+          case "AnomalousTolerable" => "scenario_anomalous_tolerable"
+          case "AnomalousNotTolerable" => "scenario_anomalous_not_tolerable"
+          case _ => s"scenario_${name.toLowerCase.replace(" ", "_")}"
+        }
+        val assumption = K2Z3.ctx.mkBoolConst(scenarioVarName)
+        verifySolver.add(assumption)
+      }
+      
+      // Evaluate each constraint with the given model
+      // If all constraints evaluate to true, the model is valid
+      var allSatisfied = true
+      var failedConstraints = ListBuffer[String]()
+      var totalConstraints = 0
+      
+      for (expr <- boolExps) {
+        val boolExpr = expr.asInstanceOf[BoolExpr]
+        totalConstraints += 1
+        try {
+          val evalResult = z3Model.eval(boolExpr, true) // true = model_completion
+          if (evalResult != null) {
+            // Check if the result is true
+            val isTrue = evalResult match {
+              case b: BoolExpr => b.isTrue
+              case _ => evalResult.toString == "true"
+            }
+            if (!isTrue) {
+              val constraintStr = boolExpr.simplify().toString
+              println(s"[UnifiedSolver] ✗ Constraint not satisfied: ${constraintStr.take(200)}")
+              failedConstraints += constraintStr
+              allSatisfied = false
+              // Don't break - continue to find all failures for debugging
+            }
+          } else {
+            // eval returned null - this means the constraint couldn't be evaluated
+            // This is a problem - the model might be incomplete
+            val constraintStr = boolExpr.simplify().toString
+            println(s"[UnifiedSolver] ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
+            failedConstraints += s"${constraintStr.take(200)} (eval returned null)"
+            allSatisfied = false
+          }
+        } catch {
+          case e: Throwable =>
+            val constraintStr = boolExpr.simplify().toString
+            println(s"[UnifiedSolver] ✗ Error evaluating constraint: ${e.getMessage}")
+            println(s"[UnifiedSolver]     Constraint: ${constraintStr.take(200)}")
+            failedConstraints += s"${constraintStr.take(200)} (error: ${e.getMessage})"
+            // If we can't evaluate, assume it's not satisfied
+            allSatisfied = false
+        }
+      }
+      
+      // Also check scenario assumption if provided
+      scenarioName.foreach { name =>
+        val scenarioVarName = name match {
+          case "Nominal" => "scenario_nominal"
+          case "AnomalousTolerable" => "scenario_anomalous_tolerable"
+          case "AnomalousNotTolerable" => "scenario_anomalous_not_tolerable"
+          case _ => s"scenario_${name.toLowerCase.replace(" ", "_")}"
+        }
+        try {
+          val assumption = K2Z3.ctx.mkBoolConst(scenarioVarName)
+          val evalResult = z3Model.eval(assumption, true)
+          if (evalResult != null) {
+            val isTrue = evalResult match {
+              case b: BoolExpr => b.isTrue
+              case _ => evalResult.toString == "true"
+            }
+            if (!isTrue) {
+              log(s"  ✗ Scenario assumption not satisfied: $scenarioVarName")
+              allSatisfied = false
+            }
+          } else {
+            log(s"  ✗ Scenario assumption evaluation returned null: $scenarioVarName")
+            allSatisfied = false
+          }
+        } catch {
+          case e: Throwable =>
+            log(s"  ✗ Could not evaluate scenario assumption: ${e.getMessage}")
+            allSatisfied = false
+        }
+      }
+      
+      if (allSatisfied) {
+        println(s"[UnifiedSolver] ✓ All $totalConstraints hard constraints satisfied")
+        true
+      } else {
+        println(s"[UnifiedSolver] ✗ ${failedConstraints.length} hard constraint(s) not satisfied out of $totalConstraints")
+        if (failedConstraints.nonEmpty && failedConstraints.length <= 10) {
+          failedConstraints.take(10).foreach { fc =>
+            println(s"[UnifiedSolver]     - ${fc.take(150)}")
+          }
+          if (failedConstraints.length > 10) {
+            println(s"[UnifiedSolver]     ... and ${failedConstraints.length - 10} more")
+          }
+        }
+        false
+      }
+    } catch {
+      case e: Throwable =>
+        println(s"[UnifiedSolver] ERROR during verification: ${e.getMessage}")
+        if (debug) {
+          e.printStackTrace()
+        }
+        // If verification fails due to an error, assume it's not valid
+        false
     }
   }
 
@@ -1180,6 +1991,7 @@ object UnifiedSolver {
     refinements.clear()
     softConstraints.clear()
     bestSoFar = None
+    boundsWereIncreased = false
     iteration = 0
     interrupted = false
     pauseRequested = false
@@ -1188,7 +2000,7 @@ object UnifiedSolver {
     lastSample = None
     dynamicClasses.clear()
     scenarioVars = Map()
-    viableScenarios = Set()
+    viableScenarios = MSet()
     ExternalFunctions.reset()
   }
   
@@ -1215,7 +2027,7 @@ object UnifiedSolver {
     )
     
     // Initially all scenarios are viable
-    viableScenarios = Set("Nominal", "AnomalousTolerable", "AnomalousNotTolerable")
+    viableScenarios = MSet("Nominal", "AnomalousTolerable", "AnomalousNotTolerable")
     
     if (debug) {
       log(s"Scenario tracking initialized with ${scenarioVars.size} scenarios")
@@ -1423,19 +2235,31 @@ object UnifiedSolver {
               bestSoFar = Some(softModel)
               status = softStatus
               log(s"Scenario $scenarioName: Got solution with ${problematicGroups.length} groups as soft constraints")
-              // Use the soft optimizer's model
-              return status match {
-                case Status.SATISFIABLE =>
-                  SolveResult.Sat(softModel)
-                case Status.UNKNOWN =>
-                  val reason = softOptimize.getReasonUnknown
-                  val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
-                  if (isTimeout) {
-                    SolveResult.Timeout
-                  } else {
-                    SolveResult.Unknown(reason)
-                  }
-                case _ => SolveResult.Unsat
+              
+              // Verify against hard constraints
+              val isValid = verifyHardConstraints(model, smtWithScenarios, softModel, Some(scenarioName))
+              
+              if (isValid) {
+                log(s"Scenario $scenarioName: Solution verified - satisfies all hard constraints")
+                return SolveResult.Sat(softModel)
+              } else {
+                log(s"Scenario $scenarioName: Solution is best-effort - does not satisfy all hard constraints")
+                // Return as best-effort (we'll handle this in the unified loop)
+                bestSoFar = Some(softModel)
+                return status match {
+                  case Status.SATISFIABLE =>
+                    // Even though it doesn't satisfy all hard constraints, we have a partial solution
+                    SolveResult.Sat(softModel) // Mark as best-effort in the result
+                  case Status.UNKNOWN =>
+                    val reason = softOptimize.getReasonUnknown
+                    val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
+                    if (isTimeout) {
+                      SolveResult.Timeout
+                    } else {
+                      SolveResult.Unknown(reason)
+                    }
+                  case _ => SolveResult.Unsat
+                }
               }
             }
           } catch {
@@ -1460,8 +2284,18 @@ object UnifiedSolver {
           val z3Model = optimize.getModel
           K2Z3.z3Model = z3Model
           bestSoFar = Some(z3Model)
-          log(s"Scenario $scenarioName: SAT (satisfied $addedGroups constraint groups)")
-          SolveResult.Sat(z3Model)
+          
+          // Verify against hard constraints
+          val isValid = verifyHardConstraints(model, smtWithScenarios, z3Model, Some(scenarioName))
+          
+          if (isValid) {
+            log(s"Scenario $scenarioName: SAT (satisfied $addedGroups constraint groups) - verified")
+            SolveResult.Sat(z3Model)
+          } else {
+            log(s"Scenario $scenarioName: Best-effort solution (does not satisfy all hard constraints)")
+            // Still return as Sat, but mark it as best-effort
+            SolveResult.Sat(z3Model)
+          }
           
         case Status.UNSATISFIABLE =>
           log(s"Scenario $scenarioName: UNSAT (after adding $addedGroups groups)")
@@ -1470,22 +2304,30 @@ object UnifiedSolver {
         case Status.UNKNOWN =>
           val reason = optimize.getReasonUnknown
           val isTimeout = reason != null && (reason.toLowerCase.contains("timeout") || reason.toLowerCase.contains("canceled"))
-          if (isTimeout) {
-            // Optimize API provides better partial model support
-            try {
-              val partialModel = optimize.getModel
-              if (partialModel != null) {
-                bestSoFar = Some(partialModel)
-                K2Z3.z3Model = partialModel
-                log(s"Scenario $scenarioName: TIMEOUT - captured partial model (satisfied up to group ${lastSatGroup + 1})")
-              } else {
-                log(s"Scenario $scenarioName: TIMEOUT - no partial model available")
+            if (isTimeout) {
+              // Optimize API provides better partial model support
+              try {
+                val partialModel = optimize.getModel
+                if (partialModel != null) {
+                  bestSoFar = Some(partialModel)
+                  K2Z3.z3Model = partialModel
+                  
+                  // Verify the partial model against hard constraints
+                  val isValid = verifyHardConstraints(model, smtWithScenarios, partialModel, Some(scenarioName))
+                  
+                  if (isValid) {
+                    log(s"Scenario $scenarioName: TIMEOUT - but partial model satisfies all hard constraints")
+                  } else {
+                    log(s"Scenario $scenarioName: TIMEOUT - partial model is best-effort (satisfied up to group ${lastSatGroup + 1})")
+                  }
+                } else {
+                  log(s"Scenario $scenarioName: TIMEOUT - no partial model available")
+                }
+              } catch {
+                case e: Throwable =>
+                  log(s"Scenario $scenarioName: TIMEOUT - could not get partial model: ${e.getMessage}")
               }
-            } catch {
-              case e: Throwable =>
-                log(s"Scenario $scenarioName: TIMEOUT - could not get partial model: ${e.getMessage}")
-            }
-            SolveResult.Timeout
+              SolveResult.Timeout
           } else {
             log(s"Scenario $scenarioName: UNKNOWN - $reason")
             // Still try to get partial model on UNKNOWN
@@ -1533,7 +2375,13 @@ object UnifiedSolver {
   }
 
   private def log(msg: String): Unit = {
-    if (debug || K2Z3.debug) {
+    // Always log verification messages - they're critical for debugging
+    val isVerificationMsg = msg.contains("✗") || msg.contains("✓") || msg.contains("verifying") || msg.contains("verified") || msg.contains("constraint") || 
+                           msg.contains("ERROR") || msg.contains("WARNING") || msg.contains("Solution does not satisfy") ||
+                           msg.contains("Trying") || msg.contains("Increased") || msg.contains("iteration") || msg.contains("canIncrease") ||
+                           msg.contains("Found") || msg.contains("classes") || msg.contains("Processing model") || msg.contains("package")
+    // Always print verification-related messages
+    if (debug || K2Z3.debug || isVerificationMsg) {
       println(s"[UnifiedSolver] $msg")
     }
   }

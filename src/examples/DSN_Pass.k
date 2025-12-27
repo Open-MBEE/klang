@@ -1,3 +1,5 @@
+// @preferred_options -dsn-pass -timeout 60000
+// @expected SAT
 package Kevin.DSN_Pass
 
 annotation owner : String

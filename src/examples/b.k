@@ -1,3 +1,5 @@
+-- @expected ERROR
+-- (multiple inheritance without share declarations)
 package b
 
 import a

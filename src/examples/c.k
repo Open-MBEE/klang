@@ -1,3 +1,4 @@
+-- @expected SAT
 package c
 
 import d

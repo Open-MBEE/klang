@@ -1,0 +1,780 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Planet",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Planet"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "Earth",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "Planet"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "Mars",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Spacecraft",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "cost",
+            "ty": {
+              "type": "RealType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "destination",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Planet"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "LowCostSCFleet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "deployedSC",
+            "ty": {
+              "args": [
+                {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "Spacecraft"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "bindings": [
+                {
+                  "collection": {
+                    "exp": {
+                      "ident": "Spacecraft",
+                      "type": "IdentExp"
+                    },
+                    "type": "ExpCollection"
+                  },
+                  "patterns": [
+                    {
+                      "ident": "sc",
+                      "type": "IdentPattern"
+                    }
+                  ],
+                  "type": "RngBinding"
+                }
+              ],
+              "exp": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "sc",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "deployedSC",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "exp": {
+                      "ident": "sc",
+                      "type": "IdentExp"
+                    },
+                    "ident": "cost",
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "f": "1000000.0000000000000000",
+                    "type": "LiteralFloatingPoint"
+                  },
+                  "op": "LT",
+                  "type": "BinExp"
+                },
+                "op": "Implies",
+                "type": "BinExp"
+              },
+              "quant": {
+                "element": "Forall",
+                "type": "Quantifier"
+              },
+              "type": "QuantifiedExp"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "FeasibleLowCostSCFleet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "deployedSC",
+            "ty": {
+              "args": [
+                {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "Spacecraft"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              ],
+              "ident": {
+                "names": [
+                  "Set"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "ident": "deployedSC",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exps": [],
+                "kind": "Set",
+                "type": "CollectionEnumExp"
+              },
+              "op": "NotEQ",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "bindings": [
+                {
+                  "collection": {
+                    "exp": {
+                      "ident": "Spacecraft",
+                      "type": "IdentExp"
+                    },
+                    "type": "ExpCollection"
+                  },
+                  "patterns": [
+                    {
+                      "ident": "sc",
+                      "type": "IdentPattern"
+                    }
+                  ],
+                  "type": "RngBinding"
+                }
+              ],
+              "exp": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "sc",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "deployedSC",
+                    "type": "IdentExp"
+                  },
+                  "op": "IsIn",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "cast": "false",
+                  "exp": {
+                    "exp": {
+                      "ident": "sc",
+                      "type": "IdentExp"
+                    },
+                    "ident": "destination",
+                    "type": "DotExp"
+                  },
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": [
+                        "Earth"
+                      ],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  },
+                  "type": "TypeCastCheckExp"
+                },
+                "op": "Implies",
+                "type": "BinExp"
+              },
+              "quant": {
+                "element": "Forall",
+                "type": "Quantifier"
+              },
+              "type": "QuantifiedExp"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Planet",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Planet"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "Earth",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "Planet"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "Mars",
+        "members": [],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Spacecraft",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "cost",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "RealType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "destination",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Planet"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "LowCostSCFleet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "deployedSC",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Spacecraft"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "QuantifiedExp"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "Forall"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "bindings": [
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "ExpCollection"
+                            },
+                            {
+                              "element": "Spacecraft",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "sc"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Implies",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "sc",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "deployedSC",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "LT",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "DotExp"
+                            },
+                            {
+                              "element": "sc",
+                              "type": "ElementValue"
+                            },
+                            "cost"
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "RealLiteral"
+                            },
+                            "1000000.0000000000000000"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "FeasibleLowCostSCFleet",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "deployedSC",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Set"
+                  ],
+                  "type": "QualifiedName"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Spacecraft"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "NotEQ",
+                {
+                  "element": "deployedSC",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "CollectionEnumExp"
+                    },
+                    "Set"
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "QuantifiedExp"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "Forall"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "bindings": [
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "RngBinding"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "ExpCollection"
+                            },
+                            {
+                              "element": "Spacecraft",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentPattern"
+                            },
+                            "sc"
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Implies",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "IsIn",
+                        {
+                          "element": "sc",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "deployedSC",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "TypeCastCheckExp"
+                        },
+                        "false",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "DotExp"
+                            },
+                            {
+                              "element": "sc",
+                              "type": "ElementValue"
+                            },
+                            "destination"
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IdentType"
+                            },
+                            {
+                              "names": [
+                                "Earth"
+                              ],
+                              "type": "QualifiedName"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nclass Planet\n\nclass Earth extending Planet\n\nclass Mars extending Planet\n\nclass Spacecraft {\n  cost:Real\n  destination:Planet\n}\n\nclass LowCostSCFleet {\n  deployedSC:Set[Spacecraft]\n\n  req forall sc : Spacecraft . sc isin deployedSC => sc.cost < 1E6\n}\n\nclass FeasibleLowCostSCFleet {\n  deployedSC:Set[Spacecraft]\n\n  req deployedSC != Set{}\n\n  req forall sc : Spacecraft . sc isin deployedSC => sc.destination is Earth\n}\n\n",
+  "name": "testsets6.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort TopLevelDeclarations) (declare-const mk-TopLevelDeclarations TopLevelDeclarations)\n(declare-sort Planet) (declare-const mk-Planet Planet)\n(declare-sort Earth) (declare-const mk-Earth Earth)\n(declare-sort Mars) (declare-const mk-Mars Mars)\n(declare-datatypes () ((Spacecraft (mk-Spacecraft (cost Real)(destination Ref)))))\n(declare-datatypes () ((LowCostSCFleet (mk-LowCostSCFleet (deployedSC (Set Ref))))))\n(declare-datatypes () ((FeasibleLowCostSCFleet (mk-FeasibleLowCostSCFleet (deployedSC (Set Ref))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Planet (sel-Planet Planet))\n  (lift-Earth (sel-Earth Earth))\n  (lift-Mars (sel-Mars Mars))\n  (lift-Spacecraft (sel-Spacecraft Spacecraft))\n  (lift-LowCostSCFleet (sel-LowCostSCFleet LowCostSCFleet))\n  (lift-FeasibleLowCostSCFleet (sel-FeasibleLowCostSCFleet FeasibleLowCostSCFleet))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Planet ((this Ref)) Bool\n  (is-lift-Planet (deref this))\n)\n\n(define-fun deref-Planet ((this Ref)) Planet\n  (sel-Planet (deref this))\n)\n\n(define-fun deref-is-Earth ((this Ref)) Bool\n  (is-lift-Earth (deref this))\n)\n\n(define-fun deref-Earth ((this Ref)) Earth\n  (sel-Earth (deref this))\n)\n\n(define-fun deref-is-Mars ((this Ref)) Bool\n  (is-lift-Mars (deref this))\n)\n\n(define-fun deref-Mars ((this Ref)) Mars\n  (sel-Mars (deref this))\n)\n\n(define-fun deref-is-Spacecraft ((this Ref)) Bool\n  (is-lift-Spacecraft (deref this))\n)\n\n(define-fun deref-Spacecraft ((this Ref)) Spacecraft\n  (sel-Spacecraft (deref this))\n)\n\n(define-fun deref-is-LowCostSCFleet ((this Ref)) Bool\n  (is-lift-LowCostSCFleet (deref this))\n)\n\n(define-fun deref-LowCostSCFleet ((this Ref)) LowCostSCFleet\n  (sel-LowCostSCFleet (deref this))\n)\n\n(define-fun deref-is-FeasibleLowCostSCFleet ((this Ref)) Bool\n  (is-lift-FeasibleLowCostSCFleet (deref this))\n)\n\n(define-fun deref-FeasibleLowCostSCFleet ((this Ref)) FeasibleLowCostSCFleet\n  (sel-FeasibleLowCostSCFleet (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Planet ((this Ref)) Bool\n  (or\n    (deref-is-Planet this)\n    (deref-is-Earth this)\n    (deref-is-Mars this)\n  )\n)\n\n(define-fun deref-isa-Earth ((this Ref)) Bool\n  (deref-is-Earth this)\n)\n\n(define-fun deref-isa-Mars ((this Ref)) Bool\n  (deref-is-Mars this)\n)\n\n(define-fun deref-isa-Spacecraft ((this Ref)) Bool\n  (deref-is-Spacecraft this)\n)\n\n(define-fun deref-isa-LowCostSCFleet ((this Ref)) Bool\n  (deref-is-LowCostSCFleet this)\n)\n\n(define-fun deref-isa-FeasibleLowCostSCFleet ((this Ref)) Bool\n  (deref-is-FeasibleLowCostSCFleet this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ---------------------------------\n;   Getters for class Spacecraft:\n; ---------------------------------\n\n; --- getters for Spacecraft.cost: ---\n\n(define-fun Spacecraft.cost ((this Ref)) Real\n  (cost (deref-Spacecraft this))\n)\n\n; --- getters for Spacecraft.destination: ---\n\n(define-fun Spacecraft.destination ((this Ref)) Ref\n  (destination (deref-Spacecraft this))\n)\n\n(define-fun Spacecraft!destination ((this Ref)) Ref\n  (destination (deref-Spacecraft this))\n)\n\n; -------------------------------------\n;   Getters for class LowCostSCFleet:\n; -------------------------------------\n\n; --- getters for LowCostSCFleet.deployedSC: ---\n\n(define-fun LowCostSCFleet!deployedSC ((this Ref)) (Set Ref)\n  (deployedSC (deref-LowCostSCFleet this))\n)\n\n; ---------------------------------------------\n;   Getters for class FeasibleLowCostSCFleet:\n; ---------------------------------------------\n\n; --- getters for FeasibleLowCostSCFleet.deployedSC: ---\n\n(define-fun FeasibleLowCostSCFleet!deployedSC ((this Ref)) (Set Ref)\n  (deployedSC (deref-FeasibleLowCostSCFleet this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n\n\n; -------------------------------\n;   Invariant for class Planet:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-Planet Planet)\n(declare-const const-6-Planet Planet)\n\n\n\n; ------------------------------\n;   Invariant for class Earth:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Earth Earth)\n\n\n\n; -----------------------------\n;   Invariant for class Mars:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-Mars Mars)\n\n\n\n; -----------------------------------\n;   Invariant for class Spacecraft:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-Spacecraft Spacecraft)\n\n; --- Invariant 1: ---\n\n(define-fun Spacecraft.inv1 ((this Ref)) Bool\n  (deref-isa-Planet (Spacecraft!destination this))\n)\n\n(assert (! (Spacecraft.inv1 7) :named _xkassert253))\n\n\n\n; ---------------------------------------\n;   Invariant for class LowCostSCFleet:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-LowCostSCFleet LowCostSCFleet)\n\n; --- Invariant 1: ---\n\n(define-fun LowCostSCFleet.inv1 ((this Ref)) Bool\n  (forall ((sc Ref)) (=> (select (LowCostSCFleet!deployedSC this) sc) (< (Spacecraft.cost sc) 1000000.0000000000000000)))\n)\n\n(assert (! (LowCostSCFleet.inv1 1) :named _xkassert254))\n\n\n\n; -----------------------------------------------\n;   Invariant for class FeasibleLowCostSCFleet:\n; -----------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-FeasibleLowCostSCFleet FeasibleLowCostSCFleet)\n\n; --- Invariant 1: ---\n\n(define-fun FeasibleLowCostSCFleet.inv1 ((this Ref)) Bool\n  (not (= (FeasibleLowCostSCFleet!deployedSC this) ((as const (Set Int)) false)))\n)\n\n(assert (! (FeasibleLowCostSCFleet.inv1 2) :named _xkassert255))\n\n; --- Invariant 2: ---\n\n(define-fun FeasibleLowCostSCFleet.inv2 ((this Ref)) Bool\n  (forall ((sc Ref)) (=> (select (FeasibleLowCostSCFleet!deployedSC this) sc) (deref-isa-Earth (Spacecraft.destination sc))))\n)\n\n(assert (! (FeasibleLowCostSCFleet.inv2 2) :named _xkassert256))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        5 (lift-Planet const-5-Planet))\n        6 (lift-Planet const-6-Planet))\n        3 (lift-Earth const-3-Earth))\n        4 (lift-Mars const-4-Mars))\n        7 (lift-Spacecraft const-7-Spacecraft))\n        1 (lift-LowCostSCFleet const-1-LowCostSCFleet))\n        2 (lift-FeasibleLowCostSCFleet const-2-FeasibleLowCostSCFleet))\n  )\n)\n\n",
+  "smtModel": ";; universe for TopLevelDeclarations:\n;;   TopLevelDeclarations!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun TopLevelDeclarations!val!0 () TopLevelDeclarations)\n;; cardinality constraint:\n(forall ((x TopLevelDeclarations)) (= x TopLevelDeclarations!val!0))\n;; -----------\n;; universe for Planet:\n;;   Planet!val!0 Planet!val!1 \n;; -----------\n;; definitions for universe elements:\n(declare-fun Planet!val!0 () Planet)\n(declare-fun Planet!val!1 () Planet)\n;; cardinality constraint:\n(forall ((x Planet)) (or (= x Planet!val!0) (= x Planet!val!1)))\n;; -----------\n;; universe for Mars:\n;;   Mars!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun Mars!val!0 () Mars)\n;; cardinality constraint:\n(forall ((x Mars)) (= x Mars!val!0))\n;; -----------\n;; universe for Earth:\n;;   Earth!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun Earth!val!0 () Earth)\n;; cardinality constraint:\n(forall ((x Earth)) (= x Earth!val!0))\n;; -----------\n(define-fun const-1-LowCostSCFleet () LowCostSCFleet\n  (mk-LowCostSCFleet (_ as-array k!1596)))\n(define-fun const-5-Planet () Planet\n  Planet!val!0)\n(define-fun const-2-FeasibleLowCostSCFleet () FeasibleLowCostSCFleet\n  (mk-FeasibleLowCostSCFleet (_ as-array k!1596)))\n(define-fun const-7-Spacecraft () Spacecraft\n  (mk-Spacecraft 997197.0 3))\n(define-fun const-3-Earth () Earth\n  Earth!val!0)\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  TopLevelDeclarations!val!0)\n(define-fun const-6-Planet () Planet\n  Planet!val!1)\n(define-fun heap () (Array Int Any)\n  (_ as-array k!1606))\n(define-fun const-4-Mars () Mars\n  Mars!val!0)\n(define-fun k!1599 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null))\n(define-fun k!1596 ((x!1 Int)) Bool\n  (ite (= x!1 7) true\n    false))\n(define-fun k!1604 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Earth Earth!val!0)\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 4) (lift-Mars Mars!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 7) (lift-Spacecraft (mk-Spacecraft 997197.0 3))\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n    null)))))))\n(define-fun k!1601 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n    null))))\n(define-fun k!1598 ((x!1 Int)) Any\n  null)\n(define-fun k!1606 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Earth Earth!val!0)\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 2)\n    (lift-FeasibleLowCostSCFleet\n      (mk-FeasibleLowCostSCFleet (_ as-array k!1596)))\n  (ite (= x!1 1) (lift-LowCostSCFleet (mk-LowCostSCFleet (_ as-array k!1596)))\n  (ite (= x!1 7) (lift-Spacecraft (mk-Spacecraft 997197.0 3))\n  (ite (= x!1 4) (lift-Mars Mars!val!0)\n    null)))))))))\n(define-fun k!1603 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Earth Earth!val!0)\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 4) (lift-Mars Mars!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n    null))))))\n(define-fun k!1600 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null)))\n(define-fun k!1597 ((x!1 Int)) Bool\n  false)\n(define-fun k!1605 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Earth Earth!val!0)\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 4) (lift-Mars Mars!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 1) (lift-LowCostSCFleet (mk-LowCostSCFleet (_ as-array k!1596)))\n  (ite (= x!1 7) (lift-Spacecraft (mk-Spacecraft 997197.0 3))\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n    null))))))))\n(define-fun k!1602 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Earth Earth!val!0)\n  (ite (= x!1 5) (lift-Planet Planet!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n  (ite (= x!1 6) (lift-Planet Planet!val!1)\n    null)))))",
+  "typeChecks": true
+}

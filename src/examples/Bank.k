@@ -1,3 +1,4 @@
+-- @expected SAT
 package examples.Bank
 
 class Customer {

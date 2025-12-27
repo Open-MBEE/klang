@@ -1,3 +1,4 @@
+-- @expected SAT
 package e
 
 import f

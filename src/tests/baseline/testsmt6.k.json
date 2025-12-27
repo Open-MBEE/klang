@@ -1,0 +1,1805 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "modifiers": [],
+        "name": "ERROR",
+        "ty": {
+          "type": "IntType"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "exp": {
+          "exp1": {
+            "ident": "ERROR",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          },
+          "op": "LT",
+          "type": "BinExp"
+        },
+        "type": "ConstraintDecl"
+      },
+      {
+        "body": [
+          {
+            "exp": {
+              "cond": {
+                "ident": "b",
+                "type": "IdentExp"
+              },
+              "falseBranch": {
+                "ident": "ERROR",
+                "type": "IdentExp"
+              },
+              "trueBranch": {
+                "i": 42,
+                "type": "LiteralInteger"
+              },
+              "type": "IfExp"
+            },
+            "type": "ExpressionDecl"
+          }
+        ],
+        "ident": "CHECK",
+        "params": [
+          {
+            "name": "b",
+            "ty": {
+              "type": "BoolType"
+            },
+            "type": "Param"
+          }
+        ],
+        "spec": [],
+        "ty": {
+          "type": "IntType"
+        },
+        "type": "FunDecl",
+        "typeParams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Event",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "id",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "State",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "id",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "RocketMachine",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "off",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "State"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "ready",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "State"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "firing",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "State"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "turn_on",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Event"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "fire",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Event"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "turn_off",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "Event"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "exp1": {
+                  "exp1": {
+                    "ident": "off",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "ready",
+                    "type": "IdentExp"
+                  },
+                  "op": "NotEQ",
+                  "type": "BinExp"
+                },
+                "exp2": {
+                  "exp1": {
+                    "ident": "off",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "firing",
+                    "type": "IdentExp"
+                  },
+                  "op": "NotEQ",
+                  "type": "BinExp"
+                },
+                "op": "And",
+                "type": "BinExp"
+              },
+              "exp2": {
+                "exp1": {
+                  "ident": "firing",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "ready",
+                  "type": "IdentExp"
+                },
+                "op": "NotEQ",
+                "type": "BinExp"
+              },
+              "op": "And",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "body": [
+              {
+                "exp": {
+                  "cond": {
+                    "exp1": {
+                      "exp1": {
+                        "ident": "s",
+                        "type": "IdentExp"
+                      },
+                      "exp2": {
+                        "ident": "off",
+                        "type": "IdentExp"
+                      },
+                      "op": "EQ",
+                      "type": "BinExp"
+                    },
+                    "exp2": {
+                      "exp1": {
+                        "ident": "e",
+                        "type": "IdentExp"
+                      },
+                      "exp2": {
+                        "ident": "turn_on",
+                        "type": "IdentExp"
+                      },
+                      "op": "EQ",
+                      "type": "BinExp"
+                    },
+                    "op": "And",
+                    "type": "BinExp"
+                  },
+                  "falseBranch": {
+                    "cond": {
+                      "exp1": {
+                        "exp1": {
+                          "ident": "s",
+                          "type": "IdentExp"
+                        },
+                        "exp2": {
+                          "ident": "ready",
+                          "type": "IdentExp"
+                        },
+                        "op": "EQ",
+                        "type": "BinExp"
+                      },
+                      "exp2": {
+                        "exp1": {
+                          "ident": "e",
+                          "type": "IdentExp"
+                        },
+                        "exp2": {
+                          "ident": "fire",
+                          "type": "IdentExp"
+                        },
+                        "op": "EQ",
+                        "type": "BinExp"
+                      },
+                      "op": "And",
+                      "type": "BinExp"
+                    },
+                    "falseBranch": {
+                      "cond": {
+                        "exp1": {
+                          "exp1": {
+                            "ident": "s",
+                            "type": "IdentExp"
+                          },
+                          "exp2": {
+                            "ident": "firing",
+                            "type": "IdentExp"
+                          },
+                          "op": "EQ",
+                          "type": "BinExp"
+                        },
+                        "exp2": {
+                          "exp1": {
+                            "ident": "e",
+                            "type": "IdentExp"
+                          },
+                          "exp2": {
+                            "ident": "turn_off",
+                            "type": "IdentExp"
+                          },
+                          "op": "EQ",
+                          "type": "BinExp"
+                        },
+                        "op": "And",
+                        "type": "BinExp"
+                      },
+                      "falseBranch": {
+                        "ident": "s",
+                        "type": "IdentExp"
+                      },
+                      "trueBranch": {
+                        "ident": "off",
+                        "type": "IdentExp"
+                      },
+                      "type": "IfExp"
+                    },
+                    "trueBranch": {
+                      "ident": "firing",
+                      "type": "IdentExp"
+                    },
+                    "type": "IfExp"
+                  },
+                  "trueBranch": {
+                    "ident": "ready",
+                    "type": "IdentExp"
+                  },
+                  "type": "IfExp"
+                },
+                "type": "ExpressionDecl"
+              }
+            ],
+            "ident": "move",
+            "params": [
+              {
+                "name": "s",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "State"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                },
+                "type": "Param"
+              },
+              {
+                "name": "e",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": [
+                      "Event"
+                    ],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": [
+                  "State"
+                ],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          },
+          {
+            "exp": {
+              "exp1": {
+                "args": [
+                  {
+                    "exp": {
+                      "ident": "off",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  },
+                  {
+                    "exp": {
+                      "ident": "turn_on",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  }
+                ],
+                "exp1": {
+                  "ident": "move",
+                  "type": "IdentExp"
+                },
+                "type": "FunApplExp"
+              },
+              "exp2": {
+                "ident": "ready",
+                "type": "IdentExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "args": [
+                  {
+                    "exp": {
+                      "ident": "ready",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  },
+                  {
+                    "exp": {
+                      "ident": "fire",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  }
+                ],
+                "exp1": {
+                  "ident": "move",
+                  "type": "IdentExp"
+                },
+                "type": "FunApplExp"
+              },
+              "exp2": {
+                "ident": "firing",
+                "type": "IdentExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "exp1": {
+                "args": [
+                  {
+                    "exp": {
+                      "ident": "firing",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  },
+                  {
+                    "exp": {
+                      "ident": "turn_off",
+                      "type": "IdentExp"
+                    },
+                    "type": "PositionalArgument"
+                  }
+                ],
+                "exp1": {
+                  "ident": "move",
+                  "type": "IdentExp"
+                },
+                "type": "FunApplExp"
+              },
+              "exp2": {
+                "ident": "off",
+                "type": "IdentExp"
+              },
+              "op": "EQ",
+              "type": "BinExp"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "args": [
+                {
+                  "exp": {
+                    "exp1": {
+                      "exp1": {
+                        "exp1": {
+                          "exp1": {
+                            "exp1": {
+                              "exp1": {
+                                "ident": "off",
+                                "type": "IdentExp"
+                              },
+                              "exp2": {
+                                "ident": "ready",
+                                "type": "IdentExp"
+                              },
+                              "op": "NotEQ",
+                              "type": "BinExp"
+                            },
+                            "exp2": {
+                              "exp1": {
+                                "ident": "off",
+                                "type": "IdentExp"
+                              },
+                              "exp2": {
+                                "ident": "firing",
+                                "type": "IdentExp"
+                              },
+                              "op": "NotEQ",
+                              "type": "BinExp"
+                            },
+                            "op": "And",
+                            "type": "BinExp"
+                          },
+                          "exp2": {
+                            "exp1": {
+                              "ident": "firing",
+                              "type": "IdentExp"
+                            },
+                            "exp2": {
+                              "ident": "ready",
+                              "type": "IdentExp"
+                            },
+                            "op": "NotEQ",
+                            "type": "BinExp"
+                          },
+                          "op": "And",
+                          "type": "BinExp"
+                        },
+                        "exp2": {
+                          "exp1": {
+                            "args": [
+                              {
+                                "exp": {
+                                  "ident": "off",
+                                  "type": "IdentExp"
+                                },
+                                "type": "PositionalArgument"
+                              },
+                              {
+                                "exp": {
+                                  "ident": "turn_on",
+                                  "type": "IdentExp"
+                                },
+                                "type": "PositionalArgument"
+                              }
+                            ],
+                            "exp1": {
+                              "ident": "move",
+                              "type": "IdentExp"
+                            },
+                            "type": "FunApplExp"
+                          },
+                          "exp2": {
+                            "ident": "ready",
+                            "type": "IdentExp"
+                          },
+                          "op": "EQ",
+                          "type": "BinExp"
+                        },
+                        "op": "And",
+                        "type": "BinExp"
+                      },
+                      "exp2": {
+                        "exp1": {
+                          "args": [
+                            {
+                              "exp": {
+                                "ident": "ready",
+                                "type": "IdentExp"
+                              },
+                              "type": "PositionalArgument"
+                            },
+                            {
+                              "exp": {
+                                "ident": "fire",
+                                "type": "IdentExp"
+                              },
+                              "type": "PositionalArgument"
+                            }
+                          ],
+                          "exp1": {
+                            "ident": "move",
+                            "type": "IdentExp"
+                          },
+                          "type": "FunApplExp"
+                        },
+                        "exp2": {
+                          "ident": "firing",
+                          "type": "IdentExp"
+                        },
+                        "op": "EQ",
+                        "type": "BinExp"
+                      },
+                      "op": "And",
+                      "type": "BinExp"
+                    },
+                    "exp2": {
+                      "exp1": {
+                        "args": [
+                          {
+                            "exp": {
+                              "ident": "firing",
+                              "type": "IdentExp"
+                            },
+                            "type": "PositionalArgument"
+                          },
+                          {
+                            "exp": {
+                              "ident": "turn_off",
+                              "type": "IdentExp"
+                            },
+                            "type": "PositionalArgument"
+                          }
+                        ],
+                        "exp1": {
+                          "ident": "move",
+                          "type": "IdentExp"
+                        },
+                        "type": "FunApplExp"
+                      },
+                      "exp2": {
+                        "ident": "off",
+                        "type": "IdentExp"
+                      },
+                      "op": "EQ",
+                      "type": "BinExp"
+                    },
+                    "op": "And",
+                    "type": "BinExp"
+                  },
+                  "type": "PositionalArgument"
+                }
+              ],
+              "exp1": {
+                "ident": "CHECK",
+                "type": "IdentExp"
+              },
+              "type": "FunApplExp"
+            },
+            "modifiers": [],
+            "name": "RESULT",
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "machine",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": [
+              "RocketMachine"
+            ],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "modifiers": [],
+        "name": "ERROR",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IntType"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      },
+      {
+        "exp": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "BinExp"
+            },
+            "LT",
+            {
+              "element": "ERROR",
+              "type": "ElementValue"
+            },
+            {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntegerLiteral"
+                },
+                0
+              ],
+              "type": "Expression"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "ConstraintDecl"
+      },
+      {
+        "body": [
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IfExp"
+                },
+                {
+                  "element": "b",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntegerLiteral"
+                    },
+                    42
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "ERROR",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ExpressionDecl"
+          }
+        ],
+        "ident": "CHECK",
+        "params": [
+          {
+            "name": "b",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BoolType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "Param"
+          }
+        ],
+        "spec": [],
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IntType"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "FunDecl",
+        "typeParams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "Event",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "id",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "State",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "id",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "RocketMachine",
+        "members": [
+          {
+            "modifiers": [],
+            "name": "off",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "State"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "ready",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "State"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "firing",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "State"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "turn_on",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Event"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "fire",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Event"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "modifiers": [],
+            "name": "turn_off",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "Event"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "And",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "And",
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "NotEQ",
+                        {
+                          "element": "off",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "ready",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "NotEQ",
+                        {
+                          "element": "off",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "element": "firing",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "NotEQ",
+                    {
+                      "element": "firing",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "ready",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "body": [
+              {
+                "exp": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IfExp"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "EQ",
+                            {
+                              "element": "s",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "off",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "EQ",
+                            {
+                              "element": "e",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "turn_on",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "ready",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IfExp"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "And",
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "EQ",
+                                {
+                                  "element": "s",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "element": "ready",
+                                  "type": "ElementValue"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "EQ",
+                                {
+                                  "element": "e",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "element": "fire",
+                                  "type": "ElementValue"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "firing",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "IfExp"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "And",
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "BinExp"
+                                    },
+                                    "EQ",
+                                    {
+                                      "element": "s",
+                                      "type": "ElementValue"
+                                    },
+                                    {
+                                      "element": "firing",
+                                      "type": "ElementValue"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "BinExp"
+                                    },
+                                    "EQ",
+                                    {
+                                      "element": "e",
+                                      "type": "ElementValue"
+                                    },
+                                    {
+                                      "element": "turn_off",
+                                      "type": "ElementValue"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "off",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "element": "s",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "ExpressionDecl"
+              }
+            ],
+            "ident": "move",
+            "params": [
+              {
+                "name": "s",
+                "ty": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "State"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "Param"
+              },
+              {
+                "name": "e",
+                "ty": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IdentType"
+                    },
+                    {
+                      "names": [
+                        "Event"
+                      ],
+                      "type": "QualifiedName"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IdentType"
+                },
+                {
+                  "names": [
+                    "State"
+                  ],
+                  "type": "QualifiedName"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "FunApplExp"
+                    },
+                    {
+                      "element": "move",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "off",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "turn_on",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "ready",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "FunApplExp"
+                    },
+                    {
+                      "element": "move",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "ready",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "fire",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "firing",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "exp": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "BinExp"
+                },
+                "EQ",
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "FunApplExp"
+                    },
+                    {
+                      "element": "move",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "firing",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "PositionalArgument"
+                        },
+                        {
+                          "element": "turn_off",
+                          "type": "ElementValue"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "element": "off",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "ConstraintDecl"
+          },
+          {
+            "assignment": false,
+            "expr": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "FunApplExp"
+                },
+                {
+                  "element": "CHECK",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "PositionalArgument"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "BinExp"
+                        },
+                        "And",
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "And",
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "And",
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "BinExp"
+                                    },
+                                    "And",
+                                    {
+                                      "operand": [
+                                        {
+                                          "element": "ElementValue",
+                                          "type": "BinExp"
+                                        },
+                                        "And",
+                                        {
+                                          "operand": [
+                                            {
+                                              "element": "ElementValue",
+                                              "type": "BinExp"
+                                            },
+                                            "NotEQ",
+                                            {
+                                              "element": "off",
+                                              "type": "ElementValue"
+                                            },
+                                            {
+                                              "element": "ready",
+                                              "type": "ElementValue"
+                                            }
+                                          ],
+                                          "type": "Expression"
+                                        },
+                                        {
+                                          "operand": [
+                                            {
+                                              "element": "ElementValue",
+                                              "type": "BinExp"
+                                            },
+                                            "NotEQ",
+                                            {
+                                              "element": "off",
+                                              "type": "ElementValue"
+                                            },
+                                            {
+                                              "element": "firing",
+                                              "type": "ElementValue"
+                                            }
+                                          ],
+                                          "type": "Expression"
+                                        }
+                                      ],
+                                      "type": "Expression"
+                                    },
+                                    {
+                                      "operand": [
+                                        {
+                                          "element": "ElementValue",
+                                          "type": "BinExp"
+                                        },
+                                        "NotEQ",
+                                        {
+                                          "element": "firing",
+                                          "type": "ElementValue"
+                                        },
+                                        {
+                                          "element": "ready",
+                                          "type": "ElementValue"
+                                        }
+                                      ],
+                                      "type": "Expression"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "BinExp"
+                                    },
+                                    "EQ",
+                                    {
+                                      "operand": [
+                                        {
+                                          "element": "ElementValue",
+                                          "type": "FunApplExp"
+                                        },
+                                        {
+                                          "element": "move",
+                                          "type": "ElementValue"
+                                        },
+                                        {
+                                          "operand": [
+                                            {
+                                              "element": "ElementValue",
+                                              "type": "PositionalArgument"
+                                            },
+                                            {
+                                              "element": "off",
+                                              "type": "ElementValue"
+                                            }
+                                          ],
+                                          "type": "Expression"
+                                        },
+                                        {
+                                          "operand": [
+                                            {
+                                              "element": "ElementValue",
+                                              "type": "PositionalArgument"
+                                            },
+                                            {
+                                              "element": "turn_on",
+                                              "type": "ElementValue"
+                                            }
+                                          ],
+                                          "type": "Expression"
+                                        }
+                                      ],
+                                      "type": "Expression"
+                                    },
+                                    {
+                                      "element": "ready",
+                                      "type": "ElementValue"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "BinExp"
+                                },
+                                "EQ",
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "FunApplExp"
+                                    },
+                                    {
+                                      "element": "move",
+                                      "type": "ElementValue"
+                                    },
+                                    {
+                                      "operand": [
+                                        {
+                                          "element": "ElementValue",
+                                          "type": "PositionalArgument"
+                                        },
+                                        {
+                                          "element": "ready",
+                                          "type": "ElementValue"
+                                        }
+                                      ],
+                                      "type": "Expression"
+                                    },
+                                    {
+                                      "operand": [
+                                        {
+                                          "element": "ElementValue",
+                                          "type": "PositionalArgument"
+                                        },
+                                        {
+                                          "element": "fire",
+                                          "type": "ElementValue"
+                                        }
+                                      ],
+                                      "type": "Expression"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                },
+                                {
+                                  "element": "firing",
+                                  "type": "ElementValue"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "element": "ElementValue",
+                              "type": "BinExp"
+                            },
+                            "EQ",
+                            {
+                              "operand": [
+                                {
+                                  "element": "ElementValue",
+                                  "type": "FunApplExp"
+                                },
+                                {
+                                  "element": "move",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "PositionalArgument"
+                                    },
+                                    {
+                                      "element": "firing",
+                                      "type": "ElementValue"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "element": "ElementValue",
+                                      "type": "PositionalArgument"
+                                    },
+                                    {
+                                      "element": "turn_off",
+                                      "type": "ElementValue"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "off",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "modifiers": [],
+            "name": "RESULT",
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "PropertyDecl"
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "modifiers": [],
+        "name": "machine",
+        "ty": {
+          "operand": [
+            {
+              "element": "ElementValue",
+              "type": "IdentType"
+            },
+            {
+              "names": [
+                "RocketMachine"
+              ],
+              "type": "QualifiedName"
+            }
+          ],
+          "type": "Expression"
+        },
+        "type": "PropertyDecl"
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nERROR:Int\n\nreq ERROR < 0\n\nfun CHECK(b:Bool) : Int\n{\n  if b then\n    42\n  else\n    ERROR\n}\n\nclass Event {\n  id:Int\n}\n\nclass State {\n  id:Int\n}\n\nclass RocketMachine {\n  off:State\n  ready:State\n  firing:State\n  turn_on:Event\n  fire:Event\n  turn_off:Event\n\n  req off != ready && off != firing && firing != ready\n\n  fun move(s:State,e:Event) : State\n  {\n    if s = off && e = turn_on then\n      ready\n    else\n      if s = ready && e = fire then\n        firing\n      else\n        if s = firing && e = turn_off then\n          off\n        else\n          s\n  }\n\n  req move(off,turn_on) = ready\n\n  req move(ready,fire) = firing\n\n  req move(firing,turn_off) = off\n  RESULT:Int = CHECK(off != ready && off != firing && firing != ready && move(off,turn_on) = ready && move(ready,fire) = firing && move(firing,turn_off) = off)\n}\n\nmachine:RocketMachine\n\n",
+  "name": "testsmt6.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (ERROR Int)(machine Ref)))))\n(declare-datatypes () ((Event (mk-Event (id Int)))))\n(declare-datatypes () ((State (mk-State (id Int)))))\n(declare-datatypes () ((RocketMachine (mk-RocketMachine (off Ref)(ready Ref)(firing Ref)(turn_on Ref)(fire Ref)(turn_off Ref)(RESULT Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Event (sel-Event Event))\n  (lift-State (sel-State State))\n  (lift-RocketMachine (sel-RocketMachine RocketMachine))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Event ((this Ref)) Bool\n  (is-lift-Event (deref this))\n)\n\n(define-fun deref-Event ((this Ref)) Event\n  (sel-Event (deref this))\n)\n\n(define-fun deref-is-State ((this Ref)) Bool\n  (is-lift-State (deref this))\n)\n\n(define-fun deref-State ((this Ref)) State\n  (sel-State (deref this))\n)\n\n(define-fun deref-is-RocketMachine ((this Ref)) Bool\n  (is-lift-RocketMachine (deref this))\n)\n\n(define-fun deref-RocketMachine ((this Ref)) RocketMachine\n  (sel-RocketMachine (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Event ((this Ref)) Bool\n  (deref-is-Event this)\n)\n\n(define-fun deref-isa-State ((this Ref)) Bool\n  (deref-is-State this)\n)\n\n(define-fun deref-isa-RocketMachine ((this Ref)) Bool\n  (deref-is-RocketMachine this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.ERROR: ---\n\n(define-fun TopLevelDeclarations.ERROR ((this Ref)) Int\n  (ERROR (deref-TopLevelDeclarations this))\n)\n\n(define-fun TopLevelDeclarations!ERROR ((this Ref)) Int\n  (ERROR (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.machine: ---\n\n(define-fun TopLevelDeclarations!machine ((this Ref)) Ref\n  (machine (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------------\n;   Getters for class RocketMachine:\n; ------------------------------------\n\n; --- getters for RocketMachine.off: ---\n\n(define-fun RocketMachine.off ((this Ref)) Ref\n  (off (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!off ((this Ref)) Ref\n  (off (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.ready: ---\n\n(define-fun RocketMachine.ready ((this Ref)) Ref\n  (ready (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!ready ((this Ref)) Ref\n  (ready (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.firing: ---\n\n(define-fun RocketMachine.firing ((this Ref)) Ref\n  (firing (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!firing ((this Ref)) Ref\n  (firing (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.turn_on: ---\n\n(define-fun RocketMachine.turn_on ((this Ref)) Ref\n  (turn_on (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!turn_on ((this Ref)) Ref\n  (turn_on (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.fire: ---\n\n(define-fun RocketMachine.fire ((this Ref)) Ref\n  (fire (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!fire ((this Ref)) Ref\n  (fire (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.turn_off: ---\n\n(define-fun RocketMachine.turn_off ((this Ref)) Ref\n  (turn_off (deref-RocketMachine this))\n)\n\n(define-fun RocketMachine!turn_off ((this Ref)) Ref\n  (turn_off (deref-RocketMachine this))\n)\n\n; --- getters for RocketMachine.RESULT: ---\n\n(define-fun RocketMachine!RESULT ((this Ref)) Int\n  (RESULT (deref-RocketMachine this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; -------------------------------------------\n;   Methods for class TopLevelDeclarations:\n; -------------------------------------------\n\n(define-fun TopLevelDeclarations.CHECK ((this Ref)(b Bool)) Int\n  (ite b 42 (TopLevelDeclarations.ERROR this))\n)\n\n(define-fun TopLevelDeclarations!CHECK ((this Ref)(b Bool)) Int\n  (ite b 42 (TopLevelDeclarations!ERROR this))\n)\n\n; ------------------------------------\n;   Methods for class RocketMachine:\n; ------------------------------------\n\n(define-fun RocketMachine.move ((this Ref)(s Ref)(e Ref)) Ref\n  (ite (and (= s (RocketMachine.off this)) (= e (RocketMachine.turn_on this))) (RocketMachine.ready this) (ite (and (= s (RocketMachine.ready this)) (= e (RocketMachine.fire this))) (RocketMachine.firing this) (ite (and (= s (RocketMachine.firing this)) (= e (RocketMachine.turn_off this))) (RocketMachine.off this) s)))\n)\n\n(define-fun RocketMachine!move ((this Ref)(s Ref)(e Ref)) Ref\n  (ite (and (= s (RocketMachine!off this)) (= e (RocketMachine!turn_on this))) (RocketMachine!ready this) (ite (and (= s (RocketMachine!ready this)) (= e (RocketMachine!fire this))) (RocketMachine!firing this) (ite (and (= s (RocketMachine!firing this)) (= e (RocketMachine!turn_off this))) (RocketMachine!off this) s)))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-RocketMachine (TopLevelDeclarations!machine this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert512))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (< (TopLevelDeclarations!ERROR this) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert513))\n\n\n\n; ------------------------------\n;   Invariant for class Event:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Event Event)\n(declare-const const-2-Event Event)\n(declare-const const-3-Event Event)\n(declare-const const-4-Event Event)\n(declare-const const-5-Event Event)\n(declare-const const-6-Event Event)\n(declare-const const-7-Event Event)\n\n\n\n; ------------------------------\n;   Invariant for class State:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-8-State State)\n(declare-const const-9-State State)\n(declare-const const-10-State State)\n(declare-const const-11-State State)\n(declare-const const-12-State State)\n(declare-const const-13-State State)\n(declare-const const-14-State State)\n\n\n\n; --------------------------------------\n;   Invariant for class RocketMachine:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-15-RocketMachine RocketMachine)\n(declare-const const-16-RocketMachine RocketMachine)\n\n; --- Invariant 1: ---\n\n(define-fun RocketMachine.inv1 ((this Ref)) Bool\n  (= (RocketMachine!RESULT this) (TopLevelDeclarations!CHECK 0 (and (and (and (and (and (not (= (RocketMachine!off this) (RocketMachine!ready this))) (not (= (RocketMachine!off this) (RocketMachine!firing this)))) (not (= (RocketMachine!firing this) (RocketMachine!ready this)))) (= (RocketMachine!move this (RocketMachine!off this) (RocketMachine!turn_on this)) (RocketMachine!ready this))) (= (RocketMachine!move this (RocketMachine!ready this) (RocketMachine!fire this)) (RocketMachine!firing this))) (= (RocketMachine!move this (RocketMachine!firing this) (RocketMachine!turn_off this)) (RocketMachine!off this)))))\n)\n\n(assert (! (RocketMachine.inv1 15) :named _xkassert514))\n(assert (! (RocketMachine.inv1 16) :named _xkassert515))\n\n; --- Invariant 2: ---\n\n(define-fun RocketMachine.inv2 ((this Ref)) Bool\n  (deref-isa-State (RocketMachine!off this))\n)\n\n(assert (! (RocketMachine.inv2 15) :named _xkassert516))\n(assert (! (RocketMachine.inv2 16) :named _xkassert517))\n\n; --- Invariant 3: ---\n\n(define-fun RocketMachine.inv3 ((this Ref)) Bool\n  (deref-isa-State (RocketMachine!ready this))\n)\n\n(assert (! (RocketMachine.inv3 15) :named _xkassert518))\n(assert (! (RocketMachine.inv3 16) :named _xkassert519))\n\n; --- Invariant 4: ---\n\n(define-fun RocketMachine.inv4 ((this Ref)) Bool\n  (deref-isa-State (RocketMachine!firing this))\n)\n\n(assert (! (RocketMachine.inv4 15) :named _xkassert520))\n(assert (! (RocketMachine.inv4 16) :named _xkassert521))\n\n; --- Invariant 5: ---\n\n(define-fun RocketMachine.inv5 ((this Ref)) Bool\n  (deref-isa-Event (RocketMachine!turn_on this))\n)\n\n(assert (! (RocketMachine.inv5 15) :named _xkassert522))\n(assert (! (RocketMachine.inv5 16) :named _xkassert523))\n\n; --- Invariant 6: ---\n\n(define-fun RocketMachine.inv6 ((this Ref)) Bool\n  (deref-isa-Event (RocketMachine!fire this))\n)\n\n(assert (! (RocketMachine.inv6 15) :named _xkassert524))\n(assert (! (RocketMachine.inv6 16) :named _xkassert525))\n\n; --- Invariant 7: ---\n\n(define-fun RocketMachine.inv7 ((this Ref)) Bool\n  (deref-isa-Event (RocketMachine!turn_off this))\n)\n\n(assert (! (RocketMachine.inv7 15) :named _xkassert526))\n(assert (! (RocketMachine.inv7 16) :named _xkassert527))\n\n; --- Invariant 8: ---\n\n(define-fun RocketMachine.inv8 ((this Ref)) Bool\n  (and (and (not (= (RocketMachine!off this) (RocketMachine!ready this))) (not (= (RocketMachine!off this) (RocketMachine!firing this)))) (not (= (RocketMachine!firing this) (RocketMachine!ready this))))\n)\n\n(assert (! (RocketMachine.inv8 15) :named _xkassert528))\n(assert (! (RocketMachine.inv8 16) :named _xkassert529))\n\n; --- Invariant 9: ---\n\n(define-fun RocketMachine.inv9 ((this Ref)) Bool\n  (= (RocketMachine!move this (RocketMachine!off this) (RocketMachine!turn_on this)) (RocketMachine!ready this))\n)\n\n(assert (! (RocketMachine.inv9 15) :named _xkassert530))\n(assert (! (RocketMachine.inv9 16) :named _xkassert531))\n\n; --- Invariant 10: ---\n\n(define-fun RocketMachine.inv10 ((this Ref)) Bool\n  (= (RocketMachine!move this (RocketMachine!ready this) (RocketMachine!fire this)) (RocketMachine!firing this))\n)\n\n(assert (! (RocketMachine.inv10 15) :named _xkassert532))\n(assert (! (RocketMachine.inv10 16) :named _xkassert533))\n\n; --- Invariant 11: ---\n\n(define-fun RocketMachine.inv11 ((this Ref)) Bool\n  (= (RocketMachine!move this (RocketMachine!firing this) (RocketMachine!turn_off this)) (RocketMachine!off this))\n)\n\n(assert (! (RocketMachine.inv11 15) :named _xkassert534))\n(assert (! (RocketMachine.inv11 16) :named _xkassert535))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Event const-1-Event))\n        2 (lift-Event const-2-Event))\n        3 (lift-Event const-3-Event))\n        4 (lift-Event const-4-Event))\n        5 (lift-Event const-5-Event))\n        6 (lift-Event const-6-Event))\n        7 (lift-Event const-7-Event))\n        8 (lift-State const-8-State))\n        9 (lift-State const-9-State))\n        10 (lift-State const-10-State))\n        11 (lift-State const-11-State))\n        12 (lift-State const-12-State))\n        13 (lift-State const-13-State))\n        14 (lift-State const-14-State))\n        15 (lift-RocketMachine const-15-RocketMachine))\n        16 (lift-RocketMachine const-16-RocketMachine))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-8-State () State\n  (mk-State 19))\n(define-fun const-9-State () State\n  (mk-State 20))\n(define-fun const-13-State () State\n  (mk-State 24))\n(define-fun const-5-Event () Event\n  (mk-Event 28))\n(define-fun const-15-RocketMachine () RocketMachine\n  (mk-RocketMachine 12 13 14 1 5 7 42))\n(define-fun const-1-Event () Event\n  (mk-Event 26))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations (- 1) 16))\n(define-fun const-12-State () State\n  (mk-State 23))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!17))\n(define-fun const-7-Event () Event\n  (mk-Event 29))\n(define-fun const-11-State () State\n  (mk-State 22))\n(define-fun const-4-Event () Event\n  (mk-Event 27))\n(define-fun const-3-Event () Event\n  (mk-Event 18))\n(define-fun const-14-State () State\n  (mk-State 25))\n(define-fun const-6-Event () Event\n  (mk-Event 30))\n(define-fun const-16-RocketMachine () RocketMachine\n  (mk-RocketMachine 12 14 13 4 7 6 42))\n(define-fun const-10-State () State\n  (mk-State 21))\n(define-fun const-2-Event () Event\n  (mk-Event 17))\n(define-fun k!7 ((x!1 Int)) Any\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null))))))))\n(define-fun k!12 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n    null)))))))))))))\n(define-fun k!1 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n    null))\n(define-fun k!17 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 15) (lift-RocketMachine (mk-RocketMachine 12 13 14 1 5 7 42))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 16) (lift-RocketMachine (mk-RocketMachine 12 14 13 4 7 6 42))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 12) (lift-State (mk-State 23))\n  (ite (= x!1 14) (lift-State (mk-State 25))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 13) (lift-State (mk-State 24))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null))))))))))))))))))\n(define-fun k!6 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n    null)))))))\n(define-fun k!11 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n    null))))))))))))\n(define-fun k!0 ((x!1 Int)) Any\n  null)\n(define-fun k!16 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 15) (lift-RocketMachine (mk-RocketMachine 12 13 14 1 5 7 42))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 12) (lift-State (mk-State 23))\n  (ite (= x!1 14) (lift-State (mk-State 25))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 13) (lift-State (mk-State 24))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null)))))))))))))))))\n(define-fun k!5 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n    null))))))\n(define-fun k!10 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null)))))))))))\n(define-fun k!15 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 12) (lift-State (mk-State 23))\n  (ite (= x!1 14) (lift-State (mk-State 25))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 13) (lift-State (mk-State 24))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null))))))))))))))))\n(define-fun k!4 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n    null)))))\n(define-fun k!9 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null))))))))))\n(define-fun k!14 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 12) (lift-State (mk-State 23))\n  (ite (= x!1 13) (lift-State (mk-State 24))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null)))))))))))))))\n(define-fun k!3 ((x!1 Int)) Any\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n    null))))\n(define-fun k!8 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n    null)))))))))\n(define-fun k!13 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Event (mk-Event 28))\n  (ite (= x!1 12) (lift-State (mk-State 23))\n  (ite (= x!1 6) (lift-Event (mk-Event 30))\n  (ite (= x!1 11) (lift-State (mk-State 22))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n  (ite (= x!1 3) (lift-Event (mk-Event 18))\n  (ite (= x!1 8) (lift-State (mk-State 19))\n  (ite (= x!1 2) (lift-Event (mk-Event 17))\n  (ite (= x!1 10) (lift-State (mk-State 21))\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 9) (lift-State (mk-State 20))\n  (ite (= x!1 7) (lift-Event (mk-Event 29))\n  (ite (= x!1 4) (lift-Event (mk-Event 27))\n    null))))))))))))))\n(define-fun k!2 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-Event (mk-Event 26))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations (- 1) 16))\n    null)))",
+  "typeChecks": true
+}

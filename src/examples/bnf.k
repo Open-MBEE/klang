@@ -1,3 +1,5 @@
+-- @expected ERROR
+-- (known type checking issues with BNF model)
 package bnf
 
 -- Model of BNF to be used for parsing

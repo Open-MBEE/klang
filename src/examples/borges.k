@@ -5,6 +5,7 @@ encode a schedule which can be tested for
 satisfiability and receive a possible schedule 
 in return.
 ==============================================
+-- @expected SAT
 
 package examples.borges
 

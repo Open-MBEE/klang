@@ -1,0 +1,232 @@
+{
+  "json1": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "A",
+        "members": [
+          {
+            "body": [],
+            "ident": "foo",
+            "params": [
+              {
+                "name": "x",
+                "ty": {
+                  "type": "IntType"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": [
+                "A"
+              ],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "ident": "B",
+        "members": [
+          {
+            "body": [
+              {
+                "exp": {
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  },
+                  "op": "Plus",
+                  "type": "BinExp"
+                },
+                "type": "ExpressionDecl"
+              }
+            ],
+            "ident": "foo",
+            "params": [
+              {
+                "name": "x",
+                "ty": {
+                  "type": "IntType"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "type": "IntType"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "json2": {
+    "annotations": [],
+    "decls": [
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [],
+        "ident": "A",
+        "members": [
+          {
+            "body": [],
+            "ident": "foo",
+            "params": [
+              {
+                "name": "x",
+                "ty": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      },
+      {
+        "annotations": [],
+        "entityToken": "class",
+        "extending": [
+          {
+            "operand": [
+              {
+                "element": "ElementValue",
+                "type": "IdentType"
+              },
+              {
+                "names": [
+                  "A"
+                ],
+                "type": "QualifiedName"
+              }
+            ],
+            "type": "Expression"
+          }
+        ],
+        "ident": "B",
+        "members": [
+          {
+            "body": [
+              {
+                "exp": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "BinExp"
+                    },
+                    "Plus",
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "element": "ElementValue",
+                          "type": "IntegerLiteral"
+                        },
+                        2
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "ExpressionDecl"
+              }
+            ],
+            "ident": "foo",
+            "params": [
+              {
+                "name": "x",
+                "ty": {
+                  "operand": [
+                    {
+                      "element": "ElementValue",
+                      "type": "IntType"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "type": "Param"
+              }
+            ],
+            "spec": [],
+            "ty": {
+              "operand": [
+                {
+                  "element": "ElementValue",
+                  "type": "IntType"
+                }
+              ],
+              "type": "Expression"
+            },
+            "type": "FunDecl",
+            "typeParams": []
+          }
+        ],
+        "type": "EntityDecl",
+        "typeparams": []
+      }
+    ],
+    "imports": [],
+    "type": "Model"
+  },
+  "model": "\nclass A {\n\n  fun foo(x:Int) : Int\n\n}\n\nclass B extending A {\n\n  fun foo(x:Int) : Int\n  {\n    x + 2\n  }\n}\n\n",
+  "name": "tc4.k",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort TopLevelDeclarations) (declare-const mk-TopLevelDeclarations TopLevelDeclarations)\n(declare-sort A) (declare-const mk-A A)\n(declare-sort B) (declare-const mk-B B)\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ------------------------\n;   Methods for class A:\n; ------------------------\n\n(declare-fun A.foo (Ref Int) Int)\n\n(define-fun A!foo ((this Ref)(x Int)) Int\n  (A.foo this x)\n)\n\n; ------------------------\n;   Methods for class B:\n; ------------------------\n\n(define-fun B.foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n(define-fun B!foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n  )\n)\n\n",
+  "smtModel": ";; universe for TopLevelDeclarations:\n;;   TopLevelDeclarations!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun TopLevelDeclarations!val!0 () TopLevelDeclarations)\n;; cardinality constraint:\n(forall ((x TopLevelDeclarations)) (= x TopLevelDeclarations!val!0))\n;; -----------\n;; universe for A:\n;;   A!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun A!val!0 () A)\n;; cardinality constraint:\n(forall ((x A)) (= x A!val!0))\n;; -----------\n;; universe for B:\n;;   B!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun B!val!0 () B)\n;; cardinality constraint:\n(forall ((x B)) (= x B!val!0))\n;; -----------\n(define-fun const-1-A () A\n  A!val!0)\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  TopLevelDeclarations!val!0)\n(define-fun heap () (Array Int Any)\n  (_ as-array k!3))\n(define-fun const-2-B () B\n  B!val!0)\n(define-fun k!3 ((x!1 Int)) Any\n  (ite (= x!1 2) (lift-B B!val!0)\n  (ite (= x!1 1) (lift-A A!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null))))\n(define-fun k!0 ((x!1 Int)) Any\n  null)\n(define-fun k!1 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null))\n(define-fun k!2 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-A A!val!0)\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null)))",
+  "typeChecks": true
+}

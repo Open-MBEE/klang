@@ -207,14 +207,25 @@ object IncrementalDiagnostic {
     val assertLabelPattern = """:named\s+(_xkassert\d+)|:id\s+(_xksoft\d+)""".r
     val labelToIndex = MMap[String, Int]()
     
+    // Find all assertion start positions first
+    val assertStartPattern = "(?m)^\\s*\\(assert\\b".r
+    val assertStarts = assertStartPattern.findAllMatchIn(smtModel).map(_.start).toList
+    
     // Find all assertion labels and their positions in the SMT string
     for (m <- assertLabelPattern.findAllMatchIn(smtModel)) {
       val label = if (m.group(1) != null) m.group(1) else m.group(2)
-      // Find which assertion index this corresponds to by counting asserts before it
-      val beforeText = smtModel.substring(0, m.start)
-      val assertCount = "(?m)^\\(assert".r.findAllMatchIn(beforeText).length
-      if (assertCount < assertions.length) {
-        labelToIndex(label) = assertCount
+      val labelPos = m.start
+      
+      // Find which assertion contains this label
+      // The label belongs to the LAST assertion that starts before the label position
+      val containingAssertIndex = assertStarts.zipWithIndex
+        .takeWhile(_._1 < labelPos)
+        .lastOption
+        .map(_._2)
+        .getOrElse(-1)
+      
+      if (containingAssertIndex >= 0 && containingAssertIndex < assertions.length) {
+        labelToIndex(label) = containingAssertIndex
       }
     }
     
@@ -255,6 +266,28 @@ object IncrementalDiagnostic {
     for (i <- assertions.indices) {
       if (!labelToIndex.values.toSet.contains(i)) {
         ungroupedIndices += i
+      }
+    }
+    
+    // Debug: Check if heap initialization is in ungrouped
+    val heapInitIndex = assertions.indexWhere { expr =>
+      val str = expr.toString
+      str.contains("heap") && str.contains("store") && str.contains("=") && 
+      str.contains("lift-TopLevelDeclarations") && str.contains("const-0")
+    }
+    if (heapInitIndex >= 0) {
+      val isUngrouped = ungroupedIndices.contains(heapInitIndex)
+      val isInLabelToIndex = labelToIndex.values.toSet.contains(heapInitIndex)
+      if (K2Z3.debug) {
+        println(s"[groupAssertionsByConstraint] Heap init at index $heapInitIndex: isUngrouped=$isUngrouped, isInLabelToIndex=$isInLabelToIndex")
+        // Find which label is mapped to this index
+        labelToIndex.foreach { case (label, idx) =>
+          if (idx == heapInitIndex) {
+            println(s"  ERROR: Heap init (index $idx) is incorrectly mapped to label '$label'")
+            val constraintDesc = UtilSMT.constraintMessageMap.getOrElse(label, "")
+            println(s"    Label maps to constraint description: '$constraintDesc'")
+          }
+        }
       }
     }
     
