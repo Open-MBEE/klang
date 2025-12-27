@@ -171,8 +171,12 @@ object Frontend {
       case "-incremental" :: tail => parseArgs(map ++ Map('incremental -> true), tail)
       case "-scenario-tracking" :: tail => parseArgs(map ++ Map('scenarioTracking -> true), tail)
       case "-cvc5" :: tail => parseArgs(map ++ Map('cvc5 -> true), tail)
+      case "-yices" :: tail => parseArgs(map ++ Map('yices -> true), tail)
+      case "-mathsat" :: tail => parseArgs(map ++ Map('mathsat -> true), tail)
       case "-minizinc" :: tail => parseArgs(map ++ Map('minizinc -> true), tail)
+      case "-bae" :: tail => parseArgs(map ++ Map('bae -> true), tail)
       case "-mzn-solver" :: value :: tail => parseArgs(map ++ Map('mznSolver -> value), tail)
+      case "-mzn-timeout" :: value :: tail => parseArgs(map ++ Map('mznTimeout -> value.toInt), tail)
       case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
@@ -802,9 +806,13 @@ object Frontend {
         val useUnifiedScenarios = options.getOrElse('unifiedScenarios, false).asInstanceOf[Boolean] // Scenario-based unified solver
         val useUnified = !useLegacy && !useUnifiedScenarios && !useDsnPass && options.getOrElse('unified, true).asInstanceOf[Boolean] // Default to unified unless other modes specified
         val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
+        val useBAE = options.getOrElse('bae, false).asInstanceOf[Boolean]
+        val useYices = options.getOrElse('yices, false).asInstanceOf[Boolean]
+        val useMathSAT = options.getOrElse('mathsat, false).asInstanceOf[Boolean]
         // useCVC5 is already defined above
+        
+        // DSN_Pass.k-specific solver (runs first if specified)
         if (useDsnPass) {
-          // DSN_Pass.k-specific solver with scenario-based incremental solving
           println("[main] Using DSN_Pass Solver (scenario-based incremental)")
           import k.frontend.DSNPassSolver
           val result = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtModel, timeoutValue)
@@ -820,6 +828,7 @@ object Frontend {
             case None =>
               log("DSNPassSolver: UNSAT or all scenarios failed")
           }
+        // Diagnostic tools
         } else if (useScenarioTracking) {
           println("[main] Using Scenario Tracking Diagnostic")
           import k.frontend.ScenarioTrackingDiagnostic
@@ -856,6 +865,7 @@ object Frontend {
             println(s"${result.groupName}: $status (${result.timeMs}ms)")
           }
           println("="*70)
+        // UnifiedSolver (default Z3-based solver)
         } else if (useUnified) {
           log("Using UnifiedSolver")
           // Scenario tracking is disabled by default - enable only when explicitly requested
@@ -876,6 +886,37 @@ object Frontend {
               log("UnifiedSolver: TIMEOUT")
             case UnifiedSolver.SolveResult.Unknown(reason) =>
               log(s"UnifiedSolver: UNKNOWN ($reason)")
+          }
+        // External solvers (BAE, Yices, MathSAT, CVC5)
+        } else if (useBAE) {
+          println("[main] Using BAE Solver")
+          BAESolver.debug = K2Z3.debug
+          BAESolver.solveSMT(combinedModel, fullFileName, true)
+        } else if (useYices) {
+          println("[main] Using Yices Solver")
+          if (!YicesSolver.isAvailable) {
+            println("[Yices] WARNING: Yices not found. Install it or set YicesSolver.yicesPath")
+            println("[Yices] Falling back to Z3...")
+            val res = runWithTimeout(timeoutValue) {
+              K2Z3.solveSMT(combinedModel, smtModel, true)
+            }
+            if (res.isEmpty) log("Timeout")
+          } else {
+            YicesSolver.debug = K2Z3.debug
+            YicesSolver.solveSMT(combinedModel, smtModel, true)
+          }
+        } else if (useMathSAT) {
+          println("[main] Using MathSAT Solver")
+          if (!MathSATSolver.isAvailable) {
+            println("[MathSAT] WARNING: MathSAT not found. Install it or set MathSATSolver.mathsatPath")
+            println("[MathSAT] Falling back to Z3...")
+            val res = runWithTimeout(timeoutValue) {
+              K2Z3.solveSMT(combinedModel, smtModel, true)
+            }
+            if (res.isEmpty) log("Timeout")
+          } else {
+            MathSATSolver.debug = K2Z3.debug
+            MathSATSolver.solveSMT(combinedModel, smtModel, true)
           }
         } else if (useCVC5) {
           println("[main] Using CVC5 Solver")
@@ -974,8 +1015,10 @@ object Frontend {
               println("[MiniZinc] Model saved to .tmp/model.mzn - run manually with: minizinc .tmp/model.mzn")
             } else {
               val solver = options.getOrElse('mznSolver, "gecode").asInstanceOf[String]
-              println(s"[MiniZinc] Solving with $solver...")
+              val mznTimeout = options.getOrElse('mznTimeout, timeoutValue).asInstanceOf[Int]
+              println(s"[MiniZinc] Solving with $solver (timeout: ${mznTimeout}ms)...")
               MiniZincSolver.verbose = K2Z3.debug
+              MiniZincSolver.timeout = mznTimeout
               val result = MiniZincSolver.solve(mznResult.mznCode, solver)
 
               result.status match {

@@ -6,15 +6,34 @@
 #        or: . setup-java.sh
 
 # Only set up Java if JAVA_HOME is not already set or invalid
-if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
+# Also fix JAVA_HOME if it points to SDKMAN symlink instead of actual Home directory
+if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME/bin" ]; then
+    # If JAVA_HOME is set but doesn't have bin/, try to fix it
+    if [ -n "$JAVA_HOME" ] && [ -d "$JAVA_HOME" ] && [ ! -d "$JAVA_HOME/bin" ]; then
+        # Check if it's the SDKMAN symlink that needs Contents/Home
+        if [ -d "$JAVA_HOME/Contents/Home" ]; then
+            export JAVA_HOME="$JAVA_HOME/Contents/Home"
+            export PATH="$JAVA_HOME/bin:$PATH"
+        fi
+    fi
     if [ -d "$HOME/.sdkman/candidates/java/current" ]; then
         # SDKMAN current - handle both macOS and Linux directory structures
         if [ -d "$HOME/.sdkman/candidates/java/current/Contents/Home" ]; then
-            # macOS structure
+            # macOS structure - need Contents/Home
             export JAVA_HOME="$HOME/.sdkman/candidates/java/current/Contents/Home"
-        else
-            # Linux structure
+        elif [ -d "$HOME/.sdkman/candidates/java/current/bin" ]; then
+            # Linux structure - direct
             export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+        else
+            # Try to resolve symlink
+            REAL_PATH=$(readlink -f "$HOME/.sdkman/candidates/java/current" 2>/dev/null || echo "$HOME/.sdkman/candidates/java/current")
+            if [ -d "$REAL_PATH/Contents/Home" ]; then
+                export JAVA_HOME="$REAL_PATH/Contents/Home"
+            elif [ -d "$REAL_PATH/bin" ]; then
+                export JAVA_HOME="$REAL_PATH"
+            else
+                export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+            fi
         fi
         export PATH="$JAVA_HOME/bin:$PATH"
     elif [ -d "$HOME/.sdkman/candidates/java/21.0.8-tem" ]; then

@@ -26,6 +26,7 @@ object K2MiniZinc {
   private var varTypes: MMap[String, String] = MMap()  // varName -> className (for object refs)
   private var classFields: MMap[String, List[(String, Type)]] = MMap()  // className -> List[(fieldName, fieldType)]
   private var varCounter: Int = 0
+  private var functionDefs: MMap[(String, String), FunDecl] = MMap()  // (className, functionName) -> FunDecl
 
   def reset(): Unit = {
     warnings.clear()
@@ -34,6 +35,7 @@ object K2MiniZinc {
     classObjects.clear()
     varTypes.clear()
     classFields.clear()
+    functionDefs.clear()
     varCounter = 0
   }
 
@@ -152,11 +154,31 @@ object K2MiniZinc {
       }
     }
 
+    // Collect function definitions from all classes (needed for predicate generation)
+    for (ed <- entityDecls) {
+      for (member <- ed.members) member match {
+        case fd: FunDecl =>
+          functionDefs((ed.ident, fd.ident)) = fd
+        case _ =>
+      }
+      // Also collect inherited functions
+      val allFunDecls = ed.getAllFunDecls
+      for (fd <- allFunDecls) {
+        functionDefs((ed.ident, fd.ident)) = fd
+      }
+    }
+
     // Generate class definitions (as bounded object pools)
     mzn ++= "% === Classes ===\n"
     for (ed <- entityDecls) {
       mzn ++= translateEntityDecl(ed)
     }
+    mzn ++= "\n"
+
+    // Generate predicates for temporal operators and other functions
+    // NOTE: This must happen AFTER classFields are fully populated
+    mzn ++= "% === Predicates (Temporal Operators) ===\n"
+    mzn ++= generateFunctionPredicates(entityDecls)
     mzn ++= "\n"
 
     // Generate variable declarations
@@ -455,9 +477,57 @@ predicate str_concat(array[int] of var int: s1, var int: len1,
           case Some(StringType) =>
             translateStringMethodInClass(fieldName, method, args, className)
           case _ =>
-            // Generic method call on field
-            val argExprs = args.collect { case PositionalArgument(e) => translateClassConstraint(e, className) }
-            s"${className}_${fieldName}_$method[obj](${argExprs.mkString(", ")})"
+              // Check if this is a temporal operator that we have a predicate for
+              // Note: "equal" has a complex body that needs special handling, skip for now
+              val temporalOps = Set("meets", "during", "starts", "finishes", "overlaps", "before")
+              if (temporalOps.contains(method) && args.length == 1) {
+                // Determine the actual type of the field (not the context class)
+                // e.g., DSN_Pass_1 is of type DSN_Pass, not Schedule
+                // For temporal operators, they're defined in Event, so use Event_meets
+                val fieldType = classFields(className).find(_._1 == fieldName).map(_._2)
+                val actualClassName = fieldType match {
+                  case Some(IdentType(QualifiedName(List(refClass)), _)) if classObjects.contains(refClass) =>
+                    // Temporal operators are defined in Event class
+                    // If refClass extends Event, use Event_meets (since meets is inherited)
+                    "Event"  // Always use Event for temporal operators
+                  case _ =>
+                    "Event"  // Default to Event for temporal operators
+                }
+                val argExpr = args.collect { case PositionalArgument(e) => translateClassConstraint(e, className) }.head
+                val thisObj = s"${className}_$fieldName[obj]"
+                s"${actualClassName}_$method($thisObj, $argExpr)"
+            } else {
+              // Generic method call on field
+              val argExprs = args.collect { case PositionalArgument(e) => translateClassConstraint(e, className) }
+              s"${className}_${fieldName}_$method[obj](${argExprs.mkString(", ")})"
+            }
+        }
+      
+      // Handle method calls on object references: e1.meets(e2) where e1 is an object ref
+      case FunApplExp(DotExp(objExp, method), args) =>
+        val temporalOps = Set("meets", "during", "starts", "finishes", "overlaps", "before", "equal")
+        if (temporalOps.contains(method) && args.length == 1) {
+          // Determine the actual type of the object expression
+          // For field access like DSN_Pass_1, we need to find its type
+          val actualClassName = objExp match {
+            case IdentExp(fieldName) if classFields.get(className).exists(_.exists(_._1 == fieldName)) =>
+              // This is a field - get its type
+              classFields(className).find(_._1 == fieldName).flatMap(_._2 match {
+                case IdentType(QualifiedName(List(refClass)), _) if classObjects.contains(refClass) =>
+                  Some(refClass)
+                case _ => None
+              }).getOrElse(className)
+            case _ =>
+              className  // Fallback
+          }
+          val thisObj = translateClassConstraint(objExp, className)
+          val argExpr = args.collect { case PositionalArgument(e) => translateClassConstraint(e, className) }.head
+          s"${actualClassName}_$method($thisObj, $argExpr)"
+        } else {
+          // Generic method call - try to expand or use predicate
+          val objStr = translateClassConstraint(objExp, className)
+          val argExprs = args.collect { case PositionalArgument(e) => translateClassConstraint(e, className) }
+          s"${className}_$method($objStr, ${argExprs.mkString(", ")})"
         }
 
       // Type cast - for MiniZinc, just translate the inner expression
@@ -965,10 +1035,43 @@ predicate str_concat(array[int] of var int: s1, var int: len1,
         val argsStr = argExprs.map(e => translateExp(e, context)).mkString(", ")
         s"$funName($argsStr)"
 
+      // Method calls on object references: e1.meets(e2)
+      case DotExp(objExp, method) =>
+        val temporalOps = Set("meets", "during", "starts", "finishes", "overlaps", "before", "equal")
+        if (temporalOps.contains(method) && argExprs.length == 1) {
+          // Determine the class name from context or object expression
+          val className = determineClassName(objExp, context)
+          val thisObj = translateExp(objExp, context)
+          val argObj = translateExp(argExprs.head, context)
+          s"${className}_$method($thisObj, $argObj)"
+        } else {
+          // Generic method call
+          val objStr = translateExp(objExp, context)
+          val argsStr = argExprs.map(e => translateExp(e, context)).mkString(", ")
+          s"$objStr.$method($argsStr)"
+        }
+        
       case _ =>
         val funStr = translateExp(fun, context)
         val argsStr = argExprs.map(e => translateExp(e, context)).mkString(", ")
         s"$funStr($argsStr)"
+    }
+  }
+
+  /**
+   * Determine the class name from an expression (for method calls).
+   */
+  private def determineClassName(exp: Exp, context: String): String = {
+    exp match {
+      case IdentExp(name) if varTypes.contains(name) =>
+        varTypes(name)
+      case IdentExp(name) if classObjects.contains(context) =>
+        context
+      case DotExp(inner, _) =>
+        determineClassName(inner, context)
+      case _ =>
+        // Default to Event for temporal operators
+        "Event"
     }
   }
 
@@ -1257,6 +1360,184 @@ predicate str_concat(array[int] of var int: s1, var int: len1,
   private def extractMaxStringLength(pd: PropertyDecl): Option[Int] = {
     pd.annotations.collectFirst {
       case Annotation("maxStringLength", IntegerLiteral(n)) => n.toInt
+    }
+  }
+
+  /**
+   * Generate MiniZinc predicates for temporal operators and other functions.
+   * These are defined as predicates that can be called in constraints.
+   */
+  private def generateFunctionPredicates(entityDecls: List[EntityDecl]): String = {
+    val sb = new StringBuilder()
+    // Note: "equal" has a complex body that needs special handling, skip for now
+    val temporalOps = Set("meets", "during", "starts", "finishes", "overlaps", "before")
+    
+    for (ed <- entityDecls) {
+      val className = ed.ident
+      // Only process functions defined in this class (not inherited ones)
+      // Inherited functions will use the parent class predicate
+      val ownFunDecls = ed.getFunDecls
+      
+      for (fd <- ownFunDecls if temporalOps.contains(fd.ident)) {
+        // Only generate predicates for functions defined in this class (not inherited)
+        // Inherited functions will use the parent class predicate
+        val isOwnFunction = ed.getFunDecls.contains(fd)
+        if (!isOwnFunction) {
+          // Skip - will use parent class predicate
+          // But we still need to generate it if parent class doesn't have it
+          // For now, generate for all to avoid missing predicates
+        }
+        
+        // Generate predicate for this temporal operator
+        // Format: predicate Event_meets(var int: obj1, var int: obj2) = ...;
+        val predicateName = s"${className}_${fd.ident}"
+        
+        // Get function body - should be a single expression
+        // Function bodies are stored as List[MemberDecl]
+        // For simple functions like "fun meets(e: Event): Bool { t2 = e.t1 }"
+        // The body contains a PropertyDecl with assignment=true and expr=e.t1
+        // We need to construct: t2 = e.t1 as a BinExp
+        val bodyExp = fd.body match {
+          case ExpressionDecl(e) :: Nil => 
+            Some(e)
+          case PropertyDecl(_, name, _, _, Some(_), Some(expr)) :: Nil =>
+            // Property assignment: name = expr (e.g., t2 = e.t1)
+            // assignment can be Some(true) or Some(false) - both mean assignment
+            // Create: this.name = expr
+            Some(BinExp(DotExp(ThisLiteral, name), EQ, expr))
+          case PropertyDecl(_, name, _, _, None, Some(expr)) :: Nil =>
+            // Property with expression but no assignment - might be a return value
+            Some(expr)
+          case _ =>
+            // Always print debug info for temporal operators to understand structure
+            if (fd.body.nonEmpty) {
+              warnings += s"[DEBUG] Function ${className}.${fd.ident} body structure: ${fd.body.map(_.getClass.getSimpleName).mkString(", ")}"
+              fd.body.foreach { m =>
+                m match {
+                  case pd: PropertyDecl => 
+                    warnings += s"  PropertyDecl: name=${pd.name}, assignment=${pd.assignment}, expr=${pd.expr.map(_.getClass.getSimpleName).getOrElse("None")}, expr.isDefined=${pd.expr.isDefined}, assignment.isDefined=${pd.assignment.isDefined}"
+                  case ed: ExpressionDecl => 
+                    warnings += s"  ExpressionDecl: ${ed.exp.getClass.getSimpleName}"
+                  case _ => 
+                    warnings += s"  Other: ${m.getClass.getSimpleName} = $m"
+                }
+              }
+            } else {
+              warnings += s"[DEBUG] Function ${className}.${fd.ident} has empty body"
+            }
+            None
+        }
+        
+        bodyExp match {
+          case Some(exp) =>
+            // Translate the function body, replacing 'this' with obj1 and parameter with obj2
+            // For temporal operators: e1.meets(e2) -> Event_meets(obj1, obj2)
+            // where obj1 is 'this' and obj2 is the parameter
+            val paramName = if (fd.params.nonEmpty) fd.params.head.name else "e"
+            
+            // Create a context for translating the body
+            // We need to map:
+            // - 'this' fields -> className_field[obj1]
+            // - paramName fields -> className_field[obj2]
+            val bodyStr = translateFunctionBody(exp, className, "obj1", paramName, "obj2")
+            
+            sb ++= s"predicate $predicateName(var int: obj1, var int: obj2) = $bodyStr;\n"
+            
+          case None =>
+            warnings += s"Function ${className}.${fd.ident} has no body, cannot generate predicate"
+        }
+      }
+    }
+    
+    if (sb.isEmpty) {
+      sb ++= "% No temporal operators found\n"
+    }
+    
+    sb.toString()
+  }
+
+  /**
+   * Translate a function body expression, replacing 'this' references with obj1 and parameter references with obj2.
+   */
+  private def translateFunctionBody(exp: Exp, className: String, thisObj: String, paramName: String, paramObj: String): String = {
+    exp match {
+      case BinExp(e1, op, e2) =>
+        val left = translateFunctionBody(e1, className, thisObj, paramName, paramObj)
+        val right = translateFunctionBody(e2, className, thisObj, paramName, paramObj)
+        val opStr = op match {
+          case ADD => "+"
+          case SUB => "-"
+          case MUL => "*"
+          case DIV => "div"
+          case REM => "mod"
+          case LT => "<"
+          case LTE => "<="
+          case GT => ">"
+          case GTE => ">="
+          case EQ => "="
+          case NEQ => "!="
+          case AND => "/\\"
+          case OR => "\\/"
+          case IMPL => "->"
+          case IFF => "<->"
+          case _ => op.toString
+        }
+        s"($left $opStr $right)"
+        
+      case UnaryExp(NOT, e) =>
+        s"(not ${translateFunctionBody(e, className, thisObj, paramName, paramObj)})"
+        
+      case UnaryExp(NEG, e) =>
+        s"(-${translateFunctionBody(e, className, thisObj, paramName, paramObj)})"
+        
+      // Field access on 'this': t2 -> className_t2[thisObj]
+      // In K, bare field names like "t2" are implicitly "this.t2"
+      // Check if this identifier is a field in the class
+      case IdentExp(name) =>
+        // Check if it's the parameter name first
+        if (name == paramName) {
+          // This is the parameter name itself, not a field access
+          paramObj
+        } else {
+          // For Event class temporal operators, fields are: t1, t2, duration, success
+          // Always treat these as fields for Event class
+          val commonEventFields = Set("t1", "t2", "duration", "success")
+          if (className == "Event" && commonEventFields.contains(name)) {
+            s"${className}_$name[$thisObj]"
+          } else {
+            // Check if it's a field - use simpler lookup
+            val fields = classFields.getOrElse(className, Nil)
+            val isField = fields.exists(_._1 == name)
+            
+            if (isField) {
+              // Field access on 'this' (implicit)
+              s"${className}_$name[$thisObj]"
+            } else {
+              // Assume it's a field (better than returning "true" which breaks predicates)
+              s"${className}_$name[$thisObj]"
+            }
+          }
+        }
+        
+      // Field access on 'this' (explicit): this.t1 -> className_t1[thisObj]
+      case DotExp(ThisLiteral, field) =>
+        s"${className}_$field[$thisObj]"
+        
+      // Field access on parameter: e.t1 -> className_t1[paramObj]
+      case DotExp(IdentExp(name), field) if name == paramName =>
+        s"${className}_$field[$paramObj]"
+        
+      // Literals
+      case IntegerLiteral(v) => v.toString
+      case RealLiteral(v) => v.toString
+      case BooleanLiteral(b) => if (b) "true" else "false"
+      
+      case ParenExp(e) =>
+        s"(${translateFunctionBody(e, className, thisObj, paramName, paramObj)})"
+        
+      case _ =>
+        warnings += s"Unsupported expression in function body: ${exp.getClass.getSimpleName}"
+        "true"
     }
   }
 
