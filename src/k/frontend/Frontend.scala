@@ -544,31 +544,45 @@ object Frontend {
                     passed += 1
                 }
 
-                // Check against baseline if it exists
+                // Build current result JSON for comparison and potential saving
+                val resultJson = new JSONObject()
+                resultJson.put("name", testName)
+                resultJson.put("typeChecks", typeChecked)
+                resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
+                resultJson.put("smt", smtStr)
+                resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
+                // Skip json1/json2 for speed in batch mode
+                resultJson.put("json1", "")
+                resultJson.put("json2", "")
+
+                // Check against baseline if it exists - STRICT comparison
                 baselineOpt.foreach { baseline =>
-                  val baselineOutcome = getOutcomeFromResult(baseline)
-                  if (baselineOutcome == outcome) {
+                  val (matches, details) = compareResult(baseline, resultJson)
+                  
+                  if (matches) {
                     baselineMatched += 1
                   } else {
                     baselineMismatched += 1
-                    if (status == "PASSED" && expectedOpt.isEmpty) {
-                      // Baseline mismatch without @expected - warn but don't fail
-                      extra = s"$outcome (baseline was $baselineOutcome)"
+                    // Strict: baseline mismatch is a FAILURE
+                    if (status == "PASSED") {
+                      status = "FAILED"
+                      failed += 1
+                      passed -= 1
+                      // Report which fields mismatched
+                      // details format: [name*, typeChecks, model, json1, json2, smt, smtModel]
+                      // Skip first element (name) when detecting mismatches
+                      val fieldNames = List("typeChecks", "model", "json1", "json2", "smt", "smtModel")
+                      val fieldResults = details.tail // Skip the name element
+                      val mismatchFields = fieldResults.zip(fieldNames)
+                        .collect { case (v, f) if v == "false" || v == "???" => f }
+                        .mkString(", ")
+                      extra = s"baseline mismatch: $mismatchFields"
                     }
                   }
                 }
 
                 // Save baseline if requested
                 if (saveBaseline) {
-                  val resultJson = new JSONObject()
-                  resultJson.put("name", testName)
-                  resultJson.put("typeChecks", typeChecked)
-                  resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
-                  resultJson.put("smt", smtStr)
-                  resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
-                  // Skip json1/json2 for speed in batch mode
-                  resultJson.put("json1", "")
-                  resultJson.put("json2", "")
                   savePerFileBaseline(file, resultJson)
                 }
 
@@ -1524,6 +1538,10 @@ object Frontend {
     else "-"
   }
 
+  // Helper to check if a comparison result indicates a mismatch
+  // "true" = match, "-" = both empty (ok), "false" = mismatch, "???" = unexpected value
+  def isMismatch(result: String): Boolean = result == "false" || result == "???"
+
   def compareResult(bo: JSONObject, co: JSONObject): (Boolean, List[String]) = {
     val typeChecksEq = compareSingleResult("typeChecks", bo, co)
     val modelEq = compareSingleResult("model", bo, co)
@@ -1534,8 +1552,10 @@ object Frontend {
     val typeCheckString =
       if (typeChecksEq == "true") s"$typeChecksEq (${co.get("typeChecks")})"
       else s"$typeChecksEq"
-    if (typeChecksEq != "true" || modelEq != "true" || json1Eq != "true" ||
-      json2Eq != "true" || smtEq != "true" || smtModelEq != "true")
+    // A field is OK if it's "true" (matches) or "-" (both empty/missing)
+    // A field is a mismatch if it's "false" (different values) or "???" (unexpected)
+    if (isMismatch(typeChecksEq) || isMismatch(modelEq) || isMismatch(json1Eq) ||
+      isMismatch(json2Eq) || isMismatch(smtEq) || isMismatch(smtModelEq))
       (false, List(bo.getString("name") + "*", s"$typeCheckString", s"$modelEq", s"$json1Eq",
         s"$json2Eq", s"$smtEq", s"$smtModelEq"))
     else

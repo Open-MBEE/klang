@@ -207,8 +207,34 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
     echo "Running test: $FOUND_FILE"
     echo ""
     
-    # Run the test and capture output
-    ./export/k "$FOUND_FILE"
+    # Setup classpath (similar to export/k)
+    if [ -d "$PROJECT_ROOT/target/classes" ]; then
+        CLASSPATH="$PROJECT_ROOT/target/classes"
+    else
+        CLASSPATH="$PROJECT_ROOT/bin"
+    fi
+    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/src/grammar/antlr-4.7-complete.jar"
+    if [ -f "$PROJECT_ROOT/export/lib/com.microsoft.z3.osx.jar" ]; then
+        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/export/lib/com.microsoft.z3.osx.jar"
+    elif [ -f "$PROJECT_ROOT/lib/com.microsoft.z3.jar" ]; then
+        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/lib/com.microsoft.z3.jar"
+    else
+        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/export/lib/com.microsoft.z3.jar"
+    fi
+    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/export/lib/*"
+    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/export/lib/scalalib/*"
+    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/export/lib/elasticsearch-1.5.0/*"
+    
+    LIB_PATH="$PROJECT_ROOT/export/lib"
+    
+    # Build java args for single test (use batch mode for baseline support)
+    JAVA_ARGS="-batch -prefer-file-options"
+    if [ "$SAVE_BASELINE" = true ]; then
+        JAVA_ARGS="$JAVA_ARGS -baseline"
+    fi
+    
+    # Run the test using batch mode for proper baseline handling
+    echo "$FOUND_FILE" | java -Djava.library.path="$LIB_PATH" -classpath "$CLASSPATH" k.frontend.Main $JAVA_ARGS
     TEST_EXIT_CODE=$?
     
     # Check baseline after test completes
