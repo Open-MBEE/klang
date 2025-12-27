@@ -527,7 +527,20 @@ object Frontend {
                   outcome = "UNSAT"
                 }
 
-                // Check against @expected
+                // Build current result JSON for comparison
+                val resultJson = new JSONObject()
+                resultJson.put("name", testName)
+                resultJson.put("typeChecks", typeChecked)
+                resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
+                resultJson.put("smt", smtStr)
+                resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
+                resultJson.put("json1", "")
+                resultJson.put("json2", "")
+
+                // Determine pass/fail based on:
+                // 1. @expected annotation (highest priority)
+                // 2. Baseline file (if no @expected)
+                // 3. Default: SAT/UNSAT = PASS, anything else = FAIL
                 expectedOpt match {
                   case Some(expected) if expected == outcome =>
                     status = "PASSED"
@@ -538,50 +551,32 @@ object Frontend {
                     extra = s"got $outcome, expected $expected"
                     failed += 1
                   case None =>
-                    // No @expected - pass if it completed without crash
-                    status = "PASSED"
-                    extra = outcome
-                    passed += 1
-                }
-
-                // Build current result JSON for comparison and potential saving
-                val resultJson = new JSONObject()
-                resultJson.put("name", testName)
-                resultJson.put("typeChecks", typeChecked)
-                resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
-                resultJson.put("smt", smtStr)
-                resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
-                // Skip json1/json2 for speed in batch mode
-                resultJson.put("json1", "")
-                resultJson.put("json2", "")
-
-                // Check against baseline if it exists
-                baselineOpt.foreach { baseline =>
-                  val (matches, details) = compareResult(baseline, resultJson)
-                  
-                  if (matches) {
-                    baselineMatched += 1
-                  } else {
-                    baselineMismatched += 1
-                    // Report which fields mismatched
-                    val fieldNames = List("typeChecks", "model", "json1", "json2", "smt", "smtModel")
-                    val fieldResults = details.tail // Skip the name element
-                    val mismatchFields = fieldResults.zip(fieldNames)
-                      .collect { case (v, f) if v == "false" || v == "???" => f }
-                      .mkString(", ")
-                    
-                    // Only fail on baseline mismatch if there's an @expected annotation
-                    // Otherwise just warn (append to extra)
-                    if (expectedOpt.isDefined && status == "PASSED") {
-                      status = "FAILED"
-                      failed += 1
-                      passed -= 1
-                      extra = s"baseline mismatch: $mismatchFields"
-                    } else if (status == "PASSED") {
-                      // No @expected - just note the mismatch but don't fail
-                      extra = s"$extra (baseline differs: $mismatchFields)"
+                    // No @expected - check baseline
+                    baselineOpt match {
+                      case Some(baseline) =>
+                        val (matches, details) = compareResult(baseline, resultJson)
+                        if (matches) {
+                          baselineMatched += 1
+                          status = "PASSED"
+                          extra = s"$outcome (matches baseline)"
+                          passed += 1
+                        } else {
+                          baselineMismatched += 1
+                          val fieldNames = List("typeChecks", "model", "json1", "json2", "smt", "smtModel")
+                          val fieldResults = details.tail
+                          val mismatchFields = fieldResults.zip(fieldNames)
+                            .collect { case (v, f) if v == "false" || v == "???" => f }
+                            .mkString(", ")
+                          status = "FAILED"
+                          extra = s"baseline mismatch: $mismatchFields"
+                          failed += 1
+                        }
+                      case None =>
+                        // No @expected and no baseline - pass if SAT or UNSAT
+                        status = "PASSED"
+                        extra = outcome
+                        passed += 1
                     }
-                  }
                 }
 
                 // Save baseline if requested
@@ -610,10 +605,23 @@ object Frontend {
                     extra = s"got ERROR (type check), expected $expected"
                     failed += 1
                   case None =>
-                    // No expectation - pass with note (legacy behavior)
-                    status = "PASSED"
-                    extra = "ERROR (type check)"
-                    passed += 1
+                    // No @expected - check if baseline expects error
+                    if (baselineOpt.exists(b => getOutcomeFromResult(b) == "ERROR")) {
+                      status = "PASSED"
+                      extra = "ERROR (matches baseline)"
+                      passed += 1
+                      baselineMatched += 1
+                    } else if (baselineOpt.isDefined) {
+                      status = "FAILED"
+                      extra = "ERROR (type check) - baseline expected different"
+                      failed += 1
+                      baselineMismatched += 1
+                    } else {
+                      // No @expected and no baseline - error is a failure
+                      status = "FAILED"
+                      extra = "ERROR (type check)"
+                      failed += 1
+                    }
                 }
               }
             case K2SMTException =>
@@ -629,10 +637,21 @@ object Frontend {
                     extra = s"got ERROR (K2SMT), expected $expected"
                     failed += 1
                   case None =>
-                    // No expectation - pass with note (legacy behavior)
-                    status = "PASSED"
-                    extra = "ERROR (K2SMT)"
-                    passed += 1
+                    if (baselineOpt.exists(b => getOutcomeFromResult(b) == "ERROR")) {
+                      status = "PASSED"
+                      extra = "ERROR (matches baseline)"
+                      passed += 1
+                      baselineMatched += 1
+                    } else if (baselineOpt.isDefined) {
+                      status = "FAILED"
+                      extra = "ERROR (K2SMT) - baseline expected different"
+                      failed += 1
+                      baselineMismatched += 1
+                    } else {
+                      status = "FAILED"
+                      extra = "ERROR (K2SMT)"
+                      failed += 1
+                    }
                 }
               }
             case K2Z3Exception =>
@@ -648,10 +667,21 @@ object Frontend {
                     extra = s"got ERROR (K2Z3), expected $expected"
                     failed += 1
                   case None =>
-                    // No expectation - pass with note (legacy behavior)
-                    status = "PASSED"
-                    extra = "ERROR (K2Z3)"
-                    passed += 1
+                    if (baselineOpt.exists(b => getOutcomeFromResult(b) == "ERROR")) {
+                      status = "PASSED"
+                      extra = "ERROR (matches baseline)"
+                      passed += 1
+                      baselineMatched += 1
+                    } else if (baselineOpt.isDefined) {
+                      status = "FAILED"
+                      extra = "ERROR (K2Z3) - baseline expected different"
+                      failed += 1
+                      baselineMismatched += 1
+                    } else {
+                      status = "FAILED"
+                      extra = "ERROR (K2Z3)"
+                      failed += 1
+                    }
                 }
               }
             case e: Throwable =>
