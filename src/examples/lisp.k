@@ -1,4 +1,4 @@
-// @preferred_options -heapcegar
+// @preferred_options -heapcegar-cvc5
 // @expected SAT
 
 class S_Exp {

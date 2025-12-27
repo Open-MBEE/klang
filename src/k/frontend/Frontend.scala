@@ -433,6 +433,7 @@ object Frontend {
             var fileTimeout: Option[Int] = None
             var fileUseDsnPass = false
             var fileUseHeapCegar = false
+            var fileUseCvc5 = false
             val timeoutIdx = preferredOpts.indexOf("-timeout")
             if (timeoutIdx >= 0 && timeoutIdx + 1 < preferredOpts.length) {
               try {
@@ -444,6 +445,13 @@ object Frontend {
             }
             if (preferredOpts.contains("-heapcegar")) {
               fileUseHeapCegar = true
+            }
+            if (preferredOpts.contains("-heapcegar-cvc5")) {
+              fileUseHeapCegar = true
+              fileUseCvc5 = true
+            }
+            if (preferredOpts.contains("-cvc5")) {
+              fileUseCvc5 = true
             }
             
             // Determine effective timeout based on precedence
@@ -461,6 +469,8 @@ object Frontend {
             // Determine effective solver options based on precedence
             val cliHasDsnPass = options.getOrElse('dsnPass, false).asInstanceOf[Boolean]
             val cliHasHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
+            val cliHasCvc5 = options.getOrElse('cvc5, false).asInstanceOf[Boolean] ||
+                             options.getOrElse('heapcegarcvc5, false).asInstanceOf[Boolean]
             
             val useDsnPass = if (preferFileOptions) {
               if (fileUseDsnPass) true else cliHasDsnPass
@@ -472,6 +482,19 @@ object Frontend {
               if (fileUseHeapCegar) true else cliHasHeapCegar
             } else {
               if (cliHasHeapCegar) true else fileUseHeapCegar
+            }
+            
+            val useCvc5 = if (preferFileOptions) {
+              if (fileUseCvc5) true else cliHasCvc5
+            } else {
+              if (cliHasCvc5) true else fileUseCvc5
+            }
+            
+            // Set CVC5 compatibility flag for SMT generation
+            if (useCvc5) {
+              ASTOptions.cvc5Compatible = true
+            } else {
+              ASTOptions.cvc5Compatible = false
             }
 
             if (!file.exists()) {
