@@ -587,46 +587,68 @@ object Frontend {
                 resultJson.put("json1", "")
                 resultJson.put("json2", "")
 
-                // Determine pass/fail based on:
-                // 1. @expected annotation (highest priority)
-                // 2. Baseline file (if no @expected)
-                // 3. Default: SAT/UNSAT = PASS, anything else = FAIL
+                // Determine pass/fail based on BOTH checks:
+                // 1. @expected annotation (if present, outcome must match)
+                // 2. Baseline file (if present, must match)
+                // 3. Default: SAT/UNSAT = PASS if neither @expected nor baseline present
+                // Fail if EITHER check fails
+                
+                var expectedPassed = true
+                var expectedInfo = ""
+                var baselinePassed = true
+                var baselineInfo = ""
+                
+                // Check @expected if present
                 expectedOpt match {
                   case Some(expected) if expected == outcome =>
-                    status = "PASSED"
-                    extra = s"$outcome (expected)"
-                    passed += 1
+                    expectedInfo = s"$outcome (expected)"
                   case Some(expected) =>
-                    status = "FAILED"
-                    extra = s"got $outcome, expected $expected"
-                    failed += 1
+                    expectedPassed = false
+                    expectedInfo = s"got $outcome, expected $expected"
                   case None =>
-                    // No @expected - check baseline
-                    baselineOpt match {
-                      case Some(baseline) =>
-                        val (matches, details) = compareResult(baseline, resultJson)
-                        if (matches) {
-                          baselineMatched += 1
-                          status = "PASSED"
-                          extra = s"$outcome (matches baseline)"
-                          passed += 1
-                        } else {
-                          baselineMismatched += 1
-                          val fieldNames = List("typeChecks", "model", "json1", "json2", "smt", "smtModel")
-                          val fieldResults = details.tail
-                          val mismatchFields = fieldResults.zip(fieldNames)
-                            .collect { case (v, f) if v == "false" || v == "???" => f }
-                            .mkString(", ")
-                          status = "FAILED"
-                          extra = s"baseline mismatch: $mismatchFields"
-                          failed += 1
-                        }
-                      case None =>
-                        // No @expected and no baseline - pass if SAT or UNSAT
-                        status = "PASSED"
-                        extra = outcome
-                        passed += 1
+                    expectedInfo = outcome
+                }
+                
+                // Check baseline if present
+                baselineOpt match {
+                  case Some(baseline) =>
+                    val (matches, details) = compareResult(baseline, resultJson)
+                    if (matches) {
+                      baselineMatched += 1
+                      baselineInfo = "baseline OK"
+                    } else {
+                      baselineMismatched += 1
+                      baselinePassed = false
+                      val fieldNames = List("typeChecks", "model", "json1", "json2", "smt", "smtModel")
+                      val fieldResults = details.tail
+                      val mismatchFields = fieldResults.zip(fieldNames)
+                        .collect { case (v, f) if v == "false" || v == "???" => f }
+                        .mkString(", ")
+                      baselineInfo = s"baseline mismatch: $mismatchFields"
                     }
+                  case None =>
+                    // No baseline to check
+                }
+                
+                // Determine overall pass/fail
+                if (expectedPassed && baselinePassed) {
+                  status = "PASSED"
+                  passed += 1
+                  // Build extra info
+                  extra = if (baselineOpt.isDefined) {
+                    s"$expectedInfo, $baselineInfo"
+                  } else {
+                    expectedInfo
+                  }
+                } else {
+                  status = "FAILED"
+                  failed += 1
+                  // Show what failed
+                  val failures = List(
+                    if (!expectedPassed) Some(expectedInfo) else None,
+                    if (!baselinePassed) Some(baselineInfo) else None
+                  ).flatten.mkString("; ")
+                  extra = failures
                 }
 
                 // Save baseline if requested

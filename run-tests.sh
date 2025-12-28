@@ -411,10 +411,8 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
     echo "  Total:    $TOTAL_TESTS"
     echo "  ✅ Passed:  $PASSED"
     echo "  ❌ Failed:  $FAILED"
-    if [ "$BASELINE_MATCHED" -gt 0 ] || [ "$BASELINE_MISMATCHED" -gt 0 ]; then
-        echo "  📋 Baseline matched:    $BASELINE_MATCHED"
-        echo "  ⚠️  Baseline mismatched: $BASELINE_MISMATCHED"
-    fi
+    echo "  📋 Baseline matched:    $BASELINE_MATCHED"
+    echo "  ⚠️  Baseline mismatched: $BASELINE_MISMATCHED"
     echo "  ⏱️  CPU time: ${TOTAL_TIME}s"
     echo "  🕐 Wall time: ${WALL_TIME}s"
 
