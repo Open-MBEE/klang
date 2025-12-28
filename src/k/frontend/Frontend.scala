@@ -179,6 +179,7 @@ object Frontend {
       case "-mzn-timeout" :: value :: tail => parseArgs(map ++ Map('mznTimeout -> value.toInt), tail)
       case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
+      case "-batch-verbose" :: tail => parseArgs(map ++ Map('batchVerbose -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
       case "-analyze" :: tail => parseArgs(map ++ Map('analyze -> true), tail)
       case "-auto" :: tail => parseArgs(map ++ Map('auto -> true), tail)
@@ -382,7 +383,8 @@ object Frontend {
     // Always checks @expected annotations and baselines
     options.get('batch) match {
       case Some(true) =>
-        K2Z3.silent = true  // Suppress verbose K2Z3 output
+        val batchVerbose = options.get('batchVerbose).contains(true)
+        K2Z3.silent = !batchVerbose  // Suppress verbose K2Z3 output unless -batch-verbose
         val showTiming = options.get('timing).contains(true)
         val saveBaseline = options.get('baseline).contains(true)
         val startTime = System.nanoTime()
@@ -425,7 +427,7 @@ object Frontend {
             K2Z3.reset()
             t1 = System.nanoTime()
             tReset = t1 - t0
-            
+
             // Apply @preferred_options for this test based on precedence mode:
             // - Default (CLI wins): file options only apply if CLI didn't set them
             // - -prefer-file-options: file options override CLI
@@ -567,6 +569,10 @@ object Frontend {
                   outcome = "TIMEOUT"
                 } else if (K2Z3.z3Model != null && K2Z3.z3Model.toString != "()") {
                   outcome = "SAT"
+                  // Print model if -batch-verbose is set
+                  if (batchVerbose) {
+                    K2Z3.PrintModel(combinedModel)
+                  }
                 } else {
                   outcome = "UNSAT"
                 }
@@ -1574,7 +1580,7 @@ object Frontend {
       try {
         testsRun = testsRun + 1
         val currentTestJsonObject = doTest(file, false)
-        
+
         // Load per-file baseline
         val baselineOpt = loadPerFileBaseline(file)
         

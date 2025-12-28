@@ -228,7 +228,8 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
     LIB_PATH="$PROJECT_ROOT/export/lib"
     
     # Build java args for single test (use batch mode for baseline support)
-    JAVA_ARGS="-batch -prefer-file-options"
+    # Add -batch-verbose to print model output while still doing baseline checking
+    JAVA_ARGS="-batch -batch-verbose -prefer-file-options"
     if [ "$SAVE_BASELINE" = true ]; then
         JAVA_ARGS="$JAVA_ARGS -baseline"
     fi
