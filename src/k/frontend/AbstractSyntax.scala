@@ -151,6 +151,7 @@ object UtilSMT {
     objectGraph = null
     statistics = null
     variableCounter = 0
+    constantCounter = 0
     heapInitializerConstants = Nil
     subClassMap = Map()
     constantsToDeclare = Nil
