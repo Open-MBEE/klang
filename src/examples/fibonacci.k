@@ -1,3 +1,4 @@
+-- @expected SAT
 package nasa.jpl.k.fibonacci
 
 fun fib (n: Int) : Int {
@@ -18,9 +19,9 @@ fun helper (x:Int) : Int {
 fun swap (x:Int, y:Int) : (Int*Int) {
     val g : Int
     val t : Int = x
-    x := y
-    y := t
-    Tuple(x,y)
+    val nx = y
+    val ny = t
+    Tuple(nx,ny)
 }
 
 -- return set of Int

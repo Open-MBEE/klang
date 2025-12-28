@@ -237,6 +237,19 @@ object UtilSMT {
       case ExpressionDecl(exp) :: Nil =>
         val expSMT = exp.toSMT(className, subtyping)
         "  " + ("  " * level) + expSMT + (")" * level)
+      case ConstraintDecl(name, exp, _) :: rest =>
+        // Constraint in function body - treat as precondition/assertion
+        // The constraint expression must be true, and is conjoined with the rest
+        val constraintSMT = exp.toSMT(className, subtyping)
+        if (rest.isEmpty) {
+          // If this is the last element, return just the constraint (should be Bool)
+          "  " + ("  " * level) + constraintSMT + (")" * level)
+        } else {
+          // Combine with rest using implication: constraint => rest
+          // (If constraint holds, then rest should hold)
+          val restSMT = memberList2SMT(rest, className, subtyping, level)
+          s"(=> $constraintSMT\n$restSMT)"
+        }
       case (pd @ PropertyDecl(modifiers, name, tyOpt, None, _, exp)) :: rest =>
         // Check if this PropertyDecl was converted to an equality constraint by the type checker
         if (TypeChecker.propertyAsConstraint.containsKey(pd)) {
@@ -266,7 +279,11 @@ object UtilSMT {
               "  " + ("  " * level) + s"(let (($name $expSMT))\n" +
                 memberList2SMT(rest, className, subtyping, level + 1)
             case None =>
-              UtilSMT.error(s"expression is missing in local property declaration $pd")
+              // Underspecified local variable - use existential quantification
+              // (exists ((name Type)) rest)
+              val smtType = ty.toSMT
+              "  " + ("  " * level) + s"(exists (($name $smtType))\n" +
+                memberList2SMT(rest, className, subtyping, level + 1)
           }
         }
       case _ =>
@@ -967,8 +984,12 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       val pdecls = allEntityDecls(pd.model)
       allDecls.appendAll(pdecls)
     }
-    // Remove duplicates by keeping only unique entity declarations based on their identity
-    allDecls.toList.distinct
+    // Remove duplicates by name (not object identity) to avoid duplicate SMT declarations
+    val seen = scala.collection.mutable.Set[String]()
+    allDecls.toList.filter { ed =>
+      if (seen.contains(ed.ident)) false
+      else { seen += ed.ident; true }
+    }
   }
 
   def toSMT: String = {

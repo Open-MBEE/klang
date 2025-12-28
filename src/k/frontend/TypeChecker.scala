@@ -662,9 +662,10 @@ class TypeChecker(model: Model) {
         if (!isPrimitiveType(d.asInstanceOf[FunDecl].ty.getOrElse(UnitType)) && lastMemberIsConstructorCall) {
           error(s"Function $d does not return a primitive type. SMT mode disallows this.")
         }
-        if (functionContainsReq(d.asInstanceOf[FunDecl])) {
-          error(s"Function $d contains a constraint. SMT mode disallows this.")
-        }
+        // Allow constraints (req) inside function bodies - they act as preconditions/assertions
+        // if (functionContainsReq(d.asInstanceOf[FunDecl])) {
+        //   error(s"Function $d contains a constraint. SMT mode disallows this.")
+        // }
         if (incompleteIf) {
           error(s"Function $d contains an incomplete If statement with no else clause.")
         }
@@ -689,9 +690,10 @@ class TypeChecker(model: Model) {
           if (!isPrimitiveType(fd.ty.getOrElse(UnitType)) && lastMemberIsConstructorCall) {
             error(s"Function $fd does not return a primitive type. SMT mode disallows this.")
           }
-          if (functionContainsReq(fd)) {
-            error(s"Function $fd contains a constraint. SMT mode disallows this.")
-          }
+          // Allow constraints (req) inside function bodies - they act as preconditions/assertions
+          // if (functionContainsReq(fd)) {
+          //   error(s"Function $fd contains a constraint. SMT mode disallows this.")
+          // }
           if (incompleteIf) {
             error(s"Function $d contains an incomplete If statement with no else clause.")
           }
@@ -819,8 +821,8 @@ class TypeChecker(model: Model) {
 
     // pass: process functions (not bodies of functions) at top level FIRST
     // This must happen before property type inference so that function return types are available
-    // Note: Do NOT recursively process packages here because each package gets its own TypeChecker
-    globalTypeEnv = model.decls.foldLeft(globalTypeEnv) { (res, d) =>
+    // Process all declarations including those in nested packages
+    globalTypeEnv = collectAllDecls(model).foldLeft(globalTypeEnv) { (res, d) =>
       d match {
         case fd @ FunDecl(_, _, _, _, _, _) =>
           // check if the type exists
