@@ -181,6 +181,7 @@ object Frontend {
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
       case "-analyze" :: tail => parseArgs(map ++ Map('analyze -> true), tail)
+      case "-auto" :: tail => parseArgs(map ++ Map('auto -> true), tail)
       case "-prefer-file-options" :: tail => parseArgs(map ++ Map('preferFileOptions -> true), tail)
       case "-ignore-file-options" :: tail => parseArgs(map ++ Map('ignoreFileOptions -> true), tail)
       case "-debug" :: tail =>
@@ -942,15 +943,81 @@ object Frontend {
         val useLegacy = options.getOrElse('legacy, false).asInstanceOf[Boolean] // Legacy solver (old path)
         val useDsnPass = options.getOrElse('dsnPass, false).asInstanceOf[Boolean] // DSN_Pass.k solver (scenario-based incremental)
         val useUnifiedScenarios = options.getOrElse('unifiedScenarios, false).asInstanceOf[Boolean] // Scenario-based unified solver
-        val useUnified = !useLegacy && !useUnifiedScenarios && !useDsnPass && options.getOrElse('unified, true).asInstanceOf[Boolean] // Default to unified unless other modes specified
         val useHeapCegar = options.getOrElse('heapcegar, false).asInstanceOf[Boolean]
         val useBAE = options.getOrElse('bae, false).asInstanceOf[Boolean]
         val useYices = options.getOrElse('yices, false).asInstanceOf[Boolean]
         val useMathSAT = options.getOrElse('mathsat, false).asInstanceOf[Boolean]
+        val useAuto = options.getOrElse('auto, false).asInstanceOf[Boolean]
         // useCVC5 is already defined above
         
-        // DSN_Pass.k-specific solver (runs first if specified)
-        if (useDsnPass) {
+        // Check if any specific solver/strategy was requested
+        val hasExplicitStrategy = useDsnPass || useScenarioTracking || useIncremental || 
+          useUnifiedScenarios || useLegacy || useHeapCegar || useBAE || useYices || useMathSAT || useCVC5
+        
+        // Use auto-detection if -auto flag or no explicit strategy
+        val useUnified = !hasExplicitStrategy && !useAuto && options.getOrElse('unified, true).asInstanceOf[Boolean]
+        
+        // AUTO-DETECTION: Analyze problem and select optimal strategy
+        if (useAuto || (!hasExplicitStrategy && !useUnified)) {
+          log("Using Auto-Detection...")
+          val props = ProblemAnalyzer.analyze(combinedModel)
+          val config = ProblemAnalyzer.selectConfig(props, SolveConfig.fromOptions(options))
+          
+          log(s"  Detected: hasDynamicHeap=${props.hasDynamicHeap}, complexity=${props.estimatedComplexity}")
+          log(s"  Selected: heapStrategy=${config.heapStrategy}, incrementalMode=${config.incrementalMode}")
+          
+          // Route to appropriate solver based on detected config
+          val result = config.heapStrategy match {
+            case HeapStrategy.CEGAR =>
+              log("  → Using Heap CEGAR strategy")
+              UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = true)
+              
+            case HeapStrategy.Soft =>
+              log("  → Using Soft Heap strategy")
+              UnifiedSolver.solveWithSoftHeap(combinedModel, printModel = true)
+              
+            case HeapStrategy.Fixed | HeapStrategy.Auto =>
+              config.incrementalMode match {
+                case IncrementalMode.Scenarios =>
+                  log("  → Using Scenario-based Incremental strategy")
+                  import k.frontend.DSNPassSolver
+                  val scenarioResult = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtModel, timeoutValue)
+                  scenarioResult match {
+                    case Some(sr) =>
+                      sr.result match {
+                        case Satisfiable(model, _) =>
+                          K2Z3.z3Model = model
+                          K2Z3.PrintModel(combinedModel)
+                          UnifiedSolver.SolveResult.Sat(model)
+                        case Unsatisfiable(_, _) =>
+                          UnifiedSolver.SolveResult.Unsat
+                        case Unknown(reason, _, timeout) =>
+                          if (timeout) UnifiedSolver.SolveResult.Timeout
+                          else UnifiedSolver.SolveResult.Unknown(reason)
+                      }
+                    case None =>
+                      UnifiedSolver.SolveResult.Unsat
+                  }
+                  
+                case _ =>
+                  log("  → Using UnifiedSolver (default)")
+                  UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
+              }
+          }
+          
+          result match {
+            case UnifiedSolver.SolveResult.Sat(model) =>
+              log("Auto: SAT")
+              K2Z3.z3Model = model
+            case UnifiedSolver.SolveResult.Unsat =>
+              log("Auto: UNSAT")
+            case UnifiedSolver.SolveResult.Timeout =>
+              log("Auto: TIMEOUT")
+            case UnifiedSolver.SolveResult.Unknown(reason) =>
+              log(s"Auto: UNKNOWN ($reason)")
+          }
+        // DSN_Pass.k-specific solver (runs if explicitly specified)
+        } else if (useDsnPass) {
           println("[main] Using DSN_Pass Solver (scenario-based incremental)")
           import k.frontend.DSNPassSolver
           val result = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtModel, timeoutValue)
