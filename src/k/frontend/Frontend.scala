@@ -948,17 +948,16 @@ object Frontend {
         val useYices = options.getOrElse('yices, false).asInstanceOf[Boolean]
         val useMathSAT = options.getOrElse('mathsat, false).asInstanceOf[Boolean]
         val useAuto = options.getOrElse('auto, false).asInstanceOf[Boolean]
+        val useUnified = options.getOrElse('unified, false).asInstanceOf[Boolean]  // Only if explicitly requested
         // useCVC5 is already defined above
         
-        // Check if any specific solver/strategy was requested
+        // Check if any specific solver/strategy was explicitly requested
         val hasExplicitStrategy = useDsnPass || useScenarioTracking || useIncremental || 
-          useUnifiedScenarios || useLegacy || useHeapCegar || useBAE || useYices || useMathSAT || useCVC5
+          useUnifiedScenarios || useLegacy || useHeapCegar || useBAE || useYices || useMathSAT || useCVC5 || useUnified
         
-        // Use auto-detection if -auto flag or no explicit strategy
-        val useUnified = !hasExplicitStrategy && !useAuto && options.getOrElse('unified, true).asInstanceOf[Boolean]
-        
-        // AUTO-DETECTION: Analyze problem and select optimal strategy
-        if (useAuto || (!hasExplicitStrategy && !useUnified)) {
+        // AUTO-DETECTION is now the DEFAULT when no explicit strategy is specified
+        // Use -unified flag to force the old UnifiedSolver behavior
+        if (!hasExplicitStrategy || useAuto) {
           log("Using Auto-Detection...")
           val props = ProblemAnalyzer.analyze(combinedModel)
           val config = ProblemAnalyzer.selectConfig(props, SolveConfig.fromOptions(options))
