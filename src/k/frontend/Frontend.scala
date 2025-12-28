@@ -180,6 +180,7 @@ object Frontend {
       case "-emit-mzn" :: tail => parseArgs(map ++ Map('emitMzn -> true), tail)
       case "-batch" :: tail => parseArgs(map ++ Map('batch -> true), tail)
       case "-timing" :: tail => parseArgs(map ++ Map('timing -> true), tail)
+      case "-analyze" :: tail => parseArgs(map ++ Map('analyze -> true), tail)
       case "-prefer-file-options" :: tail => parseArgs(map ++ Map('preferFileOptions -> true), tail)
       case "-ignore-file-options" :: tail => parseArgs(map ++ Map('ignoreFileOptions -> true), tail)
       case "-debug" :: tail =>
@@ -834,6 +835,52 @@ object Frontend {
       //        model.annotations ++ allAnnotations,
       //        model.decls ++ allDecls)
       val combinedModel = combineModel(model, fullFileName)
+      
+      // If -analyze is specified, analyze problem properties and exit
+      if (options.contains('analyze)) {
+        val props = ProblemAnalyzer.analyze(combinedModel)
+        println("\n" + "="*60)
+        println("PROBLEM ANALYSIS")
+        println("="*60)
+        println(s"File: $fullFileName")
+        println()
+        println("Heap Properties:")
+        println(s"  hasDynamicHeap: ${props.hasDynamicHeap}")
+        println(s"  dynamicClasses: ${props.dynamicClasses.mkString(", ")}")
+        println(s"  fixedObjectCount: ${props.fixedObjectCount}")
+        println()
+        println("Structure Properties:")
+        println(s"  hasScenarios: ${props.hasScenarios}")
+        println(s"  scenarioCount: ${props.scenarioCount}")
+        println()
+        println("Complexity Metrics:")
+        println(s"  classCount: ${props.classCount}")
+        println(s"  constraintCount: ${props.constraintCount}")
+        println(s"  propertyCount: ${props.propertyCount}")
+        println(s"  functionCount: ${props.functionCount}")
+        println()
+        println("Special Features:")
+        println(s"  hasExternalFunctions: ${props.hasExternalFunctions}")
+        println(s"  hasCollections: ${props.hasCollections}")
+        println(s"  hasQuantifiers: ${props.hasQuantifiers}")
+        println(s"  hasRecursion: ${props.hasRecursion}")
+        println()
+        println(s"Estimated Complexity: ${props.estimatedComplexity}")
+        println()
+        
+        // Show recommended config
+        val config = ProblemAnalyzer.selectConfig(props, SolveConfig.default)
+        println("Recommended Configuration:")
+        println(s"  heapStrategy: ${config.heapStrategy}")
+        println(s"  incrementalMode: ${config.incrementalMode}")
+        println(s"  initialTimeoutMs: ${config.initialTimeoutMs}")
+        println(s"  useSoftConstraintFallback: ${config.useSoftConstraintFallback}")
+        if (props.hasDynamicHeap) {
+          println(s"  initialHeapBounds: ${config.initialHeapBounds}")
+        }
+        println("="*60)
+        return
+      }
       
       // If -ktc-gen is specified, generate K type check program and exit
       if (options.contains('ktcGen)) {
