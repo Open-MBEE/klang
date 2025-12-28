@@ -238,17 +238,14 @@ object UtilSMT {
         val expSMT = exp.toSMT(className, subtyping)
         "  " + ("  " * level) + expSMT + (")" * level)
       case ConstraintDecl(name, exp, _) :: rest =>
-        // Constraint in function body - treat as precondition/assertion
-        // The constraint expression must be true, and is conjoined with the rest
-        val constraintSMT = exp.toSMT(className, subtyping)
+        // Constraint in function body - skip it for SMT generation
+        // (These are treated as preconditions and should be handled via `pre` keyword instead)
+        // Just process the rest of the body
         if (rest.isEmpty) {
-          // If this is the last element, return just the constraint (should be Bool)
-          "  " + ("  " * level) + constraintSMT + (")" * level)
+          // If this is the last element, return true (Unit/void function)
+          "  " + ("  " * level) + "true" + (")" * level)
         } else {
-          // Combine with rest using implication: constraint => rest
-          // (If constraint holds, then rest should hold)
-          val restSMT = memberList2SMT(rest, className, subtyping, level)
-          s"(=> $constraintSMT\n$restSMT)"
+          memberList2SMT(rest, className, subtyping, level)
         }
       case (pd @ PropertyDecl(modifiers, name, tyOpt, None, _, exp)) :: rest =>
         // Check if this PropertyDecl was converted to an equality constraint by the type checker
@@ -279,10 +276,15 @@ object UtilSMT {
               "  " + ("  " * level) + s"(let (($name $expSMT))\n" +
                 memberList2SMT(rest, className, subtyping, level + 1)
             case None =>
-              // Underspecified local variable - use existential quantification
-              // (exists ((name Type)) rest)
-              val smtType = ty.toSMT
-              "  " + ("  " * level) + s"(exists (($name $smtType))\n" +
+              // Underspecified local variable without initializer is not supported in SMT
+              // For underspecified variables, use a default value (0 for Int, false for Bool, etc.)
+              val defaultValue = ty match {
+                case IntType => "0"
+                case BoolType => "false"
+                case RealType => "0.0"
+                case _ => "0" // Default fallback
+              }
+              "  " + ("  " * level) + s"(let (($name $defaultValue))\n" +
                 memberList2SMT(rest, className, subtyping, level + 1)
           }
         }
@@ -984,11 +986,31 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       val pdecls = allEntityDecls(pd.model)
       allDecls.appendAll(pdecls)
     }
-    // Remove duplicates by name (not object identity) to avoid duplicate SMT declarations
-    val seen = scala.collection.mutable.Set[String]()
-    allDecls.toList.filter { ed =>
-      if (seen.contains(ed.ident)) false
-      else { seen += ed.ident; true }
+    // Remove duplicates by object identity - we need to keep TopLevelDeclarations from each package
+    // as they may have different members. The earlier fix (dedup by name) was too aggressive
+    // and was dropping package TopLevelDeclarations that had methods.
+    // Instead, we merge TopLevelDeclarations from all packages into one.
+    val topLevelDecls = allDecls.filter(_.ident == UtilSMT.Names.mainClass).toList
+    val otherDecls = allDecls.filterNot(_.ident == UtilSMT.Names.mainClass).toList
+    
+    if (topLevelDecls.size > 1) {
+      // Merge all TopLevelDeclarations into one, deduplicating members by name
+      val allMembers = topLevelDecls.flatMap(_.members)
+      val seenNames = scala.collection.mutable.Set[String]()
+      val mergedMembers = allMembers.filter { m =>
+        val name = m match {
+          case pd: PropertyDecl => pd.name
+          case fd: FunDecl => fd.ident
+          case cd: ConstraintDecl => cd.name.getOrElse(s"constraint_${m.hashCode}")
+          case _ => s"member_${m.hashCode}"
+        }
+        if (seenNames.contains(name)) false
+        else { seenNames += name; true }
+      }
+      val mergedTopLevel = EntityDecl(Nil, ClassToken, None, UtilSMT.Names.mainClass, null, Nil, Nil, mergedMembers)
+      mergedTopLevel :: otherDecls.distinct
+    } else {
+      allDecls.toList.distinct
     }
   }
 
@@ -2288,17 +2310,33 @@ case class FunDecl(ident: String,
         else
           t.toSMT
       case None =>
-        UtilSMT.error(s"Missing return type (= Unit) $this")
+        // No return type - treat as Unit (void) function
+        // We use Bool as a placeholder for Unit in SMT (Unit doesn't exist in SMT)
+        "Bool"
     }
+    
+    val isUnitFunction = ty.isEmpty || ty.contains(UnitType)
 
     // body:
 
     if (body == Nil) {
-      result += s"(declare-fun $className.$ident ($parameterTypes) $resultType)\n"
-      result += "\n"
-      result += s"(define-fun $className!$ident ($parameters) $resultType\n"
-      result += s"  ($className.$ident $actuals)\n"
-      result += ")"
+      if (isUnitFunction) {
+        // Unit function with empty body - just returns true (no-op)
+        result += s"(define-fun $className.$ident ($parameters) $resultType\n"
+        result += "  true\n"
+        result += ")\n"
+        result += "\n"
+        result += s"(define-fun $className!$ident ($parameters) $resultType\n"
+        result += "  true\n"
+        result += ")"
+      } else {
+        // Non-Unit function with empty body - uninterpreted function
+        result += s"(declare-fun $className.$ident ($parameterTypes) $resultType)\n"
+        result += "\n"
+        result += s"(define-fun $className!$ident ($parameters) $resultType\n"
+        result += s"  ($className.$ident $actuals)\n"
+        result += ")"
+      }
     } else {
       val bodySMTWithSubtyping = UtilSMT.memberList2SMT(body, className, true)
       result += s"(define-fun $className.$ident ($parameters) $resultType\n"

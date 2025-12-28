@@ -1112,7 +1112,84 @@ object K2Z3 {
       else println("\tNo extra objects.")
       println()
 
+      // Print synthesized function interpretations (for underspecified functions)
+      printFunctionInterpretations(model)
+
       // log("-->>")
+    }
+  }
+  
+  /**
+   * Print synthesized function interpretations from Z3 model.
+   * For underspecified functions (declared without a body), Z3 synthesizes
+   * an interpretation. This shows what Z3 chose for those functions.
+   */
+  def printFunctionInterpretations(model: Model): Unit = {
+    if (z3Model == null) return
+    
+    // Collect all underspecified functions (empty body) from the model
+    def collectUnderspecifiedFuncs(m: Model): List[(String, FunDecl)] = {
+      val fromDecls = m.decls.flatMap {
+        case fd: FunDecl if fd.body.isEmpty && fd.ty.isDefined =>
+          // Top-level underspecified function
+          Some(("TopLevelDeclarations", fd))
+        case ed: EntityDecl =>
+          ed.members.flatMap {
+            case fd: FunDecl if fd.body.isEmpty && fd.ty.isDefined =>
+              Some((ed.ident, fd))
+            case _ => None
+          }
+        case _ => None
+      }
+      val fromPackages = m.packages.flatMap(pkg => collectUnderspecifiedFuncs(pkg.model))
+      fromDecls ++ fromPackages
+    }
+    
+    val underspecFuncs = collectUnderspecifiedFuncs(model)
+    if (underspecFuncs.isEmpty) return
+    
+    var printed = false
+    for ((className, fd) <- underspecFuncs) {
+      // The uninterpreted function in SMT is named: ClassName.funcName
+      val funcName = s"$className.${fd.ident}"
+      val funcDecl = z3Model.getFuncDecls.find(_.getName.toString == funcName)
+      
+      funcDecl match {
+        case Some(decl) =>
+          val interp = z3Model.getFuncInterp(decl)
+          if (interp != null) {
+            if (!printed) {
+              println("\t📐 Synthesized function interpretations:")
+              println()
+              printed = true
+            }
+            
+            // Print the function entries
+            val entries = interp.getEntries
+            if (entries.nonEmpty) {
+              println(s"\t  $funcName:")
+              for (entry <- entries) {
+                val args = entry.getArgs.map(_.toString).mkString(", ")
+                val value = entry.getValue.toString
+                println(s"\t    ($args) → $value")
+              }
+              // Print else/default value if present
+              val elseValue = interp.getElse
+              if (elseValue != null) {
+                println(s"\t    (else) → $elseValue")
+              }
+            } else {
+              // No explicit entries, just a default
+              val elseValue = interp.getElse
+              if (elseValue != null) {
+                println(s"\t  $funcName → $elseValue (constant)")
+              }
+            }
+            println()
+          }
+        case None =>
+          // Function not found in model (may have been inlined or not used)
+      }
     }
   }
   
