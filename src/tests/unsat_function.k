@@ -1,11 +1,11 @@
--- PENDING FEATURE: Synthetic Function Calls
+-- IMPLEMENTED: Synthetic Function Calls
 -- See FEATURE_ROADMAP.md for details
 -- 
 -- This test demonstrates a function with an unsatisfiable precondition (req x && !x).
--- Currently returns SAT because the function is never called.
--- Once synthetic function call instantiation is implemented, this should return UNSAT.
+-- The synthetic function call feature generates a call to the function and detects
+-- that the body constraint is unsatisfiable.
 --
--- @expected SAT
+-- @expected UNSAT
 
 fun f(x : Bool) : Int {
   req x && !x

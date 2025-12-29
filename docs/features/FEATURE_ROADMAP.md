@@ -740,17 +740,17 @@ This section tracks items that need investigation or implementation. Items marke
     4. Consider using `cp -f` to force overwrite
   - Related: `UnsatisfiedLinkError: no libz3java in java.library.path` symptom
 
-### Synthetic Function Call Instantiation
+### Synthetic Function Call Instantiation ✅ IMPLEMENTED
 
-- [ ] **Add synthetic calls for uncalled functions**
+- [x] **Add synthetic calls for uncalled functions**
   - Similar to how extra heap objects are created for uninstantiated classes
   - For each function that is not called anywhere in the model:
     - Create synthetic input variables (`_synth_f_x`, `_synth_f_y`, etc.)
-    - Add constraint that calls the function with those inputs
+    - Extract body constraints (`req` statements) and assert them with synthetic args
     - This ensures functions are "callable" and detects unsatisfiable preconditions
-  - Example: `fun f(x: Bool): Int { req x && !x; ... }` with no calls should be UNSAT
+  - Example: `fun f(x: Bool): Int { req x && !x; ... }` with no calls returns UNSAT
   - Test case: `src/tests/unsat_function.k`
-  - Implementation: SMT generation in `AbstractSyntax.scala`
+  - Implementation: `UtilSMT.generateSyntheticFunctionCalls()` in `AbstractSyntax.scala`
 
 ### Architecture: Solver-Agnostic Constraint Processing
 

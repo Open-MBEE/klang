@@ -59,6 +59,11 @@ object UtilSMT {
   var statistics: Statistics = null
   var variableCounter: Int = 0
   var heapInitializerConstants: List[(Int, String, String)] = Nil // index into heap, class name, constant
+  
+  // Track function declarations and calls for synthetic call generation
+  // Functions that are declared but never called need synthetic calls to check their body constraints
+  var functionDeclarations: List[(String, FunDecl)] = Nil  // (className, funDecl) pairs
+  var functionCalls: Set[String] = Set()  // "ClassName.funcName" identifiers
 
   def newVariable(): String = {
     variableCounter += 1
@@ -158,6 +163,8 @@ object UtilSMT {
     gettersToDeclare = Set()
     createdLocals = Set()
     externalFuncDecls = Set()
+    functionDeclarations = Nil
+    functionCalls = Set()
     ExternalFunctions.reset()
     PythonExternalFunctions.reset()
   }
@@ -166,6 +173,141 @@ object UtilSMT {
     val msgFull = s"Unsupported: $msg"
     if (ASTOptions.silent) Misc.silentErrorThrow("K2SMT", msgFull, K2SMTException)
     else Misc.errorThrow("K2SMT", msgFull, K2SMTException)
+  }
+  
+  /** Register a function declaration for synthetic call tracking */
+  def registerFunctionDeclaration(className: String, fd: FunDecl): Unit = {
+    functionDeclarations = (className, fd) :: functionDeclarations
+  }
+  
+  /** Register a function call for synthetic call tracking */
+  def registerFunctionCall(fullName: String): Unit = {
+    functionCalls = functionCalls + fullName
+  }
+  
+  /** Check if a function has body constraints (req statements) that need checking */
+  def hasBodyConstraints(fd: FunDecl): Boolean = {
+    fd.body.exists {
+      case _: ConstraintDecl => true
+      case _ => false
+    }
+  }
+  
+  /**
+   * Translate an expression to SMT, replacing parameter names with synthetic variable names.
+   * This avoids the normal class property mechanism which adds `this` references.
+   */
+  def translateWithSynthArgs(exp: Exp, paramToSynth: Map[String, String]): String = {
+    exp match {
+      case IdentExp(name) =>
+        // If this is a parameter, use the synthetic variable name directly
+        paramToSynth.getOrElse(name, name)
+      case BinExp(e1, op, e2) =>
+        val e1SMT = translateWithSynthArgs(e1, paramToSynth)
+        val e2SMT = translateWithSynthArgs(e2, paramToSynth)
+        val opSMT = op match {
+          case AND => "and"
+          case OR => "or"
+          case IMPL => "=>"
+          case IFF => "="
+          case EQ => "="
+          case NEQ => "distinct"
+          case LT => "<"
+          case LTE => "<="
+          case GT => ">"
+          case GTE => ">="
+          case ADD => "+"
+          case SUB => "-"
+          case MUL => "*"
+          case DIV => "div"
+          case REM => "mod"
+          case _ => op.toString.toLowerCase
+        }
+        s"($opSMT $e1SMT $e2SMT)"
+      case UnaryExp(op, e) =>
+        val eSMT = translateWithSynthArgs(e, paramToSynth)
+        val opSMT = op match {
+          case NOT => "not"
+          case NEG => "-"
+          case _ => op.toString.toLowerCase
+        }
+        s"($opSMT $eSMT)"
+      case BooleanLiteral(v) => v.toString
+      case IntegerLiteral(v) => v.toString
+      case RealLiteral(v) => v.toString
+      case ParenExp(e) => translateWithSynthArgs(e, paramToSynth)
+      case _ =>
+        // For other expressions, fall back to regular toSMT (may not work for all cases)
+        exp.toSMT(Names.mainClass, false)
+    }
+  }
+  
+  /**
+   * Generate synthetic function calls for functions that are declared but never called.
+   * This ensures that body constraints (req statements) are checked even if the function
+   * is never explicitly called in the model.
+   */
+  def generateSyntheticFunctionCalls(): String = {
+    // Find functions that are declared but never called and have body constraints
+    val uncalledFunctions = functionDeclarations.filter { case (className, fd) =>
+      val fullName = s"$className.${fd.ident}"
+      !functionCalls.contains(fullName) && hasBodyConstraints(fd)
+    }
+    
+    if (uncalledFunctions.isEmpty) return ""
+    
+    var result = headline1("Synthetic Function Calls")
+    result += "; Functions declared but never called - synthetic calls to check body constraints\n\n"
+    
+    for ((className, fd) <- uncalledFunctions) {
+      val funcName = s"$className.${fd.ident}"
+      
+      // Generate synthetic argument variables
+      val synthArgs = fd.params.map { param =>
+        val varName = s"_synth_${fd.ident}_${param.name}"
+        val tySMT = param.ty.toSMT
+        (varName, tySMT, param.name)
+      }
+      
+      // Declare synthetic argument constants
+      for ((varName, tySMT, _) <- synthArgs) {
+        result += s"(declare-const $varName $tySMT)\n"
+      }
+      
+      // Generate a synthetic 'this' reference for instance methods
+      val thisArg = if (className != Names.mainClass) {
+        val thisVarName = s"_synth_${fd.ident}_this"
+        result += s"(declare-const $thisVarName Ref)\n"
+        // Constrain 'this' to be of the correct class type
+        result += s"(assert (deref-isa-$className $thisVarName))\n"
+        thisVarName
+      } else {
+        // For top-level functions, use a dummy 'this' (0)
+        "0"
+      }
+      
+      // Extract and assert body constraints (req statements)
+      // These constraints must hold for the synthetic arguments
+      for (member <- fd.body) {
+        member match {
+          case ConstraintDecl(_, exp, _) =>
+            // Build a map from parameter names to synthetic variable names
+            val paramToSynth = fd.params.zip(synthArgs).map {
+              case (param, (synthVar, _, _)) => param.name -> synthVar
+            }.toMap
+            // Translate the constraint directly using the synthetic variable names
+            val constraintSMT = translateWithSynthArgs(exp, paramToSynth)
+            result += s"(assert (! $constraintSMT :named _xkassert${constraintCounter}))\n"
+            saveConstraintMapping(s"Body constraint in $funcName must be satisfiable")
+          case _ =>
+            // Skip non-constraint members
+        }
+      }
+      
+      result += "\n"
+    }
+    
+    result
   }
   // TODO: should these refer to the TypeChecker?:
   def log(msg: String) = if (!ASTOptions.silent) Misc.log("TypeChecker", msg)
@@ -238,8 +380,8 @@ object UtilSMT {
         val expSMT = exp.toSMT(className, subtyping)
         "  " + ("  " * level) + expSMT + (")" * level)
       case ConstraintDecl(name, exp, _) :: rest =>
-        // Constraint in function body - skip it for SMT generation
-        // (These are treated as preconditions and should be handled via `pre` keyword instead)
+        // Constraint in function body - skip it for function SMT generation
+        // Body constraints are checked via synthetic function calls (see generateSyntheticFunctionCalls)
         // Just process the rest of the body
         if (rest.isEmpty) {
           // If this is the last element, return true (Unit/void function)
@@ -1221,8 +1363,11 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       externalDecls += "\n"
     }
 
+    // Generate synthetic function calls for uncalled functions with body constraints
+    val syntheticCalls = UtilSMT.generateSyntheticFunctionCalls()
+    
     // Correct result:
-    result1 + externalDecls + getters + constants + result2
+    result1 + externalDecls + getters + constants + result2 + syntheticCalls
 
     // Testing:
     // val max = UtilSMT.objectGraph.getCounter
@@ -2316,6 +2461,9 @@ case class FunDecl(ident: String,
   }
 
   override def toSMT(className: String): String = {
+    // Register this function declaration for synthetic call tracking
+    UtilSMT.registerFunctionDeclaration(className, this)
+    
     var result: String = ""
     val parameterTypes: String = s"Ref " + params.map(_.toSMTType).mkString(" ")
     val parameters: String = s"(this Ref)" + params.map(_.toSMT).mkString
@@ -3424,14 +3572,20 @@ trait CallApplExp extends Exp {
           case IdentExp(ident) =>
             if (UtilSMT.isGlobal(exp1) && className != UtilSMT.Names.mainClass) {
               val mainClass: String = UtilSMT.Names.mainClass
+              // Register this function call for synthetic call tracking
+              UtilSMT.registerFunctionCall(s"$mainClass.$ident")
               s"$mainClass!$ident 0"
             } else {
               val dot = if (subTyping) "." else "!"
+              // Register this function call for synthetic call tracking
+              UtilSMT.registerFunctionCall(s"$className.$ident")
               s"$className$dot$ident this"
             }
           case DotExp(expBeforeDot, ident) =>
             val classOfFunction = exp2Type.get(expBeforeDot).toString
             val expSMT = expBeforeDot.toSMT(className, subTyping)
+            // Register this function call for synthetic call tracking
+            UtilSMT.registerFunctionCall(s"$classOfFunction.$ident")
             s"$classOfFunction.$ident $expSMT"
         }
       val argsSMT: String = args.map(_.toSMT(className, subTyping)).mkString(" ")
