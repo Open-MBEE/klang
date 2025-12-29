@@ -1296,6 +1296,41 @@ object UnifiedSolver {
         SolveResult.Unknown(solver.getReasonUnknown)
     }
   }
+  
+  /**
+   * Try to get a partial model using Optimize API when the problem is UNSAT.
+   * This is useful for debugging - showing which constraints could be satisfied.
+   * The partial model is stored in bestSoFar for potential output.
+   */
+  private def tryGetPartialModel(boolExps: List[BoolExpr], config: SolveConfig): Unit = {
+    try {
+      val optimize = K2Z3.getOptimize()
+      
+      // Set timeout (use a shorter timeout for partial model)
+      val partialTimeout = config.timeout.map(ms => math.min(ms, 5000L)).getOrElse(5000L)
+      val optParams = K2Z3.ctx.mkParams()
+      optParams.add("timeout", partialTimeout.toInt)
+      optimize.setParameters(optParams)
+      
+      // Add all constraints - Optimize may satisfy some even if not all
+      for (expr <- boolExps) {
+        optimize.Add(expr)
+      }
+      
+      val status = optimize.Check()
+      if (status == Status.SATISFIABLE) {
+        val partialModel = optimize.getModel
+        if (partialModel != null) {
+          bestSoFar = Some(partialModel)
+          K2Z3.z3Model = partialModel  // Store for potential printing
+          println("[UnifiedSolver] Obtained partial model for UNSAT problem (for debugging)")
+        }
+      }
+    } catch {
+      case e: Exception =>
+        println(s"[UnifiedSolver] Could not get partial model: ${e.getMessage}")
+    }
+  }
 
   /**
    * General solving method using Optimize API with incremental constraint addition.
@@ -1333,20 +1368,37 @@ object UnifiedSolver {
       val boolExps = K2Z3.ctx.parseSMTLIB2File(
         tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
       
-      // Check if model contains quantified constraints (forall/exists)
-      // The Optimize API has issues with quantified constraints, so use regular Solver
-      val hasQuantifiedConstraints = boolExps.exists { expr =>
-        containsQuantifierExpr(expr)
-      }
+      val boolExpsList = boolExps.map(_.asInstanceOf[BoolExpr]).toList
       
-      if (hasQuantifiedConstraints) {
-        if (debug) {
-          log("Detected quantified constraints - using regular Solver instead of Optimize")
-        }
-        return solveWithRegularSolver(model, smtModel, boolExps.map(_.asInstanceOf[BoolExpr]).toList, config)
+      // STEP 1: Use regular Solver first to get authoritative SAT/UNSAT
+      // The Optimize API can return incorrect SAT results, so we use regular Solver
+      // to determine the true satisfiability, then use Optimize only for partial models.
+      println("[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...")
+      val authoritativeResult = solveWithRegularSolver(model, smtModel, boolExpsList, config)
+      
+      authoritativeResult match {
+        case SolveResult.Unsat =>
+          // Confirmed UNSAT - optionally use Optimize to get a partial model for debugging
+          println("[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...")
+          tryGetPartialModel(boolExpsList, config)
+          return SolveResult.Unsat
+          
+        case SolveResult.Timeout =>
+          println("[UnifiedSolver] Regular Solver: TIMEOUT")
+          return SolveResult.Timeout
+          
+        case SolveResult.Unknown(reason) =>
+          // Solver couldn't determine - fall through to Optimize for best-effort
+          println(s"[UnifiedSolver] Regular Solver: UNKNOWN ($reason) - falling back to Optimize")
+          
+        case SolveResult.Sat(z3Model) =>
+          // SAT confirmed - we can return this directly or continue with Optimize
+          // For now, continue with the existing Optimize flow for consistency
+          // (it will verify and potentially find more optimized solutions)
+          println("[UnifiedSolver] Regular Solver: SAT - continuing with Optimize for verification")
       }
 
-      // Use Optimize API for better partial model support and max-SAT
+      // STEP 2: Use Optimize API for incremental solving and partial model support
       val optimize = K2Z3.getOptimize()
       
       // Set timeout on optimizer
