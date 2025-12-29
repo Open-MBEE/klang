@@ -1238,6 +1238,64 @@ object UnifiedSolver {
   // ============================================================================
   // Solving
   // ============================================================================
+  
+  /**
+   * Check if an expression contains any quantifiers (forall/exists).
+   * This handles nested cases like (and (forall ...) ...).
+   * Used to decide whether to use Optimize or regular Solver.
+   */
+  private def containsQuantifierExpr(expr: Expr[_]): Boolean = {
+    if (expr.isQuantifier) return true
+    // Check all children recursively
+    for (i <- 0 until expr.getNumArgs) {
+      if (containsQuantifierExpr(expr.getArgs()(i))) return true
+    }
+    false
+  }
+  
+  /**
+   * Solve using regular Z3 Solver (not Optimize).
+   * Used when the model contains quantified constraints (forall/exists)
+   * which the Optimize API doesn't handle correctly.
+   */
+  private def solveWithRegularSolver(model: KModel, smtModel: String, 
+                                      boolExps: List[BoolExpr],
+                                      config: SolveConfig): SolveResult = {
+    if (debug) {
+      log(s"Using regular Solver for ${boolExps.length} constraints")
+    }
+    
+    val solver = K2Z3.ctx.mkSolver()
+    
+    // Set timeout
+    config.timeout.foreach { ms =>
+      val params = K2Z3.ctx.mkParams()
+      params.add("timeout", ms.toInt)
+      solver.setParameters(params)
+    }
+    
+    // Add all constraints
+    for (expr <- boolExps) {
+      solver.add(expr)
+    }
+    
+    val status = solver.check()
+    
+    if (debug) {
+      log(s"Regular Solver returned: $status")
+    }
+    
+    status match {
+      case Status.SATISFIABLE =>
+        val z3Model = solver.getModel
+        K2Z3.z3Model = z3Model
+        SolveResult.Sat(z3Model)
+      case Status.UNSATISFIABLE =>
+        SolveResult.Unsat
+      case Status.UNKNOWN =>
+        SolveResult.Unknown(solver.getReasonUnknown)
+    }
+  }
 
   /**
    * General solving method using Optimize API with incremental constraint addition.
@@ -1274,6 +1332,19 @@ object UnifiedSolver {
       // Parse SMT model
       val boolExps = K2Z3.ctx.parseSMTLIB2File(
         tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+      
+      // Check if model contains quantified constraints (forall/exists)
+      // The Optimize API has issues with quantified constraints, so use regular Solver
+      val hasQuantifiedConstraints = boolExps.exists { expr =>
+        containsQuantifierExpr(expr)
+      }
+      
+      if (hasQuantifiedConstraints) {
+        if (debug) {
+          log("Detected quantified constraints - using regular Solver instead of Optimize")
+        }
+        return solveWithRegularSolver(model, smtModel, boolExps.map(_.asInstanceOf[BoolExpr]).toList, config)
+      }
 
       // Use Optimize API for better partial model support and max-SAT
       val optimize = K2Z3.getOptimize()
