@@ -740,6 +740,36 @@ This section tracks items that need investigation or implementation. Items marke
     4. Consider using `cp -f` to force overwrite
   - Related: `UnsatisfiedLinkError: no libz3java in java.library.path` symptom
 
+### Synthetic Function Call Instantiation
+
+- [ ] **Add synthetic calls for uncalled functions**
+  - Similar to how extra heap objects are created for uninstantiated classes
+  - For each function that is not called anywhere in the model:
+    - Create synthetic input variables (`_synth_f_x`, `_synth_f_y`, etc.)
+    - Add constraint that calls the function with those inputs
+    - This ensures functions are "callable" and detects unsatisfiable preconditions
+  - Example: `fun f(x: Bool): Int { req x && !x; ... }` with no calls should be UNSAT
+  - Test case: `src/tests/unsat_function.k`
+  - Implementation: SMT generation in `AbstractSyntax.scala`
+
+### Architecture: Solver-Agnostic Constraint Processing
+
+- [ ] **Move synthetic instance generation from SMT to K level**
+  - Currently: synthetic class instances and function calls are generated in SMT
+  - Proposed: generate them at the K AST level before translation to any solver
+  - Benefits:
+    - MiniZinc and other backends would get the same capabilities
+    - SMT-specific code would be isolated to the SMT wrapper
+    - More maintainable and testable
+  - Related code:
+    - `K2Z3.modelToConstraints()` already converts Z3 models back to K constraints
+    - This could be generalized for verification and seeding at K level
+  - Components to refactor:
+    1. Synthetic class instances → K AST modification
+    2. Synthetic function calls → K AST modification
+    3. Hard constraint verification → K constraint evaluation
+    4. Soft constraint handling → K-level optimization hints
+
 ### Questions to Resolve (❓)
 
 - ❓ Why was no `-help` option implemented? Was it intentional or oversight?
