@@ -565,6 +565,73 @@ object K2Z3 {
     optimize
   }
 
+  /**
+   * Format primitive values, converting Z3 rationals like (/ 3.0 2.0) to decimal
+   * and handling negative numbers like (- 5).
+   */
+  def formatPrimitiveValue(v: String): String = {
+    val trimmed = v.trim
+    if (trimmed.startsWith("(/") || trimmed.startsWith("(/ ")) {
+      // Parse rational number (/ num denom)
+      val parts = trimmed.stripPrefix("(/").stripPrefix("(/ ").stripSuffix(")").trim.split("\\s+")
+      if (parts.length == 2) {
+        try {
+          val num = parts(0).toDouble
+          val denom = parts(1).toDouble
+          if (denom != 0) f"${num / denom}%.2f" else trimmed
+        } catch {
+          case _: NumberFormatException => trimmed
+        }
+      } else trimmed
+    } else if (trimmed.startsWith("(-") || trimmed.startsWith("(- ")) {
+      // Parse negative number (- val)
+      val inner = trimmed.stripPrefix("(-").stripPrefix("(- ").stripSuffix(")").trim
+      s"-$inner"
+    } else trimmed
+  }
+
+  /**
+   * Parse object values from a Z3 expression string, properly handling
+   * parenthesized expressions like (/ num denom), (- val), tuples, etc.
+   * This is needed because simple space-splitting breaks these expressions.
+   */
+  def parseObjectValues(valueString: String): List[String] = {
+    val objectValuesOrig = valueString.split(' ').map(_.trim).filterNot(_.isEmpty).drop(1)
+    var objectValues = List[String]()
+    
+    var i = 0
+    while (i < objectValuesOrig.length) {
+      var value = objectValuesOrig(i)
+      if (objectValuesOrig(i).contains("Tuple2")) {
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+      } else if (objectValuesOrig(i).contains("Tuple3")) {
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+      } else if (objectValuesOrig(i).contains("(_")) {
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+      } else if (objectValuesOrig(i) == "(/" || objectValuesOrig(i) == "(-") {
+        // Handle Z3 rational numbers like (/ 3.0 2.0) or negative numbers like (- 5)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+        i = i + 1
+        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+      }
+      objectValues = value :: objectValues
+      i = i + 1
+    }
+    objectValues.reverse
+  }
+
   def getStringForSets(setValue: FuncDecl[_ <: Sort], ty: Type): String = {
     "Set(" +
       z3Model.getFuncInterp(setValue).getEntries.foldLeft(List[String]()) {
@@ -693,28 +760,6 @@ object K2Z3 {
     objectValues = objectValues.reverse
 
     if (className == "TopLevelDeclarations") return (visited, List(List(name, " - top level -")))
-
-    // Helper to format primitive values, converting Z3 rationals like (/ 3.0 2.0) to decimal
-    def formatPrimitiveValue(v: String): String = {
-      val trimmed = v.trim
-      if (trimmed.startsWith("(/") || trimmed.startsWith("(/ ")) {
-        // Parse rational number (/ num denom)
-        val parts = trimmed.stripPrefix("(/").stripPrefix("(/ ").stripSuffix(")").trim.split("\\s+")
-        if (parts.length == 2) {
-          try {
-            val num = parts(0).toDouble
-            val denom = parts(1).toDouble
-            if (denom != 0) f"${num / denom}%.2f" else trimmed
-          } catch {
-            case _: NumberFormatException => trimmed
-          }
-        } else trimmed
-      } else if (trimmed.startsWith("(-") || trimmed.startsWith("(- ")) {
-        // Parse negative number (- val)
-        val inner = trimmed.stripPrefix("(-").stripPrefix("(- ").stripSuffix(")").trim
-        s"-$inner"
-      } else trimmed
-    }
 
     val properties = classDecl.getAllPropertyDecls
     printList =
@@ -958,8 +1003,9 @@ object K2Z3 {
           val resolvedValue = value
 
           if (resolvedValue.contains("mk-")) {
-            val objectValues = resolvedValue.subSequence(resolvedValue.indexOf("mk-"), resolvedValue.length - 2).toString
-              .split(' ').map(_.trim).filterNot { _.isEmpty }
+            // Use parseObjectValues to properly handle Z3 expressions like (/ num denom)
+            val objectValuesString = resolvedValue.subSequence(resolvedValue.indexOf("mk-"), resolvedValue.length - 2).toString
+            val objectValues = parseObjectValues(objectValuesString)
 
             className == "TopLevelDeclarations" match {
               case true =>
@@ -1048,7 +1094,8 @@ object K2Z3 {
                 topLevelVariables.reverse.foreach { k =>
                   val (name, isPrim, isColl) = k
                   if (isPrim) {
-                    rows = (List(name, "-", objectValues(seqIndex + 1))) :: rows
+                    val rawValue = objectValues(seqIndex)
+                    rows = (List(name, "-", formatPrimitiveValue(rawValue))) :: rows
                   } else if (isColl) {
                     // Use the next sequence value from our extracted list
                     if (seqIndex < allSeqValues.length) {
@@ -1058,9 +1105,10 @@ object K2Z3 {
                       rows = (List(name, "-", "[]")) :: rows
                     }
                   } else {
-                    val res = printObjectValue(name, heapMap, heapMap.getOrElse(objectValues(seqIndex + 1), heapMap("else")), visited, objectValues(seqIndex + 1), false)
+                    val refNum = objectValues(seqIndex)
+                    val res = printObjectValue(name, heapMap, heapMap.getOrElse(refNum, heapMap("else")), visited, refNum, false)
                     rows = res._2 ++ rows
-                    visited = res._1 + ("Ref " + objectValues(seqIndex + 1))
+                    visited = res._1 + ("Ref " + refNum)
                   }
                   seqIndex = seqIndex + 1
                 }
