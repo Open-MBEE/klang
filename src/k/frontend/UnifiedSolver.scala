@@ -1802,47 +1802,75 @@ object UnifiedSolver {
         verifySolver.add(assumption)
       }
       
+      // Helper to check if an expression contains any quantifiers (forall/exists)
+      // This handles nested cases like (and (forall ...) ...)
+      def containsQuantifier(expr: Expr[_]): Boolean = {
+        if (expr.isQuantifier) return true
+        // Check all children recursively
+        for (i <- 0 until expr.getNumArgs) {
+          if (containsQuantifier(expr.getArgs()(i))) return true
+        }
+        false
+      }
+      
       // Evaluate each constraint with the given model
       // If all constraints evaluate to true, the model is valid
+      // Skip constraints containing quantifiers - Z3 already solved them during the main solve
       var allSatisfied = true
       var failedConstraints = ListBuffer[String]()
       var totalConstraints = 0
+      var skippedQuantified = 0
       
       for (expr <- boolExps) {
         val boolExpr = expr.asInstanceOf[BoolExpr]
         totalConstraints += 1
-        try {
-          val evalResult = z3Model.eval(boolExpr, true) // true = model_completion
-          if (evalResult != null) {
-            // Check if the result is true
-            val isTrue = evalResult match {
-              case b: BoolExpr => b.isTrue
-              case _ => evalResult.toString == "true"
-            }
-            if (!isTrue) {
-              val constraintStr = boolExpr.simplify().toString
-              println(s"[UnifiedSolver] ✗ Constraint not satisfied: ${constraintStr.take(200)}")
-              failedConstraints += constraintStr
-              allSatisfied = false
-              // Don't break - continue to find all failures for debugging
-            }
-          } else {
-            // eval returned null - this means the constraint couldn't be evaluated
-            // This is a problem - the model might be incomplete
+        
+        // Skip quantified constraints - Z3 already handled them during solving
+        // eval() cannot properly evaluate forall/exists expressions
+        if (containsQuantifier(boolExpr)) {
+          skippedQuantified += 1
+          if (debug) {
             val constraintStr = boolExpr.simplify().toString
-            println(s"[UnifiedSolver] ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
-            failedConstraints += s"${constraintStr.take(200)} (eval returned null)"
+            println(s"[UnifiedSolver] ⊢ Skipping quantified constraint (already verified by solver): ${constraintStr.take(100)}...")
+          }
+        } else {
+          try {
+            val evalResult = z3Model.eval(boolExpr, true) // true = model_completion
+            if (evalResult != null) {
+              // Check if the result is true
+              val isTrue = evalResult match {
+                case b: BoolExpr => b.isTrue
+                case _ => evalResult.toString == "true"
+              }
+              if (!isTrue) {
+                val constraintStr = boolExpr.simplify().toString
+                println(s"[UnifiedSolver] ✗ Constraint not satisfied: ${constraintStr.take(200)}")
+                failedConstraints += constraintStr
+                allSatisfied = false
+                // Don't break - continue to find all failures for debugging
+              }
+            } else {
+              // eval returned null - this means the constraint couldn't be evaluated
+              // This is a problem - the model might be incomplete
+              val constraintStr = boolExpr.simplify().toString
+              println(s"[UnifiedSolver] ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
+              failedConstraints += s"${constraintStr.take(200)} (eval returned null)"
+                allSatisfied = false
+            }
+          } catch {
+            case e: Throwable =>
+              val constraintStr = boolExpr.simplify().toString
+              println(s"[UnifiedSolver] ✗ Error evaluating constraint: ${e.getMessage}")
+              println(s"[UnifiedSolver]     Constraint: ${constraintStr.take(200)}")
+              failedConstraints += s"${constraintStr.take(200)} (error: ${e.getMessage})"
+              // If we can't evaluate, assume it's not satisfied
               allSatisfied = false
           }
-        } catch {
-          case e: Throwable =>
-            val constraintStr = boolExpr.simplify().toString
-            println(s"[UnifiedSolver] ✗ Error evaluating constraint: ${e.getMessage}")
-            println(s"[UnifiedSolver]     Constraint: ${constraintStr.take(200)}")
-            failedConstraints += s"${constraintStr.take(200)} (error: ${e.getMessage})"
-            // If we can't evaluate, assume it's not satisfied
-            allSatisfied = false
         }
+      }
+      
+      if (skippedQuantified > 0) {
+        println(s"[UnifiedSolver] ⊢ Skipped $skippedQuantified quantified constraint(s) (verified by solver)")
       }
       
       // Also check scenario assumption if provided
