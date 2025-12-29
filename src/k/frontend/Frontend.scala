@@ -126,6 +126,83 @@ object Frontend {
 
   def errorExit(msg: String = "") = Misc.errorExit("main", msg)
 
+  /**
+   * Run solver with auto-detection of problem properties.
+   * Shared between batch-verbose mode and non-batch mode.
+   * 
+   * @param model The K model to solve
+   * @param smtStr The SMT string representation
+   * @param options The command-line options map
+   * @param timeoutMs Timeout in milliseconds
+   * @param printModel Whether to print the model on SAT
+   * @param verbose Whether to print solver selection info
+   * @return (outcome, optionalZ3Model) where outcome is SAT/UNSAT/TIMEOUT/UNKNOWN
+   */
+  def solveWithAutoDetection(
+    model: Model, 
+    smtStr: String, 
+    options: OptionMap, 
+    timeoutMs: Int, 
+    printModel: Boolean,
+    verbose: Boolean
+  ): (String, Option[com.microsoft.z3.Model]) = {
+    if (verbose) log("Using Auto-Detection...")
+    val props = ProblemAnalyzer.analyze(model)
+    val config = ProblemAnalyzer.selectConfig(props, SolveConfig.fromOptions(options))
+    
+    if (verbose) {
+      log(s"  Detected: hasDynamicHeap=${props.hasDynamicHeap}, complexity=${props.estimatedComplexity}")
+      log(s"  Selected: heapStrategy=${config.heapStrategy}, incrementalMode=${config.incrementalMode}")
+    }
+    
+    val result = config.heapStrategy match {
+      case HeapStrategy.CEGAR =>
+        if (verbose) log("  → Using Heap CEGAR strategy")
+        UnifiedSolver.solveWithHeapCegar(model, printModel = printModel)
+        
+      case HeapStrategy.Soft =>
+        if (verbose) log("  → Using Soft Heap strategy")
+        UnifiedSolver.solveWithSoftHeap(model, printModel = printModel)
+        
+      case HeapStrategy.Fixed | HeapStrategy.Auto =>
+        config.incrementalMode match {
+          case IncrementalMode.Scenarios =>
+            if (verbose) log("  → Using DSN Scenario-based Incremental Solver")
+            import k.frontend.DSNPassSolver
+            val scenarioResult = DSNPassSolver.solveByScenariosIncremental(model, smtStr, timeoutMs)
+            scenarioResult match {
+              case Some(sr) =>
+                sr.result match {
+                  case Satisfiable(m, _) => UnifiedSolver.SolveResult.Sat(m)
+                  case Unsatisfiable(_, _) => UnifiedSolver.SolveResult.Unsat
+                  case Unknown(reason, _, timeout) => 
+                    if (timeout) UnifiedSolver.SolveResult.Timeout
+                    else UnifiedSolver.SolveResult.Unknown(reason)
+                }
+              case None => UnifiedSolver.SolveResult.Unsat
+            }
+          case _ =>
+            if (verbose) log("  → Using UnifiedSolver (default)")
+            UnifiedSolver.solve(model, smtStr, printModel = printModel, timeoutMs = Some(timeoutMs))
+        }
+    }
+    
+    result match {
+      case UnifiedSolver.SolveResult.Sat(z3Model) =>
+        if (verbose) log("Auto: SAT")
+        ("SAT", Some(z3Model))
+      case UnifiedSolver.SolveResult.Unsat =>
+        if (verbose) log("Auto: UNSAT")
+        ("UNSAT", None)
+      case UnifiedSolver.SolveResult.Timeout =>
+        if (verbose) log("Auto: TIMEOUT")
+        ("TIMEOUT", None)
+      case UnifiedSolver.SolveResult.Unknown(reason) =>
+        if (verbose) log(s"Auto: UNKNOWN ($reason)")
+        ("UNKNOWN", None)
+    }
+  }
+
   def parseArgs(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
 
@@ -421,6 +498,10 @@ object Frontend {
             // Reset all state for each test
             var t0, t1, tReset, tParse, tCombine, tTypeCheck, tSMTGen, tSolve: Long = 0
 
+            if (batchVerbose) {
+              log(s"Processing $testFile")
+            }
+
             t0 = System.nanoTime()
             TypeChecker.reset()
             UtilSMT.reset
@@ -526,16 +607,25 @@ object Frontend {
                 t1 = System.nanoTime()
                 tTypeCheck = t1 - t0
                 typeChecked = true
+                if (batchVerbose) {
+                  log("Type checking completed. No errors found.")
+                }
 
                 t0 = System.nanoTime()
                 val smtStr = combinedModel.toSMT
                 t1 = System.nanoTime()
                 tSMTGen = t1 - t0
 
+                // Print statistics in verbose mode
+                if (batchVerbose) {
+                  println(UtilSMT.statistics)
+                }
+
                 t0 = System.nanoTime()
-                val solveResult = if (useDsnPass) {
+                
+                if (useDsnPass) {
                   // Use DSN_Pass solver for scenario-based incremental solving
-                  runWithTimeout(testTimeout) {
+                  val solveResult = runWithTimeout(testTimeout) {
                     import k.frontend.DSNPassSolver
                     val result = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtStr, testTimeout)
                     result match {
@@ -547,35 +637,62 @@ object Frontend {
                       case None => // All scenarios failed
                     }
                   }
+                  // Determine outcome
+                  if (solveResult.isEmpty) {
+                    outcome = "TIMEOUT"
+                  } else if (K2Z3.z3Model != null && K2Z3.z3Model.toString != "()") {
+                    outcome = "SAT"
+                    if (batchVerbose) K2Z3.PrintModel(combinedModel)
+                  } else {
+                    outcome = "UNSAT"
+                  }
                 } else if (useHeapCegar) {
                   // Use Heap CEGAR for dynamic object creation
-                  runWithTimeout(testTimeout) {
-                    val result = UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = false)
+                  val solveResult = runWithTimeout(testTimeout) {
+                    val result = UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = batchVerbose)
                     result match {
-                      case UnifiedSolver.SolveResult.Sat(model) => K2Z3.z3Model = model
-                      case _ =>
+                      case UnifiedSolver.SolveResult.Sat(model) => 
+                        K2Z3.z3Model = model
+                        outcome = "SAT"
+                      case UnifiedSolver.SolveResult.Unsat =>
+                        outcome = "UNSAT"
+                      case UnifiedSolver.SolveResult.Timeout =>
+                        outcome = "TIMEOUT"
+                      case UnifiedSolver.SolveResult.Unknown(reason) =>
+                        outcome = "UNKNOWN"
                     }
                   }
+                  if (solveResult.isEmpty) {
+                    outcome = "TIMEOUT"
+                  }
+                } else if (batchVerbose) {
+                  // Use shared auto-detection logic for verbose mode
+                  val solveResult = runWithTimeout(testTimeout) {
+                    val (resultOutcome, z3ModelOpt) = solveWithAutoDetection(
+                      combinedModel, smtStr, options, testTimeout, printModel = true, verbose = true
+                    )
+                    outcome = resultOutcome
+                    z3ModelOpt.foreach(m => K2Z3.z3Model = m)
+                  }
+                  if (solveResult.isEmpty) {
+                    outcome = "TIMEOUT"
+                  }
                 } else {
-                  runWithTimeout(testTimeout) {
+                  // Non-verbose batch mode: use simple K2Z3.solveSMT
+                  val solveResult = runWithTimeout(testTimeout) {
                     K2Z3.solveSMT(combinedModel, smtStr, false)
+                  }
+                  // Determine outcome from solve result
+                  if (solveResult.isEmpty) {
+                    outcome = "TIMEOUT"
+                  } else if (K2Z3.z3Model != null && K2Z3.z3Model.toString != "()") {
+                    outcome = "SAT"
+                  } else {
+                    outcome = "UNSAT"
                   }
                 }
                 t1 = System.nanoTime()
                 tSolve = t1 - t0
-
-                // Determine outcome from solve result
-                if (solveResult.isEmpty) {
-                  outcome = "TIMEOUT"
-                } else if (K2Z3.z3Model != null && K2Z3.z3Model.toString != "()") {
-                  outcome = "SAT"
-                  // Print model if -batch-verbose is set
-                  if (batchVerbose) {
-                    K2Z3.PrintModel(combinedModel)
-                  }
-                } else {
-                  outcome = "UNSAT"
-                }
 
                 // Build current result JSON for comparison
                 val resultJson = new JSONObject()
@@ -987,63 +1104,10 @@ object Frontend {
         // AUTO-DETECTION is now the DEFAULT when no explicit strategy is specified
         // Use -unified flag to force the old UnifiedSolver behavior
         if (!hasExplicitStrategy || useAuto) {
-          log("Using Auto-Detection...")
-          val props = ProblemAnalyzer.analyze(combinedModel)
-          val config = ProblemAnalyzer.selectConfig(props, SolveConfig.fromOptions(options))
-          
-          log(s"  Detected: hasDynamicHeap=${props.hasDynamicHeap}, complexity=${props.estimatedComplexity}")
-          log(s"  Selected: heapStrategy=${config.heapStrategy}, incrementalMode=${config.incrementalMode}")
-          
-          // Route to appropriate solver based on detected config
-          val result = config.heapStrategy match {
-            case HeapStrategy.CEGAR =>
-              log("  → Using Heap CEGAR strategy")
-              UnifiedSolver.solveWithHeapCegar(combinedModel, printModel = true)
-              
-            case HeapStrategy.Soft =>
-              log("  → Using Soft Heap strategy")
-              UnifiedSolver.solveWithSoftHeap(combinedModel, printModel = true)
-              
-            case HeapStrategy.Fixed | HeapStrategy.Auto =>
-              config.incrementalMode match {
-                case IncrementalMode.Scenarios =>
-                  log("  → Using Scenario-based Incremental strategy")
-                  import k.frontend.DSNPassSolver
-                  val scenarioResult = DSNPassSolver.solveByScenariosIncremental(combinedModel, smtModel, timeoutValue)
-                  scenarioResult match {
-                    case Some(sr) =>
-                      sr.result match {
-                        case Satisfiable(model, _) =>
-                          K2Z3.z3Model = model
-                          K2Z3.PrintModel(combinedModel)
-                          UnifiedSolver.SolveResult.Sat(model)
-                        case Unsatisfiable(_, _) =>
-                          UnifiedSolver.SolveResult.Unsat
-                        case Unknown(reason, _, timeout) =>
-                          if (timeout) UnifiedSolver.SolveResult.Timeout
-                          else UnifiedSolver.SolveResult.Unknown(reason)
-                      }
-                    case None =>
-                      UnifiedSolver.SolveResult.Unsat
-                  }
-                  
-                case _ =>
-                  log("  → Using UnifiedSolver (default)")
-                  UnifiedSolver.solve(combinedModel, smtModel, printModel = true, timeoutMs = Some(timeoutValue))
-              }
-          }
-          
-          result match {
-            case UnifiedSolver.SolveResult.Sat(model) =>
-              log("Auto: SAT")
-              K2Z3.z3Model = model
-            case UnifiedSolver.SolveResult.Unsat =>
-              log("Auto: UNSAT")
-            case UnifiedSolver.SolveResult.Timeout =>
-              log("Auto: TIMEOUT")
-            case UnifiedSolver.SolveResult.Unknown(reason) =>
-              log(s"Auto: UNKNOWN ($reason)")
-          }
+          val (resultOutcome, z3ModelOpt) = solveWithAutoDetection(
+            combinedModel, smtModel, options, timeoutValue, printModel = true, verbose = true
+          )
+          z3ModelOpt.foreach(m => K2Z3.z3Model = m)
         // DSN_Pass.k-specific solver (runs if explicitly specified)
         } else if (useDsnPass) {
           println("[main] Using DSN_Pass Solver (scenario-based incremental)")

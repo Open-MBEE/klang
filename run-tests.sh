@@ -72,7 +72,7 @@ show_help() {
     echo "  ./run-tests.sh -j 4         # Run with 4 parallel jobs"
     echo "  ./run-tests.sh -j auto      # Auto-detect parallelism"
     echo "  ./run-tests.sh -new         # Run new feature tests"
-    echo "  ./run-tests.sh -test opt1.k # Run single test"
+    echo "  ./run-tests.sh -test opt1.k # Run single test (with full verbose output)"
     echo "  ./run-tests.sh -filter opt  # Run tests matching 'opt'"
     echo "  ./run-tests.sh -save-baseline # Save current results as baselines"
     echo ""
@@ -228,7 +228,7 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
     LIB_PATH="$PROJECT_ROOT/export/lib"
     
     # Build java args for single test (use batch mode for baseline support)
-    # Add -batch-verbose to print model output while still doing baseline checking
+    # Add -batch-verbose to print model output and full solver info while still doing baseline checking
     JAVA_ARGS="-batch -batch-verbose -prefer-file-options"
     if [ "$SAVE_BASELINE" = true ]; then
         JAVA_ARGS="$JAVA_ARGS -baseline"

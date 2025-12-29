@@ -1790,6 +1790,7 @@ object UnifiedSolver {
       }
       
       // Add scenario assumption if provided
+      // TODO -- HACK:  This is specific to DSN_Pass.k; this capability should be general
       scenarioName.foreach { name =>
         val scenarioVarName = name match {
           case "Nominal" => "scenario_nominal"
