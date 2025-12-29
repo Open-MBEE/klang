@@ -580,6 +580,7 @@ object Frontend {
                 // Build current result JSON for comparison
                 val resultJson = new JSONObject()
                 resultJson.put("name", testName)
+                resultJson.put("outcome", outcome)  // SAT, UNSAT, ERROR, TIMEOUT, UNKNOWN
                 resultJson.put("typeChecks", typeChecked)
                 resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
                 resultJson.put("smt", smtStr)

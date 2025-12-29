@@ -249,15 +249,19 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
     
     if [ -f "$BASELINE_FILE" ]; then
         echo "📋 Baseline: $BASELINE_FILE"
-        # Extract smtModel status from baseline (simplified check)
-        BASELINE_STATUS=$(grep -o '"smtModel"[[:space:]]*:[[:space:]]*"[^"]*"' "$BASELINE_FILE" 2>/dev/null | head -1 || echo "")
-        if [ -n "$BASELINE_STATUS" ]; then
-            if echo "$BASELINE_STATUS" | grep -q '""'; then
-                echo "   Baseline outcome: TIMEOUT/UNKNOWN (empty smtModel)"
-            elif echo "$BASELINE_STATUS" | grep -q '"()"'; then
-                echo "   Baseline outcome: UNSAT"
-            else
-                echo "   Baseline outcome: SAT"
+        # Extract outcome from baseline (new format has explicit "outcome" field)
+        BASELINE_OUTCOME=$(grep -o '"outcome"[[:space:]]*:[[:space:]]*"[^"]*"' "$BASELINE_FILE" 2>/dev/null | head -1 | sed 's/.*"outcome"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
+        if [ -n "$BASELINE_OUTCOME" ]; then
+            echo "   Baseline outcome: $BASELINE_OUTCOME"
+        else
+            # Fallback for old baselines without explicit outcome field
+            BASELINE_STATUS=$(grep -o '"smtModel"[[:space:]]*:[[:space:]]*"[^"]*"' "$BASELINE_FILE" 2>/dev/null | head -1 || echo "")
+            if [ -n "$BASELINE_STATUS" ]; then
+                if echo "$BASELINE_STATUS" | grep -q '""'; then
+                    echo "   Baseline outcome: UNSAT or UNKNOWN (no smtModel)"
+                else
+                    echo "   Baseline outcome: SAT (inferred from smtModel)"
+                fi
             fi
         fi
     else
