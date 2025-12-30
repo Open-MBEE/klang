@@ -38,10 +38,25 @@ case "$CPU_ARCH" in
 esac
 
 # Detect Java architecture
+JAVA_BIN=""
 if [ -n "$JAVA_HOME" ]; then
-    JAVA_BIN="$JAVA_HOME/bin/java"
-else
-    JAVA_BIN="java"
+    # Check standard location first
+    if [ -f "$JAVA_HOME/bin/java" ]; then
+        JAVA_BIN="$JAVA_HOME/bin/java"
+    # Check macOS JDK bundle structure (Contents/Home/bin/java)
+    elif [ -f "$JAVA_HOME/Contents/Home/bin/java" ]; then
+        JAVA_BIN="$JAVA_HOME/Contents/Home/bin/java"
+    fi
+fi
+
+# Fall back to java on PATH if JAVA_HOME didn't work
+if [ -z "$JAVA_BIN" ] || [ ! -f "$JAVA_BIN" ]; then
+    JAVA_BIN=$(which java 2>/dev/null)
+fi
+
+if [ -z "$JAVA_BIN" ] || [ ! -f "$JAVA_BIN" ]; then
+    echo "⚠️  Could not find Java binary"
+    exit 1
 fi
 
 # Get the architecture of the Java binary
