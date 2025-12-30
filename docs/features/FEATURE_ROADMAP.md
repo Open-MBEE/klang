@@ -710,6 +710,19 @@ This section tracks items that need investigation or implementation. Items marke
   - Audit which files are missing baselines
   - Generate initial baselines for all existing tests
 
+- [ ] **Add unsat core to baselines for UNSAT cases**
+  - Currently baselines capture `smtModel` (partial model) for UNSAT cases
+  - Could also capture the unsat core (list of conflicting constraints)
+  - Benefits:
+    - Track which constraints cause unsatisfiability
+    - Detect regressions where a different set of constraints becomes the cause
+    - Useful for debugging and understanding why something is UNSAT
+  - Implementation considerations:
+    - Unsat core is extracted by running z3 externally with `(get-unsat-core)`
+    - Core labels map to constraint names via `UtilSMT.constraintMessageMap`
+    - May need to handle core variability (different but equivalent cores)
+    - Storage format: array of constraint names in baseline JSON
+
 - [ ] **Import tests from kservices repo**
   - The `kservices` repository contains additional K test cases
   - Review and copy over relevant tests

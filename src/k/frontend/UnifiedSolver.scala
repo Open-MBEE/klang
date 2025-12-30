@@ -1303,7 +1303,8 @@ object UnifiedSolver {
    * the maximum number that can be satisfied together.
    * The partial model is stored in bestSoFar for potential output.
    */
-  private def tryGetPartialModel(boolExps: List[BoolExpr], config: SolveConfig): Unit = {
+  private def tryGetPartialModel(boolExps: List[BoolExpr], config: SolveConfig,
+                                   kModel: Option[KModel] = None, smtModel: Option[String] = None): Unit = {
     try {
       // Create a fresh Optimize solver for partial model
       val optimize = K2Z3.ctx.mkOptimize()
@@ -1334,14 +1335,71 @@ object UnifiedSolver {
         if (partialModel != null) {
           bestSoFar = Some(partialModel)
           K2Z3.z3Model = partialModel  // Store for potential printing
-          println("[UnifiedSolver] Obtained partial model for UNSAT problem (for debugging)")
+
+          // Print partial model with clear UNSAT indication
+          println()
+          println("=" * 60)
+          println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
+          println("=" * 60)
+          kModel.foreach { m =>
+            K2Z3.PrintModel(m)
+          }
+          println("=" * 60)
+          println()
         }
       } else {
         println(s"[UnifiedSolver] Could not get partial model: Optimize returned $status")
       }
+
+      // Extract and print unsat core
+      smtModel.foreach { smt =>
+        printUnsatCore(smt)
+      }
     } catch {
       case e: Exception =>
         println(s"[UnifiedSolver] Could not get partial model: ${e.getMessage}")
+    }
+  }
+
+  /**
+   * Print unsat core by running z3 externally with get-unsat-core.
+   * Uses the same approach as K2Z3.solveSMTDirect.
+   */
+  private def printUnsatCore(smtModel: String): Unit = {
+    try {
+      import scala.sys.process._
+      val smt2 = "(set-option :produce-unsat-cores true)\n" + smtModel + "(check-sat)\n(get-unsat-core)\n(exit)"
+      val file = new java.io.File(".tmp/unsat_core.smt2")
+      file.getParentFile.mkdirs()
+      val tf = new java.io.PrintWriter(file)
+      tf.write(smt2)
+      tf.close()
+
+      val res = "z3 -smt2 .tmp/unsat_core.smt2".!!
+      val lines = res.split("\\r?\\n")
+
+      if (lines.length > 1 && lines(0) == "unsat") {
+        val assertionNames = lines(1).replace("(", "").replace(")", "").split("\\s")
+          .filter(_.nonEmpty)
+          .filter(!_.equals("xTOP"))
+          .map { name => UtilSMT.constraintMessageMap.getOrElse(name, name) }
+          .toSet
+          .filter(!_.equals("_k_ignore_"))
+
+        if (assertionNames.nonEmpty) {
+          println()
+          println("UNSAT Core (conflicting constraints):")
+          println("-" * 40)
+          for (an <- assertionNames) {
+            println(s"  • $an")
+          }
+          println()
+        }
+      }
+      file.delete()
+    } catch {
+      case _: Exception =>
+        // Ignore errors in unsat core extraction (z3 might not be in PATH, etc.)
     }
   }
 
@@ -1391,9 +1449,9 @@ object UnifiedSolver {
       
       authoritativeResult match {
         case SolveResult.Unsat =>
-          // Confirmed UNSAT - optionally use Optimize to get a partial model for debugging
+          // Confirmed UNSAT - use Optimize to get a partial model for debugging
           println("[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...")
-          tryGetPartialModel(boolExpsList, config)
+          tryGetPartialModel(boolExpsList, config, Some(model), Some(smtModel))
           return SolveResult.Unsat
           
         case SolveResult.Timeout =>
