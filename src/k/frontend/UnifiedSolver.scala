@@ -1117,10 +1117,14 @@ object UnifiedSolver {
             log("Could try relaxing soft constraints (not yet implemented)")
             done = true
             result = SolveResult.Unsat
+            // Print partial model and unsat core at final UNSAT
+            printFinalUnsatInfo(model, currentSMT)
           } else {
             // Truly unsatisfiable
             done = true
             result = SolveResult.Unsat
+            // Print partial model and unsat core at final UNSAT
+            printFinalUnsatInfo(model, currentSMT)
           }
 
         case SolveResult.Timeout =>
@@ -1304,7 +1308,8 @@ object UnifiedSolver {
    * The partial model is stored in bestSoFar for potential output.
    */
   private def tryGetPartialModel(boolExps: List[BoolExpr], config: SolveConfig,
-                                   kModel: Option[KModel] = None, smtModel: Option[String] = None): Unit = {
+                                   kModel: Option[KModel] = None, smtModel: Option[String] = None,
+                                   shouldPrint: Boolean = false): Unit = {
     try {
       // Create a fresh Optimize solver for partial model
       val optimize = K2Z3.ctx.mkOptimize()
@@ -1336,24 +1341,30 @@ object UnifiedSolver {
           bestSoFar = Some(partialModel)
           K2Z3.z3Model = partialModel  // Store for potential printing
 
-          // Print partial model with clear UNSAT indication
-          println()
-          println("=" * 60)
-          println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
-          println("=" * 60)
-          kModel.foreach { m =>
-            K2Z3.PrintModel(m)
+          // Only print if this is the final UNSAT (not intermediate CEGAR iteration)
+          if (shouldPrint) {
+            println()
+            println("=" * 60)
+            println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
+            println("=" * 60)
+            kModel.foreach { m =>
+              K2Z3.PrintModel(m)
+            }
+            println("=" * 60)
+            println()
           }
-          println("=" * 60)
-          println()
         }
       } else {
-        println(s"[UnifiedSolver] Could not get partial model: Optimize returned $status")
+        if (shouldPrint) {
+          println(s"[UnifiedSolver] Could not get partial model: Optimize returned $status")
+        }
       }
 
-      // Extract and print unsat core
-      smtModel.foreach { smt =>
-        printUnsatCore(smt)
+      // Extract and print unsat core only if shouldPrint
+      if (shouldPrint) {
+        smtModel.foreach { smt =>
+          printUnsatCore(smt)
+        }
       }
     } catch {
       case e: Exception =>
@@ -1401,6 +1412,25 @@ object UnifiedSolver {
       case _: Exception =>
         // Ignore errors in unsat core extraction (z3 might not be in PATH, etc.)
     }
+  }
+
+  /**
+   * Print the stored partial model and unsat core at final UNSAT.
+   * Called when the unified loop has determined this is the final UNSAT.
+   */
+  private def printFinalUnsatInfo(kModel: KModel, smtModel: String): Unit = {
+    // Print partial model if we have one
+    if (K2Z3.z3Model != null) {
+      println()
+      println("=" * 60)
+      println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
+      println("=" * 60)
+      K2Z3.PrintModel(kModel)
+      println("=" * 60)
+      println()
+    }
+    // Print unsat core
+    printUnsatCore(smtModel)
   }
 
   /**
