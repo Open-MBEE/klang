@@ -1,3 +1,4 @@
+// @expected SAT
 class MathUtil {
 
   fun min(x:Int,y:Int): Int

@@ -1,3 +1,4 @@
+-- @expected SAT
 -- Demo: Function Synthesis
 -- Z3 can synthesize the specification of an underspecified function!
 --

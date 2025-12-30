@@ -1,5 +1,6 @@
+-- @expected SAT
 ==========================================
-This example shows how inheritance and 
+This example shows how inheritance and
 requirements can be used to enforce, 
 specify, and disover type related issues.
 ==========================================

@@ -1,5 +1,6 @@
+-- @expected SAT
 ==============================================
-This example highlights how we can perform 
+This example highlights how we can perform
 refinement using inheritance and have K check
 the specification using function specifications
 (pre and post conditions) as wel as requirements

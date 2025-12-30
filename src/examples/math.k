@@ -1,3 +1,4 @@
+// @expected ERROR
 package examples.math
 
 

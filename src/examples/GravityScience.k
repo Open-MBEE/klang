@@ -1,3 +1,4 @@
+// @expected SAT
 package Kevin.GravityScience
 
 annotation owner : String

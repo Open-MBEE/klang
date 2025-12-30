@@ -1,3 +1,4 @@
+// @expected ERROR
 package tutorial
 
 fun size(set :Set[Loan]): Int

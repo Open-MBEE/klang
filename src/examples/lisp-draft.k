@@ -1,3 +1,4 @@
+-- @expected SAT
 ================================================================================
 The following is an attempt to describe a LISP parser using the
 LISP 1.5 programmer's manual, found here:
