@@ -1,21 +1,30 @@
 #!/bin/bash
 
-if [ -z "$1" ]
-  then 
-    echo "Please provide a file."
-    exit -1
+# K Language CLI - Thin wrapper around run-tests.sh
+# This ensures consistent behavior between direct CLI use and test runner
+
+if [ -z "$1" ]; then
+    echo "Usage: k <file.k> [options]"
+    echo ""
+    echo "Options are passed through to the solver/Frontend."
+    echo "Common options:"
+    echo "  -cvc5          Use CVC5 solver instead of Z3"
+    echo "  -debug         Enable debug output"
+    echo "  -timeout N     Set solver timeout in milliseconds"
+    echo "  -unified       Use UnifiedSolver"
+    echo "  -heapcegar     Use heap CEGAR mode"
+    echo "  -minizinc      Use MiniZinc solver"
+    echo ""
+    echo "For full test runner options, use: ./run-tests.sh -h"
+    exit 1
 fi
 
 # Resolve symlinks to get the actual directory
-# Use readlink -f if available (Linux), otherwise resolve manually
 if command -v readlink >/dev/null 2>&1 && readlink -f / >/dev/null 2>&1; then
-    # Linux-style readlink -f
     SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 elif command -v greadlink >/dev/null 2>&1; then
-    # macOS with GNU coreutils
     SCRIPT_PATH=$(greadlink -f "${BASH_SOURCE[0]}")
 else
-    # Manual resolution
     SCRIPT_PATH="${BASH_SOURCE[0]}"
     while [ -L "$SCRIPT_PATH" ]; do
         LINK=$(readlink "$SCRIPT_PATH")
@@ -26,61 +35,10 @@ else
         fi
     done
 fi
-DIR=$( cd "$( dirname "$SCRIPT_PATH" )" && pwd )
+DIR=$(cd "$(dirname "$SCRIPT_PATH")" && pwd)
 PROJECT_ROOT="$(cd "$DIR/.." && pwd)"
-echo "DIR = ${DIR}"
-echo "PROJECT_ROOT = ${PROJECT_ROOT}"
 
-# Setup Java 21 via SDKMAN or system - MUST be done before z3 architecture selection
-source "$PROJECT_ROOT/setup-java.sh"
-
-export PATH=./lib:$PATH
-export DYLD_LIBRARY_PATH=$DIR/lib:$DYLD_LIBRARY_PATH
-
-chmod +x lib/z3 2>/dev/null || true
-
-# Ensure correct Z3 libraries are selected for this platform
-# This should be run once per platform/architecture, but doesn't hurt to check
-if [ -f "$PROJECT_ROOT/select-z3-architecture.sh" ]; then
-    "$PROJECT_ROOT/select-z3-architecture.sh" >/dev/null 2>&1 || true
-fi
-
-# Build classpath with:
-# 1. Compiled classes from target/classes (Maven) or bin/ (custom build)
-# 2. ANTLR jar
-# 3. Z3 jar (use OSX version on Mac)
-# 4. Libraries from export/lib
-# 5. Scala libraries
-# 6. Elasticsearch libraries
-# Check for Maven build output first, then fall back to custom build
-if [ -d "$PROJECT_ROOT/target/classes" ]; then
-    CLASSPATH="$PROJECT_ROOT/target/classes"
-else
-    CLASSPATH="$PROJECT_ROOT/bin"
-fi
-CLASSPATH="$CLASSPATH:$PROJECT_ROOT/src/grammar/antlr-4.7-complete.jar"
-# Add Z3 jar - check for OSX version first, fallback to generic
-if [ -f "$DIR/lib/com.microsoft.z3.osx.jar" ]; then
-    CLASSPATH="$CLASSPATH:$DIR/lib/com.microsoft.z3.osx.jar"
-elif [ -f "$PROJECT_ROOT/lib/com.microsoft.z3.jar" ]; then
-    CLASSPATH="$CLASSPATH:$PROJECT_ROOT/lib/com.microsoft.z3.jar"
-else
-    CLASSPATH="$CLASSPATH:$DIR/lib/com.microsoft.z3.jar"
-fi
-CLASSPATH="$CLASSPATH:$DIR/lib/*"
-CLASSPATH="$CLASSPATH:$DIR/lib/scalalib/*"
-CLASSPATH="$CLASSPATH:$DIR/lib/elasticsearch-1.5.0/*"
-
-# On macOS, we need to set both java.library.path and ensure DYLD_LIBRARY_PATH is used
-# Also need to work around macOS System Integrity Protection for library loading
-
-if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
-    JAVA="$JAVA_HOME/bin/java"
-else
-    JAVA="java"
-fi
-
-# Parse arguments - find the .k file and pass other args as flags
+# Parse arguments - find the .k file and collect other args as flags
 K_FILE=""
 FLAGS=""
 for arg in "$@"; do
@@ -93,10 +51,13 @@ done
 
 if [ -z "$K_FILE" ]; then
     echo "Please provide a .k file."
-    exit -1
+    exit 1
 fi
 
-"$JAVA" -Djava.library.path="$DIR/lib" \
-     -Djava.awt.headless=true \
-     -classpath "$CLASSPATH" \
-     k.frontend.Main -f "$K_FILE" $FLAGS
+# Delegate to run-tests.sh -test with passthrough flags
+# This ensures consistent behavior with the test runner
+if [ -n "$FLAGS" ]; then
+    exec "$PROJECT_ROOT/run-tests.sh" -test "$K_FILE" -- $FLAGS
+else
+    exec "$PROJECT_ROOT/run-tests.sh" -test "$K_FILE"
+fi

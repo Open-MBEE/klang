@@ -28,6 +28,7 @@ TEST_FILE=""
 PARALLEL_JOBS=1  # Default: batch mode (no parallelism)
 TIMING_MODE=false  # Show detailed timing breakdown
 SAVE_BASELINE=false  # Save results as baselines
+PASSTHROUGH_FLAGS=""  # Additional flags to pass to Java/Frontend
 
 show_help() {
     echo "======================================"
@@ -59,6 +60,10 @@ show_help() {
     echo "Baseline management:"
     echo "  -save-baseline Save current results as new per-file baselines"
     echo "  (Baselines are always checked automatically if they exist)"
+    echo ""
+    echo "Passthrough flags (for solver/Frontend options):"
+    echo "  -- <flags>    Pass additional flags to Java/Frontend"
+    echo "                e.g., -- -cvc5 -debug -timeout 60000"
     echo ""
     echo "Feature-specific tests:"
     echo "  -opt          Run optimization tests (opt*.k)"
@@ -164,6 +169,12 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             show_help
             ;;
+        --)
+            # Everything after -- is passed through to Java/Frontend
+            shift
+            PASSTHROUGH_FLAGS="$*"
+            break
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Use -h for help"
@@ -232,6 +243,9 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
     JAVA_ARGS="-batch -batch-verbose -prefer-file-options"
     if [ "$SAVE_BASELINE" = true ]; then
         JAVA_ARGS="$JAVA_ARGS -baseline"
+    fi
+    if [ -n "$PASSTHROUGH_FLAGS" ]; then
+        JAVA_ARGS="$JAVA_ARGS $PASSTHROUGH_FLAGS"
     fi
     
     # Run the test using batch mode for proper baseline handling
@@ -353,6 +367,9 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
     fi
     if [ "$SAVE_BASELINE" = true ]; then
         JAVA_ARGS="$JAVA_ARGS -baseline"  # -baseline in batch mode means save
+    fi
+    if [ -n "$PASSTHROUGH_FLAGS" ]; then
+        JAVA_ARGS="$JAVA_ARGS $PASSTHROUGH_FLAGS"
     fi
 
     # Run batch mode - pipe test files to Java, capture output

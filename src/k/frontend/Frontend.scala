@@ -1547,24 +1547,37 @@ object Frontend {
       val smt =
         if (model != null) model.toSMT
         else null
-      val smtModel =
-        if (smt != null) {
-          val res = runWithTimeout(timeoutValue) {
-            K2Z3.solveSMT(model, smt, debug)
-          }
-          if (res.isEmpty) null
-          else if (K2Z3.z3Model != null) K2Z3.z3Model.toString
-        } else null
+
+      // Use shared auto-detection solving logic (same as batch mode)
+      var outcome = "UNKNOWN"
+      if (smt != null) {
+        val res = runWithTimeout(timeoutValue) {
+          val (resultOutcome, z3ModelOpt) = solveWithAutoDetection(
+            model, smt, Map[Symbol, Any](), timeoutValue, printModel = debug, verbose = debug
+          )
+          outcome = resultOutcome
+          z3ModelOpt.foreach(m => K2Z3.z3Model = m)
+        }
+        if (res.isEmpty) {
+          outcome = "TIMEOUT"
+        } else if (outcome == "UNSAT") {
+          // Try to get partial model for UNSAT (for debugging/baselines)
+          tryGetPartialModelForUnsat(model, smt)
+        }
+      }
+
       currentTestJsonObject.put("name", file.getName)
+      currentTestJsonObject.put("outcome", outcome)
       currentTestJsonObject.put("model", model.toString)
       currentTestJsonObject.put("json1", json1)
       currentTestJsonObject.put("json2", json2)
       currentTestJsonObject.put("smt", smt)
-      currentTestJsonObject.put("smtModel", smtModel)
+      currentTestJsonObject.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
       currentTestJsonObject.put("typeChecks", true)
     } catch {
       case TypeCheckException =>
         currentTestJsonObject.put("name", file.getName)
+        currentTestJsonObject.put("outcome", "ERROR")
         currentTestJsonObject.put("model", "")
         currentTestJsonObject.put("json1", "")
         currentTestJsonObject.put("json2", "")
