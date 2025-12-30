@@ -1,10 +1,477 @@
 {
-  "name": "testsmt8.k",
-  "outcome": "SAT",
-  "typeChecks": true,
-  "model": "\nclass Person {\n  age:Int\n\n  fun getAge : Int\n  {\n    age\n  }\n\n  req getAge() > 18\n}\n\nclass Employee extending Person {\n  boss:Person\n  officemate:Employee\n\n  fun avoid(p:Employee) : Bool\n  {\n    officemate != p\n  }\n\n  req boss.age > 30\n\n  req this = officemate.officemate\n\n  req avoid(boss)\n}\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Person (mk-Person (age Int)))))\n(declare-datatypes () ((Employee (mk-Employee (age Int)(boss Ref)(officemate Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Person (sel-Person Person))\n  (lift-Employee (sel-Employee Employee))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Person ((this Ref)) Bool\n  (is-lift-Person (deref this))\n)\n\n(define-fun deref-Person ((this Ref)) Person\n  (sel-Person (deref this))\n)\n\n(define-fun deref-is-Employee ((this Ref)) Bool\n  (is-lift-Employee (deref this))\n)\n\n(define-fun deref-Employee ((this Ref)) Employee\n  (sel-Employee (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Person ((this Ref)) Bool\n  (or\n    (deref-is-Person this)\n    (deref-is-Employee this)\n  )\n)\n\n(define-fun deref-isa-Employee ((this Ref)) Bool\n  (deref-is-Employee this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -----------------------------\n;   Getters for class Person:\n; -----------------------------\n\n; --- getters for Person.age: ---\n\n(define-fun Person.age ((this Ref)) Int\n  (ite (deref-is-Person this) (age (deref-Person this))\n  (age (deref-Employee this)))\n)\n\n(define-fun Person!age ((this Ref)) Int\n  (age (deref-Person this))\n)\n\n; -------------------------------\n;   Getters for class Employee:\n; -------------------------------\n\n; --- getters for Employee.age: ---\n\n(define-fun Employee.age ((this Ref)) Int\n  (age (deref-Employee this))\n)\n\n(define-fun Employee!age ((this Ref)) Int\n  (age (deref-Employee this))\n)\n\n; --- getters for Employee.boss: ---\n\n(define-fun Employee!boss ((this Ref)) Ref\n  (boss (deref-Employee this))\n)\n\n; --- getters for Employee.officemate: ---\n\n(define-fun Employee.officemate ((this Ref)) Ref\n  (officemate (deref-Employee this))\n)\n\n(define-fun Employee!officemate ((this Ref)) Ref\n  (officemate (deref-Employee this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; -----------------------------\n;   Methods for class Person:\n; -----------------------------\n\n(define-fun Person.getAge ((this Ref)) Int\n  (Person.age this)\n)\n\n(define-fun Person!getAge ((this Ref)) Int\n  (Person!age this)\n)\n\n; -------------------------------\n;   Methods for class Employee:\n; -------------------------------\n\n(define-fun Employee.getAge ((this Ref)) Int\n  (Employee.age this)\n)\n\n(define-fun Employee!getAge ((this Ref)) Int\n  (Employee!age this)\n)\n\n(define-fun Employee.avoid ((this Ref)(p Ref)) Bool\n  (not (= (Employee.officemate this) p))\n)\n\n(define-fun Employee!avoid ((this Ref)(p Ref)) Bool\n  (not (= (Employee!officemate this) p))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; -------------------------------\n;   Invariant for class Person:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Person Person)\n(declare-const const-2-Person Person)\n\n; --- Invariant 1: ---\n\n(define-fun Person.inv1 ((this Ref)) Bool\n  (> (Person!getAge this ) 18)\n)\n\n(assert (! (Person.inv1 1) :named _xkassert0))\n(assert (! (Person.inv1 2) :named _xkassert1))\n\n\n\n; ---------------------------------\n;   Invariant for class Employee:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Employee Employee)\n(declare-const const-4-Employee Employee)\n\n; --- Invariant 1: ---\n\n(define-fun Employee.inv1 ((this Ref)) Bool\n  (deref-isa-Person (Employee!boss this))\n)\n\n(assert (! (Employee.inv1 3) :named _xkassert2))\n(assert (! (Employee.inv1 4) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun Employee.inv2 ((this Ref)) Bool\n  (deref-isa-Employee (Employee!officemate this))\n)\n\n(assert (! (Employee.inv2 3) :named _xkassert4))\n(assert (! (Employee.inv2 4) :named _xkassert5))\n\n; --- Invariant 3: ---\n\n(define-fun Employee.inv3 ((this Ref)) Bool\n  (> (Employee!getAge this ) 18)\n)\n\n(assert (! (Employee.inv3 3) :named _xkassert6))\n(assert (! (Employee.inv3 4) :named _xkassert7))\n\n; --- Invariant 4: ---\n\n(define-fun Employee.inv4 ((this Ref)) Bool\n  (> (Person.age (Employee!boss this)) 30)\n)\n\n(assert (! (Employee.inv4 3) :named _xkassert8))\n(assert (! (Employee.inv4 4) :named _xkassert9))\n\n; --- Invariant 5: ---\n\n(define-fun Employee.inv5 ((this Ref)) Bool\n  (= this (Employee.officemate (Employee!officemate this)))\n)\n\n(assert (! (Employee.inv5 3) :named _xkassert10))\n(assert (! (Employee.inv5 4) :named _xkassert11))\n\n; --- Invariant 6: ---\n\n(define-fun Employee.inv6 ((this Ref)) Bool\n  (Employee!avoid this (Employee!boss this))\n)\n\n(assert (! (Employee.inv6 3) :named _xkassert12))\n(assert (! (Employee.inv6 4) :named _xkassert13))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Person const-1-Person))\n        2 (lift-Person const-2-Person))\n        3 (lift-Employee const-3-Employee))\n        4 (lift-Employee const-4-Employee))\n  )\n)\n\n",
-  "smtModel": "(define-fun _xkassert7 () Bool\n  (> (age (sel-Employee (select heap 4))) 18))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (= (officemate (sel-Employee (select heap 3)))\n              (boss (sel-Employee (select heap 3))))))\n  (not a!1)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 3))))))\n  (or (is-lift-Person a!1) (is-lift-Employee a!1))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 4))))))\n  (or (is-lift-Person a!1) (is-lift-Employee a!1))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 4))))))\n  (is-lift-Employee a!1)))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (= (officemate (sel-Employee (select heap 4)))\n              (boss (sel-Employee (select heap 4))))))\n  (not a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 4))))))\n  (> (ite (is-lift-Person a!1) (age (sel-Person a!1)) (age (sel-Employee a!1)))\n     30)))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 4))))))\n  (= 4 (officemate (sel-Employee a!1)))))\n(define-fun _xkassert0 () Bool\n  (> (age (sel-Person (select heap 1))) 18))\n(define-fun const-4-Employee () Employee\n  (mk-Employee 32304 2 4))\n(define-fun const-1-Person () Person\n  (mk-Person 19))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 3))))))\n  (> (ite (is-lift-Person a!1) (age (sel-Person a!1)) (age (sel-Employee a!1)))\n     30)))\n(define-fun _xkassert6 () Bool\n  (> (age (sel-Employee (select heap 3))) 18))\n(define-fun _xkassert1 () Bool\n  (> (age (sel-Person (select heap 2))) 18))\n(define-fun const-2-Person () Person\n  (mk-Person 31))\n(define-fun const-3-Employee () Employee\n  (mk-Employee 8384 2 3))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 3))))))\n  (= 3 (officemate (sel-Employee a!1)))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 3))))))\n  (is-lift-Employee a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-Person (mk-Person 19)))\n                  2\n                  (lift-Person (mk-Person 31)))))\n  (store (store a!1 3 (lift-Employee (mk-Employee 8384 2 3)))\n         4\n         (lift-Employee (mk-Employee 32304 2 4)))))",
-  "json1": "",
-  "json2": ""
+    "name": "testsmt8.k",
+    "outcome": "SAT",
+    "typeChecks": true,
+    "model": "\nclass Person {\n  age:Int\n\n  fun getAge : Int\n  {\n    age\n  }\n\n  req getAge() > 18\n}\n\nclass Employee extending Person {\n  boss:Person\n  officemate:Employee\n\n  fun avoid(p:Employee) : Bool\n  {\n    officemate != p\n  }\n\n  req boss.age > 30\n\n  req this = officemate.officemate\n\n  req avoid(boss)\n}\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Person (mk-Person (age Int)))))\n(declare-datatypes () ((Employee (mk-Employee (age Int)(boss Ref)(officemate Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Person (sel-Person Person))\n  (lift-Employee (sel-Employee Employee))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Person ((this Ref)) Bool\n  (is-lift-Person (deref this))\n)\n\n(define-fun deref-Person ((this Ref)) Person\n  (sel-Person (deref this))\n)\n\n(define-fun deref-is-Employee ((this Ref)) Bool\n  (is-lift-Employee (deref this))\n)\n\n(define-fun deref-Employee ((this Ref)) Employee\n  (sel-Employee (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Person ((this Ref)) Bool\n  (or\n    (deref-is-Person this)\n    (deref-is-Employee this)\n  )\n)\n\n(define-fun deref-isa-Employee ((this Ref)) Bool\n  (deref-is-Employee this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -----------------------------\n;   Getters for class Person:\n; -----------------------------\n\n; --- getters for Person.age: ---\n\n(define-fun Person.age ((this Ref)) Int\n  (ite (deref-is-Person this) (age (deref-Person this))\n  (age (deref-Employee this)))\n)\n\n(define-fun Person!age ((this Ref)) Int\n  (age (deref-Person this))\n)\n\n; -------------------------------\n;   Getters for class Employee:\n; -------------------------------\n\n; --- getters for Employee.age: ---\n\n(define-fun Employee.age ((this Ref)) Int\n  (age (deref-Employee this))\n)\n\n(define-fun Employee!age ((this Ref)) Int\n  (age (deref-Employee this))\n)\n\n; --- getters for Employee.boss: ---\n\n(define-fun Employee!boss ((this Ref)) Ref\n  (boss (deref-Employee this))\n)\n\n; --- getters for Employee.officemate: ---\n\n(define-fun Employee.officemate ((this Ref)) Ref\n  (officemate (deref-Employee this))\n)\n\n(define-fun Employee!officemate ((this Ref)) Ref\n  (officemate (deref-Employee this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; -----------------------------\n;   Methods for class Person:\n; -----------------------------\n\n(define-fun Person.getAge ((this Ref)) Int\n  (Person.age this)\n)\n\n(define-fun Person!getAge ((this Ref)) Int\n  (Person!age this)\n)\n\n; -------------------------------\n;   Methods for class Employee:\n; -------------------------------\n\n(define-fun Employee.getAge ((this Ref)) Int\n  (Employee.age this)\n)\n\n(define-fun Employee!getAge ((this Ref)) Int\n  (Employee!age this)\n)\n\n(define-fun Employee.avoid ((this Ref)(p Ref)) Bool\n  (not (= (Employee.officemate this) p))\n)\n\n(define-fun Employee!avoid ((this Ref)(p Ref)) Bool\n  (not (= (Employee!officemate this) p))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; -------------------------------\n;   Invariant for class Person:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Person Person)\n(declare-const const-2-Person Person)\n\n; --- Invariant 1: ---\n\n(define-fun Person.inv1 ((this Ref)) Bool\n  (> (Person!getAge this ) 18)\n)\n\n(assert (! (Person.inv1 1) :named _xkassert0))\n(assert (! (Person.inv1 2) :named _xkassert1))\n\n\n\n; ---------------------------------\n;   Invariant for class Employee:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Employee Employee)\n(declare-const const-4-Employee Employee)\n\n; --- Invariant 1: ---\n\n(define-fun Employee.inv1 ((this Ref)) Bool\n  (deref-isa-Person (Employee!boss this))\n)\n\n(assert (! (Employee.inv1 3) :named _xkassert2))\n(assert (! (Employee.inv1 4) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun Employee.inv2 ((this Ref)) Bool\n  (deref-isa-Employee (Employee!officemate this))\n)\n\n(assert (! (Employee.inv2 3) :named _xkassert4))\n(assert (! (Employee.inv2 4) :named _xkassert5))\n\n; --- Invariant 3: ---\n\n(define-fun Employee.inv3 ((this Ref)) Bool\n  (> (Employee!getAge this ) 18)\n)\n\n(assert (! (Employee.inv3 3) :named _xkassert6))\n(assert (! (Employee.inv3 4) :named _xkassert7))\n\n; --- Invariant 4: ---\n\n(define-fun Employee.inv4 ((this Ref)) Bool\n  (> (Person.age (Employee!boss this)) 30)\n)\n\n(assert (! (Employee.inv4 3) :named _xkassert8))\n(assert (! (Employee.inv4 4) :named _xkassert9))\n\n; --- Invariant 5: ---\n\n(define-fun Employee.inv5 ((this Ref)) Bool\n  (= this (Employee.officemate (Employee!officemate this)))\n)\n\n(assert (! (Employee.inv5 3) :named _xkassert10))\n(assert (! (Employee.inv5 4) :named _xkassert11))\n\n; --- Invariant 6: ---\n\n(define-fun Employee.inv6 ((this Ref)) Bool\n  (Employee!avoid this (Employee!boss this))\n)\n\n(assert (! (Employee.inv6 3) :named _xkassert12))\n(assert (! (Employee.inv6 4) :named _xkassert13))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Person const-1-Person))\n        2 (lift-Person const-2-Person))\n        3 (lift-Employee const-3-Employee))\n        4 (lift-Employee const-4-Employee))\n  )\n)\n\n",
+    "smtModel": "(define-fun _xkassert7 () Bool\n  (> (age (sel-Employee (select heap 4))) 18))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (= (officemate (sel-Employee (select heap 3)))\n              (boss (sel-Employee (select heap 3))))))\n  (not a!1)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 3))))))\n  (or (is-lift-Person a!1) (is-lift-Employee a!1))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 4))))))\n  (or (is-lift-Person a!1) (is-lift-Employee a!1))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 4))))))\n  (is-lift-Employee a!1)))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (= (officemate (sel-Employee (select heap 4)))\n              (boss (sel-Employee (select heap 4))))))\n  (not a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 4))))))\n  (> (ite (is-lift-Person a!1) (age (sel-Person a!1)) (age (sel-Employee a!1)))\n     30)))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 4))))))\n  (= 4 (officemate (sel-Employee a!1)))))\n(define-fun _xkassert0 () Bool\n  (> (age (sel-Person (select heap 1))) 18))\n(define-fun const-4-Employee () Employee\n  (mk-Employee 32304 2 4))\n(define-fun const-1-Person () Person\n  (mk-Person 19))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (boss (sel-Employee (select heap 3))))))\n  (> (ite (is-lift-Person a!1) (age (sel-Person a!1)) (age (sel-Employee a!1)))\n     30)))\n(define-fun _xkassert6 () Bool\n  (> (age (sel-Employee (select heap 3))) 18))\n(define-fun _xkassert1 () Bool\n  (> (age (sel-Person (select heap 2))) 18))\n(define-fun const-2-Person () Person\n  (mk-Person 31))\n(define-fun const-3-Employee () Employee\n  (mk-Employee 8384 2 3))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 3))))))\n  (= 3 (officemate (sel-Employee a!1)))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (officemate (sel-Employee (select heap 3))))))\n  (is-lift-Employee a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-Person (mk-Person 19)))\n                  2\n                  (lift-Person (mk-Person 31)))))\n  (store (store a!1 3 (lift-Employee (mk-Employee 8384 2 3)))\n         4\n         (lift-Employee (mk-Employee 32304 2 4)))))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Person",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "age",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "getAge",
+                        "typeParams": [],
+                        "params": [],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "ident": "age",
+                                    "type": "IdentExp"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "GT",
+                            "exp1": {
+                                "type": "FunApplExp",
+                                "exp1": {
+                                    "ident": "getAge",
+                                    "type": "IdentExp"
+                                },
+                                "args": []
+                            },
+                            "exp2": {
+                                "i": 18,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Employee",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "Person"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "boss",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "Person"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "officemate",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "Employee"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "avoid",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "p",
+                                "ty": {
+                                    "args": [],
+                                    "ident": {
+                                        "names": [
+                                            "Employee"
+                                        ],
+                                        "type": "QualifiedName"
+                                    },
+                                    "type": "IdentType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "BoolType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "BinExp",
+                                    "op": "NotEQ",
+                                    "exp1": {
+                                        "ident": "officemate",
+                                        "type": "IdentExp"
+                                    },
+                                    "exp2": {
+                                        "ident": "p",
+                                        "type": "IdentExp"
+                                    }
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "GT",
+                            "exp1": {
+                                "ident": "age",
+                                "exp": {
+                                    "ident": "boss",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            },
+                            "exp2": {
+                                "i": 30,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "EQ",
+                            "exp1": {
+                                "type": "ThisLiteral"
+                            },
+                            "exp2": {
+                                "ident": "officemate",
+                                "exp": {
+                                    "ident": "officemate",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            }
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "FunApplExp",
+                            "exp1": {
+                                "ident": "avoid",
+                                "type": "IdentExp"
+                            },
+                            "args": [
+                                {
+                                    "type": "PositionalArgument",
+                                    "exp": {
+                                        "ident": "boss",
+                                        "type": "IdentExp"
+                                    }
+                                }
+                            ]
+                        },
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Person",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "age",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "getAge",
+                        "typeParams": [],
+                        "params": [],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "element": "age",
+                                    "type": "ElementValue"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "GT"
+                                },
+                                {
+                                    "type": "Expression",
+                                    "operand": [
+                                        {
+                                            "element": "getAge",
+                                            "type": "ElementValue"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 18
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Employee",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "Person"
+                    }
+                ],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "boss",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Person"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "officemate",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Employee"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "avoid",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "p",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Employee"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Boolean"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "NotEQ"
+                                        },
+                                        {
+                                            "element": "officemate",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "element": "p",
+                                            "type": "ElementValue"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "GT"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "boss",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "age"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 30
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "EQ"
+                                },
+                                {
+                                    "type": "Expression",
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "This"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "officemate",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "officemate"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "Expression",
+                            "operand": [
+                                {
+                                    "element": "avoid",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "element": "boss",
+                                    "type": "ElementValue"
+                                }
+                            ]
+                        },
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    }
 }

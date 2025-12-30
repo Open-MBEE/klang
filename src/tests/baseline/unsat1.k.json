@@ -1,10 +1,430 @@
 {
-  "name": "unsat1.k",
-  "outcome": "UNSAT",
-  "typeChecks": true,
-  "model": "\np:Bool\n\nq:Bool\n\nr:Bool\n\ns:Bool\n\nreq (p || q)\n\nreq (r => s)\n\nreq (s => (q <=> r))\n\nreq (p || r)\n\nreq (r || s)\n\nreq !(r && q)\n\nreq !(s && p)\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (p Bool)(q Bool)(r Bool)(s Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.p: ---\n\n(define-fun TopLevelDeclarations!p ((this Ref)) Bool\n  (p (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.q: ---\n\n(define-fun TopLevelDeclarations!q ((this Ref)) Bool\n  (q (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.r: ---\n\n(define-fun TopLevelDeclarations!r ((this Ref)) Bool\n  (r (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.s: ---\n\n(define-fun TopLevelDeclarations!s ((this Ref)) Bool\n  (s (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (or (TopLevelDeclarations!p this) (TopLevelDeclarations!q this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (=> (TopLevelDeclarations!r this) (TopLevelDeclarations!s this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (=> (TopLevelDeclarations!s this) (= (TopLevelDeclarations!q this) (TopLevelDeclarations!r this)))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (or (TopLevelDeclarations!p this) (TopLevelDeclarations!r this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (or (TopLevelDeclarations!r this) (TopLevelDeclarations!s this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (not (and (TopLevelDeclarations!r this) (TopLevelDeclarations!q this)))\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun TopLevelDeclarations.inv7 ((this Ref)) Bool\n  (not (and (TopLevelDeclarations!s this) (TopLevelDeclarations!p this)))\n)\n\n(assert (! (TopLevelDeclarations.inv7 0) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
-  "smtModel": "",
-  "json1": "",
-  "json2": ""
+    "name": "unsat1.k",
+    "outcome": "UNSAT",
+    "typeChecks": true,
+    "model": "\np:Bool\n\nq:Bool\n\nr:Bool\n\ns:Bool\n\nreq (p || q)\n\nreq (r => s)\n\nreq (s => (q <=> r))\n\nreq (p || r)\n\nreq (r || s)\n\nreq !(r && q)\n\nreq !(s && p)\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (p Bool)(q Bool)(r Bool)(s Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.p: ---\n\n(define-fun TopLevelDeclarations!p ((this Ref)) Bool\n  (p (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.q: ---\n\n(define-fun TopLevelDeclarations!q ((this Ref)) Bool\n  (q (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.r: ---\n\n(define-fun TopLevelDeclarations!r ((this Ref)) Bool\n  (r (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.s: ---\n\n(define-fun TopLevelDeclarations!s ((this Ref)) Bool\n  (s (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (or (TopLevelDeclarations!p this) (TopLevelDeclarations!q this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (=> (TopLevelDeclarations!r this) (TopLevelDeclarations!s this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (=> (TopLevelDeclarations!s this) (= (TopLevelDeclarations!q this) (TopLevelDeclarations!r this)))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (or (TopLevelDeclarations!p this) (TopLevelDeclarations!r this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (or (TopLevelDeclarations!r this) (TopLevelDeclarations!s this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (not (and (TopLevelDeclarations!r this) (TopLevelDeclarations!q this)))\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun TopLevelDeclarations.inv7 ((this Ref)) Bool\n  (not (and (TopLevelDeclarations!s this) (TopLevelDeclarations!p this)))\n)\n\n(assert (! (TopLevelDeclarations.inv7 0) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
+    "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (and (r (sel-TopLevelDeclarations (select heap 0)))\n                (q (sel-TopLevelDeclarations (select heap 0))))))\n  (not a!1)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations true false false true))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (and (s (sel-TopLevelDeclarations (select heap 0)))\n                (p (sel-TopLevelDeclarations (select heap 0))))))\n  (not a!1)))\n(define-fun _xkassert0 () Bool\n  (or (p (sel-TopLevelDeclarations (select heap 0)))\n    (q (sel-TopLevelDeclarations (select heap 0)))))\n(define-fun heap () (Array Int Any)\n  (store ((as const (Array Int Any)) null)\n       0\n       (lift-TopLevelDeclarations\n         (mk-TopLevelDeclarations true false false true))))\n(define-fun _xkassert1 () Bool\n  (=> (r (sel-TopLevelDeclarations (select heap 0)))\n    (s (sel-TopLevelDeclarations (select heap 0)))))\n(define-fun _xkassert4 () Bool\n  (or (r (sel-TopLevelDeclarations (select heap 0)))\n    (s (sel-TopLevelDeclarations (select heap 0)))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (= (q (sel-TopLevelDeclarations (select heap 0)))\n              (r (sel-TopLevelDeclarations (select heap 0))))))\n  (=> (s (sel-TopLevelDeclarations (select heap 0))) a!1)))\n(define-fun _xkassert3 () Bool\n  (or (p (sel-TopLevelDeclarations (select heap 0)))\n    (r (sel-TopLevelDeclarations (select heap 0)))))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p",
+                "ty": {
+                    "type": "BoolType"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "q",
+                "ty": {
+                    "type": "BoolType"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "r",
+                "ty": {
+                    "type": "BoolType"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "s",
+                "ty": {
+                    "type": "BoolType"
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "type": "BinExp",
+                        "op": "OR",
+                        "exp1": {
+                            "ident": "p",
+                            "type": "IdentExp"
+                        },
+                        "exp2": {
+                            "ident": "q",
+                            "type": "IdentExp"
+                        }
+                    },
+                    "type": "ParenExp"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "type": "BinExp",
+                        "op": "Implies",
+                        "exp1": {
+                            "ident": "r",
+                            "type": "IdentExp"
+                        },
+                        "exp2": {
+                            "ident": "s",
+                            "type": "IdentExp"
+                        }
+                    },
+                    "type": "ParenExp"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "type": "BinExp",
+                        "op": "Implies",
+                        "exp1": {
+                            "ident": "s",
+                            "type": "IdentExp"
+                        },
+                        "exp2": {
+                            "exp": {
+                                "type": "BinExp",
+                                "op": "Iff",
+                                "exp1": {
+                                    "ident": "q",
+                                    "type": "IdentExp"
+                                },
+                                "exp2": {
+                                    "ident": "r",
+                                    "type": "IdentExp"
+                                }
+                            },
+                            "type": "ParenExp"
+                        }
+                    },
+                    "type": "ParenExp"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "type": "BinExp",
+                        "op": "OR",
+                        "exp1": {
+                            "ident": "p",
+                            "type": "IdentExp"
+                        },
+                        "exp2": {
+                            "ident": "r",
+                            "type": "IdentExp"
+                        }
+                    },
+                    "type": "ParenExp"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "type": "BinExp",
+                        "op": "OR",
+                        "exp1": {
+                            "ident": "r",
+                            "type": "IdentExp"
+                        },
+                        "exp2": {
+                            "ident": "s",
+                            "type": "IdentExp"
+                        }
+                    },
+                    "type": "ParenExp"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "And",
+                            "exp1": {
+                                "ident": "r",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "ident": "q",
+                                "type": "IdentExp"
+                            }
+                        },
+                        "type": "ParenExp"
+                    },
+                    "type": "UnaryExp",
+                    "op": "Not"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "exp": {
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "And",
+                            "exp1": {
+                                "ident": "s",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "ident": "p",
+                                "type": "IdentExp"
+                            }
+                        },
+                        "type": "ParenExp"
+                    },
+                    "type": "UnaryExp",
+                    "op": "Not"
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Boolean"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "q",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Boolean"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "r",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Boolean"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "s",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Boolean"
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "OR"
+                        },
+                        {
+                            "element": "p",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "element": "q",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "Implies"
+                        },
+                        {
+                            "element": "r",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "element": "s",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "Implies"
+                        },
+                        {
+                            "element": "s",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "Iff"
+                                },
+                                {
+                                    "element": "q",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "element": "r",
+                                    "type": "ElementValue"
+                                }
+                            ],
+                            "type": "Expression"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "OR"
+                        },
+                        {
+                            "element": "p",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "element": "r",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "OR"
+                        },
+                        {
+                            "element": "r",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "element": "s",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "Expression",
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "Not"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "And"
+                                },
+                                {
+                                    "element": "r",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "element": "q",
+                                    "type": "ElementValue"
+                                }
+                            ],
+                            "type": "Expression"
+                        }
+                    ]
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "Expression",
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "Not"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "And"
+                                },
+                                {
+                                    "element": "s",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "element": "p",
+                                    "type": "ElementValue"
+                                }
+                            ],
+                            "type": "Expression"
+                        }
+                    ]
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    }
 }

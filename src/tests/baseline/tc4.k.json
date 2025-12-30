@@ -1,10 +1,203 @@
 {
-  "name": "tc4.k",
-  "outcome": "SAT",
-  "typeChecks": true,
-  "model": "\nclass A {\n\n  fun foo(x:Int) : Int\n\n}\n\nclass B extending A {\n\n  fun foo(x:Int) : Int\n  {\n    x + 2\n  }\n}\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort A) (declare-const mk-A A)\n(declare-sort B) (declare-const mk-B B)\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ------------------------\n;   Methods for class A:\n; ------------------------\n\n(declare-fun A.foo (Ref Int) Int)\n\n(define-fun A!foo ((this Ref)(x Int)) Int\n  (A.foo this x)\n)\n\n; ------------------------\n;   Methods for class B:\n; ------------------------\n\n(define-fun B.foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n(define-fun B!foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n  )\n)\n\n",
-  "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-A () A\n  A!val!0)\n(define-fun const-2-B () B\n  B!val!0)\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null) 1 (lift-A A!val!0))\n       2\n       (lift-B B!val!0)))",
-  "json1": "",
-  "json2": ""
+    "name": "tc4.k",
+    "outcome": "SAT",
+    "typeChecks": true,
+    "model": "\nclass A {\n\n  fun foo(x:Int) : Int\n\n}\n\nclass B extending A {\n\n  fun foo(x:Int) : Int\n  {\n    x + 2\n  }\n}\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort A) (declare-const mk-A A)\n(declare-sort B) (declare-const mk-B B)\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ------------------------\n;   Methods for class A:\n; ------------------------\n\n(declare-fun A.foo (Ref Int) Int)\n\n(define-fun A!foo ((this Ref)(x Int)) Int\n  (A.foo this x)\n)\n\n; ------------------------\n;   Methods for class B:\n; ------------------------\n\n(define-fun B.foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n(define-fun B!foo ((this Ref)(x Int)) Int\n  (+ x 2)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n  )\n)\n\n",
+    "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-A () A\n  A!val!0)\n(define-fun const-2-B () B\n  B!val!0)\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null) 1 (lift-A A!val!0))\n       2\n       (lift-B B!val!0)))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "FunDecl",
+                        "ident": "foo",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "x",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "A"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": [
+                    {
+                        "type": "FunDecl",
+                        "ident": "foo",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "x",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "BinExp",
+                                    "op": "Plus",
+                                    "exp1": {
+                                        "ident": "x",
+                                        "type": "IdentExp"
+                                    },
+                                    "exp2": {
+                                        "i": 2,
+                                        "type": "LiteralInteger"
+                                    }
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "FunDecl",
+                        "ident": "foo",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "x",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "A"
+                    }
+                ],
+                "members": [
+                    {
+                        "type": "FunDecl",
+                        "ident": "foo",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "x",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "element": "x",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralInteger",
+                                            "integer": 2
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    }
 }

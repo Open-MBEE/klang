@@ -480,6 +480,8 @@ object Frontend {
           var extra = ""
           var outcome = "UNKNOWN"  // SAT, UNSAT, ERROR, TIMEOUT
           var typeChecked = false
+          var json1Obj: AnyRef = ""  // JSONObject when available, "" otherwise
+          var json2Obj: AnyRef = ""
 
           val file = new File(testFile.trim)
           val testName = file.getName
@@ -611,6 +613,12 @@ object Frontend {
                   log("Type checking completed. No errors found.")
                 }
 
+                // Generate json1 and json2 for baseline (same as doTest())
+                ASTOptions.useJson1 = true
+                json1Obj = combinedModel.toJson
+                ASTOptions.useJson1 = false
+                json2Obj = combinedModel.toJson
+
                 t0 = System.nanoTime()
                 val smtStr = combinedModel.toSMT
                 t1 = System.nanoTime()
@@ -678,7 +686,7 @@ object Frontend {
                     outcome = "TIMEOUT"
                   }
                 } else {
-                  // Non-verbose batch mode: use simple K2Z3.solveSMT
+                  // Non-verbose batch mode: use simple K2Z3.solveSMT (faster)
                   val solveResult = runWithTimeout(testTimeout) {
                     K2Z3.solveSMT(combinedModel, smtStr, false)
                   }
@@ -689,6 +697,8 @@ object Frontend {
                     outcome = "SAT"
                   } else {
                     outcome = "UNSAT"
+                    // Try to get partial model for UNSAT (for debugging/baselines)
+                    tryGetPartialModelForUnsat(combinedModel, smtStr)
                   }
                 }
                 t1 = System.nanoTime()
@@ -702,8 +712,8 @@ object Frontend {
                 resultJson.put("model", if (combinedModel != null) combinedModel.toString else "")
                 resultJson.put("smt", smtStr)
                 resultJson.put("smtModel", if (K2Z3.z3Model != null) K2Z3.z3Model.toString else "")
-                resultJson.put("json1", "")
-                resultJson.put("json2", "")
+                resultJson.put("json1", json1Obj)
+                resultJson.put("json2", json2Obj)
 
                 // Determine pass/fail based on BOTH checks:
                 // 1. @expected annotation (if present, outcome must match)
@@ -1561,6 +1571,59 @@ object Frontend {
         currentTestJsonObject.put("smt", "")
         currentTestJsonObject.put("smtModel", "")
         currentTestJsonObject.put("typeChecks", false)
+    }
+  }
+
+  /**
+   * Try to get a partial model for UNSAT problems.
+   * Uses max-SAT approach via UnifiedSolver to find the maximum number of constraints
+   * that can be satisfied together. The partial model is stored in K2Z3.z3Model.
+   */
+  def tryGetPartialModelForUnsat(model: Model, smtStr: String): Unit = {
+    try {
+      // Write SMT to temp file
+      val tempFile = new java.io.File(".tmp/k_debug.smt2")
+      val writer = new java.io.PrintWriter(tempFile)
+      writer.write(smtStr)
+      writer.close()
+
+      // Parse to get constraints
+      val boolExps = K2Z3.ctx.parseSMTLIB2File(
+        tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+      val boolExpsList = boolExps.map(_.asInstanceOf[com.microsoft.z3.BoolExpr]).toList
+
+      // Use max-SAT with soft constraints to find partial model
+      val optimize = K2Z3.ctx.mkOptimize()
+      val optParams = K2Z3.ctx.mkParams()
+      optParams.add("timeout", 5000)  // 5 second timeout for partial model
+      optimize.setParameters(optParams)
+
+      // Filter out quantified constraints (Optimize doesn't support them)
+      def containsQuantifier(expr: com.microsoft.z3.Expr[_]): Boolean = {
+        if (expr.isQuantifier) return true
+        for (i <- 0 until expr.getNumArgs) {
+          if (containsQuantifier(expr.getArgs()(i))) return true
+        }
+        false
+      }
+      val nonQuantifiedExps = boolExpsList.filterNot(containsQuantifier)
+
+      if (nonQuantifiedExps.isEmpty) return  // All constraints are quantified
+
+      // Add non-quantified constraints as SOFT constraints
+      for (expr <- nonQuantifiedExps) {
+        optimize.AssertSoft(expr, 1, "partial")
+      }
+
+      val status = optimize.Check()
+      if (status == com.microsoft.z3.Status.SATISFIABLE) {
+        val partialModel = optimize.getModel
+        if (partialModel != null) {
+          K2Z3.z3Model = partialModel
+        }
+      }
+    } catch {
+      case _: Exception => // Ignore errors in partial model extraction
     }
   }
 

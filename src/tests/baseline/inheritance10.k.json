@@ -1,10 +1,742 @@
 {
-  "name": "inheritance10.k",
-  "outcome": "SAT",
-  "typeChecks": true,
-  "model": "\nclass A {\n  a:Int\n  b:Int\n  c:Int\n  d:Int\n  e:Int\n  f:Int\n  g:Int\n}\n\nclass B extending A\n\nclass C extending B\n\nclass D extending C\n\nclass E extending D\n\nclass F extending E\n\nclass G extending F\n\nclass H extending G\n\nh:H = H()\n\nreq h.a + h.b + h.c + h.d + h.e + h.f + h.g = 90\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (h Ref)))))\n(declare-datatypes () ((A (mk-A (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((B (mk-B (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((C (mk-C (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((D (mk-D (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((E (mk-E (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((F (mk-F (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((G (mk-G (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((H (mk-H (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  (lift-E (sel-E E))\n  (lift-F (sel-F F))\n  (lift-G (sel-G G))\n  (lift-H (sel-H H))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n(define-fun deref-is-E ((this Ref)) Bool\n  (is-lift-E (deref this))\n)\n\n(define-fun deref-E ((this Ref)) E\n  (sel-E (deref this))\n)\n\n(define-fun deref-is-F ((this Ref)) Bool\n  (is-lift-F (deref this))\n)\n\n(define-fun deref-F ((this Ref)) F\n  (sel-F (deref this))\n)\n\n(define-fun deref-is-G ((this Ref)) Bool\n  (is-lift-G (deref this))\n)\n\n(define-fun deref-G ((this Ref)) G\n  (sel-G (deref this))\n)\n\n(define-fun deref-is-H ((this Ref)) Bool\n  (is-lift-H (deref this))\n)\n\n(define-fun deref-H ((this Ref)) H\n  (sel-H (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (or\n    (deref-is-B this)\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (or\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (or\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-E ((this Ref)) Bool\n  (or\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-F ((this Ref)) Bool\n  (or\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-G ((this Ref)) Bool\n  (or\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-H ((this Ref)) Bool\n  (deref-is-H this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.h: ---\n\n(define-fun TopLevelDeclarations!h ((this Ref)) Ref\n  (h (deref-TopLevelDeclarations this))\n)\n\n; ------------------------\n;   Getters for class H:\n; ------------------------\n\n; --- getters for H.a: ---\n\n(define-fun H.a ((this Ref)) Int\n  (a (deref-H this))\n)\n\n; --- getters for H.b: ---\n\n(define-fun H.b ((this Ref)) Int\n  (b (deref-H this))\n)\n\n; --- getters for H.c: ---\n\n(define-fun H.c ((this Ref)) Int\n  (c (deref-H this))\n)\n\n; --- getters for H.d: ---\n\n(define-fun H.d ((this Ref)) Int\n  (d (deref-H this))\n)\n\n; --- getters for H.e: ---\n\n(define-fun H.e ((this Ref)) Int\n  (e (deref-H this))\n)\n\n; --- getters for H.f: ---\n\n(define-fun H.f ((this Ref)) Int\n  (f (deref-H this))\n)\n\n; --- getters for H.g: ---\n\n(define-fun H.g ((this Ref)) Int\n  (g (deref-H this))\n)\n\n; ========================================\n; === Constructor parameter constants: ===\n; ========================================\n\n(declare-const const__1 Int)\n(declare-const const__2 Int)\n(declare-const const__3 Int)\n(declare-const const__4 Int)\n(declare-const const__5 Int)\n(declare-const const__6 Int)\n(declare-const const__7 Int)\n\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!h this)) (lift-H (mk-H const__1 const__2 const__3 const__4 const__5 const__6 const__7)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-H (TopLevelDeclarations!h this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (= (+ (+ (+ (+ (+ (+ (H.a (TopLevelDeclarations!h this)) (H.b (TopLevelDeclarations!h this))) (H.c (TopLevelDeclarations!h this))) (H.d (TopLevelDeclarations!h this))) (H.e (TopLevelDeclarations!h this))) (H.f (TopLevelDeclarations!h this))) (H.g (TopLevelDeclarations!h this))) 90)\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-B B)\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-C C)\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-8-D D)\n\n\n\n; --------------------------\n;   Invariant for class E:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-E E)\n\n\n\n; --------------------------\n;   Invariant for class F:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-F F)\n\n\n\n; --------------------------\n;   Invariant for class G:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-G G)\n\n\n\n; --------------------------\n;   Invariant for class H:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-H H)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        3 (lift-A const-3-A))\n        5 (lift-B const-5-B))\n        6 (lift-C const-6-C))\n        8 (lift-D const-8-D))\n        1 (lift-E const-1-E))\n        2 (lift-F const-2-F))\n        4 (lift-G const-4-G))\n        7 (lift-H const-7-H))\n  )\n)\n\n",
-  "smtModel": "(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (= a!1\n     (lift-H (mk-H const__1\n                   const__2\n                   const__3\n                   const__4\n                   const__5\n                   const__6\n                   const__7)))))\n(define-fun const__2 () Int\n  30612)\n(define-fun const__5 () Int\n  28100)\n(define-fun const__4 () Int\n  (- 76067))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (= (+ (a (sel-H a!1))\n        (b (sel-H a!1))\n        (c (sel-H a!1))\n        (d (sel-H a!1))\n        (e (sel-H a!1))\n        (f (sel-H a!1))\n        (g (sel-H a!1)))\n     90)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 7))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-H a!1)))\n(define-fun const__6 () Int\n  1142)\n(define-fun const__7 () Int\n  0)\n(define-fun const__1 () Int\n  10450)\n(define-fun const-7-H () H\n  (mk-H 10450 30612 5853 (- 76067) 28100 1142 0))\n(define-fun const__3 () Int\n  5853)\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-3-A () A\n  (mk-A 0 0 0 0 0 0 0))\n(define-fun const-5-B () B\n  (mk-B 0 0 0 0 0 0 0))\n(define-fun const-6-C () C\n  (mk-C 0 0 0 0 0 0 0))\n(define-fun const-8-D () D\n  (mk-D 0 0 0 0 0 0 0))\n(define-fun const-1-E () E\n  (mk-E 0 0 0 0 0 0 0))\n(define-fun const-2-F () F\n  (mk-F 0 0 0 0 0 0 0))\n(define-fun const-4-G () G\n  (mk-G 0 0 0 0 0 0 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 7)))\n                  3\n                  (lift-A (mk-A 0 0 0 0 0 0 0)))))\n(let ((a!2 (store (store a!1 5 (lift-B (mk-B 0 0 0 0 0 0 0)))\n                  6\n                  (lift-C (mk-C 0 0 0 0 0 0 0)))))\n(let ((a!3 (store (store a!2 8 (lift-D (mk-D 0 0 0 0 0 0 0)))\n                  1\n                  (lift-E (mk-E 0 0 0 0 0 0 0)))))\n(let ((a!4 (store (store a!3 2 (lift-F (mk-F 0 0 0 0 0 0 0)))\n                  4\n                  (lift-G (mk-G 0 0 0 0 0 0 0)))))\n  (store a!4 7 (lift-H (mk-H 10450 30612 5853 (- 76067) 28100 1142 0))))))))",
-  "json1": "",
-  "json2": ""
+    "name": "inheritance10.k",
+    "outcome": "SAT",
+    "typeChecks": true,
+    "model": "\nclass A {\n  a:Int\n  b:Int\n  c:Int\n  d:Int\n  e:Int\n  f:Int\n  g:Int\n}\n\nclass B extending A\n\nclass C extending B\n\nclass D extending C\n\nclass E extending D\n\nclass F extending E\n\nclass G extending F\n\nclass H extending G\n\nh:H = H()\n\nreq h.a + h.b + h.c + h.d + h.e + h.f + h.g = 90\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (h Ref)))))\n(declare-datatypes () ((A (mk-A (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((B (mk-B (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((C (mk-C (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((D (mk-D (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((E (mk-E (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((F (mk-F (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((G (mk-G (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n(declare-datatypes () ((H (mk-H (a Int)(b Int)(c Int)(d Int)(e Int)(f Int)(g Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  (lift-E (sel-E E))\n  (lift-F (sel-F F))\n  (lift-G (sel-G G))\n  (lift-H (sel-H H))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n(define-fun deref-is-E ((this Ref)) Bool\n  (is-lift-E (deref this))\n)\n\n(define-fun deref-E ((this Ref)) E\n  (sel-E (deref this))\n)\n\n(define-fun deref-is-F ((this Ref)) Bool\n  (is-lift-F (deref this))\n)\n\n(define-fun deref-F ((this Ref)) F\n  (sel-F (deref this))\n)\n\n(define-fun deref-is-G ((this Ref)) Bool\n  (is-lift-G (deref this))\n)\n\n(define-fun deref-G ((this Ref)) G\n  (sel-G (deref this))\n)\n\n(define-fun deref-is-H ((this Ref)) Bool\n  (is-lift-H (deref this))\n)\n\n(define-fun deref-H ((this Ref)) H\n  (sel-H (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (or\n    (deref-is-B this)\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (or\n    (deref-is-C this)\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (or\n    (deref-is-D this)\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-E ((this Ref)) Bool\n  (or\n    (deref-is-E this)\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-F ((this Ref)) Bool\n  (or\n    (deref-is-F this)\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-G ((this Ref)) Bool\n  (or\n    (deref-is-G this)\n    (deref-is-H this)\n  )\n)\n\n(define-fun deref-isa-H ((this Ref)) Bool\n  (deref-is-H this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.h: ---\n\n(define-fun TopLevelDeclarations!h ((this Ref)) Ref\n  (h (deref-TopLevelDeclarations this))\n)\n\n; ------------------------\n;   Getters for class H:\n; ------------------------\n\n; --- getters for H.a: ---\n\n(define-fun H.a ((this Ref)) Int\n  (a (deref-H this))\n)\n\n; --- getters for H.b: ---\n\n(define-fun H.b ((this Ref)) Int\n  (b (deref-H this))\n)\n\n; --- getters for H.c: ---\n\n(define-fun H.c ((this Ref)) Int\n  (c (deref-H this))\n)\n\n; --- getters for H.d: ---\n\n(define-fun H.d ((this Ref)) Int\n  (d (deref-H this))\n)\n\n; --- getters for H.e: ---\n\n(define-fun H.e ((this Ref)) Int\n  (e (deref-H this))\n)\n\n; --- getters for H.f: ---\n\n(define-fun H.f ((this Ref)) Int\n  (f (deref-H this))\n)\n\n; --- getters for H.g: ---\n\n(define-fun H.g ((this Ref)) Int\n  (g (deref-H this))\n)\n\n; ========================================\n; === Constructor parameter constants: ===\n; ========================================\n\n(declare-const const__1 Int)\n(declare-const const__2 Int)\n(declare-const const__3 Int)\n(declare-const const__4 Int)\n(declare-const const__5 Int)\n(declare-const const__6 Int)\n(declare-const const__7 Int)\n\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!h this)) (lift-H (mk-H const__1 const__2 const__3 const__4 const__5 const__6 const__7)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-H (TopLevelDeclarations!h this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (= (+ (+ (+ (+ (+ (+ (H.a (TopLevelDeclarations!h this)) (H.b (TopLevelDeclarations!h this))) (H.c (TopLevelDeclarations!h this))) (H.d (TopLevelDeclarations!h this))) (H.e (TopLevelDeclarations!h this))) (H.f (TopLevelDeclarations!h this))) (H.g (TopLevelDeclarations!h this))) 90)\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-B B)\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-C C)\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-8-D D)\n\n\n\n; --------------------------\n;   Invariant for class E:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-E E)\n\n\n\n; --------------------------\n;   Invariant for class F:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-F F)\n\n\n\n; --------------------------\n;   Invariant for class G:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-G G)\n\n\n\n; --------------------------\n;   Invariant for class H:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-H H)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        3 (lift-A const-3-A))\n        5 (lift-B const-5-B))\n        6 (lift-C const-6-C))\n        8 (lift-D const-8-D))\n        1 (lift-E const-1-E))\n        2 (lift-F const-2-F))\n        4 (lift-G const-4-G))\n        7 (lift-H const-7-H))\n  )\n)\n\n",
+    "smtModel": "(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (= a!1\n     (lift-H (mk-H const__1\n                   const__2\n                   const__3\n                   const__4\n                   const__5\n                   const__6\n                   const__7)))))\n(define-fun const__2 () Int\n  30612)\n(define-fun const__5 () Int\n  28100)\n(define-fun const__4 () Int\n  (- 76067))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (= (+ (a (sel-H a!1))\n        (b (sel-H a!1))\n        (c (sel-H a!1))\n        (d (sel-H a!1))\n        (e (sel-H a!1))\n        (f (sel-H a!1))\n        (g (sel-H a!1)))\n     90)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 7))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (h (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-H a!1)))\n(define-fun const__6 () Int\n  1142)\n(define-fun const__7 () Int\n  0)\n(define-fun const__1 () Int\n  10450)\n(define-fun const-7-H () H\n  (mk-H 10450 30612 5853 (- 76067) 28100 1142 0))\n(define-fun const__3 () Int\n  5853)\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-3-A () A\n  (mk-A 0 0 0 0 0 0 0))\n(define-fun const-5-B () B\n  (mk-B 0 0 0 0 0 0 0))\n(define-fun const-6-C () C\n  (mk-C 0 0 0 0 0 0 0))\n(define-fun const-8-D () D\n  (mk-D 0 0 0 0 0 0 0))\n(define-fun const-1-E () E\n  (mk-E 0 0 0 0 0 0 0))\n(define-fun const-2-F () F\n  (mk-F 0 0 0 0 0 0 0))\n(define-fun const-4-G () G\n  (mk-G 0 0 0 0 0 0 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 7)))\n                  3\n                  (lift-A (mk-A 0 0 0 0 0 0 0)))))\n(let ((a!2 (store (store a!1 5 (lift-B (mk-B 0 0 0 0 0 0 0)))\n                  6\n                  (lift-C (mk-C 0 0 0 0 0 0 0)))))\n(let ((a!3 (store (store a!2 8 (lift-D (mk-D 0 0 0 0 0 0 0)))\n                  1\n                  (lift-E (mk-E 0 0 0 0 0 0 0)))))\n(let ((a!4 (store (store a!3 2 (lift-F (mk-F 0 0 0 0 0 0 0)))\n                  4\n                  (lift-G (mk-G 0 0 0 0 0 0 0)))))\n  (store a!4 7 (lift-H (mk-H 10450 30612 5853 (- 76067) 28100 1142 0))))))))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "a",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "b",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "c",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "e",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "f",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "g",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "A"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "B"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "D",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "C"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "E",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "D"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "F",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "E"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "G",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "F"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "H",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "args": [],
+                        "ident": {
+                            "names": [
+                                "G"
+                            ],
+                            "type": "QualifiedName"
+                        },
+                        "type": "IdentType"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "h",
+                "ty": {
+                    "args": [],
+                    "ident": {
+                        "names": [
+                            "H"
+                        ],
+                        "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                },
+                "assignment": false,
+                "expr": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                        "ident": "H",
+                        "type": "IdentExp"
+                    },
+                    "args": []
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                        "type": "BinExp",
+                        "op": "Plus",
+                        "exp1": {
+                            "type": "BinExp",
+                            "op": "Plus",
+                            "exp1": {
+                                "type": "BinExp",
+                                "op": "Plus",
+                                "exp1": {
+                                    "type": "BinExp",
+                                    "op": "Plus",
+                                    "exp1": {
+                                        "type": "BinExp",
+                                        "op": "Plus",
+                                        "exp1": {
+                                            "type": "BinExp",
+                                            "op": "Plus",
+                                            "exp1": {
+                                                "ident": "a",
+                                                "exp": {
+                                                    "ident": "h",
+                                                    "type": "IdentExp"
+                                                },
+                                                "type": "DotExp"
+                                            },
+                                            "exp2": {
+                                                "ident": "b",
+                                                "exp": {
+                                                    "ident": "h",
+                                                    "type": "IdentExp"
+                                                },
+                                                "type": "DotExp"
+                                            }
+                                        },
+                                        "exp2": {
+                                            "ident": "c",
+                                            "exp": {
+                                                "ident": "h",
+                                                "type": "IdentExp"
+                                            },
+                                            "type": "DotExp"
+                                        }
+                                    },
+                                    "exp2": {
+                                        "ident": "d",
+                                        "exp": {
+                                            "ident": "h",
+                                            "type": "IdentExp"
+                                        },
+                                        "type": "DotExp"
+                                    }
+                                },
+                                "exp2": {
+                                    "ident": "e",
+                                    "exp": {
+                                        "ident": "h",
+                                        "type": "IdentExp"
+                                    },
+                                    "type": "DotExp"
+                                }
+                            },
+                            "exp2": {
+                                "ident": "f",
+                                "exp": {
+                                    "ident": "h",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            }
+                        },
+                        "exp2": {
+                            "ident": "g",
+                            "exp": {
+                                "ident": "h",
+                                "type": "IdentExp"
+                            },
+                            "type": "DotExp"
+                        }
+                    },
+                    "exp2": {
+                        "i": 90,
+                        "type": "LiteralInteger"
+                    }
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "a",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "b",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "c",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "e",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "f",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "g",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "A"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "B"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "D",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "C"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "E",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "D"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "F",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "E"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "G",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "F"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "H",
+                "typeparams": [],
+                "extending": [
+                    {
+                        "type": "ElementValue",
+                        "element": "G"
+                    }
+                ],
+                "members": []
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "h",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "H"
+                },
+                "assignment": false,
+                "expr": {
+                    "type": "Expression",
+                    "operand": [
+                        {
+                            "element": "H",
+                            "type": "ElementValue"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "Plus"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "Plus"
+                                                },
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "Plus"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "Plus"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "Plus"
+                                                                        },
+                                                                        {
+                                                                            "operand": [
+                                                                                {
+                                                                                    "type": "ElementValue",
+                                                                                    "element": "getProperty"
+                                                                                },
+                                                                                {
+                                                                                    "element": "h",
+                                                                                    "type": "ElementValue"
+                                                                                },
+                                                                                {
+                                                                                    "type": "LiteralString",
+                                                                                    "string": "a"
+                                                                                }
+                                                                            ],
+                                                                            "type": "Expression"
+                                                                        },
+                                                                        {
+                                                                            "operand": [
+                                                                                {
+                                                                                    "type": "ElementValue",
+                                                                                    "element": "getProperty"
+                                                                                },
+                                                                                {
+                                                                                    "element": "h",
+                                                                                    "type": "ElementValue"
+                                                                                },
+                                                                                {
+                                                                                    "type": "LiteralString",
+                                                                                    "string": "b"
+                                                                                }
+                                                                            ],
+                                                                            "type": "Expression"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "getProperty"
+                                                                        },
+                                                                        {
+                                                                            "element": "h",
+                                                                            "type": "ElementValue"
+                                                                        },
+                                                                        {
+                                                                            "type": "LiteralString",
+                                                                            "string": "c"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "element": "h",
+                                                                    "type": "ElementValue"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "d"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                },
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "getProperty"
+                                                        },
+                                                        {
+                                                            "element": "h",
+                                                            "type": "ElementValue"
+                                                        },
+                                                        {
+                                                            "type": "LiteralString",
+                                                            "string": "e"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "getProperty"
+                                                },
+                                                {
+                                                    "element": "h",
+                                                    "type": "ElementValue"
+                                                },
+                                                {
+                                                    "type": "LiteralString",
+                                                    "string": "f"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "h",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "g"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        {
+                            "type": "LiteralInteger",
+                            "integer": 90
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    }
 }

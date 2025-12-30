@@ -1,10 +1,459 @@
 {
-  "name": "inheritance6.k",
-  "outcome": "SAT",
-  "typeChecks": true,
-  "model": "\nclass Person {\n  father:Person\n  child:Person\n\n  req father.child = this\n}\n\np1:Person\n\np2:Person\n\nreq p1 != p2\n\nreq p2.father = p1\n\nreq p1.child = p2\n\nreq p1.father = p2\n\nreq p2.child = p1\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (p1 Ref)(p2 Ref)))))\n(declare-datatypes () ((Person (mk-Person (father Ref)(child Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Person (sel-Person Person))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Person ((this Ref)) Bool\n  (is-lift-Person (deref this))\n)\n\n(define-fun deref-Person ((this Ref)) Person\n  (sel-Person (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Person ((this Ref)) Bool\n  (deref-is-Person this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.p1: ---\n\n(define-fun TopLevelDeclarations!p1 ((this Ref)) Ref\n  (p1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.p2: ---\n\n(define-fun TopLevelDeclarations!p2 ((this Ref)) Ref\n  (p2 (deref-TopLevelDeclarations this))\n)\n\n; -----------------------------\n;   Getters for class Person:\n; -----------------------------\n\n; --- getters for Person.father: ---\n\n(define-fun Person.father ((this Ref)) Ref\n  (father (deref-Person this))\n)\n\n(define-fun Person!father ((this Ref)) Ref\n  (father (deref-Person this))\n)\n\n; --- getters for Person.child: ---\n\n(define-fun Person.child ((this Ref)) Ref\n  (child (deref-Person this))\n)\n\n(define-fun Person!child ((this Ref)) Ref\n  (child (deref-Person this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Person (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Person (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (not (= (TopLevelDeclarations!p1 this) (TopLevelDeclarations!p2 this)))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (= (Person.father (TopLevelDeclarations!p2 this)) (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Person.child (TopLevelDeclarations!p1 this)) (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (Person.father (TopLevelDeclarations!p1 this)) (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun TopLevelDeclarations.inv7 ((this Ref)) Bool\n  (= (Person.child (TopLevelDeclarations!p2 this)) (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv7 0) :named _xkassert6))\n\n\n\n; -------------------------------\n;   Invariant for class Person:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Person Person)\n(declare-const const-2-Person Person)\n(declare-const const-3-Person Person)\n(declare-const const-4-Person Person)\n(declare-const const-5-Person Person)\n(declare-const const-6-Person Person)\n\n; --- Invariant 1: ---\n\n(define-fun Person.inv1 ((this Ref)) Bool\n  (deref-isa-Person (Person!father this))\n)\n\n(assert (! (Person.inv1 1) :named _xkassert7))\n(assert (! (Person.inv1 2) :named _xkassert8))\n(assert (! (Person.inv1 3) :named _xkassert9))\n(assert (! (Person.inv1 4) :named _xkassert10))\n(assert (! (Person.inv1 5) :named _xkassert11))\n(assert (! (Person.inv1 6) :named _xkassert12))\n\n; --- Invariant 2: ---\n\n(define-fun Person.inv2 ((this Ref)) Bool\n  (deref-isa-Person (Person!child this))\n)\n\n(assert (! (Person.inv2 1) :named _xkassert13))\n(assert (! (Person.inv2 2) :named _xkassert14))\n(assert (! (Person.inv2 3) :named _xkassert15))\n(assert (! (Person.inv2 4) :named _xkassert16))\n(assert (! (Person.inv2 5) :named _xkassert17))\n(assert (! (Person.inv2 6) :named _xkassert18))\n\n; --- Invariant 3: ---\n\n(define-fun Person.inv3 ((this Ref)) Bool\n  (= (Person.child (Person!father this)) this)\n)\n\n(assert (! (Person.inv3 1) :named _xkassert19))\n(assert (! (Person.inv3 2) :named _xkassert20))\n(assert (! (Person.inv3 3) :named _xkassert21))\n(assert (! (Person.inv3 4) :named _xkassert22))\n(assert (! (Person.inv3 5) :named _xkassert23))\n(assert (! (Person.inv3 6) :named _xkassert24))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Person const-1-Person))\n        2 (lift-Person const-2-Person))\n        3 (lift-Person const-3-Person))\n        4 (lift-Person const-4-Person))\n        5 (lift-Person const-5-Person))\n        6 (lift-Person const-6-Person))\n  )\n)\n\n",
-  "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 1))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (= (p1 (sel-TopLevelDeclarations (select heap 0)))\n              (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (not a!1)))\n(define-fun _xkassert19 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 1))))))\n  (= (child (sel-Person a!1)) 1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (father (sel-Person a!1)) (p2 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 1))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 3))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert24 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 6))))))\n  (= (child (sel-Person a!1)) 6)))\n(define-fun _xkassert21 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 3))))))\n  (= (child (sel-Person a!1)) 3)))\n(define-fun const-6-Person () Person\n  (mk-Person 6 6))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 2))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert22 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 4))))))\n  (= (child (sel-Person a!1)) 4)))\n(define-fun const-5-Person () Person\n  (mk-Person 2 3))\n(define-fun const-2-Person () Person\n  (mk-Person 3 5))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 4))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert14 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 2))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert20 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 2))))))\n  (= (child (sel-Person a!1)) 2)))\n(define-fun _xkassert17 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 5))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 6))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (father (sel-Person a!1)) (p1 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert16 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 4))))))\n  (is-lift-Person a!1)))\n(define-fun const-3-Person () Person\n  (mk-Person 5 2))\n(define-fun const-4-Person () Person\n  (mk-Person 1 1))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 5))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 3))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert23 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 5))))))\n  (= (child (sel-Person a!1)) 5)))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (child (sel-Person a!1)) (p1 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun const-1-Person () Person\n  (mk-Person 4 4))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1 4))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (child (sel-Person a!1)) (p2 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert18 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 6))))))\n  (is-lift-Person a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 1 4)))\n                  1\n                  (lift-Person (mk-Person 4 4)))))\n(let ((a!2 (store (store a!1 2 (lift-Person (mk-Person 3 5)))\n                  3\n                  (lift-Person (mk-Person 5 2)))))\n(let ((a!3 (store (store a!2 4 (lift-Person (mk-Person 1 1)))\n                  5\n                  (lift-Person (mk-Person 2 3)))))\n  (store a!3 6 (lift-Person (mk-Person 6 6)))))))",
-  "json1": "",
-  "json2": ""
+    "name": "inheritance6.k",
+    "outcome": "SAT",
+    "typeChecks": true,
+    "model": "\nclass Person {\n  father:Person\n  child:Person\n\n  req father.child = this\n}\n\np1:Person\n\np2:Person\n\nreq p1 != p2\n\nreq p2.father = p1\n\nreq p1.child = p2\n\nreq p1.father = p2\n\nreq p2.child = p1\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (p1 Ref)(p2 Ref)))))\n(declare-datatypes () ((Person (mk-Person (father Ref)(child Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Person (sel-Person Person))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Person ((this Ref)) Bool\n  (is-lift-Person (deref this))\n)\n\n(define-fun deref-Person ((this Ref)) Person\n  (sel-Person (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Person ((this Ref)) Bool\n  (deref-is-Person this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.p1: ---\n\n(define-fun TopLevelDeclarations!p1 ((this Ref)) Ref\n  (p1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.p2: ---\n\n(define-fun TopLevelDeclarations!p2 ((this Ref)) Ref\n  (p2 (deref-TopLevelDeclarations this))\n)\n\n; -----------------------------\n;   Getters for class Person:\n; -----------------------------\n\n; --- getters for Person.father: ---\n\n(define-fun Person.father ((this Ref)) Ref\n  (father (deref-Person this))\n)\n\n(define-fun Person!father ((this Ref)) Ref\n  (father (deref-Person this))\n)\n\n; --- getters for Person.child: ---\n\n(define-fun Person.child ((this Ref)) Ref\n  (child (deref-Person this))\n)\n\n(define-fun Person!child ((this Ref)) Ref\n  (child (deref-Person this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Person (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Person (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (not (= (TopLevelDeclarations!p1 this) (TopLevelDeclarations!p2 this)))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (= (Person.father (TopLevelDeclarations!p2 this)) (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Person.child (TopLevelDeclarations!p1 this)) (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (Person.father (TopLevelDeclarations!p1 this)) (TopLevelDeclarations!p2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun TopLevelDeclarations.inv7 ((this Ref)) Bool\n  (= (Person.child (TopLevelDeclarations!p2 this)) (TopLevelDeclarations!p1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv7 0) :named _xkassert6))\n\n\n\n; -------------------------------\n;   Invariant for class Person:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Person Person)\n(declare-const const-2-Person Person)\n(declare-const const-3-Person Person)\n(declare-const const-4-Person Person)\n(declare-const const-5-Person Person)\n(declare-const const-6-Person Person)\n\n; --- Invariant 1: ---\n\n(define-fun Person.inv1 ((this Ref)) Bool\n  (deref-isa-Person (Person!father this))\n)\n\n(assert (! (Person.inv1 1) :named _xkassert7))\n(assert (! (Person.inv1 2) :named _xkassert8))\n(assert (! (Person.inv1 3) :named _xkassert9))\n(assert (! (Person.inv1 4) :named _xkassert10))\n(assert (! (Person.inv1 5) :named _xkassert11))\n(assert (! (Person.inv1 6) :named _xkassert12))\n\n; --- Invariant 2: ---\n\n(define-fun Person.inv2 ((this Ref)) Bool\n  (deref-isa-Person (Person!child this))\n)\n\n(assert (! (Person.inv2 1) :named _xkassert13))\n(assert (! (Person.inv2 2) :named _xkassert14))\n(assert (! (Person.inv2 3) :named _xkassert15))\n(assert (! (Person.inv2 4) :named _xkassert16))\n(assert (! (Person.inv2 5) :named _xkassert17))\n(assert (! (Person.inv2 6) :named _xkassert18))\n\n; --- Invariant 3: ---\n\n(define-fun Person.inv3 ((this Ref)) Bool\n  (= (Person.child (Person!father this)) this)\n)\n\n(assert (! (Person.inv3 1) :named _xkassert19))\n(assert (! (Person.inv3 2) :named _xkassert20))\n(assert (! (Person.inv3 3) :named _xkassert21))\n(assert (! (Person.inv3 4) :named _xkassert22))\n(assert (! (Person.inv3 5) :named _xkassert23))\n(assert (! (Person.inv3 6) :named _xkassert24))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Person const-1-Person))\n        2 (lift-Person const-2-Person))\n        3 (lift-Person const-3-Person))\n        4 (lift-Person const-4-Person))\n        5 (lift-Person const-5-Person))\n        6 (lift-Person const-6-Person))\n  )\n)\n\n",
+    "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 1))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (= (p1 (sel-TopLevelDeclarations (select heap 0)))\n              (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (not a!1)))\n(define-fun _xkassert19 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 1))))))\n  (= (child (sel-Person a!1)) 1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (father (sel-Person a!1)) (p2 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 1))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 3))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert24 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 6))))))\n  (= (child (sel-Person a!1)) 6)))\n(define-fun _xkassert21 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 3))))))\n  (= (child (sel-Person a!1)) 3)))\n(define-fun const-6-Person () Person\n  (mk-Person 6 6))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 2))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert22 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 4))))))\n  (= (child (sel-Person a!1)) 4)))\n(define-fun const-5-Person () Person\n  (mk-Person 2 3))\n(define-fun const-2-Person () Person\n  (mk-Person 3 5))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 4))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert14 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 2))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert20 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 2))))))\n  (= (child (sel-Person a!1)) 2)))\n(define-fun _xkassert17 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 5))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 6))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (father (sel-Person a!1)) (p1 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert16 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 4))))))\n  (is-lift-Person a!1)))\n(define-fun const-3-Person () Person\n  (mk-Person 5 2))\n(define-fun const-4-Person () Person\n  (mk-Person 1 1))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 5))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 3))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert23 () Bool\n  (let ((a!1 (select heap (father (sel-Person (select heap 5))))))\n  (= (child (sel-Person a!1)) 5)))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (child (sel-Person a!1)) (p1 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun const-1-Person () Person\n  (mk-Person 4 4))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1 4))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (p2 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Person a!1)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (p1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (child (sel-Person a!1)) (p2 (sel-TopLevelDeclarations (select heap 0))))))\n(define-fun _xkassert18 () Bool\n  (let ((a!1 (select heap (child (sel-Person (select heap 6))))))\n  (is-lift-Person a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 1 4)))\n                  1\n                  (lift-Person (mk-Person 4 4)))))\n(let ((a!2 (store (store a!1 2 (lift-Person (mk-Person 3 5)))\n                  3\n                  (lift-Person (mk-Person 5 2)))))\n(let ((a!3 (store (store a!2 4 (lift-Person (mk-Person 1 1)))\n                  5\n                  (lift-Person (mk-Person 2 3)))))\n  (store a!3 6 (lift-Person (mk-Person 6 6)))))))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Person",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "father",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "Person"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "child",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "Person"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "EQ",
+                            "exp1": {
+                                "ident": "child",
+                                "exp": {
+                                    "ident": "father",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            },
+                            "exp2": {
+                                "type": "ThisLiteral"
+                            }
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p1",
+                "ty": {
+                    "args": [],
+                    "ident": {
+                        "names": [
+                            "Person"
+                        ],
+                        "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p2",
+                "ty": {
+                    "args": [],
+                    "ident": {
+                        "names": [
+                            "Person"
+                        ],
+                        "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "NotEQ",
+                    "exp1": {
+                        "ident": "p1",
+                        "type": "IdentExp"
+                    },
+                    "exp2": {
+                        "ident": "p2",
+                        "type": "IdentExp"
+                    }
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                        "ident": "father",
+                        "exp": {
+                            "ident": "p2",
+                            "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                    },
+                    "exp2": {
+                        "ident": "p1",
+                        "type": "IdentExp"
+                    }
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                        "ident": "child",
+                        "exp": {
+                            "ident": "p1",
+                            "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                    },
+                    "exp2": {
+                        "ident": "p2",
+                        "type": "IdentExp"
+                    }
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                        "ident": "father",
+                        "exp": {
+                            "ident": "p1",
+                            "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                    },
+                    "exp2": {
+                        "ident": "p2",
+                        "type": "IdentExp"
+                    }
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                        "ident": "child",
+                        "exp": {
+                            "ident": "p2",
+                            "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                    },
+                    "exp2": {
+                        "ident": "p1",
+                        "type": "IdentExp"
+                    }
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Person",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "father",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Person"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "child",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Person"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "EQ"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "father",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "child"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "type": "Expression",
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "This"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p1",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Person"
+                }
+            },
+            {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "p2",
+                "ty": {
+                    "type": "ElementValue",
+                    "element": "Person"
+                }
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "NotEQ"
+                        },
+                        {
+                            "element": "p1",
+                            "type": "ElementValue"
+                        },
+                        {
+                            "element": "p2",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "getProperty"
+                                },
+                                {
+                                    "element": "p2",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralString",
+                                    "string": "father"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        {
+                            "element": "p1",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "getProperty"
+                                },
+                                {
+                                    "element": "p1",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralString",
+                                    "string": "child"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        {
+                            "element": "p2",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "getProperty"
+                                },
+                                {
+                                    "element": "p1",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralString",
+                                    "string": "father"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        {
+                            "element": "p2",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            },
+            {
+                "type": "ConstraintDecl",
+                "exp": {
+                    "operand": [
+                        {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                        },
+                        {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "getProperty"
+                                },
+                                {
+                                    "element": "p2",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralString",
+                                    "string": "child"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        {
+                            "element": "p1",
+                            "type": "ElementValue"
+                        }
+                    ],
+                    "type": "Expression"
+                },
+                "annotations": []
+            }
+        ],
+        "packages": []
+    }
 }

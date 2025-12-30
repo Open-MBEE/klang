@@ -1,10 +1,1348 @@
 {
-  "name": "testsmt7.k",
-  "outcome": "SAT",
-  "typeChecks": true,
-  "model": "\nclass A {\n  a:Int = 1\n\n  fun f(k:Int) : Int\n  {\n    a + k\n  }\n}\n\nclass B {\n  iA:A\n  b:Int = 2\n\n  fun g(k:Int) : Int\n  {\n    iA.f(iA.a + b + k)\n  }\n}\n\nclass C {\n  iA:A\n  c:Int = 3\n\n  fun h(k:Int) : Int\n  {\n    iA.f(iA.a + c + k)\n  }\n}\n\nclass D {\n  iB:B\n  iC:C\n  d:Int = 4\n\n  req iB.iA = iC.iA\n\n  fun i(k:Int) : Int\n  {\n    iB.iA.a + iB.b + iC.c + d + k\n  }\n}\n\nclass Master {\n  d:D\n\n  fun main : Int\n  {\n    d.iB.iA.f(1) + d.iB.g(2) + d.i(3)\n  }\n  RESULT:Int = main + main\n}\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (a Int)))))\n(declare-datatypes () ((B (mk-B (iA Ref)(b Int)))))\n(declare-datatypes () ((C (mk-C (iA Ref)(c Int)))))\n(declare-datatypes () ((D (mk-D (iB Ref)(iC Ref)(d Int)))))\n(declare-datatypes () ((Master (mk-Master (d Ref)(RESULT Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  (lift-Master (sel-Master Master))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n(define-fun deref-is-Master ((this Ref)) Bool\n  (is-lift-Master (deref this))\n)\n\n(define-fun deref-Master ((this Ref)) Master\n  (sel-Master (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (deref-is-D this)\n)\n\n(define-fun deref-isa-Master ((this Ref)) Bool\n  (deref-is-Master this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.a: ---\n\n(define-fun A.a ((this Ref)) Int\n  (a (deref-A this))\n)\n\n(define-fun A!a ((this Ref)) Int\n  (a (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.iA: ---\n\n(define-fun B.iA ((this Ref)) Ref\n  (iA (deref-B this))\n)\n\n(define-fun B!iA ((this Ref)) Ref\n  (iA (deref-B this))\n)\n\n; --- getters for B.b: ---\n\n(define-fun B.b ((this Ref)) Int\n  (b (deref-B this))\n)\n\n(define-fun B!b ((this Ref)) Int\n  (b (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.iA: ---\n\n(define-fun C.iA ((this Ref)) Ref\n  (iA (deref-C this))\n)\n\n(define-fun C!iA ((this Ref)) Ref\n  (iA (deref-C this))\n)\n\n; --- getters for C.c: ---\n\n(define-fun C.c ((this Ref)) Int\n  (c (deref-C this))\n)\n\n(define-fun C!c ((this Ref)) Int\n  (c (deref-C this))\n)\n\n; ------------------------\n;   Getters for class D:\n; ------------------------\n\n; --- getters for D.iB: ---\n\n(define-fun D.iB ((this Ref)) Ref\n  (iB (deref-D this))\n)\n\n(define-fun D!iB ((this Ref)) Ref\n  (iB (deref-D this))\n)\n\n; --- getters for D.iC: ---\n\n(define-fun D.iC ((this Ref)) Ref\n  (iC (deref-D this))\n)\n\n(define-fun D!iC ((this Ref)) Ref\n  (iC (deref-D this))\n)\n\n; --- getters for D.d: ---\n\n(define-fun D.d ((this Ref)) Int\n  (d (deref-D this))\n)\n\n(define-fun D!d ((this Ref)) Int\n  (d (deref-D this))\n)\n\n; -----------------------------\n;   Getters for class Master:\n; -----------------------------\n\n; --- getters for Master.d: ---\n\n(define-fun Master.d ((this Ref)) Ref\n  (d (deref-Master this))\n)\n\n(define-fun Master!d ((this Ref)) Ref\n  (d (deref-Master this))\n)\n\n; --- getters for Master.RESULT: ---\n\n(define-fun Master!RESULT ((this Ref)) Int\n  (RESULT (deref-Master this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ------------------------\n;   Methods for class A:\n; ------------------------\n\n(define-fun A.f ((this Ref)(k Int)) Int\n  (+ (A.a this) k)\n)\n\n(define-fun A!f ((this Ref)(k Int)) Int\n  (+ (A!a this) k)\n)\n\n; ------------------------\n;   Methods for class B:\n; ------------------------\n\n(define-fun B.g ((this Ref)(k Int)) Int\n  (A.f (B.iA this) (+ (+ (A.a (B.iA this)) (B.b this)) k))\n)\n\n(define-fun B!g ((this Ref)(k Int)) Int\n  (A.f (B!iA this) (+ (+ (A.a (B!iA this)) (B!b this)) k))\n)\n\n; ------------------------\n;   Methods for class C:\n; ------------------------\n\n(define-fun C.h ((this Ref)(k Int)) Int\n  (A.f (C.iA this) (+ (+ (A.a (C.iA this)) (C.c this)) k))\n)\n\n(define-fun C!h ((this Ref)(k Int)) Int\n  (A.f (C!iA this) (+ (+ (A.a (C!iA this)) (C!c this)) k))\n)\n\n; ------------------------\n;   Methods for class D:\n; ------------------------\n\n(define-fun D.i ((this Ref)(k Int)) Int\n  (+ (+ (+ (+ (A.a (B.iA (D.iB this))) (B.b (D.iB this))) (C.c (D.iC this))) (D.d this)) k)\n)\n\n(define-fun D!i ((this Ref)(k Int)) Int\n  (+ (+ (+ (+ (A.a (B.iA (D!iB this))) (B.b (D!iB this))) (C.c (D!iC this))) (D!d this)) k)\n)\n\n; -----------------------------\n;   Methods for class Master:\n; -----------------------------\n\n(define-fun Master.main ((this Ref)) Int\n  (+ (+ (A.f (B.iA (D.iB (Master.d this))) 1) (B.g (D.iB (Master.d this)) 2)) (D.i (Master.d this) 3))\n)\n\n(define-fun Master!main ((this Ref)) Int\n  (+ (+ (A.f (B.iA (D.iB (Master!d this))) 1) (B.g (D.iB (Master!d this)) 2)) (D.i (Master!d this) 3))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-A A)\n(declare-const const-3-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (= (A!a this) 1)\n)\n\n(assert (! (A.inv1 2) :named _xkassert0))\n(assert (! (A.inv1 3) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (= (B!b this) 2)\n)\n\n(assert (! (B.inv1 4) :named _xkassert2))\n\n; --- Invariant 2: ---\n\n(define-fun B.inv2 ((this Ref)) Bool\n  (deref-isa-A (B!iA this))\n)\n\n(assert (! (B.inv2 4) :named _xkassert3))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (= (C!c this) 3)\n)\n\n(assert (! (C.inv1 5) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (deref-isa-A (C!iA this))\n)\n\n(assert (! (C.inv2 5) :named _xkassert5))\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-D D)\n\n; --- Invariant 1: ---\n\n(define-fun D.inv1 ((this Ref)) Bool\n  (= (D!d this) 4)\n)\n\n(assert (! (D.inv1 6) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun D.inv2 ((this Ref)) Bool\n  (deref-isa-B (D!iB this))\n)\n\n(assert (! (D.inv2 6) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun D.inv3 ((this Ref)) Bool\n  (deref-isa-C (D!iC this))\n)\n\n(assert (! (D.inv3 6) :named _xkassert8))\n\n; --- Invariant 4: ---\n\n(define-fun D.inv4 ((this Ref)) Bool\n  (= (B.iA (D!iB this)) (C.iA (D!iC this)))\n)\n\n(assert (! (D.inv4 6) :named _xkassert9))\n\n\n\n; -------------------------------\n;   Invariant for class Master:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Master Master)\n\n; --- Invariant 1: ---\n\n(define-fun Master.inv1 ((this Ref)) Bool\n  (= (Master!RESULT this) (+ (Master!main this) (Master!main this)))\n)\n\n(assert (! (Master.inv1 1) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun Master.inv2 ((this Ref)) Bool\n  (deref-isa-D (Master!d this))\n)\n\n(assert (! (Master.inv2 1) :named _xkassert11))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        2 (lift-A const-2-A))\n        3 (lift-A const-3-A))\n        4 (lift-B const-4-B))\n        5 (lift-C const-5-C))\n        6 (lift-D const-6-D))\n        1 (lift-Master const-1-Master))\n  )\n)\n\n",
-  "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (iB (sel-D (select heap 6))))))\n  (is-lift-B a!1)))\n(define-fun _xkassert2 () Bool\n  (= (b (sel-B (select heap 4))) 2))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (iA (sel-B (select heap 4))))))\n  (is-lift-A a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (iA (sel-C (select heap 5))))))\n  (is-lift-A a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (iB (sel-D (select heap 6)))))\n      (a!2 (select heap (iC (sel-D (select heap 6))))))\n  (= (iA (sel-B a!1)) (iA (sel-C a!2)))))\n(define-fun const-1-Master () Master\n  (mk-Master 6 42))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (d (sel-Master (select heap 1))))))\n  (is-lift-D a!1)))\n(define-fun _xkassert0 () Bool\n  (= (a (sel-A (select heap 2))) 1))\n(define-fun const-6-D () D\n  (mk-D 4 5 4))\n(define-fun const-2-A () A\n  (mk-A 1))\n(define-fun const-5-C () C\n  (mk-C 2 3))\n(define-fun _xkassert6 () Bool\n  (= (d (sel-D (select heap 6))) 4))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (iC (sel-D (select heap 6))))))\n  (is-lift-C a!1)))\n(define-fun _xkassert1 () Bool\n  (= (a (sel-A (select heap 3))) 1))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (d (sel-Master (select heap 1))))))\n(let ((a!2 (sel-B (select heap (iB (sel-D a!1)))))\n      (a!4 (sel-C (select heap (iC (sel-D a!1))))))\n(let ((a!3 (a (sel-A (select heap (iA a!2))))))\n(let ((a!5 (+ a!3\n              1\n              a!3\n              (+ a!3 (b a!2))\n              2\n              (+ a!3 (b a!2))\n              (c a!4)\n              (d (sel-D a!1))\n              3)))\n  (= (RESULT (sel-Master (select heap 1))) (+ a!5 a!5)))))))\n(define-fun const-4-B () B\n  (mk-B 2 2))\n(define-fun const-3-A () A\n  (mk-A 1))\n(define-fun _xkassert4 () Bool\n  (= (c (sel-C (select heap 5))) 3))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null) 2 (lift-A (mk-A 1)))\n                  3\n                  (lift-A (mk-A 1)))))\n(let ((a!2 (store (store a!1 4 (lift-B (mk-B 2 2))) 5 (lift-C (mk-C 2 3)))))\n  (store (store a!2 6 (lift-D (mk-D 4 5 4))) 1 (lift-Master (mk-Master 6 42))))))",
-  "json1": "",
-  "json2": ""
+    "name": "testsmt7.k",
+    "outcome": "SAT",
+    "typeChecks": true,
+    "model": "\nclass A {\n  a:Int = 1\n\n  fun f(k:Int) : Int\n  {\n    a + k\n  }\n}\n\nclass B {\n  iA:A\n  b:Int = 2\n\n  fun g(k:Int) : Int\n  {\n    iA.f(iA.a + b + k)\n  }\n}\n\nclass C {\n  iA:A\n  c:Int = 3\n\n  fun h(k:Int) : Int\n  {\n    iA.f(iA.a + c + k)\n  }\n}\n\nclass D {\n  iB:B\n  iC:C\n  d:Int = 4\n\n  req iB.iA = iC.iA\n\n  fun i(k:Int) : Int\n  {\n    iB.iA.a + iB.b + iC.c + d + k\n  }\n}\n\nclass Master {\n  d:D\n\n  fun main : Int\n  {\n    d.iB.iA.f(1) + d.iB.g(2) + d.i(3)\n  }\n  RESULT:Int = main + main\n}\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (a Int)))))\n(declare-datatypes () ((B (mk-B (iA Ref)(b Int)))))\n(declare-datatypes () ((C (mk-C (iA Ref)(c Int)))))\n(declare-datatypes () ((D (mk-D (iB Ref)(iC Ref)(d Int)))))\n(declare-datatypes () ((Master (mk-Master (d Ref)(RESULT Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  (lift-Master (sel-Master Master))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n(define-fun deref-is-Master ((this Ref)) Bool\n  (is-lift-Master (deref this))\n)\n\n(define-fun deref-Master ((this Ref)) Master\n  (sel-Master (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (deref-is-D this)\n)\n\n(define-fun deref-isa-Master ((this Ref)) Bool\n  (deref-is-Master this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.a: ---\n\n(define-fun A.a ((this Ref)) Int\n  (a (deref-A this))\n)\n\n(define-fun A!a ((this Ref)) Int\n  (a (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.iA: ---\n\n(define-fun B.iA ((this Ref)) Ref\n  (iA (deref-B this))\n)\n\n(define-fun B!iA ((this Ref)) Ref\n  (iA (deref-B this))\n)\n\n; --- getters for B.b: ---\n\n(define-fun B.b ((this Ref)) Int\n  (b (deref-B this))\n)\n\n(define-fun B!b ((this Ref)) Int\n  (b (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.iA: ---\n\n(define-fun C.iA ((this Ref)) Ref\n  (iA (deref-C this))\n)\n\n(define-fun C!iA ((this Ref)) Ref\n  (iA (deref-C this))\n)\n\n; --- getters for C.c: ---\n\n(define-fun C.c ((this Ref)) Int\n  (c (deref-C this))\n)\n\n(define-fun C!c ((this Ref)) Int\n  (c (deref-C this))\n)\n\n; ------------------------\n;   Getters for class D:\n; ------------------------\n\n; --- getters for D.iB: ---\n\n(define-fun D.iB ((this Ref)) Ref\n  (iB (deref-D this))\n)\n\n(define-fun D!iB ((this Ref)) Ref\n  (iB (deref-D this))\n)\n\n; --- getters for D.iC: ---\n\n(define-fun D.iC ((this Ref)) Ref\n  (iC (deref-D this))\n)\n\n(define-fun D!iC ((this Ref)) Ref\n  (iC (deref-D this))\n)\n\n; --- getters for D.d: ---\n\n(define-fun D.d ((this Ref)) Int\n  (d (deref-D this))\n)\n\n(define-fun D!d ((this Ref)) Int\n  (d (deref-D this))\n)\n\n; -----------------------------\n;   Getters for class Master:\n; -----------------------------\n\n; --- getters for Master.d: ---\n\n(define-fun Master.d ((this Ref)) Ref\n  (d (deref-Master this))\n)\n\n(define-fun Master!d ((this Ref)) Ref\n  (d (deref-Master this))\n)\n\n; --- getters for Master.RESULT: ---\n\n(define-fun Master!RESULT ((this Ref)) Int\n  (RESULT (deref-Master this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ------------------------\n;   Methods for class A:\n; ------------------------\n\n(define-fun A.f ((this Ref)(k Int)) Int\n  (+ (A.a this) k)\n)\n\n(define-fun A!f ((this Ref)(k Int)) Int\n  (+ (A!a this) k)\n)\n\n; ------------------------\n;   Methods for class B:\n; ------------------------\n\n(define-fun B.g ((this Ref)(k Int)) Int\n  (A.f (B.iA this) (+ (+ (A.a (B.iA this)) (B.b this)) k))\n)\n\n(define-fun B!g ((this Ref)(k Int)) Int\n  (A.f (B!iA this) (+ (+ (A.a (B!iA this)) (B!b this)) k))\n)\n\n; ------------------------\n;   Methods for class C:\n; ------------------------\n\n(define-fun C.h ((this Ref)(k Int)) Int\n  (A.f (C.iA this) (+ (+ (A.a (C.iA this)) (C.c this)) k))\n)\n\n(define-fun C!h ((this Ref)(k Int)) Int\n  (A.f (C!iA this) (+ (+ (A.a (C!iA this)) (C!c this)) k))\n)\n\n; ------------------------\n;   Methods for class D:\n; ------------------------\n\n(define-fun D.i ((this Ref)(k Int)) Int\n  (+ (+ (+ (+ (A.a (B.iA (D.iB this))) (B.b (D.iB this))) (C.c (D.iC this))) (D.d this)) k)\n)\n\n(define-fun D!i ((this Ref)(k Int)) Int\n  (+ (+ (+ (+ (A.a (B.iA (D!iB this))) (B.b (D!iB this))) (C.c (D!iC this))) (D!d this)) k)\n)\n\n; -----------------------------\n;   Methods for class Master:\n; -----------------------------\n\n(define-fun Master.main ((this Ref)) Int\n  (+ (+ (A.f (B.iA (D.iB (Master.d this))) 1) (B.g (D.iB (Master.d this)) 2)) (D.i (Master.d this) 3))\n)\n\n(define-fun Master!main ((this Ref)) Int\n  (+ (+ (A.f (B.iA (D.iB (Master!d this))) 1) (B.g (D.iB (Master!d this)) 2)) (D.i (Master!d this) 3))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-A A)\n(declare-const const-3-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (= (A!a this) 1)\n)\n\n(assert (! (A.inv1 2) :named _xkassert0))\n(assert (! (A.inv1 3) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (= (B!b this) 2)\n)\n\n(assert (! (B.inv1 4) :named _xkassert2))\n\n; --- Invariant 2: ---\n\n(define-fun B.inv2 ((this Ref)) Bool\n  (deref-isa-A (B!iA this))\n)\n\n(assert (! (B.inv2 4) :named _xkassert3))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (= (C!c this) 3)\n)\n\n(assert (! (C.inv1 5) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (deref-isa-A (C!iA this))\n)\n\n(assert (! (C.inv2 5) :named _xkassert5))\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-D D)\n\n; --- Invariant 1: ---\n\n(define-fun D.inv1 ((this Ref)) Bool\n  (= (D!d this) 4)\n)\n\n(assert (! (D.inv1 6) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun D.inv2 ((this Ref)) Bool\n  (deref-isa-B (D!iB this))\n)\n\n(assert (! (D.inv2 6) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun D.inv3 ((this Ref)) Bool\n  (deref-isa-C (D!iC this))\n)\n\n(assert (! (D.inv3 6) :named _xkassert8))\n\n; --- Invariant 4: ---\n\n(define-fun D.inv4 ((this Ref)) Bool\n  (= (B.iA (D!iB this)) (C.iA (D!iC this)))\n)\n\n(assert (! (D.inv4 6) :named _xkassert9))\n\n\n\n; -------------------------------\n;   Invariant for class Master:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Master Master)\n\n; --- Invariant 1: ---\n\n(define-fun Master.inv1 ((this Ref)) Bool\n  (= (Master!RESULT this) (+ (Master!main this) (Master!main this)))\n)\n\n(assert (! (Master.inv1 1) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun Master.inv2 ((this Ref)) Bool\n  (deref-isa-D (Master!d this))\n)\n\n(assert (! (Master.inv2 1) :named _xkassert11))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        2 (lift-A const-2-A))\n        3 (lift-A const-3-A))\n        4 (lift-B const-4-B))\n        5 (lift-C const-5-C))\n        6 (lift-D const-6-D))\n        1 (lift-Master const-1-Master))\n  )\n)\n\n",
+    "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (iB (sel-D (select heap 6))))))\n  (is-lift-B a!1)))\n(define-fun _xkassert2 () Bool\n  (= (b (sel-B (select heap 4))) 2))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (iA (sel-B (select heap 4))))))\n  (is-lift-A a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (iA (sel-C (select heap 5))))))\n  (is-lift-A a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (iB (sel-D (select heap 6)))))\n      (a!2 (select heap (iC (sel-D (select heap 6))))))\n  (= (iA (sel-B a!1)) (iA (sel-C a!2)))))\n(define-fun const-1-Master () Master\n  (mk-Master 6 42))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (d (sel-Master (select heap 1))))))\n  (is-lift-D a!1)))\n(define-fun _xkassert0 () Bool\n  (= (a (sel-A (select heap 2))) 1))\n(define-fun const-6-D () D\n  (mk-D 4 5 4))\n(define-fun const-2-A () A\n  (mk-A 1))\n(define-fun const-5-C () C\n  (mk-C 2 3))\n(define-fun _xkassert6 () Bool\n  (= (d (sel-D (select heap 6))) 4))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (iC (sel-D (select heap 6))))))\n  (is-lift-C a!1)))\n(define-fun _xkassert1 () Bool\n  (= (a (sel-A (select heap 3))) 1))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (d (sel-Master (select heap 1))))))\n(let ((a!2 (sel-B (select heap (iB (sel-D a!1)))))\n      (a!4 (sel-C (select heap (iC (sel-D a!1))))))\n(let ((a!3 (a (sel-A (select heap (iA a!2))))))\n(let ((a!5 (+ a!3\n              1\n              a!3\n              (+ a!3 (b a!2))\n              2\n              (+ a!3 (b a!2))\n              (c a!4)\n              (d (sel-D a!1))\n              3)))\n  (= (RESULT (sel-Master (select heap 1))) (+ a!5 a!5)))))))\n(define-fun const-4-B () B\n  (mk-B 2 2))\n(define-fun const-3-A () A\n  (mk-A 1))\n(define-fun _xkassert4 () Bool\n  (= (c (sel-C (select heap 5))) 3))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null) 2 (lift-A (mk-A 1)))\n                  3\n                  (lift-A (mk-A 1)))))\n(let ((a!2 (store (store a!1 4 (lift-B (mk-B 2 2))) 5 (lift-C (mk-C 2 3)))))\n  (store (store a!2 6 (lift-D (mk-D 4 5 4))) 1 (lift-Master (mk-Master 6 42))))))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "a",
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "i": 1,
+                            "type": "LiteralInteger"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "f",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "BinExp",
+                                    "op": "Plus",
+                                    "exp1": {
+                                        "ident": "a",
+                                        "type": "IdentExp"
+                                    },
+                                    "exp2": {
+                                        "ident": "k",
+                                        "type": "IdentExp"
+                                    }
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iA",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "A"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "b",
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "i": 2,
+                            "type": "LiteralInteger"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "g",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "FunApplExp",
+                                    "exp1": {
+                                        "ident": "f",
+                                        "exp": {
+                                            "ident": "iA",
+                                            "type": "IdentExp"
+                                        },
+                                        "type": "DotExp"
+                                    },
+                                    "args": [
+                                        {
+                                            "type": "PositionalArgument",
+                                            "exp": {
+                                                "type": "BinExp",
+                                                "op": "Plus",
+                                                "exp1": {
+                                                    "type": "BinExp",
+                                                    "op": "Plus",
+                                                    "exp1": {
+                                                        "ident": "a",
+                                                        "exp": {
+                                                            "ident": "iA",
+                                                            "type": "IdentExp"
+                                                        },
+                                                        "type": "DotExp"
+                                                    },
+                                                    "exp2": {
+                                                        "ident": "b",
+                                                        "type": "IdentExp"
+                                                    }
+                                                },
+                                                "exp2": {
+                                                    "ident": "k",
+                                                    "type": "IdentExp"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iA",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "A"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "c",
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "i": 3,
+                            "type": "LiteralInteger"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "h",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "FunApplExp",
+                                    "exp1": {
+                                        "ident": "f",
+                                        "exp": {
+                                            "ident": "iA",
+                                            "type": "IdentExp"
+                                        },
+                                        "type": "DotExp"
+                                    },
+                                    "args": [
+                                        {
+                                            "type": "PositionalArgument",
+                                            "exp": {
+                                                "type": "BinExp",
+                                                "op": "Plus",
+                                                "exp1": {
+                                                    "type": "BinExp",
+                                                    "op": "Plus",
+                                                    "exp1": {
+                                                        "ident": "a",
+                                                        "exp": {
+                                                            "ident": "iA",
+                                                            "type": "IdentExp"
+                                                        },
+                                                        "type": "DotExp"
+                                                    },
+                                                    "exp2": {
+                                                        "ident": "c",
+                                                        "type": "IdentExp"
+                                                    }
+                                                },
+                                                "exp2": {
+                                                    "ident": "k",
+                                                    "type": "IdentExp"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "D",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iB",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "B"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iC",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "C"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "i": 4,
+                            "type": "LiteralInteger"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "EQ",
+                            "exp1": {
+                                "ident": "iA",
+                                "exp": {
+                                    "ident": "iB",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            },
+                            "exp2": {
+                                "ident": "iA",
+                                "exp": {
+                                    "ident": "iC",
+                                    "type": "IdentExp"
+                                },
+                                "type": "DotExp"
+                            }
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "i",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "IntType"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "BinExp",
+                                    "op": "Plus",
+                                    "exp1": {
+                                        "type": "BinExp",
+                                        "op": "Plus",
+                                        "exp1": {
+                                            "type": "BinExp",
+                                            "op": "Plus",
+                                            "exp1": {
+                                                "type": "BinExp",
+                                                "op": "Plus",
+                                                "exp1": {
+                                                    "ident": "a",
+                                                    "exp": {
+                                                        "ident": "iA",
+                                                        "exp": {
+                                                            "ident": "iB",
+                                                            "type": "IdentExp"
+                                                        },
+                                                        "type": "DotExp"
+                                                    },
+                                                    "type": "DotExp"
+                                                },
+                                                "exp2": {
+                                                    "ident": "b",
+                                                    "exp": {
+                                                        "ident": "iB",
+                                                        "type": "IdentExp"
+                                                    },
+                                                    "type": "DotExp"
+                                                }
+                                            },
+                                            "exp2": {
+                                                "ident": "c",
+                                                "exp": {
+                                                    "ident": "iC",
+                                                    "type": "IdentExp"
+                                                },
+                                                "type": "DotExp"
+                                            }
+                                        },
+                                        "exp2": {
+                                            "ident": "d",
+                                            "type": "IdentExp"
+                                        }
+                                    },
+                                    "exp2": {
+                                        "ident": "k",
+                                        "type": "IdentExp"
+                                    }
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Master",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "args": [],
+                            "ident": {
+                                "names": [
+                                    "D"
+                                ],
+                                "type": "QualifiedName"
+                            },
+                            "type": "IdentType"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "main",
+                        "typeParams": [],
+                        "params": [],
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "BinExp",
+                                    "op": "Plus",
+                                    "exp1": {
+                                        "type": "BinExp",
+                                        "op": "Plus",
+                                        "exp1": {
+                                            "type": "FunApplExp",
+                                            "exp1": {
+                                                "ident": "f",
+                                                "exp": {
+                                                    "ident": "iA",
+                                                    "exp": {
+                                                        "ident": "iB",
+                                                        "exp": {
+                                                            "ident": "d",
+                                                            "type": "IdentExp"
+                                                        },
+                                                        "type": "DotExp"
+                                                    },
+                                                    "type": "DotExp"
+                                                },
+                                                "type": "DotExp"
+                                            },
+                                            "args": [
+                                                {
+                                                    "type": "PositionalArgument",
+                                                    "exp": {
+                                                        "i": 1,
+                                                        "type": "LiteralInteger"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "exp2": {
+                                            "type": "FunApplExp",
+                                            "exp1": {
+                                                "ident": "g",
+                                                "exp": {
+                                                    "ident": "iB",
+                                                    "exp": {
+                                                        "ident": "d",
+                                                        "type": "IdentExp"
+                                                    },
+                                                    "type": "DotExp"
+                                                },
+                                                "type": "DotExp"
+                                            },
+                                            "args": [
+                                                {
+                                                    "type": "PositionalArgument",
+                                                    "exp": {
+                                                        "i": 2,
+                                                        "type": "LiteralInteger"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "exp2": {
+                                        "type": "FunApplExp",
+                                        "exp1": {
+                                            "ident": "i",
+                                            "exp": {
+                                                "ident": "d",
+                                                "type": "IdentExp"
+                                            },
+                                            "type": "DotExp"
+                                        },
+                                        "args": [
+                                            {
+                                                "type": "PositionalArgument",
+                                                "exp": {
+                                                    "i": 3,
+                                                    "type": "LiteralInteger"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "RESULT",
+                        "ty": {
+                            "type": "IntType"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "type": "BinExp",
+                            "op": "Plus",
+                            "exp1": {
+                                "ident": "main",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "ident": "main",
+                                "type": "IdentExp"
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "a",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "type": "LiteralInteger",
+                            "integer": 1
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "f",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "element": "a",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "element": "k",
+                                            "type": "ElementValue"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iA",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "A"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "b",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "type": "LiteralInteger",
+                            "integer": 2
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "g",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "Expression",
+                                    "operand": [
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "getProperty"
+                                                },
+                                                {
+                                                    "element": "iA",
+                                                    "type": "ElementValue"
+                                                },
+                                                {
+                                                    "type": "LiteralString",
+                                                    "string": "f"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "Plus"
+                                                },
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "Plus"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "element": "iA",
+                                                                    "type": "ElementValue"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "a"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "element": "b",
+                                                            "type": "ElementValue"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                },
+                                                {
+                                                    "element": "k",
+                                                    "type": "ElementValue"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        }
+                                    ]
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iA",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "A"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "c",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "type": "LiteralInteger",
+                            "integer": 3
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "h",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "type": "Expression",
+                                    "operand": [
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "getProperty"
+                                                },
+                                                {
+                                                    "element": "iA",
+                                                    "type": "ElementValue"
+                                                },
+                                                {
+                                                    "type": "LiteralString",
+                                                    "string": "f"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "Plus"
+                                                },
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "Plus"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "element": "iA",
+                                                                    "type": "ElementValue"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "a"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "element": "c",
+                                                            "type": "ElementValue"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                },
+                                                {
+                                                    "element": "k",
+                                                    "type": "ElementValue"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        }
+                                    ]
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "D",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iB",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "B"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "iC",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "C"
+                        }
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "type": "LiteralInteger",
+                            "integer": 4
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "EQ"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "iB",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "iA"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "getProperty"
+                                        },
+                                        {
+                                            "element": "iC",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralString",
+                                            "string": "iA"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "i",
+                        "typeParams": [],
+                        "params": [
+                            {
+                                "type": "Param",
+                                "name": "k",
+                                "ty": {
+                                    "type": "ElementValue",
+                                    "element": "Integer"
+                                }
+                            }
+                        ],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "Plus"
+                                                },
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "Plus"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "Plus"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "getProperty"
+                                                                        },
+                                                                        {
+                                                                            "operand": [
+                                                                                {
+                                                                                    "type": "ElementValue",
+                                                                                    "element": "getProperty"
+                                                                                },
+                                                                                {
+                                                                                    "element": "iB",
+                                                                                    "type": "ElementValue"
+                                                                                },
+                                                                                {
+                                                                                    "type": "LiteralString",
+                                                                                    "string": "iA"
+                                                                                }
+                                                                            ],
+                                                                            "type": "Expression"
+                                                                        },
+                                                                        {
+                                                                            "type": "LiteralString",
+                                                                            "string": "a"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "getProperty"
+                                                                        },
+                                                                        {
+                                                                            "element": "iB",
+                                                                            "type": "ElementValue"
+                                                                        },
+                                                                        {
+                                                                            "type": "LiteralString",
+                                                                            "string": "b"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "element": "iC",
+                                                                    "type": "ElementValue"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "c"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                },
+                                                {
+                                                    "element": "d",
+                                                    "type": "ElementValue"
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        },
+                                        {
+                                            "element": "k",
+                                            "type": "ElementValue"
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Master",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "d",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "D"
+                        }
+                    },
+                    {
+                        "type": "FunDecl",
+                        "ident": "main",
+                        "typeParams": [],
+                        "params": [],
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "spec": [],
+                        "body": [
+                            {
+                                "type": "ExpressionDecl",
+                                "exp": {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "operand": [
+                                                {
+                                                    "type": "ElementValue",
+                                                    "element": "Plus"
+                                                },
+                                                {
+                                                    "type": "Expression",
+                                                    "operand": [
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "getProperty"
+                                                                        },
+                                                                        {
+                                                                            "operand": [
+                                                                                {
+                                                                                    "type": "ElementValue",
+                                                                                    "element": "getProperty"
+                                                                                },
+                                                                                {
+                                                                                    "element": "d",
+                                                                                    "type": "ElementValue"
+                                                                                },
+                                                                                {
+                                                                                    "type": "LiteralString",
+                                                                                    "string": "iB"
+                                                                                }
+                                                                            ],
+                                                                            "type": "Expression"
+                                                                        },
+                                                                        {
+                                                                            "type": "LiteralString",
+                                                                            "string": "iA"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "f"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "type": "LiteralInteger",
+                                                            "integer": 1
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "Expression",
+                                                    "operand": [
+                                                        {
+                                                            "operand": [
+                                                                {
+                                                                    "type": "ElementValue",
+                                                                    "element": "getProperty"
+                                                                },
+                                                                {
+                                                                    "operand": [
+                                                                        {
+                                                                            "type": "ElementValue",
+                                                                            "element": "getProperty"
+                                                                        },
+                                                                        {
+                                                                            "element": "d",
+                                                                            "type": "ElementValue"
+                                                                        },
+                                                                        {
+                                                                            "type": "LiteralString",
+                                                                            "string": "iB"
+                                                                        }
+                                                                    ],
+                                                                    "type": "Expression"
+                                                                },
+                                                                {
+                                                                    "type": "LiteralString",
+                                                                    "string": "g"
+                                                                }
+                                                            ],
+                                                            "type": "Expression"
+                                                        },
+                                                        {
+                                                            "type": "LiteralInteger",
+                                                            "integer": 2
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "type": "Expression"
+                                        },
+                                        {
+                                            "type": "Expression",
+                                            "operand": [
+                                                {
+                                                    "operand": [
+                                                        {
+                                                            "type": "ElementValue",
+                                                            "element": "getProperty"
+                                                        },
+                                                        {
+                                                            "element": "d",
+                                                            "type": "ElementValue"
+                                                        },
+                                                        {
+                                                            "type": "LiteralString",
+                                                            "string": "i"
+                                                        }
+                                                    ],
+                                                    "type": "Expression"
+                                                },
+                                                {
+                                                    "type": "LiteralInteger",
+                                                    "integer": 3
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                "annotations": []
+                            }
+                        ],
+                        "annotations": []
+                    },
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "RESULT",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        },
+                        "assignment": false,
+                        "expr": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "Plus"
+                                },
+                                {
+                                    "element": "main",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "element": "main",
+                                    "type": "ElementValue"
+                                }
+                            ],
+                            "type": "Expression"
+                        }
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    }
 }

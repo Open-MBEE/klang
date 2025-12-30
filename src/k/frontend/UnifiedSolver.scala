@@ -1299,24 +1299,35 @@ object UnifiedSolver {
   
   /**
    * Try to get a partial model using Optimize API when the problem is UNSAT.
-   * This is useful for debugging - showing which constraints could be satisfied.
+   * Uses max-SAT approach: adds all constraints as SOFT constraints to find
+   * the maximum number that can be satisfied together.
    * The partial model is stored in bestSoFar for potential output.
    */
   private def tryGetPartialModel(boolExps: List[BoolExpr], config: SolveConfig): Unit = {
     try {
-      val optimize = K2Z3.getOptimize()
-      
+      // Create a fresh Optimize solver for partial model
+      val optimize = K2Z3.ctx.mkOptimize()
+
       // Set timeout (use a shorter timeout for partial model)
       val partialTimeout = config.timeout.map(ms => math.min(ms, 5000L)).getOrElse(5000L)
       val optParams = K2Z3.ctx.mkParams()
       optParams.add("timeout", partialTimeout.toInt)
       optimize.setParameters(optParams)
-      
-      // Add all constraints - Optimize may satisfy some even if not all
-      for (expr <- boolExps) {
-        optimize.Add(expr)
+
+      // Filter out quantified constraints (Optimize doesn't support them)
+      val nonQuantifiedExps = boolExps.filterNot(containsQuantifierExpr)
+
+      if (nonQuantifiedExps.isEmpty) {
+        println("[UnifiedSolver] All constraints are quantified, cannot get partial model")
+        return
       }
-      
+
+      // Add non-quantified constraints as SOFT constraints with weight 1
+      // This turns the problem into max-SAT: maximize # of satisfied constraints
+      for (expr <- nonQuantifiedExps) {
+        optimize.AssertSoft(expr, 1, "partial")
+      }
+
       val status = optimize.Check()
       if (status == Status.SATISFIABLE) {
         val partialModel = optimize.getModel
@@ -1325,6 +1336,8 @@ object UnifiedSolver {
           K2Z3.z3Model = partialModel  // Store for potential printing
           println("[UnifiedSolver] Obtained partial model for UNSAT problem (for debugging)")
         }
+      } else {
+        println(s"[UnifiedSolver] Could not get partial model: Optimize returned $status")
       }
     } catch {
       case e: Exception =>

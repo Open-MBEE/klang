@@ -4,7 +4,154 @@
   "typeChecks": true,
   "model": "\nfun foo(x:Int) : Int\n  pre x > 0\n  post $result > 0\n{\n  -1\n}\n\n",
   "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort TopLevelDeclarations) (declare-const mk-TopLevelDeclarations TopLevelDeclarations)\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; -------------------------------------------\n;   Methods for class TopLevelDeclarations:\n; -------------------------------------------\n\n(define-fun TopLevelDeclarations.foo ((this Ref)(x Int)) Int\n  (- 1)\n)\n\n(define-fun TopLevelDeclarations!foo ((this Ref)(x Int)) Int\n  (- 1)\n)\n\n(assert (!(forall ((this Ref)(x Int))\n  (=>\n    (and\n      (deref-is-TopLevelDeclarations this)\n      (> x 0)\n    )\n    (let (($result (TopLevelDeclarations!foo this x)))\n      (and\n        (> $result 0)\n      )\n    )\n  )\n) :named _xkassert0))\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
-  "smtModel": "",
-  "json1": "",
-  "json2": ""
+  "smtModel": ";; universe for TopLevelDeclarations:\n;;   TopLevelDeclarations!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun TopLevelDeclarations!val!0 () TopLevelDeclarations)\n;; cardinality constraint:\n(forall ((x TopLevelDeclarations)) (= x TopLevelDeclarations!val!0))\n;; -----------\n(define-fun _xkassert0 () Bool\n  (forall ((this Int) (x Int))\n  (=> (and (is-lift-TopLevelDeclarations (select heap this)) (> x 0))\n      (and (> (- 1) 0)))))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  TopLevelDeclarations!val!0)\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store ((as const (Array Int Any)) null)\n       0\n       (lift-TopLevelDeclarations TopLevelDeclarations!val!0)))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [{
+      "type": "FunDecl",
+      "ident": "foo",
+      "typeParams": [],
+      "params": [{
+        "type": "Param",
+        "name": "x",
+        "ty": {"type": "IntType"}
+      }],
+      "ty": {"type": "IntType"},
+      "spec": [
+        {
+          "type": "FunSpec",
+          "pre": "true",
+          "exp": {
+            "type": "BinExp",
+            "op": "GT",
+            "exp1": {
+              "ident": "x",
+              "type": "IdentExp"
+            },
+            "exp2": {
+              "i": 0,
+              "type": "LiteralInteger"
+            }
+          }
+        },
+        {
+          "type": "FunSpec",
+          "pre": "false",
+          "exp": {
+            "type": "BinExp",
+            "op": "GT",
+            "exp1": {"type": "ResultExp"},
+            "exp2": {
+              "i": 0,
+              "type": "LiteralInteger"
+            }
+          }
+        }
+      ],
+      "body": [{
+        "type": "ExpressionDecl",
+        "exp": {
+          "exp": {
+            "i": 1,
+            "type": "LiteralInteger"
+          },
+          "type": "UnaryExp",
+          "op": "Neg"
+        },
+        "annotations": []
+      }],
+      "annotations": []
+    }],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [{
+      "type": "FunDecl",
+      "ident": "foo",
+      "typeParams": [],
+      "params": [{
+        "type": "Param",
+        "name": "x",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Integer"
+        }
+      }],
+      "ty": {
+        "type": "ElementValue",
+        "element": "Integer"
+      },
+      "spec": [
+        {
+          "type": "FunSpec",
+          "pre": "true",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "GT"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 0
+              }
+            ],
+            "type": "Expression"
+          }
+        },
+        {
+          "type": "FunSpec",
+          "pre": "false",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "GT"
+              },
+              {
+                "type": "Expression",
+                "operand": [{
+                  "type": "ElementValue",
+                  "element": "$result"
+                }]
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 0
+              }
+            ],
+            "type": "Expression"
+          }
+        }
+      ],
+      "body": [{
+        "type": "ExpressionDecl",
+        "exp": {
+          "type": "Expression",
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "Neg"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 1
+            }
+          ]
+        },
+        "annotations": []
+      }],
+      "annotations": []
+    }],
+    "packages": []
+  }
 }

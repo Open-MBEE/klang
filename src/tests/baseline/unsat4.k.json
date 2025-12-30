@@ -1,10 +1,368 @@
 {
-  "name": "unsat4.k",
-  "outcome": "UNSAT",
-  "typeChecks": true,
-  "model": "\nclass A {\n  x:Int\n\n  req x < 0\n\n  req x + 0 > 10\n}\n\nclass B {\n  y:Int\n\n  req y > 100\n}\n\nclass C {\n  z:Int\n\n  req z < 10\n\n  req z * 1 > 10\n}\n\n",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (x Int)))))\n(declare-datatypes () ((B (mk-B (y Int)))))\n(declare-datatypes () ((C (mk-C (z Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.x: ---\n\n(define-fun A!x ((this Ref)) Int\n  (x (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.y: ---\n\n(define-fun B!y ((this Ref)) Int\n  (y (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.z: ---\n\n(define-fun C!z ((this Ref)) Int\n  (z (deref-C this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (< (A!x this) 0)\n)\n\n(assert (! (A.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun A.inv2 ((this Ref)) Bool\n  (> (+ (A!x this) 0) 10)\n)\n\n(assert (! (A.inv2 1) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (> (B!y this) 100)\n)\n\n(assert (! (B.inv1 2) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (< (C!z this) 10)\n)\n\n(assert (! (C.inv1 3) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (> (* (C!z this) 1) 10)\n)\n\n(assert (! (C.inv2 3) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n        3 (lift-C const-3-C))\n  )\n)\n\n",
-  "smtModel": "",
-  "json1": "",
-  "json2": ""
+    "name": "unsat4.k",
+    "outcome": "UNSAT",
+    "typeChecks": true,
+    "model": "\nclass A {\n  x:Int\n\n  req x < 0\n\n  req x + 0 > 10\n}\n\nclass B {\n  y:Int\n\n  req y > 100\n}\n\nclass C {\n  z:Int\n\n  req z < 10\n\n  req z * 1 > 10\n}\n\n",
+    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (x Int)))))\n(declare-datatypes () ((B (mk-B (y Int)))))\n(declare-datatypes () ((C (mk-C (z Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.x: ---\n\n(define-fun A!x ((this Ref)) Int\n  (x (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.y: ---\n\n(define-fun B!y ((this Ref)) Int\n  (y (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.z: ---\n\n(define-fun C!z ((this Ref)) Int\n  (z (deref-C this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (< (A!x this) 0)\n)\n\n(assert (! (A.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun A.inv2 ((this Ref)) Bool\n  (> (+ (A!x this) 0) 10)\n)\n\n(assert (! (A.inv2 1) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (> (B!y this) 100)\n)\n\n(assert (! (B.inv1 2) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (< (C!z this) 10)\n)\n\n(assert (! (C.inv1 3) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (> (* (C!z this) 1) 10)\n)\n\n(assert (! (C.inv2 3) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n        3 (lift-C const-3-C))\n  )\n)\n\n",
+    "smtModel": "(define-fun _xkassert0 () Bool\n  (< (x (sel-A (select heap 1))) 0))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 1))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 3))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert3 () Bool\n  (< (z (sel-C (select heap 3))) 10))\n(define-fun _xkassert2 () Bool\n  (> (y (sel-B (select heap 2))) 100))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null) 1 (lift-A (mk-A 11)))\n                  3\n                  (lift-C (mk-C 9)))))\n  (store a!1 2 (lift-B (mk-B 101)))))\n(define-fun const-2-B () B\n  (mk-B 101))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-A () A\n  (mk-A 11))\n(define-fun const-3-C () C\n  (mk-C 9))",
+    "json1": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "x",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "LT",
+                            "exp1": {
+                                "ident": "x",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "i": 0,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "GT",
+                            "exp1": {
+                                "type": "BinExp",
+                                "op": "Plus",
+                                "exp1": {
+                                    "ident": "x",
+                                    "type": "IdentExp"
+                                },
+                                "exp2": {
+                                    "i": 0,
+                                    "type": "LiteralInteger"
+                                }
+                            },
+                            "exp2": {
+                                "i": 10,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "y",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "GT",
+                            "exp1": {
+                                "ident": "y",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "i": 100,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "z",
+                        "ty": {
+                            "type": "IntType"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "LT",
+                            "exp1": {
+                                "ident": "z",
+                                "type": "IdentExp"
+                            },
+                            "exp2": {
+                                "i": 10,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "type": "BinExp",
+                            "op": "GT",
+                            "exp1": {
+                                "type": "BinExp",
+                                "op": "Times",
+                                "exp1": {
+                                    "ident": "z",
+                                    "type": "IdentExp"
+                                },
+                                "exp2": {
+                                    "i": 1,
+                                    "type": "LiteralInteger"
+                                }
+                            },
+                            "exp2": {
+                                "i": 10,
+                                "type": "LiteralInteger"
+                            }
+                        },
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    },
+    "json2": {
+        "type": "Model",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "x",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "LT"
+                                },
+                                {
+                                    "element": "x",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 0
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "GT"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Plus"
+                                        },
+                                        {
+                                            "element": "x",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralInteger",
+                                            "integer": 0
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 10
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "B",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "y",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "GT"
+                                },
+                                {
+                                    "element": "y",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 100
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    }
+                ]
+            },
+            {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [],
+                "members": [
+                    {
+                        "type": "PropertyDecl",
+                        "modifiers": [],
+                        "annotations": [],
+                        "name": "z",
+                        "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                        }
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "LT"
+                                },
+                                {
+                                    "element": "z",
+                                    "type": "ElementValue"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 10
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    },
+                    {
+                        "type": "ConstraintDecl",
+                        "exp": {
+                            "operand": [
+                                {
+                                    "type": "ElementValue",
+                                    "element": "GT"
+                                },
+                                {
+                                    "operand": [
+                                        {
+                                            "type": "ElementValue",
+                                            "element": "Times"
+                                        },
+                                        {
+                                            "element": "z",
+                                            "type": "ElementValue"
+                                        },
+                                        {
+                                            "type": "LiteralInteger",
+                                            "integer": 1
+                                        }
+                                    ],
+                                    "type": "Expression"
+                                },
+                                {
+                                    "type": "LiteralInteger",
+                                    "integer": 10
+                                }
+                            ],
+                            "type": "Expression"
+                        },
+                        "annotations": []
+                    }
+                ]
+            }
+        ],
+        "packages": []
+    }
 }
