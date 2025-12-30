@@ -127,6 +127,9 @@ object UnifiedSolver {
   /** Best solution found so far */
   private var bestSoFar: Option[Z3Model] = None
 
+  /** SMT string that produced bestSoFar (for reparsing after context reset) */
+  private var bestSoFarSMT: Option[String] = None
+
   /** Current iteration count */
   private var iteration: Int = 0
 
@@ -1338,8 +1341,14 @@ object UnifiedSolver {
       if (status == Status.SATISFIABLE) {
         val partialModel = optimize.getModel
         if (partialModel != null) {
-          bestSoFar = Some(partialModel)
-          K2Z3.z3Model = partialModel  // Store for potential printing
+          // Only store if we don't already have a partial model AND we have objects in the heap.
+          // The first CEGAR iteration with 0 objects gives a trivially empty model.
+          // We want the first model with actual object instances (smallest non-trivial heap).
+          val hasObjects = objectBounds.values.exists(_ > 0)
+          if (bestSoFar.isEmpty && hasObjects) {
+            bestSoFar = Some(partialModel)
+            smtModel.foreach(smt => bestSoFarSMT = Some(smt))
+          }
 
           // Only print if this is the final UNSAT (not intermediate CEGAR iteration)
           if (shouldPrint) {
@@ -1420,14 +1429,44 @@ object UnifiedSolver {
    */
   private def printFinalUnsatInfo(kModel: KModel, smtModel: String): Unit = {
     // Print partial model if we have one
-    if (K2Z3.z3Model != null) {
-      println()
-      println("=" * 60)
-      println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
-      println("=" * 60)
-      K2Z3.PrintModel(kModel)
-      println("=" * 60)
-      println()
+    // We need to reparse the stored SMT in the current context since K2Z3.reset() creates new contexts
+    if (bestSoFar.isDefined && bestSoFarSMT.isDefined) {
+      try {
+        // Reparse the stored SMT to get a fresh Z3 model in the current context
+        val tempFile = new java.io.File(".tmp/k_partial_model.smt2")
+        val tmpDir = tempFile.getParentFile
+        if (tmpDir != null && !tmpDir.exists()) {
+          tmpDir.mkdirs()
+        }
+        val writer = new java.io.PrintWriter(tempFile)
+        writer.write(bestSoFarSMT.get)
+        writer.close()
+
+        val boolExps = K2Z3.ctx.parseSMTLIB2File(
+          tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
+        val boolExpsList = boolExps.map(_.asInstanceOf[BoolExpr]).toList
+
+        // Get partial model using soft constraints (same logic as tryGetPartialModel)
+        val optimize = K2Z3.ctx.mkOptimize()
+        val nonQuantifiedExps = boolExpsList.filterNot(containsQuantifierExpr)
+        for (expr <- nonQuantifiedExps) {
+          optimize.AssertSoft(expr, 1, "partial")
+        }
+
+        if (optimize.Check() == Status.SATISFIABLE) {
+          K2Z3.z3Model = optimize.getModel
+          println()
+          println("=" * 60)
+          println("UNSAT - Partial Model (max-SAT: maximally satisfiable subset)")
+          println("=" * 60)
+          K2Z3.PrintModel(kModel)
+          println("=" * 60)
+          println()
+        }
+      } catch {
+        case e: Exception =>
+          // Ignore errors in partial model reconstruction
+      }
     }
     // Print unsat core
     printUnsatCore(smtModel)
@@ -2244,6 +2283,7 @@ object UnifiedSolver {
     refinements.clear()
     softConstraints.clear()
     bestSoFar = None
+    bestSoFarSMT = None
     boundsWereIncreased = false
     iteration = 0
     interrupted = false

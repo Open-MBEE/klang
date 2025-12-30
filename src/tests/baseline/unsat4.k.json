@@ -1,368 +1,362 @@
 {
-    "name": "unsat4.k",
-    "outcome": "UNSAT",
-    "typeChecks": true,
-    "model": "\nclass A {\n  x:Int\n\n  req x < 0\n\n  req x + 0 > 10\n}\n\nclass B {\n  y:Int\n\n  req y > 100\n}\n\nclass C {\n  z:Int\n\n  req z < 10\n\n  req z * 1 > 10\n}\n\n",
-    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (x Int)))))\n(declare-datatypes () ((B (mk-B (y Int)))))\n(declare-datatypes () ((C (mk-C (z Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.x: ---\n\n(define-fun A!x ((this Ref)) Int\n  (x (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.y: ---\n\n(define-fun B!y ((this Ref)) Int\n  (y (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.z: ---\n\n(define-fun C!z ((this Ref)) Int\n  (z (deref-C this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (< (A!x this) 0)\n)\n\n(assert (! (A.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun A.inv2 ((this Ref)) Bool\n  (> (+ (A!x this) 0) 10)\n)\n\n(assert (! (A.inv2 1) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (> (B!y this) 100)\n)\n\n(assert (! (B.inv1 2) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (< (C!z this) 10)\n)\n\n(assert (! (C.inv1 3) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (> (* (C!z this) 1) 10)\n)\n\n(assert (! (C.inv2 3) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n        3 (lift-C const-3-C))\n  )\n)\n\n",
-    "smtModel": "(define-fun _xkassert0 () Bool\n  (< (x (sel-A (select heap 1))) 0))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 1))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 3))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert3 () Bool\n  (< (z (sel-C (select heap 3))) 10))\n(define-fun _xkassert2 () Bool\n  (> (y (sel-B (select heap 2))) 100))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null) 1 (lift-A (mk-A 11)))\n                  3\n                  (lift-C (mk-C 9)))))\n  (store a!1 2 (lift-B (mk-B 101)))))\n(define-fun const-2-B () B\n  (mk-B 101))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-A () A\n  (mk-A 11))\n(define-fun const-3-C () C\n  (mk-C 9))",
-    "json1": {
-        "type": "Model",
-        "imports": [],
+  "name": "unsat4.k",
+  "outcome": "UNSAT",
+  "typeChecks": true,
+  "model": "\nclass A {\n  x:Int\n\n  req x < 0\n\n  req x + 0 > 10\n}\n\nclass B {\n  y:Int\n\n  req y > 100\n}\n\nclass C {\n  z:Int\n\n  req z < 10\n\n  req z * 1 > 10\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((A (mk-A (x Int)))))\n(declare-datatypes () ((B (mk-B (y Int)))))\n(declare-datatypes () ((C (mk-C (z Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (deref-is-A this)\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ------------------------\n;   Getters for class A:\n; ------------------------\n\n; --- getters for A.x: ---\n\n(define-fun A!x ((this Ref)) Int\n  (x (deref-A this))\n)\n\n; ------------------------\n;   Getters for class B:\n; ------------------------\n\n; --- getters for B.y: ---\n\n(define-fun B!y ((this Ref)) Int\n  (y (deref-B this))\n)\n\n; ------------------------\n;   Getters for class C:\n; ------------------------\n\n; --- getters for C.z: ---\n\n(define-fun C!z ((this Ref)) Int\n  (z (deref-C this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n; --- Invariant 1: ---\n\n(define-fun A.inv1 ((this Ref)) Bool\n  (< (A!x this) 0)\n)\n\n(assert (! (A.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun A.inv2 ((this Ref)) Bool\n  (> (+ (A!x this) 0) 10)\n)\n\n(assert (! (A.inv2 1) :named _xkassert1))\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n; --- Invariant 1: ---\n\n(define-fun B.inv1 ((this Ref)) Bool\n  (> (B!y this) 100)\n)\n\n(assert (! (B.inv1 2) :named _xkassert2))\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-C C)\n\n; --- Invariant 1: ---\n\n(define-fun C.inv1 ((this Ref)) Bool\n  (< (C!z this) 10)\n)\n\n(assert (! (C.inv1 3) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun C.inv2 ((this Ref)) Bool\n  (> (* (C!z this) 1) 10)\n)\n\n(assert (! (C.inv2 3) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n        3 (lift-C const-3-C))\n  )\n)\n\n",
+  "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun _xkassert162 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 63))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert84 () Bool\n  (< (x (sel-A (select heap 85))) 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null) 1 (lift-A (mk-A 11)))\n                  3\n                  (lift-C (mk-C 31902)))))\n  (store a!1 2 (lift-B (mk-B 101)))))\n(define-fun const-2-B () B\n  (mk-B 101))\n(define-fun const-1-A () A\n  (mk-A 11))\n(define-fun _xkassert493 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 294))) 1)))\n  (> a!1 10)))\n(define-fun const-3-C () C\n  (mk-C 31902))\n(define-fun _xkassert332 () Bool\n  (< (z (sel-C (select heap 233))) 10))\n(define-fun _xkassert313 () Bool\n  (< (z (sel-C (select heap 214))) 10))\n(define-fun _xkassert147 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 48))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert377 () Bool\n  (< (z (sel-C (select heap 278))) 10))\n(define-fun _xkassert141 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 42))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert215 () Bool\n  (> (y (sel-B (select heap 116))) 100))\n(define-fun _xkassert386 () Bool\n  (< (z (sel-C (select heap 287))) 10))\n(define-fun _xkassert407 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 208))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert309 () Bool\n  (< (z (sel-C (select heap 210))) 10))\n(define-fun _xkassert347 () Bool\n  (< (z (sel-C (select heap 248))) 10))\n(define-fun _xkassert91 () Bool\n  (< (x (sel-A (select heap 92))) 0))\n(define-fun _xkassert213 () Bool\n  (> (y (sel-B (select heap 114))) 100))\n(define-fun _xkassert442 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 243))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert414 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 215))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert43 () Bool\n  (< (x (sel-A (select heap 44))) 0))\n(define-fun _xkassert77 () Bool\n  (< (x (sel-A (select heap 78))) 0))\n(define-fun _xkassert476 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 277))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert457 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 258))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert284 () Bool\n  (> (y (sel-B (select heap 185))) 100))\n(define-fun _xkassert177 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 78))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert320 () Bool\n  (< (z (sel-C (select heap 221))) 10))\n(define-fun _xkassert83 () Bool\n  (< (x (sel-A (select heap 84))) 0))\n(define-fun _xkassert282 () Bool\n  (> (y (sel-B (select heap 183))) 100))\n(define-fun _xkassert428 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 229))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert238 () Bool\n  (> (y (sel-B (select heap 139))) 100))\n(define-fun _xkassert245 () Bool\n  (> (y (sel-B (select heap 146))) 100))\n(define-fun _xkassert415 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 216))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert89 () Bool\n  (< (x (sel-A (select heap 90))) 0))\n(define-fun _xkassert163 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 64))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert327 () Bool\n  (< (z (sel-C (select heap 228))) 10))\n(define-fun _xkassert317 () Bool\n  (< (z (sel-C (select heap 218))) 10))\n(define-fun _xkassert311 () Bool\n  (< (z (sel-C (select heap 212))) 10))\n(define-fun _xkassert55 () Bool\n  (< (x (sel-A (select heap 56))) 0))\n(define-fun _xkassert30 () Bool\n  (< (x (sel-A (select heap 31))) 0))\n(define-fun _xkassert262 () Bool\n  (> (y (sel-B (select heap 163))) 100))\n(define-fun _xkassert183 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 84))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert106 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 7))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert2 () Bool\n  (> (y (sel-B (select heap 2))) 100))\n(define-fun _xkassert322 () Bool\n  (< (z (sel-C (select heap 223))) 10))\n(define-fun _xkassert248 () Bool\n  (> (y (sel-B (select heap 149))) 100))\n(define-fun _xkassert37 () Bool\n  (< (x (sel-A (select heap 38))) 0))\n(define-fun _xkassert337 () Bool\n  (< (z (sel-C (select heap 238))) 10))\n(define-fun _xkassert93 () Bool\n  (< (x (sel-A (select heap 94))) 0))\n(define-fun _xkassert301 () Bool\n  (< (z (sel-C (select heap 202))) 10))\n(define-fun _xkassert101 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 2))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert340 () Bool\n  (< (z (sel-C (select heap 241))) 10))\n(define-fun _xkassert318 () Bool\n  (< (z (sel-C (select heap 219))) 10))\n(define-fun _xkassert129 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 30))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert268 () Bool\n  (> (y (sel-B (select heap 169))) 100))\n(define-fun _xkassert465 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 266))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert233 () Bool\n  (> (y (sel-B (select heap 134))) 100))\n(define-fun _xkassert308 () Bool\n  (< (z (sel-C (select heap 209))) 10))\n(define-fun _xkassert436 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 237))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert389 () Bool\n  (< (z (sel-C (select heap 290))) 10))\n(define-fun _xkassert17 () Bool\n  (< (x (sel-A (select heap 18))) 0))\n(define-fun _xkassert289 () Bool\n  (> (y (sel-B (select heap 190))) 100))\n(define-fun _xkassert326 () Bool\n  (< (z (sel-C (select heap 227))) 10))\n(define-fun _xkassert426 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 227))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert16 () Bool\n  (< (x (sel-A (select heap 17))) 0))\n(define-fun _xkassert95 () Bool\n  (< (x (sel-A (select heap 96))) 0))\n(define-fun _xkassert224 () Bool\n  (> (y (sel-B (select heap 125))) 100))\n(define-fun _xkassert278 () Bool\n  (> (y (sel-B (select heap 179))) 100))\n(define-fun _xkassert375 () Bool\n  (< (z (sel-C (select heap 276))) 10))\n(define-fun _xkassert41 () Bool\n  (< (x (sel-A (select heap 42))) 0))\n(define-fun _xkassert15 () Bool\n  (< (x (sel-A (select heap 16))) 0))\n(define-fun _xkassert48 () Bool\n  (< (x (sel-A (select heap 49))) 0))\n(define-fun _xkassert458 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 259))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert136 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 37))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert221 () Bool\n  (> (y (sel-B (select heap 122))) 100))\n(define-fun _xkassert257 () Bool\n  (> (y (sel-B (select heap 158))) 100))\n(define-fun _xkassert230 () Bool\n  (> (y (sel-B (select heap 131))) 100))\n(define-fun _xkassert441 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 242))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert35 () Bool\n  (< (x (sel-A (select heap 36))) 0))\n(define-fun _xkassert66 () Bool\n  (< (x (sel-A (select heap 67))) 0))\n(define-fun _xkassert132 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 33))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert18 () Bool\n  (< (x (sel-A (select heap 19))) 0))\n(define-fun _xkassert287 () Bool\n  (> (y (sel-B (select heap 188))) 100))\n(define-fun _xkassert398 () Bool\n  (< (z (sel-C (select heap 299))) 10))\n(define-fun _xkassert446 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 247))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert63 () Bool\n  (< (x (sel-A (select heap 64))) 0))\n(define-fun _xkassert38 () Bool\n  (< (x (sel-A (select heap 39))) 0))\n(define-fun _xkassert133 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 34))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert207 () Bool\n  (> (y (sel-B (select heap 108))) 100))\n(define-fun _xkassert350 () Bool\n  (< (z (sel-C (select heap 251))) 10))\n(define-fun _xkassert352 () Bool\n  (< (z (sel-C (select heap 253))) 10))\n(define-fun _xkassert182 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 83))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert363 () Bool\n  (< (z (sel-C (select heap 264))) 10))\n(define-fun _xkassert366 () Bool\n  (< (z (sel-C (select heap 267))) 10))\n(define-fun _xkassert231 () Bool\n  (> (y (sel-B (select heap 132))) 100))\n(define-fun _xkassert324 () Bool\n  (< (z (sel-C (select heap 225))) 10))\n(define-fun _xkassert256 () Bool\n  (> (y (sel-B (select heap 157))) 100))\n(define-fun _xkassert388 () Bool\n  (< (z (sel-C (select heap 289))) 10))\n(define-fun _xkassert209 () Bool\n  (> (y (sel-B (select heap 110))) 100))\n(define-fun _xkassert44 () Bool\n  (< (x (sel-A (select heap 45))) 0))\n(define-fun _xkassert431 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 232))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert454 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 255))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert22 () Bool\n  (< (x (sel-A (select heap 23))) 0))\n(define-fun _xkassert217 () Bool\n  (> (y (sel-B (select heap 118))) 100))\n(define-fun _xkassert447 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 248))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert99 () Bool\n  (< (x (sel-A (select heap 100))) 0))\n(define-fun _xkassert379 () Bool\n  (< (z (sel-C (select heap 280))) 10))\n(define-fun _xkassert96 () Bool\n  (< (x (sel-A (select heap 97))) 0))\n(define-fun _xkassert292 () Bool\n  (> (y (sel-B (select heap 193))) 100))\n(define-fun _xkassert300 () Bool\n  (< (z (sel-C (select heap 201))) 10))\n(define-fun _xkassert172 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 73))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert281 () Bool\n  (> (y (sel-B (select heap 182))) 100))\n(define-fun _xkassert294 () Bool\n  (> (y (sel-B (select heap 195))) 100))\n(define-fun _xkassert395 () Bool\n  (< (z (sel-C (select heap 296))) 10))\n(define-fun _xkassert485 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 286))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert286 () Bool\n  (> (y (sel-B (select heap 187))) 100))\n(define-fun _xkassert481 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 282))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert176 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 77))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert7 () Bool\n  (< (x (sel-A (select heap 8))) 0))\n(define-fun _xkassert116 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 17))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert420 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 221))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert335 () Bool\n  (< (z (sel-C (select heap 236))) 10))\n(define-fun _xkassert151 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 52))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert157 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 58))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert448 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 249))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert305 () Bool\n  (< (z (sel-C (select heap 206))) 10))\n(define-fun _xkassert357 () Bool\n  (< (z (sel-C (select heap 258))) 10))\n(define-fun _xkassert167 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 68))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert222 () Bool\n  (> (y (sel-B (select heap 123))) 100))\n(define-fun _xkassert349 () Bool\n  (< (z (sel-C (select heap 250))) 10))\n(define-fun _xkassert288 () Bool\n  (> (y (sel-B (select heap 189))) 100))\n(define-fun _xkassert480 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 281))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert384 () Bool\n  (< (z (sel-C (select heap 285))) 10))\n(define-fun _xkassert427 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 228))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert10 () Bool\n  (< (x (sel-A (select heap 11))) 0))\n(define-fun _xkassert20 () Bool\n  (< (x (sel-A (select heap 21))) 0))\n(define-fun _xkassert143 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 44))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert365 () Bool\n  (< (z (sel-C (select heap 266))) 10))\n(define-fun _xkassert240 () Bool\n  (> (y (sel-B (select heap 141))) 100))\n(define-fun _xkassert49 () Bool\n  (< (x (sel-A (select heap 50))) 0))\n(define-fun _xkassert293 () Bool\n  (> (y (sel-B (select heap 194))) 100))\n(define-fun _xkassert397 () Bool\n  (< (z (sel-C (select heap 298))) 10))\n(define-fun _xkassert90 () Bool\n  (< (x (sel-A (select heap 91))) 0))\n(define-fun _xkassert404 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 205))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert342 () Bool\n  (< (z (sel-C (select heap 243))) 10))\n(define-fun _xkassert490 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 291))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert242 () Bool\n  (> (y (sel-B (select heap 143))) 100))\n(define-fun _xkassert488 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 289))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert330 () Bool\n  (< (z (sel-C (select heap 231))) 10))\n(define-fun _xkassert498 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 299))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert381 () Bool\n  (< (z (sel-C (select heap 282))) 10))\n(define-fun _xkassert319 () Bool\n  (< (z (sel-C (select heap 220))) 10))\n(define-fun _xkassert413 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 214))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert56 () Bool\n  (< (x (sel-A (select heap 57))) 0))\n(define-fun _xkassert264 () Bool\n  (> (y (sel-B (select heap 165))) 100))\n(define-fun _xkassert279 () Bool\n  (> (y (sel-B (select heap 180))) 100))\n(define-fun _xkassert171 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 72))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert94 () Bool\n  (< (x (sel-A (select heap 95))) 0))\n(define-fun _xkassert234 () Bool\n  (> (y (sel-B (select heap 135))) 100))\n(define-fun _xkassert13 () Bool\n  (< (x (sel-A (select heap 14))) 0))\n(define-fun _xkassert479 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 280))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert46 () Bool\n  (< (x (sel-A (select heap 47))) 0))\n(define-fun _xkassert359 () Bool\n  (< (z (sel-C (select heap 260))) 10))\n(define-fun _xkassert187 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 88))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert443 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 244))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert346 () Bool\n  (< (z (sel-C (select heap 247))) 10))\n(define-fun _xkassert252 () Bool\n  (> (y (sel-B (select heap 153))) 100))\n(define-fun _xkassert111 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 12))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert53 () Bool\n  (< (x (sel-A (select heap 54))) 0))\n(define-fun _xkassert201 () Bool\n  (> (y (sel-B (select heap 102))) 100))\n(define-fun _xkassert14 () Bool\n  (< (x (sel-A (select heap 15))) 0))\n(define-fun _xkassert204 () Bool\n  (> (y (sel-B (select heap 105))) 100))\n(define-fun _xkassert272 () Bool\n  (> (y (sel-B (select heap 173))) 100))\n(define-fun _xkassert410 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 211))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert425 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 226))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert156 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 57))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert108 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 9))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert403 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 204))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert449 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 250))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert336 () Bool\n  (< (z (sel-C (select heap 237))) 10))\n(define-fun _xkassert74 () Bool\n  (< (x (sel-A (select heap 75))) 0))\n(define-fun _xkassert396 () Bool\n  (< (z (sel-C (select heap 297))) 10))\n(define-fun _xkassert351 () Bool\n  (< (z (sel-C (select heap 252))) 10))\n(define-fun _xkassert361 () Bool\n  (< (z (sel-C (select heap 262))) 10))\n(define-fun _xkassert65 () Bool\n  (< (x (sel-A (select heap 66))) 0))\n(define-fun _xkassert450 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 251))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert228 () Bool\n  (> (y (sel-B (select heap 129))) 100))\n(define-fun _xkassert185 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 86))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert401 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 202))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert88 () Bool\n  (< (x (sel-A (select heap 89))) 0))\n(define-fun _xkassert306 () Bool\n  (< (z (sel-C (select heap 207))) 10))\n(define-fun _xkassert102 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 3))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert130 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 31))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert192 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 93))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert122 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 23))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert471 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 272))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert58 () Bool\n  (< (x (sel-A (select heap 59))) 0))\n(define-fun _xkassert152 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 53))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert235 () Bool\n  (> (y (sel-B (select heap 136))) 100))\n(define-fun _xkassert8 () Bool\n  (< (x (sel-A (select heap 9))) 0))\n(define-fun _xkassert368 () Bool\n  (< (z (sel-C (select heap 269))) 10))\n(define-fun _xkassert120 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 21))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert189 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 90))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert12 () Bool\n  (< (x (sel-A (select heap 13))) 0))\n(define-fun _xkassert220 () Bool\n  (> (y (sel-B (select heap 121))) 100))\n(define-fun _xkassert418 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 219))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert154 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 55))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert487 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 288))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert82 () Bool\n  (< (x (sel-A (select heap 83))) 0))\n(define-fun _xkassert114 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 15))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert23 () Bool\n  (< (x (sel-A (select heap 24))) 0))\n(define-fun _xkassert86 () Bool\n  (< (x (sel-A (select heap 87))) 0))\n(define-fun _xkassert64 () Bool\n  (< (x (sel-A (select heap 65))) 0))\n(define-fun _xkassert353 () Bool\n  (< (z (sel-C (select heap 254))) 10))\n(define-fun _xkassert307 () Bool\n  (< (z (sel-C (select heap 208))) 10))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 1))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert348 () Bool\n  (< (z (sel-C (select heap 249))) 10))\n(define-fun _xkassert190 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 91))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert92 () Bool\n  (< (x (sel-A (select heap 93))) 0))\n(define-fun _xkassert69 () Bool\n  (< (x (sel-A (select heap 70))) 0))\n(define-fun _xkassert223 () Bool\n  (> (y (sel-B (select heap 124))) 100))\n(define-fun _xkassert486 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 287))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert72 () Bool\n  (< (x (sel-A (select heap 73))) 0))\n(define-fun _xkassert40 () Bool\n  (< (x (sel-A (select heap 41))) 0))\n(define-fun _xkassert126 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 27))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert125 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 26))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert295 () Bool\n  (> (y (sel-B (select heap 196))) 100))\n(define-fun _xkassert161 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 62))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert400 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 201))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert80 () Bool\n  (< (x (sel-A (select heap 81))) 0))\n(define-fun _xkassert316 () Bool\n  (< (z (sel-C (select heap 217))) 10))\n(define-fun _xkassert218 () Bool\n  (> (y (sel-B (select heap 119))) 100))\n(define-fun _xkassert71 () Bool\n  (< (x (sel-A (select heap 72))) 0))\n(define-fun _xkassert146 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 47))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert247 () Bool\n  (> (y (sel-B (select heap 148))) 100))\n(define-fun _xkassert385 () Bool\n  (< (z (sel-C (select heap 286))) 10))\n(define-fun _xkassert81 () Bool\n  (< (x (sel-A (select heap 82))) 0))\n(define-fun _xkassert341 () Bool\n  (< (z (sel-C (select heap 242))) 10))\n(define-fun _xkassert331 () Bool\n  (< (z (sel-C (select heap 232))) 10))\n(define-fun _xkassert166 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 67))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert180 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 81))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert249 () Bool\n  (> (y (sel-B (select heap 150))) 100))\n(define-fun _xkassert57 () Bool\n  (< (x (sel-A (select heap 58))) 0))\n(define-fun _xkassert304 () Bool\n  (< (z (sel-C (select heap 205))) 10))\n(define-fun _xkassert466 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 267))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert354 () Bool\n  (< (z (sel-C (select heap 255))) 10))\n(define-fun _xkassert312 () Bool\n  (< (z (sel-C (select heap 213))) 10))\n(define-fun _xkassert333 () Bool\n  (< (z (sel-C (select heap 234))) 10))\n(define-fun _xkassert219 () Bool\n  (> (y (sel-B (select heap 120))) 100))\n(define-fun _xkassert237 () Bool\n  (> (y (sel-B (select heap 138))) 100))\n(define-fun _xkassert51 () Bool\n  (< (x (sel-A (select heap 52))) 0))\n(define-fun _xkassert276 () Bool\n  (> (y (sel-B (select heap 177))) 100))\n(define-fun _xkassert419 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 220))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert229 () Bool\n  (> (y (sel-B (select heap 130))) 100))\n(define-fun _xkassert33 () Bool\n  (< (x (sel-A (select heap 34))) 0))\n(define-fun _xkassert52 () Bool\n  (< (x (sel-A (select heap 53))) 0))\n(define-fun _xkassert142 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 43))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert323 () Bool\n  (< (z (sel-C (select heap 224))) 10))\n(define-fun _xkassert194 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 95))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert417 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 218))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert148 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 49))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert474 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 275))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert239 () Bool\n  (> (y (sel-B (select heap 140))) 100))\n(define-fun _xkassert275 () Bool\n  (> (y (sel-B (select heap 176))) 100))\n(define-fun _xkassert226 () Bool\n  (> (y (sel-B (select heap 127))) 100))\n(define-fun _xkassert394 () Bool\n  (< (z (sel-C (select heap 295))) 10))\n(define-fun _xkassert497 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 298))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert225 () Bool\n  (> (y (sel-B (select heap 126))) 100))\n(define-fun _xkassert328 () Bool\n  (< (z (sel-C (select heap 229))) 10))\n(define-fun _xkassert380 () Bool\n  (< (z (sel-C (select heap 281))) 10))\n(define-fun _xkassert251 () Bool\n  (> (y (sel-B (select heap 152))) 100))\n(define-fun _xkassert186 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 87))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert109 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 10))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert461 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 262))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert70 () Bool\n  (< (x (sel-A (select heap 71))) 0))\n(define-fun _xkassert107 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 8))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert290 () Bool\n  (> (y (sel-B (select heap 191))) 100))\n(define-fun _xkassert232 () Bool\n  (> (y (sel-B (select heap 133))) 100))\n(define-fun _xkassert174 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 75))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert173 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 74))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert321 () Bool\n  (< (z (sel-C (select heap 222))) 10))\n(define-fun _xkassert439 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 240))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert483 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 284))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert495 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 296))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert208 () Bool\n  (> (y (sel-B (select heap 109))) 100))\n(define-fun _xkassert29 () Bool\n  (< (x (sel-A (select heap 30))) 0))\n(define-fun _xkassert160 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 61))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert195 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 96))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert236 () Bool\n  (> (y (sel-B (select heap 137))) 100))\n(define-fun _xkassert334 () Bool\n  (< (z (sel-C (select heap 235))) 10))\n(define-fun _xkassert75 () Bool\n  (< (x (sel-A (select heap 76))) 0))\n(define-fun _xkassert360 () Bool\n  (< (z (sel-C (select heap 261))) 10))\n(define-fun _xkassert138 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 39))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert6 () Bool\n  (< (x (sel-A (select heap 7))) 0))\n(define-fun _xkassert269 () Bool\n  (> (y (sel-B (select heap 170))) 100))\n(define-fun _xkassert266 () Bool\n  (> (y (sel-B (select heap 167))) 100))\n(define-fun _xkassert169 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 70))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert25 () Bool\n  (< (x (sel-A (select heap 26))) 0))\n(define-fun _xkassert210 () Bool\n  (> (y (sel-B (select heap 111))) 100))\n(define-fun _xkassert378 () Bool\n  (< (z (sel-C (select heap 279))) 10))\n(define-fun _xkassert310 () Bool\n  (< (z (sel-C (select heap 211))) 10))\n(define-fun _xkassert302 () Bool\n  (< (z (sel-C (select heap 203))) 10))\n(define-fun _xkassert19 () Bool\n  (< (x (sel-A (select heap 20))) 0))\n(define-fun _xkassert344 () Bool\n  (< (z (sel-C (select heap 245))) 10))\n(define-fun _xkassert422 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 223))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert499 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 300))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert139 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 40))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert475 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 276))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert112 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 13))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert241 () Bool\n  (> (y (sel-B (select heap 142))) 100))\n(define-fun _xkassert118 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 19))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert261 () Bool\n  (> (y (sel-B (select heap 162))) 100))\n(define-fun _xkassert338 () Bool\n  (< (z (sel-C (select heap 239))) 10))\n(define-fun _xkassert392 () Bool\n  (< (z (sel-C (select heap 293))) 10))\n(define-fun _xkassert67 () Bool\n  (< (x (sel-A (select heap 68))) 0))\n(define-fun _xkassert469 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 270))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert315 () Bool\n  (< (z (sel-C (select heap 216))) 10))\n(define-fun _xkassert253 () Bool\n  (> (y (sel-B (select heap 154))) 100))\n(define-fun _xkassert100 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 1))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert492 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 293))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert250 () Bool\n  (> (y (sel-B (select heap 151))) 100))\n(define-fun _xkassert296 () Bool\n  (> (y (sel-B (select heap 197))) 100))\n(define-fun _xkassert263 () Bool\n  (> (y (sel-B (select heap 164))) 100))\n(define-fun _xkassert197 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 98))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert444 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 245))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert297 () Bool\n  (> (y (sel-B (select heap 198))) 100))\n(define-fun _xkassert140 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 41))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert165 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 66))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert155 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 56))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert11 () Bool\n  (< (x (sel-A (select heap 12))) 0))\n(define-fun _xkassert184 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 85))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert402 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 203))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert472 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 273))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert27 () Bool\n  (< (x (sel-A (select heap 28))) 0))\n(define-fun _xkassert121 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 22))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 3))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert62 () Bool\n  (< (x (sel-A (select heap 63))) 0))\n(define-fun _xkassert460 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 261))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert39 () Bool\n  (< (x (sel-A (select heap 40))) 0))\n(define-fun _xkassert196 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 97))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert255 () Bool\n  (> (y (sel-B (select heap 156))) 100))\n(define-fun _xkassert424 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 225))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert34 () Bool\n  (< (x (sel-A (select heap 35))) 0))\n(define-fun _xkassert339 () Bool\n  (< (z (sel-C (select heap 240))) 10))\n(define-fun _xkassert168 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 69))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert104 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 5))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert433 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 234))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert59 () Bool\n  (< (x (sel-A (select heap 60))) 0))\n(define-fun _xkassert383 () Bool\n  (< (z (sel-C (select heap 284))) 10))\n(define-fun _xkassert115 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 16))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert464 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 265))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert440 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 241))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert103 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 4))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert345 () Bool\n  (< (z (sel-C (select heap 246))) 10))\n(define-fun _xkassert477 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 278))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert31 () Bool\n  (< (x (sel-A (select heap 32))) 0))\n(define-fun _xkassert356 () Bool\n  (< (z (sel-C (select heap 257))) 10))\n(define-fun _xkassert462 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 263))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert438 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 239))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert158 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 59))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert42 () Bool\n  (< (x (sel-A (select heap 43))) 0))\n(define-fun _xkassert399 () Bool\n  (< (z (sel-C (select heap 300))) 10))\n(define-fun _xkassert430 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 231))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert123 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 24))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert145 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 46))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert285 () Bool\n  (> (y (sel-B (select heap 186))) 100))\n(define-fun _xkassert372 () Bool\n  (< (z (sel-C (select heap 273))) 10))\n(define-fun _xkassert445 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 246))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert110 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 11))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert370 () Bool\n  (< (z (sel-C (select heap 271))) 10))\n(define-fun _xkassert482 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 283))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert9 () Bool\n  (< (x (sel-A (select heap 10))) 0))\n(define-fun _xkassert21 () Bool\n  (< (x (sel-A (select heap 22))) 0))\n(define-fun _xkassert355 () Bool\n  (< (z (sel-C (select heap 256))) 10))\n(define-fun _xkassert421 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 222))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert0 () Bool\n  (< (x (sel-A (select heap 1))) 0))\n(define-fun _xkassert343 () Bool\n  (< (z (sel-C (select heap 244))) 10))\n(define-fun _xkassert489 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 290))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert273 () Bool\n  (> (y (sel-B (select heap 174))) 100))\n(define-fun _xkassert134 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 35))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert200 () Bool\n  (> (y (sel-B (select heap 101))) 100))\n(define-fun _xkassert314 () Bool\n  (< (z (sel-C (select heap 215))) 10))\n(define-fun _xkassert128 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 29))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert198 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 99))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert60 () Bool\n  (< (x (sel-A (select heap 61))) 0))\n(define-fun _xkassert135 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 36))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert473 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 274))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert131 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 32))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert47 () Bool\n  (< (x (sel-A (select heap 48))) 0))\n(define-fun _xkassert216 () Bool\n  (> (y (sel-B (select heap 117))) 100))\n(define-fun _xkassert303 () Bool\n  (< (z (sel-C (select heap 204))) 10))\n(define-fun _xkassert149 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 50))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert456 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 257))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert283 () Bool\n  (> (y (sel-B (select heap 184))) 100))\n(define-fun _xkassert274 () Bool\n  (> (y (sel-B (select heap 175))) 100))\n(define-fun _xkassert362 () Bool\n  (< (z (sel-C (select heap 263))) 10))\n(define-fun _xkassert387 () Bool\n  (< (z (sel-C (select heap 288))) 10))\n(define-fun _xkassert391 () Bool\n  (< (z (sel-C (select heap 292))) 10))\n(define-fun _xkassert243 () Bool\n  (> (y (sel-B (select heap 144))) 100))\n(define-fun _xkassert358 () Bool\n  (< (z (sel-C (select heap 259))) 10))\n(define-fun _xkassert150 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 51))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert367 () Bool\n  (< (z (sel-C (select heap 268))) 10))\n(define-fun _xkassert270 () Bool\n  (> (y (sel-B (select heap 171))) 100))\n(define-fun _xkassert24 () Bool\n  (< (x (sel-A (select heap 25))) 0))\n(define-fun _xkassert203 () Bool\n  (> (y (sel-B (select heap 104))) 100))\n(define-fun _xkassert411 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 212))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert32 () Bool\n  (< (x (sel-A (select heap 33))) 0))\n(define-fun _xkassert175 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 76))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert254 () Bool\n  (> (y (sel-B (select heap 155))) 100))\n(define-fun _xkassert463 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 264))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert451 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 252))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert211 () Bool\n  (> (y (sel-B (select heap 112))) 100))\n(define-fun _xkassert280 () Bool\n  (> (y (sel-B (select heap 181))) 100))\n(define-fun _xkassert376 () Bool\n  (< (z (sel-C (select heap 277))) 10))\n(define-fun _xkassert382 () Bool\n  (< (z (sel-C (select heap 283))) 10))\n(define-fun _xkassert412 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 213))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert277 () Bool\n  (> (y (sel-B (select heap 178))) 100))\n(define-fun _xkassert298 () Bool\n  (> (y (sel-B (select heap 199))) 100))\n(define-fun _xkassert258 () Bool\n  (> (y (sel-B (select heap 159))) 100))\n(define-fun _xkassert97 () Bool\n  (< (x (sel-A (select heap 98))) 0))\n(define-fun _xkassert434 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 235))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert119 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 20))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert259 () Bool\n  (> (y (sel-B (select heap 160))) 100))\n(define-fun _xkassert87 () Bool\n  (< (x (sel-A (select heap 88))) 0))\n(define-fun _xkassert202 () Bool\n  (> (y (sel-B (select heap 103))) 100))\n(define-fun _xkassert299 () Bool\n  (> (y (sel-B (select heap 200))) 100))\n(define-fun _xkassert325 () Bool\n  (< (z (sel-C (select heap 226))) 10))\n(define-fun _xkassert416 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 217))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert494 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 295))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert265 () Bool\n  (> (y (sel-B (select heap 166))) 100))\n(define-fun _xkassert291 () Bool\n  (> (y (sel-B (select heap 192))) 100))\n(define-fun _xkassert374 () Bool\n  (< (z (sel-C (select heap 275))) 10))\n(define-fun _xkassert212 () Bool\n  (> (y (sel-B (select heap 113))) 100))\n(define-fun _xkassert452 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 253))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert78 () Bool\n  (< (x (sel-A (select heap 79))) 0))\n(define-fun _xkassert5 () Bool\n  (< (x (sel-A (select heap 6))) 0))\n(define-fun _xkassert105 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 6))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert137 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 38))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert329 () Bool\n  (< (z (sel-C (select heap 230))) 10))\n(define-fun _xkassert50 () Bool\n  (< (x (sel-A (select heap 51))) 0))\n(define-fun _xkassert260 () Bool\n  (> (y (sel-B (select heap 161))) 100))\n(define-fun _xkassert117 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 18))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert193 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 94))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert455 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 256))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert181 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 82))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert3 () Bool\n  (< (z (sel-C (select heap 3))) 10))\n(define-fun _xkassert244 () Bool\n  (> (y (sel-B (select heap 145))) 100))\n(define-fun _xkassert205 () Bool\n  (> (y (sel-B (select heap 106))) 100))\n(define-fun _xkassert406 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 207))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert271 () Bool\n  (> (y (sel-B (select heap 172))) 100))\n(define-fun _xkassert214 () Bool\n  (> (y (sel-B (select heap 115))) 100))\n(define-fun _xkassert459 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 260))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert423 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 224))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert467 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 268))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert36 () Bool\n  (< (x (sel-A (select heap 37))) 0))\n(define-fun _xkassert227 () Bool\n  (> (y (sel-B (select heap 128))) 100))\n(define-fun _xkassert199 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 100))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert429 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 230))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert76 () Bool\n  (< (x (sel-A (select heap 77))) 0))\n(define-fun _xkassert124 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 25))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert170 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 71))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert98 () Bool\n  (< (x (sel-A (select heap 99))) 0))\n(define-fun _xkassert246 () Bool\n  (> (y (sel-B (select heap 147))) 100))\n(define-fun _xkassert405 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 206))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert113 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 14))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert409 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 210))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert432 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 233))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert393 () Bool\n  (< (z (sel-C (select heap 294))) 10))\n(define-fun _xkassert28 () Bool\n  (< (x (sel-A (select heap 29))) 0))\n(define-fun _xkassert68 () Bool\n  (< (x (sel-A (select heap 69))) 0))\n(define-fun _xkassert373 () Bool\n  (< (z (sel-C (select heap 274))) 10))\n(define-fun _xkassert144 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 45))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert491 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 292))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert484 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 285))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert179 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 80))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert191 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 92))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert496 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 297))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert364 () Bool\n  (< (z (sel-C (select heap 265))) 10))\n(define-fun _xkassert267 () Bool\n  (> (y (sel-B (select heap 168))) 100))\n(define-fun _xkassert54 () Bool\n  (< (x (sel-A (select heap 55))) 0))\n(define-fun _xkassert85 () Bool\n  (< (x (sel-A (select heap 86))) 0))\n(define-fun _xkassert470 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 271))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert26 () Bool\n  (< (x (sel-A (select heap 27))) 0))\n(define-fun _xkassert153 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 54))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert61 () Bool\n  (< (x (sel-A (select heap 62))) 0))\n(define-fun _xkassert408 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 209))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert206 () Bool\n  (> (y (sel-B (select heap 107))) 100))\n(define-fun _xkassert164 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 65))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert159 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 60))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert390 () Bool\n  (< (z (sel-C (select heap 291))) 10))\n(define-fun _xkassert435 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 236))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert478 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 279))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert45 () Bool\n  (< (x (sel-A (select heap 46))) 0))\n(define-fun _xkassert371 () Bool\n  (< (z (sel-C (select heap 272))) 10))\n(define-fun _xkassert437 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 238))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert453 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 254))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert79 () Bool\n  (< (x (sel-A (select heap 80))) 0))\n(define-fun _xkassert468 () Bool\n  (let ((a!1 (* (z (sel-C (select heap 269))) 1)))\n  (> a!1 10)))\n(define-fun _xkassert73 () Bool\n  (< (x (sel-A (select heap 74))) 0))\n(define-fun _xkassert178 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 79))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert188 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 89))) 0)))\n  (> a!1 10)))\n(define-fun _xkassert369 () Bool\n  (< (z (sel-C (select heap 270))) 10))\n(define-fun _xkassert127 () Bool\n  (let ((a!1 (+ (x (sel-A (select heap 28))) 0)))\n  (> a!1 10)))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
         "annotations": [],
-        "decls": [
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "A",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "x",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "type": "BinExp",
-                            "op": "LT",
-                            "exp1": {
-                                "ident": "x",
-                                "type": "IdentExp"
-                            },
-                            "exp2": {
-                                "i": 0,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        "annotations": []
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "type": "BinExp",
-                            "op": "GT",
-                            "exp1": {
-                                "type": "BinExp",
-                                "op": "Plus",
-                                "exp1": {
-                                    "ident": "x",
-                                    "type": "IdentExp"
-                                },
-                                "exp2": {
-                                    "i": 0,
-                                    "type": "LiteralInteger"
-                                }
-                            },
-                            "exp2": {
-                                "i": 10,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        "annotations": []
-                    }
-                ]
+        "entityToken": "class",
+        "ident": "A",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
             },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "B",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "y",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "type": "BinExp",
-                            "op": "GT",
-                            "exp1": {
-                                "ident": "y",
-                                "type": "IdentExp"
-                            },
-                            "exp2": {
-                                "i": 100,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        "annotations": []
-                    }
-                ]
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 0,
+                  "type": "LiteralInteger"
+                }
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
             },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "C",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "z",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "type": "BinExp",
-                            "op": "LT",
-                            "exp1": {
-                                "ident": "z",
-                                "type": "IdentExp"
-                            },
-                            "exp2": {
-                                "i": 10,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        "annotations": []
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "type": "BinExp",
-                            "op": "GT",
-                            "exp1": {
-                                "type": "BinExp",
-                                "op": "Times",
-                                "exp1": {
-                                    "ident": "z",
-                                    "type": "IdentExp"
-                                },
-                                "exp2": {
-                                    "i": 1,
-                                    "type": "LiteralInteger"
-                                }
-                            },
-                            "exp2": {
-                                "i": 10,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        "annotations": []
-                    }
-                ]
-            }
-        ],
-        "packages": []
-    },
-    "json2": {
-        "type": "Model",
-        "imports": [],
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
         "annotations": [],
-        "decls": [
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "A",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "x",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "operand": [
-                                {
-                                    "type": "ElementValue",
-                                    "element": "LT"
-                                },
-                                {
-                                    "element": "x",
-                                    "type": "ElementValue"
-                                },
-                                {
-                                    "type": "LiteralInteger",
-                                    "integer": 0
-                                }
-                            ],
-                            "type": "Expression"
-                        },
-                        "annotations": []
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "operand": [
-                                {
-                                    "type": "ElementValue",
-                                    "element": "GT"
-                                },
-                                {
-                                    "operand": [
-                                        {
-                                            "type": "ElementValue",
-                                            "element": "Plus"
-                                        },
-                                        {
-                                            "element": "x",
-                                            "type": "ElementValue"
-                                        },
-                                        {
-                                            "type": "LiteralInteger",
-                                            "integer": 0
-                                        }
-                                    ],
-                                    "type": "Expression"
-                                },
-                                {
-                                    "type": "LiteralInteger",
-                                    "integer": 10
-                                }
-                            ],
-                            "type": "Expression"
-                        },
-                        "annotations": []
-                    }
-                ]
+        "entityToken": "class",
+        "ident": "B",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "ident": "y",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
             },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "B",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "y",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "operand": [
-                                {
-                                    "type": "ElementValue",
-                                    "element": "GT"
-                                },
-                                {
-                                    "element": "y",
-                                    "type": "ElementValue"
-                                },
-                                {
-                                    "type": "LiteralInteger",
-                                    "integer": 100
-                                }
-                            ],
-                            "type": "Expression"
-                        },
-                        "annotations": []
-                    }
-                ]
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "C",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "z",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "z",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
             },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "C",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "z",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "operand": [
-                                {
-                                    "type": "ElementValue",
-                                    "element": "LT"
-                                },
-                                {
-                                    "element": "z",
-                                    "type": "ElementValue"
-                                },
-                                {
-                                    "type": "LiteralInteger",
-                                    "integer": 10
-                                }
-                            ],
-                            "type": "Expression"
-                        },
-                        "annotations": []
-                    },
-                    {
-                        "type": "ConstraintDecl",
-                        "exp": {
-                            "operand": [
-                                {
-                                    "type": "ElementValue",
-                                    "element": "GT"
-                                },
-                                {
-                                    "operand": [
-                                        {
-                                            "type": "ElementValue",
-                                            "element": "Times"
-                                        },
-                                        {
-                                            "element": "z",
-                                            "type": "ElementValue"
-                                        },
-                                        {
-                                            "type": "LiteralInteger",
-                                            "integer": 1
-                                        }
-                                    ],
-                                    "type": "Expression"
-                                },
-                                {
-                                    "type": "LiteralInteger",
-                                    "integer": 10
-                                }
-                            ],
-                            "type": "Expression"
-                        },
-                        "annotations": []
-                    }
-                ]
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Times",
+                "exp1": {
+                  "ident": "z",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 1,
+                  "type": "LiteralInteger"
+                }
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "A",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
             }
-        ],
-        "packages": []
-    }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "B",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "element": "y",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "C",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "z",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "z",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Times"
+                    },
+                    {
+                      "element": "z",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 1
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
 }
