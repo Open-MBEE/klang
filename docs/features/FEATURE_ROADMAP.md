@@ -765,6 +765,31 @@ This section tracks items that need investigation or implementation. Items marke
   - Test case: `src/tests/unsat_function.k`
   - Implementation: `UtilSMT.generateSyntheticFunctionCalls()` in `AbstractSyntax.scala`
 
+### CEGAR Loop Optimization
+
+- [ ] **Early termination when unsat core doesn't involve heap constraints**
+  - Currently: CEGAR loop doubles heap objects on each UNSAT (0→1→2→4→8→16→32→64→100)
+  - Problem: When unsat core shows constraint conflict (e.g., `x < 0` and `x + 0 > 10`),
+    adding more objects won't help, but the loop continues anyway
+  - Observed in `unsat4.k`: 8 iterations of CEGAR, each printing partial model and same unsat core
+  - Proposed optimization:
+    1. After getting UNSAT, extract unsat core
+    2. Check if unsat core constraints involve heap-related variables (object references, heap bounds)
+    3. If unsat core is purely about property constraints, stop CEGAR early
+    4. Only continue CEGAR if unsat core suggests heap exhaustion (e.g., "no more objects available")
+  - Benefits:
+    - Faster UNSAT determination for constraint conflicts
+    - Cleaner output (only one partial model printed)
+    - User sees immediately that the issue is constraint-based, not heap-based
+
+- [ ] **Verbose mode for CEGAR iterations**
+  - Current behavior prints partial model at each CEGAR iteration
+  - This is useful for debugging but verbose for normal use
+  - Options:
+    1. Only print partial model at final UNSAT (default)
+    2. Print at each iteration only with `-debug` or `-cegar-verbose` flag
+    3. Keep current behavior but add summary at end ("Tried N heap configurations")
+
 ### Architecture: Solver-Agnostic Constraint Processing
 
 - [ ] **Move synthetic instance generation from SMT to K level**
