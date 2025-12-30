@@ -765,6 +765,28 @@ This section tracks items that need investigation or implementation. Items marke
   - Test case: `src/tests/unsat_function.k`
   - Implementation: `UtilSMT.generateSyntheticFunctionCalls()` in `AbstractSyntax.scala`
 
+### Function Instance Display in Model Output
+
+- [ ] **Show function instances and synthesized functions in model output**
+  - Problem: For models like `mathutil.k` with utility functions, the output shows
+    "No instance variables" and "No extra objects" even though functions exist
+  - Current behavior: Function postconditions are verified via `forall` quantifiers,
+    which is correct but produces no visible model output for the functions
+  - Desired behavior: Show concrete function invocations and results in model output
+  - Cases to handle:
+    1. **Unimplemented functions** (e.g., `fun max(x:Int, y:Int): Int` with no body):
+       - Z3 synthesizes an interpretation but doesn't show it without explicit queries
+       - Add sample invocation constraints to force Z3 to show synthesized values
+       - Example: Show `max(5, 3) = ?` where `?` is Z3's synthesized result
+    2. **Functions with postconditions**: While Z3 verifies correctness via quantifiers,
+       showing sample invocations would improve user understanding
+  - Open questions:
+    - Should this be opt-in (verbose mode) or default?
+    - What sample values to use for invocations?
+    - How to display in the model table format?
+  - Related: External library calls that could throw exceptions may need special handling
+  - See also: `src/examples/mathutil.k`
+
 ### CEGAR Loop Optimization
 
 - [ ] **Early termination when unsat core doesn't involve heap constraints**
