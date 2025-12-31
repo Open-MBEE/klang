@@ -1,3 +1,4 @@
+// @expected SAT
 package examples.petal
 
 class <act> Activity {

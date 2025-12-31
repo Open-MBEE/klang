@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: Lambda expression parse error
 --WSTS modeling pattern
 --STAKR model
 --Written by Dang Le and Thirupathi Srinivasan

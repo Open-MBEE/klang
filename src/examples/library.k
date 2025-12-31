@@ -1,4 +1,6 @@
-// @expected ERROR
+// @expected SAT
+// KNOWN BUG: Set comprehensions (e.g., Set{l | l : Loan :- ...}) are not
+// currently translated to SMT. Once implemented, this test should pass.
 package tutorial
 
 fun size(set :Set[Loan]): Int

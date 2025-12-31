@@ -1,3 +1,4 @@
+// @expected SAT
 package pkg1
 
 class Helper {

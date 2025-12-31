@@ -1,3 +1,4 @@
+// @expected SAT
 ==============================================
 This example shows how a simple state machine
 can be encoded using K and then checked for

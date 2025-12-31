@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: Type check error
 class PhysicalObject {
   -- type checker workaround
   keyParam1 : Real

@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: NullPointerException in parser (TerminalNode access)
 =====
 
 A start on a formal specification of K in K

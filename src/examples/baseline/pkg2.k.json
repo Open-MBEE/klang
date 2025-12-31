@@ -1,0 +1,221 @@
+{
+  "name": "pkg2.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage pkg2 {\n\nimport pkg1\n\nclass Container {\n  helper:Helper\n  name:String\n}\n\n\npackage pkg1 {\n\nclass Helper {\n  value:Int\n}\n\nclass Unused {\n  unused_field:Real\n}\n\n\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Container (mk-Container (helper Ref)(name String)))))\n(declare-datatypes () ((Helper (mk-Helper (value Int)))))\n(declare-datatypes () ((Unused (mk-Unused (unused_field Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Container (sel-Container Container))\n  (lift-Helper (sel-Helper Helper))\n  (lift-Unused (sel-Unused Unused))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Container ((this Ref)) Bool\n  (is-lift-Container (deref this))\n)\n\n(define-fun deref-Container ((this Ref)) Container\n  (sel-Container (deref this))\n)\n\n(define-fun deref-is-Helper ((this Ref)) Bool\n  (is-lift-Helper (deref this))\n)\n\n(define-fun deref-Helper ((this Ref)) Helper\n  (sel-Helper (deref this))\n)\n\n(define-fun deref-is-Unused ((this Ref)) Bool\n  (is-lift-Unused (deref this))\n)\n\n(define-fun deref-Unused ((this Ref)) Unused\n  (sel-Unused (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Container ((this Ref)) Bool\n  (deref-is-Container this)\n)\n\n(define-fun deref-isa-Helper ((this Ref)) Bool\n  (deref-is-Helper this)\n)\n\n(define-fun deref-isa-Unused ((this Ref)) Bool\n  (deref-is-Unused this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; --------------------------------\n;   Getters for class Container:\n; --------------------------------\n\n; --- getters for Container.helper: ---\n\n(define-fun Container!helper ((this Ref)) Ref\n  (helper (deref-Container this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ----------------------------------\n;   Invariant for class Container:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Container Container)\n\n; --- Invariant 1: ---\n\n(define-fun Container.inv1 ((this Ref)) Bool\n  (deref-isa-Helper (Container!helper this))\n)\n\n(assert (! (Container.inv1 1) :named _xkassert0))\n\n\n\n; -------------------------------\n;   Invariant for class Helper:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Helper Helper)\n\n\n\n; -------------------------------\n;   Invariant for class Unused:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Unused Unused)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Container const-1-Container))\n        2 (lift-Helper const-2-Helper))\n        3 (lift-Unused const-3-Unused))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-Container () Container\n  (mk-Container 2 \"!0!\"))\n(define-fun const-2-Helper () Helper\n  (mk-Helper 4))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (helper (sel-Container (select heap 1))))))\n  (is-lift-Helper a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-3-Unused () Unused\n  (mk-Unused 0.0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-Container (mk-Container 2 \"!0!\")))\n                  2\n                  (lift-Helper (mk-Helper 4)))))\n  (store a!1 3 (lift-Unused (mk-Unused 0.0)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["pkg2"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "pkg2",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["pkg1"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Container",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "helper",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["Helper"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "name",
+              "ty": {"type": "StringType"}
+            }
+          ]
+        }],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["pkg1"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "pkg1",
+            "imports": [],
+            "annotations": [],
+            "decls": [
+              {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Helper",
+                "typeparams": [],
+                "extending": [],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "value",
+                  "ty": {"type": "IntType"}
+                }]
+              },
+              {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Unused",
+                "typeparams": [],
+                "extending": [],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "unused_field",
+                  "ty": {"type": "RealType"}
+                }]
+              }
+            ],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["pkg2"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "pkg2",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["pkg1"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Container",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "helper",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Helper"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "name",
+              "ty": {
+                "type": "ElementValue",
+                "element": "String"
+              }
+            }
+          ]
+        }],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["pkg1"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "pkg1",
+            "imports": [],
+            "annotations": [],
+            "decls": [
+              {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Helper",
+                "typeparams": [],
+                "extending": [],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "value",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Integer"
+                  }
+                }]
+              },
+              {
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "Unused",
+                "typeparams": [],
+                "extending": [],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "unused_field",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Double"
+                  }
+                }]
+              }
+            ],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  }
+}

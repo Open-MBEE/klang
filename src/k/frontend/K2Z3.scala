@@ -548,6 +548,10 @@ object K2Z3 {
     datatypes = null
     hasSoftConstraints = false
     optimize = null  // Will be created lazily if needed via getOptimize()
+    // NOTE: Do NOT close the old Z3 context. Calling ctx.close() can cause Z3
+    // to crash (SIGABRT/SIGSEGV) if there are pending operations or the context
+    // is in an inconsistent state after a timeout. The old context will be
+    // garbage collected eventually. This trades a small memory leak for stability.
     // Create fresh Z3 context and solvers
     ctx = new Context(cfg.asJava)
     params = ctx.mkParams
@@ -591,45 +595,87 @@ object K2Z3 {
   }
 
   /**
+   * Format a Z3 sequence value for display
+   * Converts (seq.++ (seq.unit 1) (seq.unit 2)) to [1, 2]
+   */
+  def formatSequenceValue(seqStr: String): String = {
+    // Handle seq.unit pattern: (seq.unit X)
+    val unitPattern = """\(seq\.unit\s+(-?\d+)\)""".r
+    val elements = unitPattern.findAllMatchIn(seqStr).map(_.group(1)).toList
+    if (elements.nonEmpty) {
+      "[" + elements.mkString(", ") + "]"
+    } else if (seqStr.contains("seq.empty")) {
+      "[]"
+    } else {
+      // Return raw value if we can't parse it
+      seqStr
+    }
+  }
+
+  /**
    * Parse object values from a Z3 expression string, properly handling
    * parenthesized expressions like (/ num denom), (- val), tuples, etc.
    * This is needed because simple space-splitting breaks these expressions.
+   * Also properly handles quoted strings with spaces inside them.
    */
   def parseObjectValues(valueString: String): List[String] = {
-    val objectValuesOrig = valueString.split(' ').map(_.trim).filterNot(_.isEmpty).drop(1)
-    var objectValues = List[String]()
-    
-    var i = 0
-    while (i < objectValuesOrig.length) {
-      var value = objectValuesOrig(i)
-      if (objectValuesOrig(i).contains("Tuple2")) {
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i).contains("Tuple3")) {
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i).contains("(_")) {
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i) == "(/" || objectValuesOrig(i) == "(-") {
-        // Handle Z3 rational numbers like (/ 3.0 2.0) or negative numbers like (- 5)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) value += " " + objectValuesOrig(i)
+    // Tokenize respecting quoted strings and balanced parentheses
+    def tokenize(s: String): List[String] = {
+      var tokens = List[String]()
+      var i = 0
+      while (i < s.length) {
+        // Skip whitespace
+        while (i < s.length && s(i).isWhitespace) i += 1
+        if (i >= s.length) return tokens.reverse
+
+        val start = i
+        s(i) match {
+          case '"' =>
+            // Quoted string - read until closing quote (handling escapes)
+            i += 1
+            while (i < s.length && s(i) != '"') {
+              if (s(i) == '\\' && i + 1 < s.length) i += 2  // Skip escape sequence
+              else i += 1
+            }
+            if (i < s.length) i += 1  // Include closing quote
+            tokens = s.substring(start, i) :: tokens
+          case '(' =>
+            // Parenthesized expression - read until balanced
+            var depth = 1
+            i += 1
+            while (i < s.length && depth > 0) {
+              s(i) match {
+                case '"' =>
+                  // Skip quoted strings inside parens
+                  i += 1
+                  while (i < s.length && s(i) != '"') {
+                    if (s(i) == '\\' && i + 1 < s.length) i += 2
+                    else i += 1
+                  }
+                  if (i < s.length) i += 1
+                case '(' => depth += 1; i += 1
+                case ')' => depth -= 1; i += 1
+                case _ => i += 1
+              }
+            }
+            tokens = s.substring(start, i) :: tokens
+          case ')' =>
+            // Unmatched closing paren - skip it
+            i += 1
+          case _ =>
+            // Regular token - read until whitespace or special char
+            while (i < s.length && !s(i).isWhitespace && s(i) != '(' && s(i) != ')' && s(i) != '"') {
+              i += 1
+            }
+            if (i > start) tokens = s.substring(start, i) :: tokens
+        }
       }
-      objectValues = value :: objectValues
-      i = i + 1
+      tokens.reverse
     }
-    objectValues.reverse
+
+    val allTokens = tokenize(valueString)
+    // Drop first token (class name like "mk-ClassName")
+    if (allTokens.nonEmpty) allTokens.drop(1) else Nil
   }
 
   def getStringForSets(setValue: FuncDecl[_ <: Sort], ty: Type): String = {
@@ -720,44 +766,10 @@ object K2Z3 {
     if (noInstancesForClass && !force) return (visited, Nil)
 
     val objectValuesString = value.subSequence(value.indexOf("mk-"), value.length - 2).toString
-    val objectValuesOrig = objectValuesString.split(' ').map(_.trim).filterNot { _.isEmpty }.drop(1)
-    var objectValues = List[String]()
+    // Use proper tokenizer that respects quoted strings and balanced parentheses
+    val objectValues = parseObjectValues(objectValuesString)
     var printList = List[String]()
     var toPrint = List[String]()
-
-    var i = 0
-    while (i < objectValuesOrig.length) {
-      var value = objectValuesOrig(i)
-      if (objectValuesOrig(i).contains("Tuple2")) {
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i).contains("Tuple3")) {
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i).contains("(_")) {
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-      } else if (objectValuesOrig(i) == "(/" || objectValuesOrig(i) == "(-") {
-        // Handle Z3 rational numbers like (/ 3.0 2.0) or negative numbers like (- 5)
-        i = i + 1
-        value += " " + objectValuesOrig(i)
-        i = i + 1
-        if (i < objectValuesOrig.length) {
-          value += " " + objectValuesOrig(i)
-        }
-      }
-      objectValues = value :: objectValues
-      i = i + 1
-    }
-    objectValues = objectValues.reverse
 
     if (className == "TopLevelDeclarations") return (visited, List(List(name, " - top level -")))
 
@@ -767,10 +779,26 @@ object K2Z3 {
         x =>
           val propType = x._1.getTypeOrError
           if (Misc.isCollection(propType)) {
-            val setName = x._2.split("!").last.replace(")", "")
-            val setValue = z3Model.getFuncDecls.find { x => x.getName.toString == setName }
-            if (setValue.isEmpty) x._1.name + ":: [Empty Seq]"
-            else x._1.name + ":: " + getStringForSets(setValue.get, propType)
+            // Check if this is a Seq type - Seqs have inline (seq...) values, not FuncDecl references
+            val collKind = Misc.getCollectionKind(propType)
+            if (collKind == SeqKind) {
+              // For Seq, look for (seq...) expressions in the value
+              val seqValue = x._2
+              if (seqValue.contains("(seq.")) {
+                x._1.name + ":: " + formatSequenceValue(seqValue)
+              } else if (seqValue.contains("seq.empty") || seqValue == "empty") {
+                x._1.name + ":: []"
+              } else {
+                // Might be a reference to a sequence variable
+                x._1.name + ":: " + seqValue
+              }
+            } else {
+              // For Set/Bag, use the FuncDecl lookup
+              val setName = x._2.split("!").last.replace(")", "")
+              val setValue = z3Model.getFuncDecls.find { x => x.getName.toString == setName }
+              if (setValue.isEmpty) x._1.name + ":: [Empty]"
+              else x._1.name + ":: " + getStringForSets(setValue.get, propType)
+            }
           } else if (!TypeChecker.isPrimitiveType(propType)) {
             toPrint = x._2 :: toPrint
             (x._1.name + ":: Ref " + x._2)
@@ -817,24 +845,6 @@ object K2Z3 {
       logDebug(z3Model.toString)
 
       // log("<<++")
-
-      /**
-       * Format a Z3 sequence value for display
-       * Converts (seq.++ (seq.unit 1) (seq.unit 2)) to [1, 2]
-       */
-      def formatSequenceValue(seqStr: String): String = {
-        // Handle seq.unit pattern: (seq.unit X)
-        val unitPattern = """\(seq\.unit\s+(-?\d+)\)""".r
-        val elements = unitPattern.findAllMatchIn(seqStr).map(_.group(1)).toList
-        if (elements.nonEmpty) {
-          "[" + elements.mkString(", ") + "]"
-        } else if (seqStr.contains("seq.empty")) {
-          "[]"
-        } else {
-          // Return raw value if we can't parse it
-          seqStr
-        }
-      }
 
       var rows: List[List[String]] = List(List("Variable", "Ref", "Value"))
       var extraRows: List[List[String]] = List(List("Variable", "Ref", "Value"))

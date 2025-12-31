@@ -1,3 +1,4 @@
+// @expected SAT
 ==============================================
 This example shows how one can encode Allen
 logic using a simple Event class, and then 

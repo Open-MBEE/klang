@@ -18,6 +18,11 @@ object UnifiedSolver {
   type KModel = k.frontend.Model
   type Z3Model = com.microsoft.z3.Model
 
+  // Helper to print only when not in silent mode (batch mode)
+  private def log(msg: String): Unit = {
+    if (!K2Z3.silent) println(s"[UnifiedSolver]$msg")
+  }
+
   // ============================================================================
   // Heap Strategy for CEGAR
   // ============================================================================
@@ -162,7 +167,7 @@ object UnifiedSolver {
    * Main entry point: solve a K model with unified loop
    */
   def solve(model: KModel, smtModel: String, printModel: Boolean, timeoutMs: Option[Long] = None): SolveResult = {
-    println("[UnifiedSolver] Starting unified solver...")
+    log(" Starting unified solver...")
     reset()
     solving = true
 
@@ -980,7 +985,7 @@ object UnifiedSolver {
 
   private def unifiedLoop(model: KModel, smtModel: String, config: SolveConfig,
                           printModel: Boolean): SolveResult = {
-    println("[UnifiedSolver] Entering unified loop...")
+    log(" Entering unified loop...")
     iteration = 0
     var done = false
     var result: SolveResult = SolveResult.Unknown("Not started")
@@ -1044,7 +1049,7 @@ object UnifiedSolver {
           bestSoFar = Some(z3Model)
           // Set z3Model for potential printing (but don't print here - let Frontend handle it)
           K2Z3.z3Model = z3Model
-          println("[UnifiedSolver] SAT - verifying solution against hard constraints")
+          log(" SAT - verifying solution against hard constraints")
           log("SAT - verifying solution against hard constraints")
 
           // Verify against hard constraints first
@@ -1056,7 +1061,7 @@ object UnifiedSolver {
           val satisfiesHardConstraints = verifyHardConstraints(model, currentSMT, z3Model, currentScenario)
           
           if (!satisfiesHardConstraints) {
-            println("[UnifiedSolver] ⚠️  Solution does not satisfy all hard constraints")
+            log(" ⚠️  Solution does not satisfy all hard constraints")
             log("⚠️  Solution does not satisfy all hard constraints")
             
             // For models with dynamic classes (like lisp.k with recursive types),
@@ -1076,7 +1081,7 @@ object UnifiedSolver {
               result = SolveResult.Unknown("Solver returned SAT but model verification failed")
             }
           } else {
-            println("[UnifiedSolver] ✓ Solution verified - satisfies all hard constraints")
+            log(" ✓ Solution verified - satisfies all hard constraints")
             log("✓ Solution verified - satisfies all hard constraints")
             
             // CEGAR: verify external calls
@@ -1327,7 +1332,7 @@ object UnifiedSolver {
       val nonQuantifiedExps = boolExps.filterNot(containsQuantifierExpr)
 
       if (nonQuantifiedExps.isEmpty) {
-        println("[UnifiedSolver] All constraints are quantified, cannot get partial model")
+        log(" All constraints are quantified, cannot get partial model")
         return
       }
 
@@ -1365,7 +1370,7 @@ object UnifiedSolver {
         }
       } else {
         if (shouldPrint) {
-          println(s"[UnifiedSolver] Could not get partial model: Optimize returned $status")
+          log(s" Could not get partial model: Optimize returned $status")
         }
       }
 
@@ -1377,7 +1382,7 @@ object UnifiedSolver {
       }
     } catch {
       case e: Exception =>
-        println(s"[UnifiedSolver] Could not get partial model: ${e.getMessage}")
+        log(s" Could not get partial model: ${e.getMessage}")
     }
   }
 
@@ -1513,29 +1518,29 @@ object UnifiedSolver {
       // STEP 1: Use regular Solver first to get authoritative SAT/UNSAT
       // The Optimize API can return incorrect SAT results, so we use regular Solver
       // to determine the true satisfiability, then use Optimize only for partial models.
-      println("[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...")
+      log(" Step 1: Checking satisfiability with regular Solver...")
       val authoritativeResult = solveWithRegularSolver(model, smtModel, boolExpsList, config)
       
       authoritativeResult match {
         case SolveResult.Unsat =>
           // Confirmed UNSAT - use Optimize to get a partial model for debugging
-          println("[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...")
+          log(" Regular Solver: UNSAT - attempting to get partial model via Optimize...")
           tryGetPartialModel(boolExpsList, config, Some(model), Some(smtModel))
           return SolveResult.Unsat
           
         case SolveResult.Timeout =>
-          println("[UnifiedSolver] Regular Solver: TIMEOUT")
+          log(" Regular Solver: TIMEOUT")
           return SolveResult.Timeout
           
         case SolveResult.Unknown(reason) =>
           // Solver couldn't determine - fall through to Optimize for best-effort
-          println(s"[UnifiedSolver] Regular Solver: UNKNOWN ($reason) - falling back to Optimize")
+          log(s" Regular Solver: UNKNOWN ($reason) - falling back to Optimize")
           
         case SolveResult.Sat(z3Model) =>
           // SAT confirmed - we can return this directly or continue with Optimize
           // For now, continue with the existing Optimize flow for consistency
           // (it will verify and potentially find more optimized solutions)
-          println("[UnifiedSolver] Regular Solver: SAT - continuing with Optimize for verification")
+          log(" Regular Solver: SAT - continuing with Optimize for verification")
       }
 
       // STEP 2: Use Optimize API for incremental solving and partial model support
@@ -2006,9 +2011,9 @@ object UnifiedSolver {
     z3Model: Z3Model,
     scenarioName: Option[String] = None
   ): Boolean = {
-    println("[UnifiedSolver] Starting verification of model against hard constraints...")
+    log(" Starting verification of model against hard constraints...")
     if (z3Model == null) {
-      println("[UnifiedSolver] ✗ Model is null - cannot verify")
+      log(" ✗ Model is null - cannot verify")
       return false
     }
     
@@ -2041,11 +2046,11 @@ object UnifiedSolver {
         tempFile.getAbsolutePath, Array(), Array(), Array(), Array())
       
       if (boolExps.isEmpty) {
-        println("[UnifiedSolver] ⚠ No hard constraints found to verify")
+        log(" ⚠ No hard constraints found to verify")
         return true // If no constraints, consider it valid
       }
       
-      println(s"[UnifiedSolver] Verifying ${boolExps.length} hard constraints...")
+      log(s" Verifying ${boolExps.length} hard constraints...")
       
       // Add all hard constraints to the verification solver
       for (expr <- boolExps) {
@@ -2094,7 +2099,7 @@ object UnifiedSolver {
           skippedQuantified += 1
           if (debug) {
             val constraintStr = boolExpr.simplify().toString
-            println(s"[UnifiedSolver] ⊢ Skipping quantified constraint (already verified by solver): ${constraintStr.take(100)}...")
+            log(s" ⊢ Skipping quantified constraint (already verified by solver): ${constraintStr.take(100)}...")
           }
         } else {
           try {
@@ -2107,7 +2112,7 @@ object UnifiedSolver {
               }
               if (!isTrue) {
                 val constraintStr = boolExpr.simplify().toString
-                println(s"[UnifiedSolver] ✗ Constraint not satisfied: ${constraintStr.take(200)}")
+                log(s" ✗ Constraint not satisfied: ${constraintStr.take(200)}")
                 failedConstraints += constraintStr
                 allSatisfied = false
                 // Don't break - continue to find all failures for debugging
@@ -2116,15 +2121,15 @@ object UnifiedSolver {
               // eval returned null - this means the constraint couldn't be evaluated
               // This is a problem - the model might be incomplete
               val constraintStr = boolExpr.simplify().toString
-              println(s"[UnifiedSolver] ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
+              log(s" ✗ Constraint evaluation returned null: ${constraintStr.take(200)}")
               failedConstraints += s"${constraintStr.take(200)} (eval returned null)"
                 allSatisfied = false
             }
           } catch {
             case e: Throwable =>
               val constraintStr = boolExpr.simplify().toString
-              println(s"[UnifiedSolver] ✗ Error evaluating constraint: ${e.getMessage}")
-              println(s"[UnifiedSolver]     Constraint: ${constraintStr.take(200)}")
+              log(s" ✗ Error evaluating constraint: ${e.getMessage}")
+              log(s"     Constraint: ${constraintStr.take(200)}")
               failedConstraints += s"${constraintStr.take(200)} (error: ${e.getMessage})"
               // If we can't evaluate, assume it's not satisfied
               allSatisfied = false
@@ -2133,7 +2138,7 @@ object UnifiedSolver {
       }
       
       if (skippedQuantified > 0) {
-        println(s"[UnifiedSolver] ⊢ Skipped $skippedQuantified quantified constraint(s) (verified by solver)")
+        log(s" ⊢ Skipped $skippedQuantified quantified constraint(s) (verified by solver)")
       }
       
       // Also check scenario assumption if provided
@@ -2168,23 +2173,23 @@ object UnifiedSolver {
       }
       
       if (allSatisfied) {
-        println(s"[UnifiedSolver] ✓ All $totalConstraints hard constraints satisfied")
+        log(s" ✓ All $totalConstraints hard constraints satisfied")
         true
       } else {
-        println(s"[UnifiedSolver] ✗ ${failedConstraints.length} hard constraint(s) not satisfied out of $totalConstraints")
+        log(s" ✗ ${failedConstraints.length} hard constraint(s) not satisfied out of $totalConstraints")
         if (failedConstraints.nonEmpty && failedConstraints.length <= 10) {
           failedConstraints.take(10).foreach { fc =>
-            println(s"[UnifiedSolver]     - ${fc.take(150)}")
+            log(s"     - ${fc.take(150)}")
         }
           if (failedConstraints.length > 10) {
-            println(s"[UnifiedSolver]     ... and ${failedConstraints.length - 10} more")
+            log(s"     ... and ${failedConstraints.length - 10} more")
           }
         }
         false
       }
     } catch {
       case e: Throwable =>
-        println(s"[UnifiedSolver] ERROR during verification: ${e.getMessage}")
+        log(s" ERROR during verification: ${e.getMessage}")
         if (debug) {
           e.printStackTrace()
         }
@@ -2667,17 +2672,6 @@ object UnifiedSolver {
 """
   }
 
-  private def log(msg: String): Unit = {
-    // Always log verification messages - they're critical for debugging
-    val isVerificationMsg = msg.contains("✗") || msg.contains("✓") || msg.contains("verifying") || msg.contains("verified") || msg.contains("constraint") || 
-                           msg.contains("ERROR") || msg.contains("WARNING") || msg.contains("Solution does not satisfy") ||
-                           msg.contains("Trying") || msg.contains("Increased") || msg.contains("iteration") || msg.contains("canIncrease") ||
-                           msg.contains("Found") || msg.contains("classes") || msg.contains("Processing model") || msg.contains("package")
-    // Always print verification-related messages
-    if (debug || K2Z3.debug || isVerificationMsg) {
-      println(s"[UnifiedSolver] $msg")
-    }
-  }
 
   /**
    * Result of solving

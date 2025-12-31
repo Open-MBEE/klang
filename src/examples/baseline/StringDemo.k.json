@@ -1,0 +1,1290 @@
+{
+  "name": "StringDemo.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage examples.StringDemo {\n\nclass Greeting {\n  hello:String\n  name:String\n  message:String\n\n  req hello = \"Hello\"\n\n  req name = \"World\"\n\n  req message = hello + \", \" + name + \"!\"\n}\n\nclass EmailValidator {\n  email:String\n  isValid:Bool\n\n  req email = \"user@example.com\"\n\n  req email.length >= 5\n\n  req email.length <= 50\n\n  req email.contains(\"@\")\n\n  req email.endsWith(\".com\")\n\n  req isValid = true\n}\n\nclass FileName {\n  name:String\n  extension:String\n\n  req name = \"document.pdf\"\n\n  req name.startsWith(\"doc\")\n\n  req name.endsWith(\".pdf\")\n\n  req name.contains(\".\")\n\n  req extension = \"pdf\"\n}\n\nclass StringParsing {\n  text:String\n  firstWord:String\n  commaPos:Int\n\n  req text = \"Hello, World\"\n\n  req firstWord = text.substring(0,5)\n\n  req commaPos = text.indexOf(\",\")\n}\n\ngreeting:Greeting\n\nemailValidator:EmailValidator\n\nfileName:FileName\n\nstringParsing:StringParsing\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (greeting Ref)(emailValidator Ref)(fileName Ref)(stringParsing Ref)))))\n(declare-datatypes () ((Greeting (mk-Greeting (hello String)(name String)(message String)))))\n(declare-datatypes () ((EmailValidator (mk-EmailValidator (email String)(isValid Bool)))))\n(declare-datatypes () ((FileName (mk-FileName (name String)(extension String)))))\n(declare-datatypes () ((StringParsing (mk-StringParsing (text String)(firstWord String)(commaPos Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Greeting (sel-Greeting Greeting))\n  (lift-EmailValidator (sel-EmailValidator EmailValidator))\n  (lift-FileName (sel-FileName FileName))\n  (lift-StringParsing (sel-StringParsing StringParsing))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Greeting ((this Ref)) Bool\n  (is-lift-Greeting (deref this))\n)\n\n(define-fun deref-Greeting ((this Ref)) Greeting\n  (sel-Greeting (deref this))\n)\n\n(define-fun deref-is-EmailValidator ((this Ref)) Bool\n  (is-lift-EmailValidator (deref this))\n)\n\n(define-fun deref-EmailValidator ((this Ref)) EmailValidator\n  (sel-EmailValidator (deref this))\n)\n\n(define-fun deref-is-FileName ((this Ref)) Bool\n  (is-lift-FileName (deref this))\n)\n\n(define-fun deref-FileName ((this Ref)) FileName\n  (sel-FileName (deref this))\n)\n\n(define-fun deref-is-StringParsing ((this Ref)) Bool\n  (is-lift-StringParsing (deref this))\n)\n\n(define-fun deref-StringParsing ((this Ref)) StringParsing\n  (sel-StringParsing (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Greeting ((this Ref)) Bool\n  (deref-is-Greeting this)\n)\n\n(define-fun deref-isa-EmailValidator ((this Ref)) Bool\n  (deref-is-EmailValidator this)\n)\n\n(define-fun deref-isa-FileName ((this Ref)) Bool\n  (deref-is-FileName this)\n)\n\n(define-fun deref-isa-StringParsing ((this Ref)) Bool\n  (deref-is-StringParsing this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.greeting: ---\n\n(define-fun TopLevelDeclarations!greeting ((this Ref)) Ref\n  (greeting (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.emailValidator: ---\n\n(define-fun TopLevelDeclarations!emailValidator ((this Ref)) Ref\n  (emailValidator (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.fileName: ---\n\n(define-fun TopLevelDeclarations!fileName ((this Ref)) Ref\n  (fileName (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.stringParsing: ---\n\n(define-fun TopLevelDeclarations!stringParsing ((this Ref)) Ref\n  (stringParsing (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------\n;   Getters for class Greeting:\n; -------------------------------\n\n; --- getters for Greeting.hello: ---\n\n(define-fun Greeting!hello ((this Ref)) String\n  (hello (deref-Greeting this))\n)\n\n; --- getters for Greeting.name: ---\n\n(define-fun Greeting!name ((this Ref)) String\n  (name (deref-Greeting this))\n)\n\n; --- getters for Greeting.message: ---\n\n(define-fun Greeting!message ((this Ref)) String\n  (message (deref-Greeting this))\n)\n\n; -------------------------------------\n;   Getters for class EmailValidator:\n; -------------------------------------\n\n; --- getters for EmailValidator.email: ---\n\n(define-fun EmailValidator!email ((this Ref)) String\n  (email (deref-EmailValidator this))\n)\n\n; --- getters for EmailValidator.isValid: ---\n\n(define-fun EmailValidator!isValid ((this Ref)) Bool\n  (isValid (deref-EmailValidator this))\n)\n\n; -------------------------------\n;   Getters for class FileName:\n; -------------------------------\n\n; --- getters for FileName.name: ---\n\n(define-fun FileName!name ((this Ref)) String\n  (name (deref-FileName this))\n)\n\n; --- getters for FileName.extension: ---\n\n(define-fun FileName!extension ((this Ref)) String\n  (extension (deref-FileName this))\n)\n\n; ------------------------------------\n;   Getters for class StringParsing:\n; ------------------------------------\n\n; --- getters for StringParsing.text: ---\n\n(define-fun StringParsing!text ((this Ref)) String\n  (text (deref-StringParsing this))\n)\n\n; --- getters for StringParsing.firstWord: ---\n\n(define-fun StringParsing!firstWord ((this Ref)) String\n  (firstWord (deref-StringParsing this))\n)\n\n; --- getters for StringParsing.commaPos: ---\n\n(define-fun StringParsing!commaPos ((this Ref)) Int\n  (commaPos (deref-StringParsing this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Greeting (TopLevelDeclarations!greeting this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-EmailValidator (TopLevelDeclarations!emailValidator this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-FileName (TopLevelDeclarations!fileName this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (deref-isa-StringParsing (TopLevelDeclarations!stringParsing this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n\n\n; ---------------------------------\n;   Invariant for class Greeting:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Greeting Greeting)\n(declare-const const-2-Greeting Greeting)\n\n; --- Invariant 1: ---\n\n(define-fun Greeting.inv1 ((this Ref)) Bool\n  (= (Greeting!hello this) \"Hello\")\n)\n\n(assert (! (Greeting.inv1 1) :named _xkassert4))\n(assert (! (Greeting.inv1 2) :named _xkassert5))\n\n; --- Invariant 2: ---\n\n(define-fun Greeting.inv2 ((this Ref)) Bool\n  (= (Greeting!name this) \"World\")\n)\n\n(assert (! (Greeting.inv2 1) :named _xkassert6))\n(assert (! (Greeting.inv2 2) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun Greeting.inv3 ((this Ref)) Bool\n  (= (Greeting!message this) (str.++ (str.++ (str.++ (Greeting!hello this) \", \") (Greeting!name this)) \"!\"))\n)\n\n(assert (! (Greeting.inv3 1) :named _xkassert8))\n(assert (! (Greeting.inv3 2) :named _xkassert9))\n\n\n\n; ---------------------------------------\n;   Invariant for class EmailValidator:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-EmailValidator EmailValidator)\n\n; --- Invariant 1: ---\n\n(define-fun EmailValidator.inv1 ((this Ref)) Bool\n  (= (EmailValidator!email this) \"user@example.com\")\n)\n\n(assert (! (EmailValidator.inv1 5) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun EmailValidator.inv2 ((this Ref)) Bool\n  (>= (str.len (EmailValidator!email this)) 5)\n)\n\n(assert (! (EmailValidator.inv2 5) :named _xkassert11))\n\n; --- Invariant 3: ---\n\n(define-fun EmailValidator.inv3 ((this Ref)) Bool\n  (<= (str.len (EmailValidator!email this)) 50)\n)\n\n(assert (! (EmailValidator.inv3 5) :named _xkassert12))\n\n; --- Invariant 4: ---\n\n(define-fun EmailValidator.inv4 ((this Ref)) Bool\n  (str.contains (EmailValidator!email this) \"@\")\n)\n\n(assert (! (EmailValidator.inv4 5) :named _xkassert13))\n\n; --- Invariant 5: ---\n\n(define-fun EmailValidator.inv5 ((this Ref)) Bool\n  (str.suffixof \".com\" (EmailValidator!email this))\n)\n\n(assert (! (EmailValidator.inv5 5) :named _xkassert14))\n\n; --- Invariant 6: ---\n\n(define-fun EmailValidator.inv6 ((this Ref)) Bool\n  (= (EmailValidator!isValid this) true)\n)\n\n(assert (! (EmailValidator.inv6 5) :named _xkassert15))\n\n\n\n; ---------------------------------\n;   Invariant for class FileName:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-FileName FileName)\n\n; --- Invariant 1: ---\n\n(define-fun FileName.inv1 ((this Ref)) Bool\n  (= (FileName!name this) \"document.pdf\")\n)\n\n(assert (! (FileName.inv1 6) :named _xkassert16))\n\n; --- Invariant 2: ---\n\n(define-fun FileName.inv2 ((this Ref)) Bool\n  (str.prefixof \"doc\" (FileName!name this))\n)\n\n(assert (! (FileName.inv2 6) :named _xkassert17))\n\n; --- Invariant 3: ---\n\n(define-fun FileName.inv3 ((this Ref)) Bool\n  (str.suffixof \".pdf\" (FileName!name this))\n)\n\n(assert (! (FileName.inv3 6) :named _xkassert18))\n\n; --- Invariant 4: ---\n\n(define-fun FileName.inv4 ((this Ref)) Bool\n  (str.contains (FileName!name this) \".\")\n)\n\n(assert (! (FileName.inv4 6) :named _xkassert19))\n\n; --- Invariant 5: ---\n\n(define-fun FileName.inv5 ((this Ref)) Bool\n  (= (FileName!extension this) \"pdf\")\n)\n\n(assert (! (FileName.inv5 6) :named _xkassert20))\n\n\n\n; --------------------------------------\n;   Invariant for class StringParsing:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-StringParsing StringParsing)\n(declare-const const-4-StringParsing StringParsing)\n\n; --- Invariant 1: ---\n\n(define-fun StringParsing.inv1 ((this Ref)) Bool\n  (= (StringParsing!text this) \"Hello, World\")\n)\n\n(assert (! (StringParsing.inv1 3) :named _xkassert21))\n(assert (! (StringParsing.inv1 4) :named _xkassert22))\n\n; --- Invariant 2: ---\n\n(define-fun StringParsing.inv2 ((this Ref)) Bool\n  (= (StringParsing!firstWord this) (str.substr (StringParsing!text this) 0 (- 5 0)))\n)\n\n(assert (! (StringParsing.inv2 3) :named _xkassert23))\n(assert (! (StringParsing.inv2 4) :named _xkassert24))\n\n; --- Invariant 3: ---\n\n(define-fun StringParsing.inv3 ((this Ref)) Bool\n  (= (StringParsing!commaPos this) (str.indexof (StringParsing!text this) \",\" 0))\n)\n\n(assert (! (StringParsing.inv3 3) :named _xkassert25))\n(assert (! (StringParsing.inv3 4) :named _xkassert26))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Greeting const-1-Greeting))\n        2 (lift-Greeting const-2-Greeting))\n        5 (lift-EmailValidator const-5-EmailValidator))\n        6 (lift-FileName const-6-FileName))\n        3 (lift-StringParsing const-3-StringParsing))\n        4 (lift-StringParsing const-4-StringParsing))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert7 () Bool\n  (= (name (sel-Greeting (select heap 2))) \"World\"))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (fileName (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-FileName a!1)))\n(define-fun _xkassert19 () Bool\n  (str.contains (name (sel-FileName (select heap 6))) \".\"))\n(define-fun _xkassert13 () Bool\n  (str.contains (email (sel-EmailValidator (select heap 5))) \"@\"))\n(define-fun _xkassert5 () Bool\n  (= (hello (sel-Greeting (select heap 2))) \"Hello\"))\n(define-fun _xkassert24 () Bool\n  (let ((a!1 (str.substr (text (sel-StringParsing (select heap 4))) 0 (- 5 0))))\n  (= (firstWord (sel-StringParsing (select heap 4))) a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (str.++ (hello (sel-Greeting (select heap 2)))\n                   \", \"\n                   (name (sel-Greeting (select heap 2)))\n                   \"!\")))\n  (= (message (sel-Greeting (select heap 2))) a!1)))\n(define-fun _xkassert21 () Bool\n  (= (text (sel-StringParsing (select heap 3))) \"Hello, World\"))\n(define-fun _xkassert26 () Bool\n  (let ((a!1 (str.indexof (text (sel-StringParsing (select heap 4))) \",\" 0)))\n  (= (commaPos (sel-StringParsing (select heap 4))) a!1)))\n(define-fun const-3-StringParsing () StringParsing\n  (mk-StringParsing \"Hello, World\" \"Hello\" 5))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (greeting (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Greeting a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (str.++ (hello (sel-Greeting (select heap 1)))\n                   \", \"\n                   (name (sel-Greeting (select heap 1)))\n                   \"!\")))\n  (= (message (sel-Greeting (select heap 1))) a!1)))\n(define-fun _xkassert22 () Bool\n  (= (text (sel-StringParsing (select heap 4))) \"Hello, World\"))\n(define-fun _xkassert10 () Bool\n  (= (email (sel-EmailValidator (select heap 5))) \"user@example.com\"))\n(define-fun _xkassert14 () Bool\n  (str.suffixof \".com\" (email (sel-EmailValidator (select heap 5)))))\n(define-fun const-2-Greeting () Greeting\n  (mk-Greeting \"Hello\" \"World\" \"Hello, World!\"))\n(define-fun _xkassert20 () Bool\n  (= (extension (sel-FileName (select heap 6))) \"pdf\"))\n(define-fun _xkassert17 () Bool\n  (str.prefixof \"doc\" (name (sel-FileName (select heap 6)))))\n(define-fun const-6-FileName () FileName\n  (mk-FileName \"document.pdf\" \"pdf\"))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (str.len (email (sel-EmailValidator (select heap 5))))))\n  (<= a!1 50)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap\n                   (stringParsing (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringParsing a!1)))\n(define-fun _xkassert16 () Bool\n  (= (name (sel-FileName (select heap 6))) \"document.pdf\"))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (str.len (email (sel-EmailValidator (select heap 5))))))\n  (>= a!1 5)))\n(define-fun const-4-StringParsing () StringParsing\n  (mk-StringParsing \"Hello, World\" \"Hello\" 5))\n(define-fun _xkassert15 () Bool\n  (= (isValid (sel-EmailValidator (select heap 5))) true))\n(define-fun _xkassert23 () Bool\n  (let ((a!1 (str.substr (text (sel-StringParsing (select heap 3))) 0 (- 5 0))))\n  (= (firstWord (sel-StringParsing (select heap 3))) a!1)))\n(define-fun _xkassert6 () Bool\n  (= (name (sel-Greeting (select heap 1))) \"World\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2 5 6 4))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap\n                   (emailValidator (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-EmailValidator a!1)))\n(define-fun const-5-EmailValidator () EmailValidator\n  (mk-EmailValidator \"user@example.com\" true))\n(define-fun _xkassert4 () Bool\n  (= (hello (sel-Greeting (select heap 1))) \"Hello\"))\n(define-fun const-1-Greeting () Greeting\n  (mk-Greeting \"Hello\" \"World\" \"Hello, World!\"))\n(define-fun _xkassert25 () Bool\n  (let ((a!1 (str.indexof (text (sel-StringParsing (select heap 3))) \",\" 0)))\n  (= (commaPos (sel-StringParsing (select heap 3))) a!1)))\n(define-fun _xkassert18 () Bool\n  (str.suffixof \".pdf\" (name (sel-FileName (select heap 6)))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 2 5 6 4)))\n                  1\n                  (lift-Greeting (mk-Greeting \"Hello\" \"World\" \"Hello, World!\")))))\n(let ((a!2 (store (store a!1\n                         2\n                         (lift-Greeting (mk-Greeting \"Hello\"\n                                                     \"World\"\n                                                     \"Hello, World!\")))\n                  5\n                  (lift-EmailValidator\n                    (mk-EmailValidator \"user@example.com\" true)))))\n(let ((a!3 (store (store a!2\n                         6\n                         (lift-FileName (mk-FileName \"document.pdf\" \"pdf\")))\n                  3\n                  (lift-StringParsing\n                    (mk-StringParsing \"Hello, World\" \"Hello\" 5)))))\n  (store a!3 4 (lift-StringParsing (mk-StringParsing \"Hello, World\" \"Hello\" 5)))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "StringDemo"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.StringDemo",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Greeting",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "hello",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "name",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "message",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "hello",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "Hello",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "name",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "World",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "message",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "type": "BinExp",
+                      "op": "Plus",
+                      "exp1": {
+                        "type": "BinExp",
+                        "op": "Plus",
+                        "exp1": {
+                          "ident": "hello",
+                          "type": "IdentExp"
+                        },
+                        "exp2": {
+                          "string": ", ",
+                          "type": "StringLiteral"
+                        }
+                      },
+                      "exp2": {
+                        "ident": "name",
+                        "type": "IdentExp"
+                      }
+                    },
+                    "exp2": {
+                      "string": "!",
+                      "type": "StringLiteral"
+                    }
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "EmailValidator",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "email",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "isValid",
+                "ty": {"type": "BoolType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "email",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "user@example.com",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "GTE",
+                  "exp1": {
+                    "ident": "length",
+                    "exp": {
+                      "ident": "email",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "i": 5,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "ident": "length",
+                    "exp": {
+                      "ident": "email",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "i": 50,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "contains",
+                    "exp": {
+                      "ident": "email",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": "@",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "endsWith",
+                    "exp": {
+                      "ident": "email",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": ".com",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "isValid",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "b": true,
+                    "type": "LiteralBoolean"
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "FileName",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "name",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "extension",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "name",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "document.pdf",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "startsWith",
+                    "exp": {
+                      "ident": "name",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": "doc",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "endsWith",
+                    "exp": {
+                      "ident": "name",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": ".pdf",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "contains",
+                    "exp": {
+                      "ident": "name",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": ".",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "extension",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "pdf",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "StringParsing",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "text",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "firstWord",
+                "ty": {"type": "StringType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "commaPos",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "string": "Hello, World",
+                    "type": "StringLiteral"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "firstWord",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "substring",
+                      "exp": {
+                        "ident": "text",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [
+                      {
+                        "type": "PositionalArgument",
+                        "exp": {
+                          "i": 0,
+                          "type": "LiteralInteger"
+                        }
+                      },
+                      {
+                        "type": "PositionalArgument",
+                        "exp": {
+                          "i": 5,
+                          "type": "LiteralInteger"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "commaPos",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "indexOf",
+                      "exp": {
+                        "ident": "text",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "string": ",",
+                        "type": "StringLiteral"
+                      }
+                    }]
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "greeting",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Greeting"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "emailValidator",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["EmailValidator"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fileName",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["FileName"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "stringParsing",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["StringParsing"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "StringDemo"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.StringDemo",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Greeting",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "hello",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "name",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "message",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "hello",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "Hello"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "World"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "message",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "Plus"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "Plus"
+                                },
+                                {
+                                  "element": "hello",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": ", "
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "name",
+                              "type": "ElementValue"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "!"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "EmailValidator",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "email",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "isValid",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "email",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "user@example.com"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "GTE"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "email",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "length"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 5
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LTE"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "email",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "length"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 50
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "email",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "contains"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "@"
+                    }
+                  ]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "email",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "endsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": ".com"
+                    }
+                  ]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "isValid",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralBoolean",
+                      "boolean": "true"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "FileName",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "name",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "extension",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "document.pdf"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "name",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "startsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "doc"
+                    }
+                  ]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "name",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "endsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": ".pdf"
+                    }
+                  ]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "name",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "contains"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "."
+                    }
+                  ]
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "extension",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "pdf"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "StringParsing",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "text",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "firstWord",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "String"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "commaPos",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "text",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "Hello, World"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "firstWord",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "text",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "substring"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 0
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 5
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "commaPos",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "text",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "indexOf"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": ","
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "greeting",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Greeting"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "emailValidator",
+            "ty": {
+              "type": "ElementValue",
+              "element": "EmailValidator"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fileName",
+            "ty": {
+              "type": "ElementValue",
+              "element": "FileName"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "stringParsing",
+            "ty": {
+              "type": "ElementValue",
+              "element": "StringParsing"
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  }
+}

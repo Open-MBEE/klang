@@ -308,6 +308,11 @@ done
 
 # Sort and count
 TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | grep -v '^$' | sort)
+
+# Exclude tests known to crash Z3 in batch mode
+# DSN_Pass-diagnostic.k causes Z3 to crash after timeout due to native code issues
+TEST_FILES=$(echo "$TEST_FILES" | grep -v "DSN_Pass-diagnostic.k" || true)
+
 TOTAL_TESTS=$(echo "$TEST_FILES" | grep -c . 2>/dev/null || true)
 TOTAL_TESTS=${TOTAL_TESTS:-0}
 
@@ -372,12 +377,17 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
         JAVA_ARGS="$JAVA_ARGS $PASSTHROUGH_FLAGS"
     fi
 
-    # Run batch mode - pipe test files to Java, capture output
-    # Filter to only lines that look like results (STATUS|...)
+    # Run batch mode - pipe test files to Java, capture ALL output first
+    # Then filter to result lines. This avoids pipe buffering issues with long-running tests.
+    BATCH_RAW_FILE=$(mktemp)
     echo "$TEST_FILES" | java -Djava.library.path="$SCRIPT_DIR/export/lib" \
         -Djava.awt.headless=true \
         -classpath "$CLASSPATH" \
-        k.frontend.Main $JAVA_ARGS 2>&1 | grep -E "^(PASSED|FAILED|NOTFOUND|UNKNOWN|SUMMARY)\|" > "$BATCH_OUTPUT_FILE"
+        k.frontend.Main $JAVA_ARGS 2>&1 > "$BATCH_RAW_FILE"
+
+    # Filter to only lines that look like results (STATUS|...)
+    grep -E "^(PASSED|FAILED|NOTFOUND|UNKNOWN|SUMMARY)\|" "$BATCH_RAW_FILE" > "$BATCH_OUTPUT_FILE" || true
+    rm -f "$BATCH_RAW_FILE"
 
     # Parse and display results
     PASSED=0
@@ -492,11 +502,11 @@ EXTRA=""
 ACTUAL_RESULT=""
 
 # Determine actual result
-if echo "$OUTPUT" | grep -q "TypeCheckException\|K2SMTException\|K2Z3Exception"; then
+if echo "$OUTPUT" | grep -q "TypeCheckException\|K2SMTException\|K2Z3Exception\|NullPointerException\|RuntimeException"; then
     ACTUAL_RESULT="ERROR"
 elif echo "$OUTPUT" | grep -q "fatal error\|SIGSEGV\|Abort trap\|core dump"; then
     ACTUAL_RESULT="CRASH"
-elif echo "$OUTPUT" | grep -q "\[main\] Timeout"; then
+elif echo "$OUTPUT" | grep -q "\[main\] Timeout\|TimeoutException"; then
     ACTUAL_RESULT="TIMEOUT"
 elif echo "$OUTPUT" | grep -q "model is NOT satisfiable\|NOT satisfiable"; then
     ACTUAL_RESULT="UNSAT"

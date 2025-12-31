@@ -1,3 +1,8 @@
+// @expected SAT
+// KNOWN BUGS:
+// 1. Missing import: nasa.jpl.physics not found
+// 2. Parse error around weight property in Instrument class
+// 3. Type error: assignment expressions in function bodies need Unit type
 package nasa.jpl.spacecraft
 
 import nasa.jpl.physics

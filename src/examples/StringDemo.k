@@ -1,3 +1,4 @@
+// @expected SAT
 // String Operations Demo
 // Demonstrates K string capabilities with Z3 solver
 // Features: concatenation, length, predicates, substring, indexOf

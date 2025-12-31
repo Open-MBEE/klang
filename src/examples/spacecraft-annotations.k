@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUGS: Same as spacecraft.k - missing imports, parse errors, type errors
 package nasa.jpl.spacecraft
 
 import nasa.jpl.physics

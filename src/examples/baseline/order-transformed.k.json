@@ -1,0 +1,1061 @@
+{
+  "name": "order-transformed.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage examples.order {\n\nclass Event {\n  t:Real\n}\n\nclass Scheduler {\n  power_on:Event\n  pick_boot_image:Event\n  establish_clock:Event\n  boot:Event\n  evr_service_start:Event\n  init_evr:Event\n  power_on_star_sensor:Event\n  mount_flash:Event\n  power_on_navigation:Event\n  power_off_cameras:Event\n\n  req power_on.t < power_off_cameras.t\n\n  req power_off_cameras.t < pick_boot_image.t\n\n  req pick_boot_image.t < boot.t\n\n  req pick_boot_image.t < power_on_star_sensor.t\n\n  req boot.t < establish_clock.t\n\n  req power_on_star_sensor.t < establish_clock.t\n\n  req establish_clock.t < init_evr.t\n\n  req init_evr.t < evr_service_start.t\n\n  req establish_clock.t < mount_flash.t\n\n  req mount_flash.t < power_on_navigation.t\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Event (mk-Event (t Real)))))\n(declare-datatypes () ((Scheduler (mk-Scheduler (power_on Ref)(pick_boot_image Ref)(establish_clock Ref)(boot Ref)(evr_service_start Ref)(init_evr Ref)(power_on_star_sensor Ref)(mount_flash Ref)(power_on_navigation Ref)(power_off_cameras Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Event (sel-Event Event))\n  (lift-Scheduler (sel-Scheduler Scheduler))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Event ((this Ref)) Bool\n  (is-lift-Event (deref this))\n)\n\n(define-fun deref-Event ((this Ref)) Event\n  (sel-Event (deref this))\n)\n\n(define-fun deref-is-Scheduler ((this Ref)) Bool\n  (is-lift-Scheduler (deref this))\n)\n\n(define-fun deref-Scheduler ((this Ref)) Scheduler\n  (sel-Scheduler (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Event ((this Ref)) Bool\n  (deref-is-Event this)\n)\n\n(define-fun deref-isa-Scheduler ((this Ref)) Bool\n  (deref-is-Scheduler this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ----------------------------\n;   Getters for class Event:\n; ----------------------------\n\n; --- getters for Event.t: ---\n\n(define-fun Event.t ((this Ref)) Real\n  (t (deref-Event this))\n)\n\n; --------------------------------\n;   Getters for class Scheduler:\n; --------------------------------\n\n; --- getters for Scheduler.power_on: ---\n\n(define-fun Scheduler!power_on ((this Ref)) Ref\n  (power_on (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.pick_boot_image: ---\n\n(define-fun Scheduler!pick_boot_image ((this Ref)) Ref\n  (pick_boot_image (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.establish_clock: ---\n\n(define-fun Scheduler!establish_clock ((this Ref)) Ref\n  (establish_clock (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.boot: ---\n\n(define-fun Scheduler!boot ((this Ref)) Ref\n  (boot (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.evr_service_start: ---\n\n(define-fun Scheduler!evr_service_start ((this Ref)) Ref\n  (evr_service_start (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.init_evr: ---\n\n(define-fun Scheduler!init_evr ((this Ref)) Ref\n  (init_evr (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.power_on_star_sensor: ---\n\n(define-fun Scheduler!power_on_star_sensor ((this Ref)) Ref\n  (power_on_star_sensor (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.mount_flash: ---\n\n(define-fun Scheduler!mount_flash ((this Ref)) Ref\n  (mount_flash (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.power_on_navigation: ---\n\n(define-fun Scheduler!power_on_navigation ((this Ref)) Ref\n  (power_on_navigation (deref-Scheduler this))\n)\n\n; --- getters for Scheduler.power_off_cameras: ---\n\n(define-fun Scheduler!power_off_cameras ((this Ref)) Ref\n  (power_off_cameras (deref-Scheduler this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------\n;   Invariant for class Event:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Event Event)\n(declare-const const-2-Event Event)\n(declare-const const-3-Event Event)\n(declare-const const-4-Event Event)\n(declare-const const-5-Event Event)\n(declare-const const-6-Event Event)\n(declare-const const-7-Event Event)\n(declare-const const-8-Event Event)\n(declare-const const-9-Event Event)\n(declare-const const-10-Event Event)\n(declare-const const-11-Event Event)\n\n\n\n; ----------------------------------\n;   Invariant for class Scheduler:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-12-Scheduler Scheduler)\n\n; --- Invariant 1: ---\n\n(define-fun Scheduler.inv1 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!power_on this))\n)\n\n(assert (! (Scheduler.inv1 12) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun Scheduler.inv2 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!pick_boot_image this))\n)\n\n(assert (! (Scheduler.inv2 12) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun Scheduler.inv3 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!establish_clock this))\n)\n\n(assert (! (Scheduler.inv3 12) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun Scheduler.inv4 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!boot this))\n)\n\n(assert (! (Scheduler.inv4 12) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun Scheduler.inv5 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!evr_service_start this))\n)\n\n(assert (! (Scheduler.inv5 12) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun Scheduler.inv6 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!init_evr this))\n)\n\n(assert (! (Scheduler.inv6 12) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun Scheduler.inv7 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!power_on_star_sensor this))\n)\n\n(assert (! (Scheduler.inv7 12) :named _xkassert6))\n\n; --- Invariant 8: ---\n\n(define-fun Scheduler.inv8 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!mount_flash this))\n)\n\n(assert (! (Scheduler.inv8 12) :named _xkassert7))\n\n; --- Invariant 9: ---\n\n(define-fun Scheduler.inv9 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!power_on_navigation this))\n)\n\n(assert (! (Scheduler.inv9 12) :named _xkassert8))\n\n; --- Invariant 10: ---\n\n(define-fun Scheduler.inv10 ((this Ref)) Bool\n  (deref-isa-Event (Scheduler!power_off_cameras this))\n)\n\n(assert (! (Scheduler.inv10 12) :named _xkassert9))\n\n; --- Invariant 11: ---\n\n(define-fun Scheduler.inv11 ((this Ref)) Bool\n  (< (Event.t (Scheduler!power_on this)) (Event.t (Scheduler!power_off_cameras this)))\n)\n\n(assert (! (Scheduler.inv11 12) :named _xkassert10))\n\n; --- Invariant 12: ---\n\n(define-fun Scheduler.inv12 ((this Ref)) Bool\n  (< (Event.t (Scheduler!power_off_cameras this)) (Event.t (Scheduler!pick_boot_image this)))\n)\n\n(assert (! (Scheduler.inv12 12) :named _xkassert11))\n\n; --- Invariant 13: ---\n\n(define-fun Scheduler.inv13 ((this Ref)) Bool\n  (< (Event.t (Scheduler!pick_boot_image this)) (Event.t (Scheduler!boot this)))\n)\n\n(assert (! (Scheduler.inv13 12) :named _xkassert12))\n\n; --- Invariant 14: ---\n\n(define-fun Scheduler.inv14 ((this Ref)) Bool\n  (< (Event.t (Scheduler!pick_boot_image this)) (Event.t (Scheduler!power_on_star_sensor this)))\n)\n\n(assert (! (Scheduler.inv14 12) :named _xkassert13))\n\n; --- Invariant 15: ---\n\n(define-fun Scheduler.inv15 ((this Ref)) Bool\n  (< (Event.t (Scheduler!boot this)) (Event.t (Scheduler!establish_clock this)))\n)\n\n(assert (! (Scheduler.inv15 12) :named _xkassert14))\n\n; --- Invariant 16: ---\n\n(define-fun Scheduler.inv16 ((this Ref)) Bool\n  (< (Event.t (Scheduler!power_on_star_sensor this)) (Event.t (Scheduler!establish_clock this)))\n)\n\n(assert (! (Scheduler.inv16 12) :named _xkassert15))\n\n; --- Invariant 17: ---\n\n(define-fun Scheduler.inv17 ((this Ref)) Bool\n  (< (Event.t (Scheduler!establish_clock this)) (Event.t (Scheduler!init_evr this)))\n)\n\n(assert (! (Scheduler.inv17 12) :named _xkassert16))\n\n; --- Invariant 18: ---\n\n(define-fun Scheduler.inv18 ((this Ref)) Bool\n  (< (Event.t (Scheduler!init_evr this)) (Event.t (Scheduler!evr_service_start this)))\n)\n\n(assert (! (Scheduler.inv18 12) :named _xkassert17))\n\n; --- Invariant 19: ---\n\n(define-fun Scheduler.inv19 ((this Ref)) Bool\n  (< (Event.t (Scheduler!establish_clock this)) (Event.t (Scheduler!mount_flash this)))\n)\n\n(assert (! (Scheduler.inv19 12) :named _xkassert18))\n\n; --- Invariant 20: ---\n\n(define-fun Scheduler.inv20 ((this Ref)) Bool\n  (< (Event.t (Scheduler!mount_flash this)) (Event.t (Scheduler!power_on_navigation this)))\n)\n\n(assert (! (Scheduler.inv20 12) :named _xkassert19))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Event const-1-Event))\n        2 (lift-Event const-2-Event))\n        3 (lift-Event const-3-Event))\n        4 (lift-Event const-4-Event))\n        5 (lift-Event const-5-Event))\n        6 (lift-Event const-6-Event))\n        7 (lift-Event const-7-Event))\n        8 (lift-Event const-8-Event))\n        9 (lift-Event const-9-Event))\n        10 (lift-Event const-10-Event))\n        11 (lift-Event const-11-Event))\n        12 (lift-Scheduler const-12-Scheduler))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (mount_flash (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun const-7-Event () Event\n  (mk-Event (/ 1.0 16.0)))\n(define-fun const-1-Event () Event\n  (mk-Event (- (/ 3.0 8.0))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (establish_clock (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select heap (pick_boot_image (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (power_on_star_sensor (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert19 () Bool\n  (let ((a!1 (select heap (mount_flash (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (power_on_navigation (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun const-10-Event () Event\n  (mk-Event (- (/ 5.0 16.0))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (init_evr (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (power_off_cameras (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun const-6-Event () Event\n  (mk-Event (- (/ 7.0 16.0))))\n(define-fun const-11-Event () Event\n  (mk-Event (- (/ 1.0 4.0))))\n(define-fun const-3-Event () Event\n  (mk-Event 3.0))\n(define-fun const-8-Event () Event\n  (mk-Event (- (/ 1.0 8.0))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (power_on (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun const-2-Event () Event\n  (mk-Event (- (/ 1.0 16.0))))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (power_on_navigation (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (power_on (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (power_off_cameras (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert14 () Bool\n  (let ((a!1 (select heap (boot (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (establish_clock (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert17 () Bool\n  (let ((a!1 (select heap (init_evr (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (evr_service_start (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select heap (pick_boot_image (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (boot (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (boot (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert16 () Bool\n  (let ((a!1 (select heap (establish_clock (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (init_evr (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun const-5-Event () Event\n  (mk-Event 0.0))\n(define-fun const-9-Event () Event\n  (mk-Event (- (/ 3.0 16.0))))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (power_off_cameras (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (pick_boot_image (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 (select heap (power_on_star_sensor (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (establish_clock (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun const-4-Event () Event\n  (mk-Event 2.0))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select heap (power_on_star_sensor (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (pick_boot_image (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun const-12-Scheduler () Scheduler\n  (mk-Scheduler 6 10 9 11 2 8 11 5 7 1))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (evr_service_start (sel-Scheduler (select heap 12))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert18 () Bool\n  (let ((a!1 (select heap (establish_clock (sel-Scheduler (select heap 12)))))\n      (a!2 (select heap (mount_flash (sel-Scheduler (select heap 12))))))\n  (< (t (sel-Event a!1)) (t (sel-Event a!2)))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-Event (mk-Event (- (/ 3.0 8.0)))))\n                  2\n                  (lift-Event (mk-Event (- (/ 1.0 16.0)))))))\n(let ((a!2 (store (store a!1 3 (lift-Event (mk-Event 3.0)))\n                  4\n                  (lift-Event (mk-Event 2.0)))))\n(let ((a!3 (store (store a!2 5 (lift-Event (mk-Event 0.0)))\n                  6\n                  (lift-Event (mk-Event (- (/ 7.0 16.0)))))))\n(let ((a!4 (store (store a!3 7 (lift-Event (mk-Event (/ 1.0 16.0))))\n                  8\n                  (lift-Event (mk-Event (- (/ 1.0 8.0)))))))\n(let ((a!5 (store (store a!4 9 (lift-Event (mk-Event (- (/ 3.0 16.0)))))\n                  10\n                  (lift-Event (mk-Event (- (/ 5.0 16.0)))))))\n  (store (store a!5 11 (lift-Event (mk-Event (- (/ 1.0 4.0)))))\n         12\n         (lift-Scheduler (mk-Scheduler 6 10 9 11 2 8 11 5 7 1)))))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "order"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.order",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Event",
+            "typeparams": [],
+            "extending": [],
+            "members": [{
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "t",
+              "ty": {"type": "RealType"}
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Scheduler",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "pick_boot_image",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "establish_clock",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "boot",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "evr_service_start",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "init_evr",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on_star_sensor",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "mount_flash",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on_navigation",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_off_cameras",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_on",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_off_cameras",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_off_cameras",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "pick_boot_image",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "pick_boot_image",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "boot",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "pick_boot_image",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_on_star_sensor",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "boot",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "establish_clock",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_on_star_sensor",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "establish_clock",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "establish_clock",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "init_evr",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "init_evr",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "evr_service_start",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "establish_clock",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "mount_flash",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "LT",
+                  "exp1": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "mount_flash",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "ident": "t",
+                    "exp": {
+                      "ident": "power_on_navigation",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          }
+        ],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "order"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.order",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Event",
+            "typeparams": [],
+            "extending": [],
+            "members": [{
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "t",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Double"
+              }
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Scheduler",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "pick_boot_image",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "establish_clock",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "boot",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "evr_service_start",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "init_evr",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on_star_sensor",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "mount_flash",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_on_navigation",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "power_off_cameras",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_on",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_off_cameras",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_off_cameras",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "pick_boot_image",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "pick_boot_image",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "boot",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "pick_boot_image",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_on_star_sensor",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "boot",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "establish_clock",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_on_star_sensor",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "establish_clock",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "establish_clock",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "init_evr",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "init_evr",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "evr_service_start",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "establish_clock",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "mount_flash",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "LT"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "mount_flash",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "power_on_navigation",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "t"
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          }
+        ],
+        "packages": []
+      }
+    }]
+  }
+}

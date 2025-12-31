@@ -50,8 +50,8 @@ a;
 
 -- OpaqueExpression
 -- TODO: how do we do this? what is it? 
-<<<<<<< HEAD
-var opaqueExpr = "model VsourceAC \"Sin-wave voltage source\" 
+// its basically a string but becuase it is a opaque there is some expectation that something knows how to execute it.
+var opaqueExpr = "model VsourceAC \"Sin-wave voltage source\"
    extends TwoPin;
    parameter Voltage VA = 220 \"Amplitude\";
    parameter Real f(unit=\"Hz\") = 50 \"Frequency\";
@@ -59,9 +59,6 @@ var opaqueExpr = "model VsourceAC \"Sin-wave voltage source\"
  equation 
    v = VA*sin(2*PI*f*time);
  end VsourceAC;";
-=======
-// its basically a string but becuase it is a opaque there is some expectation that something knows how to execute it.
->>>>>>> f80628369d5077ea8e546793ec7647949b79a62b
 
 -- Namespace
 -- Package, Class, or Property
@@ -141,7 +138,8 @@ every possible combination of PRODUCT and SENIOR SALES REP need not be
 associated with a JUNIOR SALES REP, it is possible for a specific
 combination to be associated with more than one JUNIOR SALES REP
 (Rumbaugh et al. 2005, p. 471).  
--- 		  
+=============================
+--
 
 class SeniorSaleRep { 
   val firstName : String; 

@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: NullPointerException in parser (ParseTree access)
 package nasa.jpl.spacecraft
 
 import nasa.jpl.physics

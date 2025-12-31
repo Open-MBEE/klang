@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUGS: Parse errors (semicolons), type inference issues for top-level properties
 --WSTS modeling pattern
 --simple Test script invoking STAKR.rb
 

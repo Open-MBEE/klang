@@ -1,3 +1,4 @@
+// @expected SAT
 ==============================================
 This example shows how one can specify function
 specifications (pre and post conditions). These

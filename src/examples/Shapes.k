@@ -1,3 +1,4 @@
+// @expected SAT
 ==============================================
 This example models shapes found in geometry. 
 It illustrates use of inheritance, functions, 

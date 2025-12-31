@@ -1,0 +1,233 @@
+{
+  "name": "nesting.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage nesting {\n\nclass Outer {\n  var x:Int\n  class Inner {\n    var y:Int\n\n    req x = y\n    class Very_Inner {\n      var z:Int\n\n      req z = x\n}\n}\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Outer (mk-Outer (x Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Outer (sel-Outer Outer))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Outer ((this Ref)) Bool\n  (is-lift-Outer (deref this))\n)\n\n(define-fun deref-Outer ((this Ref)) Outer\n  (sel-Outer (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Outer ((this Ref)) Bool\n  (deref-is-Outer this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------\n;   Invariant for class Outer:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Outer Outer)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Outer const-1-Outer))\n  )\n)\n\n",
+  "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-Outer () Outer\n  (mk-Outer 0))\n(define-fun heap () (Array Int Any)\n  (store ((as const (Array Int Any)) null) 1 (lift-Outer (mk-Outer 0))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["nesting"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "nesting",
+        "imports": [],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Outer",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": ["var"],
+              "annotations": [],
+              "name": "x",
+              "ty": {"type": "IntType"}
+            },
+            {
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "Inner",
+              "typeparams": [],
+              "extending": [],
+              "members": [
+                {
+                  "type": "PropertyDecl",
+                  "modifiers": ["var"],
+                  "annotations": [],
+                  "name": "y",
+                  "ty": {"type": "IntType"}
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "EQ",
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "y",
+                      "type": "IdentExp"
+                    }
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "EntityDecl",
+                  "annotations": [],
+                  "entityToken": "class",
+                  "ident": "Very_Inner",
+                  "typeparams": [],
+                  "extending": [],
+                  "members": [
+                    {
+                      "type": "PropertyDecl",
+                      "modifiers": ["var"],
+                      "annotations": [],
+                      "name": "z",
+                      "ty": {"type": "IntType"}
+                    },
+                    {
+                      "type": "ConstraintDecl",
+                      "exp": {
+                        "type": "BinExp",
+                        "op": "EQ",
+                        "exp1": {
+                          "ident": "z",
+                          "type": "IdentExp"
+                        },
+                        "exp2": {
+                          "ident": "x",
+                          "type": "IdentExp"
+                        }
+                      },
+                      "annotations": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["nesting"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "nesting",
+        "imports": [],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Outer",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": ["var"],
+              "annotations": [],
+              "name": "x",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Integer"
+              }
+            },
+            {
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "Inner",
+              "typeparams": [],
+              "extending": [],
+              "members": [
+                {
+                  "type": "PropertyDecl",
+                  "modifiers": ["var"],
+                  "annotations": [],
+                  "name": "y",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Integer"
+                  }
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "EQ"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "y",
+                        "type": "ElementValue"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "EntityDecl",
+                  "annotations": [],
+                  "entityToken": "class",
+                  "ident": "Very_Inner",
+                  "typeparams": [],
+                  "extending": [],
+                  "members": [
+                    {
+                      "type": "PropertyDecl",
+                      "modifiers": ["var"],
+                      "annotations": [],
+                      "name": "z",
+                      "ty": {
+                        "type": "ElementValue",
+                        "element": "Integer"
+                      }
+                    },
+                    {
+                      "type": "ConstraintDecl",
+                      "exp": {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "EQ"
+                          },
+                          {
+                            "element": "z",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      "annotations": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }],
+        "packages": []
+      }
+    }]
+  }
+}

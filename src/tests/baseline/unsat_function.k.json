@@ -1,0 +1,150 @@
+{
+  "name": "unsat_function.k",
+  "outcome": "UNSAT",
+  "typeChecks": true,
+  "model": "\nfun f(x:Bool) : Int\n{\n  req x && !x\n  if x then\n    1\n  else\n    0\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort TopLevelDeclarations) (declare-const mk-TopLevelDeclarations TopLevelDeclarations)\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; -------------------------------------------\n;   Methods for class TopLevelDeclarations:\n; -------------------------------------------\n\n(define-fun TopLevelDeclarations.f ((this Ref)(x Bool)) Int\n  (ite x 1 0)\n)\n\n(define-fun TopLevelDeclarations!f ((this Ref)(x Bool)) Int\n  (ite x 1 0)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n; =================================\n; === Synthetic Function Calls: ===\n; =================================\n\n; Functions declared but never called - synthetic calls to check body constraints\n\n(declare-const _synth_f_x Bool)\n(assert (! (and _synth_f_x (not _synth_f_x)) :named _xkassert0))\n\n",
+  "smtModel": "",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [{
+      "type": "FunDecl",
+      "ident": "f",
+      "typeParams": [],
+      "params": [{
+        "type": "Param",
+        "name": "x",
+        "ty": {"type": "BoolType"}
+      }],
+      "ty": {"type": "IntType"},
+      "spec": [],
+      "body": [
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "And",
+            "exp1": {
+              "ident": "x",
+              "type": "IdentExp"
+            },
+            "exp2": {
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "type": "UnaryExp",
+              "op": "Not"
+            }
+          },
+          "annotations": []
+        },
+        {
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "IfExp",
+            "cond": {
+              "ident": "x",
+              "type": "IdentExp"
+            },
+            "trueBranch": {
+              "i": 1,
+              "type": "LiteralInteger"
+            },
+            "falseBranch": {
+              "i": 0,
+              "type": "LiteralInteger"
+            }
+          },
+          "annotations": []
+        }
+      ],
+      "annotations": []
+    }],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [{
+      "type": "FunDecl",
+      "ident": "f",
+      "typeParams": [],
+      "params": [{
+        "type": "Param",
+        "name": "x",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Boolean"
+        }
+      }],
+      "ty": {
+        "type": "ElementValue",
+        "element": "Integer"
+      },
+      "spec": [],
+      "body": [
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "And"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Not"
+                  },
+                  {
+                    "element": "x",
+                    "type": "ElementValue"
+                  }
+                ]
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "Expression",
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "If"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 1
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 0
+              }
+            ]
+          },
+          "annotations": []
+        }
+      ],
+      "annotations": []
+    }],
+    "packages": []
+  }
+}

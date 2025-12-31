@@ -1,0 +1,1092 @@
+{
+  "name": "Shapes.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage examples.Shapes {\n\nclass Shape {\n  sides:Int\n\n  fun area : Real\n\n}\n\nclass Angle {\n  value:Int\n\n  fun eq(other:Angle) : Bool\n  {\n    value = other.value\n  }\n\n  req value >= 0 && value <= 360\n}\n\nclass TAngle extending Angle {\n\n  req value < 180\n}\n\nclass Triangle extending Shape {\n  a:TAngle\n  b:TAngle\n  c:TAngle\n  base:Int\n  height:Int\n\n  req sides = 3\n\n  fun area : Real\n  {\n    base * height / 2\n  }\n\n  req Angles: a.value + b.value + c.value = 180\n}\n\nclass Equilateral extending Triangle {\n\n  req a.eq(b) && b.eq(c)\n}\n\nclass Obtuse extending Triangle {\n\n  req a.value > 90 || b.value > 90 || c.value > 90\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Angle (mk-Angle (value Int)))))\n(declare-datatypes () ((Shape (mk-Shape (sides Int)))))\n(declare-datatypes () ((Triangle (mk-Triangle (sides Int)(a Ref)(b Ref)(c Ref)(base Int)(height Int)))))\n(declare-datatypes () ((TAngle (mk-TAngle (value Int)))))\n(declare-datatypes () ((Equilateral (mk-Equilateral (sides Int)(a Ref)(b Ref)(c Ref)(base Int)(height Int)))))\n(declare-datatypes () ((Obtuse (mk-Obtuse (sides Int)(a Ref)(b Ref)(c Ref)(base Int)(height Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Angle (sel-Angle Angle))\n  (lift-Shape (sel-Shape Shape))\n  (lift-Triangle (sel-Triangle Triangle))\n  (lift-TAngle (sel-TAngle TAngle))\n  (lift-Equilateral (sel-Equilateral Equilateral))\n  (lift-Obtuse (sel-Obtuse Obtuse))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Angle ((this Ref)) Bool\n  (is-lift-Angle (deref this))\n)\n\n(define-fun deref-Angle ((this Ref)) Angle\n  (sel-Angle (deref this))\n)\n\n(define-fun deref-is-Shape ((this Ref)) Bool\n  (is-lift-Shape (deref this))\n)\n\n(define-fun deref-Shape ((this Ref)) Shape\n  (sel-Shape (deref this))\n)\n\n(define-fun deref-is-Triangle ((this Ref)) Bool\n  (is-lift-Triangle (deref this))\n)\n\n(define-fun deref-Triangle ((this Ref)) Triangle\n  (sel-Triangle (deref this))\n)\n\n(define-fun deref-is-TAngle ((this Ref)) Bool\n  (is-lift-TAngle (deref this))\n)\n\n(define-fun deref-TAngle ((this Ref)) TAngle\n  (sel-TAngle (deref this))\n)\n\n(define-fun deref-is-Equilateral ((this Ref)) Bool\n  (is-lift-Equilateral (deref this))\n)\n\n(define-fun deref-Equilateral ((this Ref)) Equilateral\n  (sel-Equilateral (deref this))\n)\n\n(define-fun deref-is-Obtuse ((this Ref)) Bool\n  (is-lift-Obtuse (deref this))\n)\n\n(define-fun deref-Obtuse ((this Ref)) Obtuse\n  (sel-Obtuse (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Angle ((this Ref)) Bool\n  (or\n    (deref-is-Angle this)\n    (deref-is-TAngle this)\n  )\n)\n\n(define-fun deref-isa-Shape ((this Ref)) Bool\n  (or\n    (deref-is-Shape this)\n    (deref-is-Triangle this)\n    (deref-is-Equilateral this)\n    (deref-is-Obtuse this)\n  )\n)\n\n(define-fun deref-isa-Triangle ((this Ref)) Bool\n  (or\n    (deref-is-Triangle this)\n    (deref-is-Equilateral this)\n    (deref-is-Obtuse this)\n  )\n)\n\n(define-fun deref-isa-TAngle ((this Ref)) Bool\n  (deref-is-TAngle this)\n)\n\n(define-fun deref-isa-Equilateral ((this Ref)) Bool\n  (deref-is-Equilateral this)\n)\n\n(define-fun deref-isa-Obtuse ((this Ref)) Bool\n  (deref-is-Obtuse this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ----------------------------\n;   Getters for class Angle:\n; ----------------------------\n\n; --- getters for Angle.value: ---\n\n(define-fun Angle.value ((this Ref)) Int\n  (ite (deref-is-Angle this) (value (deref-Angle this))\n  (value (deref-TAngle this)))\n)\n\n(define-fun Angle!value ((this Ref)) Int\n  (value (deref-Angle this))\n)\n\n; -------------------------------\n;   Getters for class Triangle:\n; -------------------------------\n\n; --- getters for Triangle.sides: ---\n\n(define-fun Triangle!sides ((this Ref)) Int\n  (sides (deref-Triangle this))\n)\n\n; --- getters for Triangle.a: ---\n\n(define-fun Triangle!a ((this Ref)) Ref\n  (a (deref-Triangle this))\n)\n\n; --- getters for Triangle.b: ---\n\n(define-fun Triangle!b ((this Ref)) Ref\n  (b (deref-Triangle this))\n)\n\n; --- getters for Triangle.c: ---\n\n(define-fun Triangle!c ((this Ref)) Ref\n  (c (deref-Triangle this))\n)\n\n; --- getters for Triangle.base: ---\n\n(define-fun Triangle.base ((this Ref)) Int\n  (ite (deref-is-Triangle this) (base (deref-Triangle this))\n  (ite (deref-is-Equilateral this) (base (deref-Equilateral this))\n  (base (deref-Obtuse this))))\n)\n\n(define-fun Triangle!base ((this Ref)) Int\n  (base (deref-Triangle this))\n)\n\n; --- getters for Triangle.height: ---\n\n(define-fun Triangle.height ((this Ref)) Int\n  (ite (deref-is-Triangle this) (height (deref-Triangle this))\n  (ite (deref-is-Equilateral this) (height (deref-Equilateral this))\n  (height (deref-Obtuse this))))\n)\n\n(define-fun Triangle!height ((this Ref)) Int\n  (height (deref-Triangle this))\n)\n\n; -----------------------------\n;   Getters for class TAngle:\n; -----------------------------\n\n; --- getters for TAngle.value: ---\n\n(define-fun TAngle.value ((this Ref)) Int\n  (value (deref-TAngle this))\n)\n\n(define-fun TAngle!value ((this Ref)) Int\n  (value (deref-TAngle this))\n)\n\n; ----------------------------------\n;   Getters for class Equilateral:\n; ----------------------------------\n\n; --- getters for Equilateral.sides: ---\n\n(define-fun Equilateral!sides ((this Ref)) Int\n  (sides (deref-Equilateral this))\n)\n\n; --- getters for Equilateral.a: ---\n\n(define-fun Equilateral!a ((this Ref)) Ref\n  (a (deref-Equilateral this))\n)\n\n; --- getters for Equilateral.b: ---\n\n(define-fun Equilateral!b ((this Ref)) Ref\n  (b (deref-Equilateral this))\n)\n\n; --- getters for Equilateral.c: ---\n\n(define-fun Equilateral!c ((this Ref)) Ref\n  (c (deref-Equilateral this))\n)\n\n; --- getters for Equilateral.base: ---\n\n(define-fun Equilateral.base ((this Ref)) Int\n  (base (deref-Equilateral this))\n)\n\n(define-fun Equilateral!base ((this Ref)) Int\n  (base (deref-Equilateral this))\n)\n\n; --- getters for Equilateral.height: ---\n\n(define-fun Equilateral.height ((this Ref)) Int\n  (height (deref-Equilateral this))\n)\n\n(define-fun Equilateral!height ((this Ref)) Int\n  (height (deref-Equilateral this))\n)\n\n; -----------------------------\n;   Getters for class Obtuse:\n; -----------------------------\n\n; --- getters for Obtuse.sides: ---\n\n(define-fun Obtuse!sides ((this Ref)) Int\n  (sides (deref-Obtuse this))\n)\n\n; --- getters for Obtuse.a: ---\n\n(define-fun Obtuse!a ((this Ref)) Ref\n  (a (deref-Obtuse this))\n)\n\n; --- getters for Obtuse.b: ---\n\n(define-fun Obtuse!b ((this Ref)) Ref\n  (b (deref-Obtuse this))\n)\n\n; --- getters for Obtuse.c: ---\n\n(define-fun Obtuse!c ((this Ref)) Ref\n  (c (deref-Obtuse this))\n)\n\n; --- getters for Obtuse.base: ---\n\n(define-fun Obtuse.base ((this Ref)) Int\n  (base (deref-Obtuse this))\n)\n\n(define-fun Obtuse!base ((this Ref)) Int\n  (base (deref-Obtuse this))\n)\n\n; --- getters for Obtuse.height: ---\n\n(define-fun Obtuse.height ((this Ref)) Int\n  (height (deref-Obtuse this))\n)\n\n(define-fun Obtuse!height ((this Ref)) Int\n  (height (deref-Obtuse this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ----------------------------\n;   Methods for class Angle:\n; ----------------------------\n\n(define-fun Angle.eq ((this Ref)(other Ref)) Bool\n  (= (Angle.value this) (Angle.value other))\n)\n\n(define-fun Angle!eq ((this Ref)(other Ref)) Bool\n  (= (Angle!value this) (Angle.value other))\n)\n\n; ----------------------------\n;   Methods for class Shape:\n; ----------------------------\n\n(declare-fun Shape.area (Ref ) Real)\n\n(define-fun Shape!area ((this Ref)) Real\n  (Shape.area this )\n)\n\n; -------------------------------\n;   Methods for class Triangle:\n; -------------------------------\n\n(define-fun Triangle.area ((this Ref)) Real\n  (/ (* (Triangle.base this) (Triangle.height this)) 2)\n)\n\n(define-fun Triangle!area ((this Ref)) Real\n  (/ (* (Triangle!base this) (Triangle!height this)) 2)\n)\n\n; -----------------------------\n;   Methods for class TAngle:\n; -----------------------------\n\n(define-fun TAngle.eq ((this Ref)(other Ref)) Bool\n  (= (TAngle.value this) (Angle.value other))\n)\n\n(define-fun TAngle!eq ((this Ref)(other Ref)) Bool\n  (= (TAngle!value this) (Angle.value other))\n)\n\n; ----------------------------------\n;   Methods for class Equilateral:\n; ----------------------------------\n\n(define-fun Equilateral.area ((this Ref)) Real\n  (/ (* (Equilateral.base this) (Equilateral.height this)) 2)\n)\n\n(define-fun Equilateral!area ((this Ref)) Real\n  (/ (* (Equilateral!base this) (Equilateral!height this)) 2)\n)\n\n; -----------------------------\n;   Methods for class Obtuse:\n; -----------------------------\n\n(define-fun Obtuse.area ((this Ref)) Real\n  (/ (* (Obtuse.base this) (Obtuse.height this)) 2)\n)\n\n(define-fun Obtuse!area ((this Ref)) Real\n  (/ (* (Obtuse!base this) (Obtuse!height this)) 2)\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------\n;   Invariant for class Angle:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Angle Angle)\n\n; --- Invariant 1: ---\n\n(define-fun Angle.inv1 ((this Ref)) Bool\n  (and (>= (Angle!value this) 0) (<= (Angle!value this) 360))\n)\n\n(assert (! (Angle.inv1 2) :named _xkassert0))\n\n\n\n; ------------------------------\n;   Invariant for class Shape:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-9-Shape Shape)\n\n\n\n; ---------------------------------\n;   Invariant for class Triangle:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-Triangle Triangle)\n\n; --- Invariant 1: ---\n\n(define-fun Triangle.inv1 ((this Ref)) Bool\n  (deref-isa-TAngle (Triangle!a this))\n)\n\n(assert (! (Triangle.inv1 7) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun Triangle.inv2 ((this Ref)) Bool\n  (deref-isa-TAngle (Triangle!b this))\n)\n\n(assert (! (Triangle.inv2 7) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun Triangle.inv3 ((this Ref)) Bool\n  (deref-isa-TAngle (Triangle!c this))\n)\n\n(assert (! (Triangle.inv3 7) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun Triangle.inv4 ((this Ref)) Bool\n  (= (Triangle!sides this) 3)\n)\n\n(assert (! (Triangle.inv4 7) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun Triangle.inv5 ((this Ref)) Bool\n  (= (+ (+ (TAngle.value (Triangle!a this)) (TAngle.value (Triangle!b this))) (TAngle.value (Triangle!c this))) 180)\n)\n\n(assert (! (Triangle.inv5 7) :named _xkassert5))\n\n\n\n; -------------------------------\n;   Invariant for class TAngle:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-TAngle TAngle)\n(declare-const const-4-TAngle TAngle)\n(declare-const const-5-TAngle TAngle)\n(declare-const const-6-TAngle TAngle)\n\n; --- Invariant 1: ---\n\n(define-fun TAngle.inv1 ((this Ref)) Bool\n  (and (>= (TAngle!value this) 0) (<= (TAngle!value this) 360))\n)\n\n(assert (! (TAngle.inv1 3) :named _xkassert6))\n(assert (! (TAngle.inv1 4) :named _xkassert7))\n(assert (! (TAngle.inv1 5) :named _xkassert8))\n(assert (! (TAngle.inv1 6) :named _xkassert9))\n\n; --- Invariant 2: ---\n\n(define-fun TAngle.inv2 ((this Ref)) Bool\n  (< (TAngle!value this) 180)\n)\n\n(assert (! (TAngle.inv2 3) :named _xkassert10))\n(assert (! (TAngle.inv2 4) :named _xkassert11))\n(assert (! (TAngle.inv2 5) :named _xkassert12))\n(assert (! (TAngle.inv2 6) :named _xkassert13))\n\n\n\n; ------------------------------------\n;   Invariant for class Equilateral:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Equilateral Equilateral)\n\n; --- Invariant 1: ---\n\n(define-fun Equilateral.inv1 ((this Ref)) Bool\n  (deref-isa-TAngle (Equilateral!a this))\n)\n\n(assert (! (Equilateral.inv1 1) :named _xkassert14))\n\n; --- Invariant 2: ---\n\n(define-fun Equilateral.inv2 ((this Ref)) Bool\n  (deref-isa-TAngle (Equilateral!b this))\n)\n\n(assert (! (Equilateral.inv2 1) :named _xkassert15))\n\n; --- Invariant 3: ---\n\n(define-fun Equilateral.inv3 ((this Ref)) Bool\n  (deref-isa-TAngle (Equilateral!c this))\n)\n\n(assert (! (Equilateral.inv3 1) :named _xkassert16))\n\n; --- Invariant 4: ---\n\n(define-fun Equilateral.inv4 ((this Ref)) Bool\n  (= (Equilateral!sides this) 3)\n)\n\n(assert (! (Equilateral.inv4 1) :named _xkassert17))\n\n; --- Invariant 5: ---\n\n(define-fun Equilateral.inv5 ((this Ref)) Bool\n  (= (+ (+ (TAngle.value (Equilateral!a this)) (TAngle.value (Equilateral!b this))) (TAngle.value (Equilateral!c this))) 180)\n)\n\n(assert (! (Equilateral.inv5 1) :named _xkassert18))\n\n; --- Invariant 6: ---\n\n(define-fun Equilateral.inv6 ((this Ref)) Bool\n  (and (TAngle.eq (Equilateral!a this) (Equilateral!b this)) (TAngle.eq (Equilateral!b this) (Equilateral!c this)))\n)\n\n(assert (! (Equilateral.inv6 1) :named _xkassert19))\n\n\n\n; -------------------------------\n;   Invariant for class Obtuse:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-8-Obtuse Obtuse)\n\n; --- Invariant 1: ---\n\n(define-fun Obtuse.inv1 ((this Ref)) Bool\n  (deref-isa-TAngle (Obtuse!a this))\n)\n\n(assert (! (Obtuse.inv1 8) :named _xkassert20))\n\n; --- Invariant 2: ---\n\n(define-fun Obtuse.inv2 ((this Ref)) Bool\n  (deref-isa-TAngle (Obtuse!b this))\n)\n\n(assert (! (Obtuse.inv2 8) :named _xkassert21))\n\n; --- Invariant 3: ---\n\n(define-fun Obtuse.inv3 ((this Ref)) Bool\n  (deref-isa-TAngle (Obtuse!c this))\n)\n\n(assert (! (Obtuse.inv3 8) :named _xkassert22))\n\n; --- Invariant 4: ---\n\n(define-fun Obtuse.inv4 ((this Ref)) Bool\n  (= (Obtuse!sides this) 3)\n)\n\n(assert (! (Obtuse.inv4 8) :named _xkassert23))\n\n; --- Invariant 5: ---\n\n(define-fun Obtuse.inv5 ((this Ref)) Bool\n  (= (+ (+ (TAngle.value (Obtuse!a this)) (TAngle.value (Obtuse!b this))) (TAngle.value (Obtuse!c this))) 180)\n)\n\n(assert (! (Obtuse.inv5 8) :named _xkassert24))\n\n; --- Invariant 6: ---\n\n(define-fun Obtuse.inv6 ((this Ref)) Bool\n  (or (or (> (TAngle.value (Obtuse!a this)) 90) (> (TAngle.value (Obtuse!b this)) 90)) (> (TAngle.value (Obtuse!c this)) 90))\n)\n\n(assert (! (Obtuse.inv6 8) :named _xkassert25))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        2 (lift-Angle const-2-Angle))\n        9 (lift-Shape const-9-Shape))\n        7 (lift-Triangle const-7-Triangle))\n        3 (lift-TAngle const-3-TAngle))\n        4 (lift-TAngle const-4-TAngle))\n        5 (lift-TAngle const-5-TAngle))\n        6 (lift-TAngle const-6-TAngle))\n        1 (lift-Equilateral const-1-Equilateral))\n        8 (lift-Obtuse const-8-Obtuse))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert7 () Bool\n  (let ((a!1 (>= (value (sel-TAngle (select heap 4))) 0))\n      (a!2 (<= (value (sel-TAngle (select heap 4))) 360)))\n  (and a!1 a!2)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (b (sel-Triangle (select heap 7))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert19 () Bool\n  (let ((a!1 (select heap (a (sel-Equilateral (select heap 1)))))\n      (a!2 (select heap (b (sel-Equilateral (select heap 1)))))\n      (a!4 (select heap (c (sel-Equilateral (select heap 1))))))\n(let ((a!3 (= (value (sel-TAngle a!1))\n              (ite (is-lift-Angle a!2)\n                   (value (sel-Angle a!2))\n                   (value (sel-TAngle a!2)))))\n      (a!5 (= (value (sel-TAngle a!2))\n              (ite (is-lift-Angle a!4)\n                   (value (sel-Angle a!4))\n                   (value (sel-TAngle a!4))))))\n  (and a!3 a!5))))\n(define-fun _xkassert13 () Bool\n  (< (value (sel-TAngle (select heap 6))) 180))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (a (sel-Triangle (select heap 7)))))\n      (a!2 (select heap (b (sel-Triangle (select heap 7)))))\n      (a!3 (select heap (c (sel-Triangle (select heap 7))))))\n  (= (+ (value (sel-TAngle a!1))\n        (value (sel-TAngle a!2))\n        (value (sel-TAngle a!3)))\n     180)))\n(define-fun _xkassert24 () Bool\n  (let ((a!1 (select heap (a (sel-Obtuse (select heap 8)))))\n      (a!2 (select heap (b (sel-Obtuse (select heap 8)))))\n      (a!3 (select heap (c (sel-Obtuse (select heap 8))))))\n  (= (+ (value (sel-TAngle a!1))\n        (value (sel-TAngle a!2))\n        (value (sel-TAngle a!3)))\n     180)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (>= (value (sel-TAngle (select heap 6))) 0))\n      (a!2 (<= (value (sel-TAngle (select heap 6))) 360)))\n  (and a!1 a!2)))\n(define-fun _xkassert21 () Bool\n  (let ((a!1 (select heap (b (sel-Obtuse (select heap 8))))))\n  (is-lift-TAngle a!1)))\n(define-fun const-8-Obtuse () Obtuse\n  (mk-Obtuse 3 3 6 4 12 13))\n(define-fun const-9-Shape () Shape\n  (mk-Shape 16))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (>= (value (sel-Angle (select heap 2))) 0))\n      (a!2 (<= (value (sel-Angle (select heap 2))) 360)))\n  (and a!1 a!2)))\n(define-fun const-1-Equilateral () Equilateral\n  (mk-Equilateral 3 6 6 6 14 15))\n(define-fun const-6-TAngle () TAngle\n  (mk-TAngle 60))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (>= (value (sel-TAngle (select heap 5))) 0))\n      (a!2 (<= (value (sel-TAngle (select heap 5))) 360)))\n  (and a!1 a!2)))\n(define-fun _xkassert22 () Bool\n  (let ((a!1 (select heap (c (sel-Obtuse (select heap 8))))))\n  (is-lift-TAngle a!1)))\n(define-fun const-5-TAngle () TAngle\n  (mk-TAngle 157))\n(define-fun _xkassert10 () Bool\n  (< (value (sel-TAngle (select heap 3))) 180))\n(define-fun _xkassert14 () Bool\n  (let ((a!1 (select heap (a (sel-Equilateral (select heap 1))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert20 () Bool\n  (let ((a!1 (select heap (a (sel-Obtuse (select heap 8))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert17 () Bool\n  (= (sides (sel-Equilateral (select heap 1))) 3))\n(define-fun _xkassert12 () Bool\n  (< (value (sel-TAngle (select heap 5))) 180))\n(define-fun const-4-TAngle () TAngle\n  (mk-TAngle 29))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (c (sel-Triangle (select heap 7))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert16 () Bool\n  (let ((a!1 (select heap (c (sel-Equilateral (select heap 1))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert11 () Bool\n  (< (value (sel-TAngle (select heap 4))) 180))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 (select heap (b (sel-Equilateral (select heap 1))))))\n  (is-lift-TAngle a!1)))\n(define-fun _xkassert23 () Bool\n  (= (sides (sel-Obtuse (select heap 8))) 3))\n(define-fun const-2-Angle () Angle\n  (mk-Angle 0))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (>= (value (sel-TAngle (select heap 3))) 0))\n      (a!2 (<= (value (sel-TAngle (select heap 3))) 360)))\n  (and a!1 a!2)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (a (sel-Triangle (select heap 7))))))\n  (is-lift-TAngle a!1)))\n(define-fun const-7-Triangle () Triangle\n  (mk-Triangle 3 4 6 3 10 11))\n(define-fun _xkassert4 () Bool\n  (= (sides (sel-Triangle (select heap 7))) 3))\n(define-fun _xkassert18 () Bool\n  (let ((a!1 (select heap (a (sel-Equilateral (select heap 1)))))\n      (a!2 (select heap (b (sel-Equilateral (select heap 1)))))\n      (a!3 (select heap (c (sel-Equilateral (select heap 1))))))\n  (= (+ (value (sel-TAngle a!1))\n        (value (sel-TAngle a!2))\n        (value (sel-TAngle a!3)))\n     180)))\n(define-fun _xkassert25 () Bool\n  (let ((a!1 (select heap (a (sel-Obtuse (select heap 8)))))\n      (a!2 (select heap (b (sel-Obtuse (select heap 8)))))\n      (a!3 (select heap (c (sel-Obtuse (select heap 8))))))\n  (or (> (value (sel-TAngle a!1)) 90)\n      (> (value (sel-TAngle a!2)) 90)\n      (> (value (sel-TAngle a!3)) 90))))\n(define-fun const-3-TAngle () TAngle\n  (mk-TAngle 91))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         2\n                         (lift-Angle (mk-Angle 0)))\n                  9\n                  (lift-Shape (mk-Shape 16)))))\n(let ((a!2 (store (store a!1 7 (lift-Triangle (mk-Triangle 3 4 6 3 10 11)))\n                  3\n                  (lift-TAngle (mk-TAngle 91)))))\n(let ((a!3 (store (store a!2 4 (lift-TAngle (mk-TAngle 29)))\n                  5\n                  (lift-TAngle (mk-TAngle 157)))))\n(let ((a!4 (store (store a!3 6 (lift-TAngle (mk-TAngle 60)))\n                  1\n                  (lift-Equilateral (mk-Equilateral 3 6 6 6 14 15)))))\n  (store a!4 8 (lift-Obtuse (mk-Obtuse 3 3 6 4 12 13))))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "Shapes"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.Shapes",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Shape",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "sides",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "FunDecl",
+                "ident": "area",
+                "typeParams": [],
+                "params": [],
+                "ty": {"type": "RealType"},
+                "spec": [],
+                "body": [],
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Angle",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "value",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "FunDecl",
+                "ident": "eq",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "other",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["Angle"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                }],
+                "ty": {"type": "BoolType"},
+                "spec": [],
+                "body": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "value",
+                  "assignment": false,
+                  "expr": {
+                    "ident": "value",
+                    "exp": {
+                      "ident": "other",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                }],
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "And",
+                  "exp1": {
+                    "type": "BinExp",
+                    "op": "GTE",
+                    "exp1": {
+                      "ident": "value",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 0,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  "exp2": {
+                    "type": "BinExp",
+                    "op": "LTE",
+                    "exp1": {
+                      "ident": "value",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 360,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "TAngle",
+            "typeparams": [],
+            "extending": [{
+              "args": [],
+              "ident": {
+                "names": ["Angle"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "LT",
+                "exp1": {
+                  "ident": "value",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 180,
+                  "type": "LiteralInteger"
+                }
+              },
+              "annotations": []
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Triangle",
+            "typeparams": [],
+            "extending": [{
+              "args": [],
+              "ident": {
+                "names": ["Shape"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "a",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["TAngle"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "b",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["TAngle"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "c",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["TAngle"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "base",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "height",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "sides",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "area",
+                "typeParams": [],
+                "params": [],
+                "ty": {"type": "RealType"},
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Divide",
+                    "exp1": {
+                      "type": "BinExp",
+                      "op": "Times",
+                      "exp1": {
+                        "ident": "base",
+                        "type": "IdentExp"
+                      },
+                      "exp2": {
+                        "ident": "height",
+                        "type": "IdentExp"
+                      }
+                    },
+                    "exp2": {
+                      "i": 2,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "name": "Angles",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "type": "BinExp",
+                      "op": "Plus",
+                      "exp1": {
+                        "ident": "value",
+                        "exp": {
+                          "ident": "a",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      },
+                      "exp2": {
+                        "ident": "value",
+                        "exp": {
+                          "ident": "b",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      }
+                    },
+                    "exp2": {
+                      "ident": "value",
+                      "exp": {
+                        "ident": "c",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    }
+                  },
+                  "exp2": {
+                    "i": 180,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Equilateral",
+            "typeparams": [],
+            "extending": [{
+              "args": [],
+              "ident": {
+                "names": ["Triangle"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "eq",
+                    "exp": {
+                      "ident": "a",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "ident": "b",
+                      "type": "IdentExp"
+                    }
+                  }]
+                },
+                "exp2": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "eq",
+                    "exp": {
+                      "ident": "b",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "ident": "c",
+                      "type": "IdentExp"
+                    }
+                  }]
+                }
+              },
+              "annotations": []
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Obtuse",
+            "typeparams": [],
+            "extending": [{
+              "args": [],
+              "ident": {
+                "names": ["Triangle"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "OR",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "OR",
+                  "exp1": {
+                    "type": "BinExp",
+                    "op": "GT",
+                    "exp1": {
+                      "ident": "value",
+                      "exp": {
+                        "ident": "a",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "exp2": {
+                      "i": 90,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  "exp2": {
+                    "type": "BinExp",
+                    "op": "GT",
+                    "exp1": {
+                      "ident": "value",
+                      "exp": {
+                        "ident": "b",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "exp2": {
+                      "i": 90,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "GT",
+                  "exp1": {
+                    "ident": "value",
+                    "exp": {
+                      "ident": "c",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "exp2": {
+                    "i": 90,
+                    "type": "LiteralInteger"
+                  }
+                }
+              },
+              "annotations": []
+            }]
+          }
+        ],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "Shapes"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.Shapes",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Shape",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "sides",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "FunDecl",
+                "ident": "area",
+                "typeParams": [],
+                "params": [],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Double"
+                },
+                "spec": [],
+                "body": [],
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Angle",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "value",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "FunDecl",
+                "ident": "eq",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "other",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Angle"
+                  }
+                }],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "spec": [],
+                "body": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "value",
+                  "assignment": false,
+                  "expr": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "getProperty"
+                      },
+                      {
+                        "element": "other",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "value"
+                      }
+                    ],
+                    "type": "Expression"
+                  }
+                }],
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "And"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "GTE"
+                        },
+                        {
+                          "element": "value",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 0
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "LTE"
+                        },
+                        {
+                          "element": "value",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 360
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "TAngle",
+            "typeparams": [],
+            "extending": [{
+              "type": "ElementValue",
+              "element": "Angle"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "LT"
+                  },
+                  {
+                    "element": "value",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "LiteralInteger",
+                    "integer": 180
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Triangle",
+            "typeparams": [],
+            "extending": [{
+              "type": "ElementValue",
+              "element": "Shape"
+            }],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "a",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "TAngle"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "b",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "TAngle"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "c",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "TAngle"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "base",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "height",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "sides",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 3
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "area",
+                "typeParams": [],
+                "params": [],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Double"
+                },
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Divide"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "Times"
+                          },
+                          {
+                            "element": "base",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "element": "height",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 2
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "name": "Angles",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "Plus"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "a",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "value"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "b",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "value"
+                                }
+                              ],
+                              "type": "Expression"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "c",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "value"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 180
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Equilateral",
+            "typeparams": [],
+            "extending": [{
+              "type": "ElementValue",
+              "element": "Triangle"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "And"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "getProperty"
+                          },
+                          {
+                            "element": "a",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "eq"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "element": "b",
+                        "type": "ElementValue"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "getProperty"
+                          },
+                          {
+                            "element": "b",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "eq"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "element": "c",
+                        "type": "ElementValue"
+                      }
+                    ]
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            }]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Obtuse",
+            "typeparams": [],
+            "extending": [{
+              "type": "ElementValue",
+              "element": "Triangle"
+            }],
+            "members": [{
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "OR"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "OR"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "GT"
+                          },
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "a",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "value"
+                              }
+                            ],
+                            "type": "Expression"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 90
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "GT"
+                          },
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "b",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "value"
+                              }
+                            ],
+                            "type": "Expression"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 90
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "GT"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "getProperty"
+                          },
+                          {
+                            "element": "c",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "value"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 90
+                      }
+                    ],
+                    "type": "Expression"
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            }]
+          }
+        ],
+        "packages": []
+      }
+    }]
+  }
+}

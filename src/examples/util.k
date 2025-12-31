@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: Tuple indexing ($result # 1) not fully supported by type checker
 package util
 
 ========================================

@@ -1,3 +1,5 @@
+// @expected SAT
+// KNOWN BUG: Lambda expression parse error
 class PhysicalObject {
   -- type checker workaround
   keyParam1 : Real
