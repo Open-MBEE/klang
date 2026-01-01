@@ -1,17 +1,9 @@
--- KNOWN BUG: Constructor calls in function return statements generate incompatible SMT types
--- See function_with_class_params.k for detailed explanation of the bug.
+-- Test: Function returning constructor call (variant with wider bounds)
 --
--- This variant has value < 4 instead of value < 3:
---   - X.value must be in {1, 2, 3}
---   - sum requires x1.value != x2.value
---   - Possible sums: 1+2=3, 1+3=4, 2+3=5
---   - Only sum=3 satisfies value < 4, achieved with x1=1, x2=2 (or vice versa)
---   - So this should be SAT (not UNSAT like the other variant)
+-- Similar to function_with_class_params.k but with value < 4 instead of value < 3.
+-- The function is defined but not called, so SAT.
 --
--- However, this test currently fails with the same SMT sort mismatch error
--- as function_with_class_params.k due to the constructor-in-return bug.
---
--- @expected UNKNOWN
+-- @expected SAT
 
 class X {
   value : Int

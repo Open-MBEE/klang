@@ -1,31 +1,15 @@
--- KNOWN BUG: Constructor calls in function return statements generate incompatible SMT types
+-- Test: Function returning constructor call
 --
--- Problem Description:
--- When a function returns a class type and the return statement contains a constructor call,
--- the SMT generation produces type-incompatible code:
+-- This test verifies that functions can return constructor calls.
+-- The fix detects when a function body contains a return statement with a
+-- constructor call and uses 'Any' as the return type (since constructors
+-- generate (lift-X (mk-X ...)) which has type Any).
 --
---   1. The function is declared with return type `Ref` (which is an alias for `Int`)
---   2. But the constructor call `X(value::...)` generates `(lift-X (mk-X ...))`
---   3. `lift-X` wraps an X value into the `Any` datatype (used for the polymorphic heap)
---   4. So the function body returns `Any` but the signature says `Ref` → sort mismatch
+-- The function sum() takes two X parameters and returns a new X with
+-- value = x1.value + x2.value. The function is defined but not called,
+-- so there are no constraints forcing the result to satisfy X's invariant.
 --
--- Generated SMT (problematic):
---   (define-fun TopLevelDeclarations.sum ((this Ref)(x1 Ref)(x2 Ref)) Ref
---     (lift-X (mk-X (+ (X.value x1) (X.value x2)))))  ; Returns Any, not Ref!
---
--- The issue is in AbstractSyntax.scala around line 3695 where constructor applications
--- generate `(lift-$ident (mk-$ident $argsSMT))`. For heap allocation this is correct,
--- but for function returns we need to either:
---   a) Change function return types to `Any` when returning class types, OR
---   b) Have constructor returns allocate on heap and return a Ref, OR
---   c) Not translate functions with constructor returns (leave them abstract)
---
--- This test documents the bug. Once fixed, it should return UNSAT because:
---   - X.value must be in {1, 2} (req value > 0 && value < 3)
---   - sum requires x1.value != x2.value, so {x1.value, x2.value} = {1, 2}
---   - The returned X has value = 1 + 2 = 3, which violates value < 3
---
--- @expected UNKNOWN
+-- @expected SAT
 
 class X {
   value : Int

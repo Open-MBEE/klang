@@ -167,6 +167,9 @@ object UtilSMT {
     functionCalls = Set()
     ExternalFunctions.reset()
     PythonExternalFunctions.reset()
+    // Reset heap CEGAR multiplier - must be reset between batch tests
+    // to prevent one test's heap expansion from affecting subsequent tests
+    ASTOptions.instanceMultiplier = 1
   }
 
   def error(msg: String) = {
@@ -197,11 +200,46 @@ object UtilSMT {
    * Translate an expression to SMT, replacing parameter names with synthetic variable names.
    * This avoids the normal class property mechanism which adds `this` references.
    */
+  /**
+   * Map from parameter name to its type, used by translateWithSynthArgs for DotExp handling
+   */
+  var paramTypes: Map[String, Type] = Map()
+
   def translateWithSynthArgs(exp: Exp, paramToSynth: Map[String, String]): String = {
     exp match {
       case IdentExp(name) =>
         // If this is a parameter, use the synthetic variable name directly
         paramToSynth.getOrElse(name, name)
+      case DotExp(baseExp, fieldName) =>
+        // Handle field access on class-typed parameters (e.g., x1.value)
+        baseExp match {
+          case IdentExp(paramName) if paramToSynth.contains(paramName) =>
+            // This is a field access on a parameter
+            val synthVar = paramToSynth(paramName)
+            // Get the class type of the parameter
+            paramTypes.get(paramName) match {
+              case Some(IdentType(QualifiedName(List(className)), _)) =>
+                // Generate getter call: (ClassName.fieldName synthVar)
+                val getter = s"$className.$fieldName"
+                UtilSMT.addGetter(getter)
+                s"($getter $synthVar)"
+              case _ =>
+                // Fall back to regular toSMT
+                exp.toSMT(Names.mainClass, false)
+            }
+          case _ =>
+            // Recursively translate nested expressions
+            val baseSMT = translateWithSynthArgs(baseExp, paramToSynth)
+            // Try to get the type from nested DotExp
+            val baseType = baseExp match {
+              case DotExp(IdentExp(paramName), _) if paramTypes.contains(paramName) =>
+                // Would need more complex type resolution; fall back
+                None
+              case _ => None
+            }
+            // Fall back to regular toSMT for complex cases
+            exp.toSMT(Names.mainClass, false)
+        }
       case BinExp(e1, op, e2) =>
         val e1SMT = translateWithSynthArgs(e1, paramToSynth)
         val e2SMT = translateWithSynthArgs(e2, paramToSynth)
@@ -260,7 +298,8 @@ object UtilSMT {
     result += "; Functions declared but never called - synthetic calls to check body constraints\n\n"
     
     for ((className, fd) <- uncalledFunctions) {
-      val funcName = s"$className.${fd.ident}"
+      // For display purposes, omit "TopLevelDeclarations." prefix for top-level functions
+      val funcName = if (className == Names.mainClass) fd.ident else s"$className.${fd.ident}"
       
       // Generate synthetic argument variables
       val synthArgs = fd.params.map { param =>
@@ -288,13 +327,18 @@ object UtilSMT {
       
       // Extract and assert body constraints (req statements)
       // These constraints must hold for the synthetic arguments
+
+      // Build a map from parameter names to synthetic variable names
+      val paramToSynth = fd.params.zip(synthArgs).map {
+        case (param, (synthVar, _, _)) => param.name -> synthVar
+      }.toMap
+
+      // Set up paramTypes for translateWithSynthArgs to use when handling DotExp
+      paramTypes = fd.params.map(p => p.name -> p.ty).toMap
+
       for (member <- fd.body) {
         member match {
           case ConstraintDecl(_, exp, _) =>
-            // Build a map from parameter names to synthetic variable names
-            val paramToSynth = fd.params.zip(synthArgs).map {
-              case (param, (synthVar, _, _)) => param.name -> synthVar
-            }.toMap
             // Translate the constraint directly using the synthetic variable names
             val constraintSMT = translateWithSynthArgs(exp, paramToSynth)
             result += s"(assert (! $constraintSMT :named _xkassert${constraintCounter}))\n"
@@ -303,12 +347,78 @@ object UtilSMT {
             // Skip non-constraint members
         }
       }
+
+      // Clear paramTypes after processing this function
+      paramTypes = Map()
       
       result += "\n"
     }
     
     result
   }
+
+  /**
+   * Pre-register getters needed by synthetic function calls.
+   * This must be called before getters are generated, so that getters used
+   * in synthetic function body constraints are included in the SMT output.
+   */
+  def preRegisterGettersForSyntheticFunctions(): Unit = {
+    // Find functions that will have synthetic calls generated
+    val uncalledFunctions = functionDeclarations.filter { case (className, fd) =>
+      val fullName = s"$className.${fd.ident}"
+      !functionCalls.contains(fullName) && hasBodyConstraints(fd)
+    }
+
+    // For each uncalled function, scan body constraints for field accesses on class-typed parameters
+    for ((className, fd) <- uncalledFunctions) {
+      val classTypedParams = fd.params.filter { p =>
+        p.ty match {
+          case IdentType(QualifiedName(List(name)), _) if !Misc.isCollection(name) => true
+          case _ => false
+        }
+      }
+
+      // Build a map from parameter name to class name
+      val paramToClass = classTypedParams.flatMap { p =>
+        p.ty match {
+          case IdentType(QualifiedName(List(name)), _) => Some(p.name -> name)
+          case _ => None
+        }
+      }.toMap
+
+      // Scan constraints for DotExp on class-typed parameters
+      for (member <- fd.body) {
+        member match {
+          case ConstraintDecl(_, exp, _) =>
+            preRegisterGettersFromExp(exp, paramToClass)
+          case _ =>
+        }
+      }
+    }
+  }
+
+  /**
+   * Recursively scan an expression for field accesses on class-typed parameters
+   * and pre-register the corresponding getters.
+   */
+  private def preRegisterGettersFromExp(exp: Exp, paramToClass: Map[String, String]): Unit = {
+    exp match {
+      case DotExp(IdentExp(paramName), fieldName) if paramToClass.contains(paramName) =>
+        val className = paramToClass(paramName)
+        addGetter(s"$className.$fieldName")
+      case BinExp(e1, _, e2) =>
+        preRegisterGettersFromExp(e1, paramToClass)
+        preRegisterGettersFromExp(e2, paramToClass)
+      case UnaryExp(_, e) =>
+        preRegisterGettersFromExp(e, paramToClass)
+      case ParenExp(e) =>
+        preRegisterGettersFromExp(e, paramToClass)
+      case DotExp(e, _) =>
+        preRegisterGettersFromExp(e, paramToClass)
+      case _ =>
+    }
+  }
+
   // TODO: should these refer to the TypeChecker?:
   def log(msg: String) = if (!ASTOptions.silent) Misc.log("TypeChecker", msg)
   def logDebug(msg: String) = if (ASTOptions.debug && !ASTOptions.silent) Misc.log("TypeChecker", s"DEBUG $msg")
@@ -900,9 +1010,30 @@ class InstantiationGraph(model: Model) {
   }
 
   def addModelInstances(model: Model): Unit = {
-    for (ed <- model.decls.asInstanceOf[List[EntityDecl]]) {
-      val created = ed.getCreatedObjects
-      addInstances(ed.ident, created)
+    def processEntityDecl(ed: EntityDecl): Unit = {
+      // Get objects created via property type references
+      val createdFromProps = ed.getCreatedObjects
+      // Get nested classes (which should be auto-instantiated with parent)
+      val nestedClasses = ed.members.collect {
+        case nested: EntityDecl => nested.ident
+      }
+      // Add edges for both property types and nested classes
+      addInstances(ed.ident, createdFromProps ++ nestedClasses)
+      // Recursively process nested classes
+      ed.members.foreach {
+        case nested: EntityDecl =>
+          processEntityDecl(nested)
+        case _ =>
+      }
+    }
+
+    for (decl <- model.decls) {
+      decl match {
+        case ed: EntityDecl =>
+          // Process all EntityDecl including ClassToken and IdentifierToken (value classes like 'b C')
+          processEntityDecl(ed)
+        case _ =>
+      }
     }
     for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
       var m = pd.model
@@ -986,8 +1117,13 @@ class HeapLayout(model: Model) {
   }
 
   def getHeapEntries(className: graph.ClassName): List[Int] = {
-    val (low, high) = heapEntries(className)
-    (low to high).toList
+    heapEntries.get(className) match {
+      case Some((low, high)) => (low to high).toList
+      case None =>
+        // Class not in heapEntries - might be a nested class not yet in graph
+        if (K2Z3.debug) println(s"WARNING: No heap entries for class $className (available: ${heapEntries.keys.mkString(", ")})")
+        List()
+    }
   }
 
   // --- Populate state: ---
@@ -1139,8 +1275,21 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
 
   def allEntityDecls(model: Model): List[EntityDecl] = {
     var allDecls = new ListBuffer[EntityDecl]()
+
+    // Recursively collect EntityDecls including nested classes
+    def collectEntityDecls(ed: EntityDecl): Unit = {
+      allDecls += ed
+      // Recursively collect nested classes
+      ed.members.foreach {
+        case nested: EntityDecl if nested.entityToken == ClassToken =>
+          collectEntityDecls(nested)
+        case _ =>
+      }
+    }
+
     val eDecls = entityDecls(model)
-    allDecls.appendAll(eDecls)
+    eDecls.foreach(collectEntityDecls)
+
     for ( pd <- model.packages ) {
       val pdecls = allEntityDecls(pd.model)
       allDecls.appendAll(pdecls)
@@ -1327,7 +1476,10 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // --- Back to the middle section. ---
     // -----------------------------------
 
-    // Generate getters:    
+    // Pre-register getters needed by synthetic function calls before generating getter definitions
+    UtilSMT.preRegisterGettersForSyntheticFunctions()
+
+    // Generate getters:
 
     var getters: String = UtilSMT.headline1("Getters")
     for (ed <- entityDecls) {
@@ -2463,17 +2615,34 @@ case class FunDecl(ident: String,
   override def toSMT(className: String): String = {
     // Register this function declaration for synthetic call tracking
     UtilSMT.registerFunctionDeclaration(className, this)
-    
+
     var result: String = ""
     val parameterTypes: String = s"Ref " + params.map(_.toSMTType).mkString(" ")
     val parameters: String = s"(this Ref)" + params.map(_.toSMT).mkString
     val actuals: String = "this " + params.map(_.toSMTName).mkString(" ")
+
+    // Check if body returns a constructor call - if so, return type should be Any
+    // because constructor expressions generate (lift-X (mk-X ...)) which has type Any
+    def bodyReturnsConstructor: Boolean = {
+      body.exists {
+        case ExpressionDecl(ReturnExp(exp)) => UtilSMT.isConstructorAppl(exp)
+        case _ => false
+      }
+    }
+
     val resultType: String = ty match {
       case Some(t) =>
         if (!UtilSMT.wellFormedType(t))
           UtilSMT.error(s"function return type $t in $this")
-        else
-          t.toSMT
+        else {
+          // For class return types, check if body returns a constructor
+          t match {
+            case IdentType(QualifiedName(_ :: Nil), Nil) if bodyReturnsConstructor =>
+              "Any"  // Constructor returns Any via lift-X wrapper
+            case _ =>
+              t.toSMT
+          }
+        }
       case None =>
         // No return type - treat as Unit (void) function
         // We use Bool as a placeholder for Unit in SMT (Unit doesn't exist in SMT)
@@ -2869,16 +3038,54 @@ case class IdentExp(ident: String) extends Exp {
     }
     if (isLocal(this) || UtilSMT.isCreatedLocal(ident))
       ident
-    else if (UtilSMT.isGlobal(this) && className != UtilSMT.Names.mainClass) {
-      val mainClass: String = UtilSMT.Names.mainClass
-      val getter: String = s"$mainClass!$ident"
-      UtilSMT.addGetter(getter)
-      s"($getter 0)"
-    } else {
-      val dot: String = if (subTyping) "." else "!"
-      val getter: String = s"$className$dot$ident"
-      UtilSMT.addGetter(getter)
-      s"($getter this)" // deleted space after ')'. I think it does not break anything (KH).
+    else {
+      // Get the owning entity for this identifier
+      val owningEntity = TypeChecker.getOwningEntityDecl(this)
+      if (owningEntity == null && className != UtilSMT.Names.mainClass) {
+        // Global variable (no owning entity)
+        val mainClass: String = UtilSMT.Names.mainClass
+        val getter: String = s"$mainClass!$ident"
+        UtilSMT.addGetter(getter)
+        s"($getter 0)"
+      } else {
+        // Check if this is a nested class accessing a parent (enclosing) class field
+        // This is different from inheritance - for nested classes, we use parent's class name
+        // For inheritance, we use the current class name (subclass inherits the field)
+        val isNestedClassField = owningEntity != null && owningEntity.ident != className && {
+          // Check if className is a nested class and owningEntity is in its nesting chain
+          var current = className
+          var isNested = false
+          while (TypeChecker.nestedClassParent.contains(current) && !isNested) {
+            val parent = TypeChecker.nestedClassParent(current)
+            if (parent == owningEntity.ident) isNested = true
+            current = parent
+          }
+          isNested
+        }
+
+        // For nested classes, use the parent's class name; otherwise use current class
+        val actualClassName = if (isNestedClassField && owningEntity != null) owningEntity.ident else className
+        val dot: String = if (subTyping) "." else "!"
+        val getter: String = s"$actualClassName$dot$ident"
+        UtilSMT.addGetter(getter)
+
+        if (isNestedClassField) {
+          // For nested classes accessing parent fields, we need to get the parent's heap entry
+          val parentHeapEntries = UtilSMT.objectGraph.getHeapEntries(owningEntity.ident)
+          if (parentHeapEntries.size == 1) {
+            s"($getter ${parentHeapEntries.head})"
+          } else if (parentHeapEntries.nonEmpty) {
+            // Multiple parent instances - use first one as default (limitation)
+            s"($getter ${parentHeapEntries.head})"
+          } else {
+            // No parent instances allocated yet - use 'this' as fallback
+            s"($getter this)"
+          }
+        } else {
+          // For regular access and inheritance, use 'this'
+          s"($getter this)"
+        }
+      }
     }
   }
 
@@ -2993,7 +3200,27 @@ case class DotExp(exp: Exp, ident: String) extends Exp {
 
   override def toSMT(className: String, subTyping: Boolean): String = {
     val expSMT = exp.toSMT(className, subTyping)
-    val expType = TypeChecker.exp2Type.get(exp)
+    var expType = TypeChecker.exp2Type.get(exp)
+
+    // If type not found in exp2Type, try to infer from expression structure
+    // This handles cases like function parameters with class types
+    if (expType == null) {
+      exp match {
+        case ie: IdentExp =>
+          // Try to look up the identifier's type from the type environment
+          if (TypeChecker.exp2TypeEnv.containsKey(ie)) {
+            val typeEnv = TypeChecker.exp2TypeEnv.get(ie)
+            if (typeEnv != null && typeEnv.contains(ie.ident)) {
+              typeEnv(ie.ident) match {
+                case ParamTypeInfo(p) => expType = p.ty
+                case PropertyTypeInfo(decl, _, _, _) => expType = decl.getType.orNull
+                case _ =>
+              }
+            }
+          }
+        case _ =>
+      }
+    }
 
     // Handle string properties
     if (expType == StringType) {

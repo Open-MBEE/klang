@@ -41,7 +41,9 @@ class G extends E {
 }
 
 class H extends F, G {
-  h : Int 
+  share E;  -- Resolve diamond inheritance (E inherited via both F and G)
+  share D;  -- D is also inherited via E from both paths
+  h : Int
 
   tsum : Int = a + b + c + d + e + f + g + h
   

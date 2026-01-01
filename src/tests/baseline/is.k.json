@@ -1,113 +1,101 @@
 {
+  "name": "is.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Fruit {\n  mass:Real\n}\n\nclass CitrusFruit extending Fruit {\n  vitC:Real\n}\n\nclass Legume extending Fruit {\n  protein:Real\n}\n\nclass Berry extending Fruit\n\nclass SeedyFruit extending Fruit,CitrusFruit {\n  share Fruit;\n  seeds:Int\n}\n\napple:CitrusFruit\n\npeanut:Legume\n\nreq apple is SeedyFruit\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (apple Ref)(peanut Ref)))))\n(declare-datatypes () ((Fruit (mk-Fruit (mass Real)))))\n(declare-datatypes () ((CitrusFruit (mk-CitrusFruit (mass Real)(vitC Real)))))\n(declare-datatypes () ((Legume (mk-Legume (mass Real)(protein Real)))))\n(declare-datatypes () ((Berry (mk-Berry (mass Real)))))\n(declare-datatypes () ((SeedyFruit (mk-SeedyFruit (mass Real)(vitC Real)(seeds Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Fruit (sel-Fruit Fruit))\n  (lift-CitrusFruit (sel-CitrusFruit CitrusFruit))\n  (lift-Legume (sel-Legume Legume))\n  (lift-Berry (sel-Berry Berry))\n  (lift-SeedyFruit (sel-SeedyFruit SeedyFruit))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Fruit ((this Ref)) Bool\n  (is-lift-Fruit (deref this))\n)\n\n(define-fun deref-Fruit ((this Ref)) Fruit\n  (sel-Fruit (deref this))\n)\n\n(define-fun deref-is-CitrusFruit ((this Ref)) Bool\n  (is-lift-CitrusFruit (deref this))\n)\n\n(define-fun deref-CitrusFruit ((this Ref)) CitrusFruit\n  (sel-CitrusFruit (deref this))\n)\n\n(define-fun deref-is-Legume ((this Ref)) Bool\n  (is-lift-Legume (deref this))\n)\n\n(define-fun deref-Legume ((this Ref)) Legume\n  (sel-Legume (deref this))\n)\n\n(define-fun deref-is-Berry ((this Ref)) Bool\n  (is-lift-Berry (deref this))\n)\n\n(define-fun deref-Berry ((this Ref)) Berry\n  (sel-Berry (deref this))\n)\n\n(define-fun deref-is-SeedyFruit ((this Ref)) Bool\n  (is-lift-SeedyFruit (deref this))\n)\n\n(define-fun deref-SeedyFruit ((this Ref)) SeedyFruit\n  (sel-SeedyFruit (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Fruit ((this Ref)) Bool\n  (or\n    (deref-is-Fruit this)\n    (deref-is-CitrusFruit this)\n    (deref-is-Legume this)\n    (deref-is-Berry this)\n    (deref-is-SeedyFruit this)\n  )\n)\n\n(define-fun deref-isa-CitrusFruit ((this Ref)) Bool\n  (or\n    (deref-is-CitrusFruit this)\n    (deref-is-SeedyFruit this)\n  )\n)\n\n(define-fun deref-isa-Legume ((this Ref)) Bool\n  (deref-is-Legume this)\n)\n\n(define-fun deref-isa-Berry ((this Ref)) Bool\n  (deref-is-Berry this)\n)\n\n(define-fun deref-isa-SeedyFruit ((this Ref)) Bool\n  (deref-is-SeedyFruit this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.apple: ---\n\n(define-fun TopLevelDeclarations!apple ((this Ref)) Ref\n  (apple (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.peanut: ---\n\n(define-fun TopLevelDeclarations!peanut ((this Ref)) Ref\n  (peanut (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-CitrusFruit (TopLevelDeclarations!apple this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Legume (TopLevelDeclarations!peanut this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-SeedyFruit (TopLevelDeclarations!apple this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n\n\n; ------------------------------\n;   Invariant for class Fruit:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-Fruit Fruit)\n\n\n\n; ------------------------------------\n;   Invariant for class CitrusFruit:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-CitrusFruit CitrusFruit)\n\n\n\n; -------------------------------\n;   Invariant for class Legume:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Legume Legume)\n\n\n\n; ------------------------------\n;   Invariant for class Berry:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Berry Berry)\n\n\n\n; -----------------------------------\n;   Invariant for class SeedyFruit:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-SeedyFruit SeedyFruit)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        4 (lift-Fruit const-4-Fruit))\n        3 (lift-CitrusFruit const-3-CitrusFruit))\n        1 (lift-Legume const-1-Legume))\n        2 (lift-Berry const-2-Berry))\n        5 (lift-SeedyFruit const-5-SeedyFruit))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-Berry () Berry\n  (mk-Berry 2.0))\n(define-fun const-3-CitrusFruit () CitrusFruit\n  (mk-CitrusFruit 3.0 4.0))\n(define-fun const-5-SeedyFruit () SeedyFruit\n  (mk-SeedyFruit 8.0 9.0 6))\n(define-fun const-4-Fruit () Fruit\n  (mk-Fruit 5.0))\n(define-fun const-1-Legume () Legume\n  (mk-Legume 6.0 7.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 5 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (apple (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-SeedyFruit a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (apple (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-CitrusFruit a!1) (is-lift-SeedyFruit a!1))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (peanut (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Legume a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 5 1)))\n                  4\n                  (lift-Fruit (mk-Fruit 5.0)))))\n(let ((a!2 (store (store a!1 3 (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0)))\n                  1\n                  (lift-Legume (mk-Legume 6.0 7.0)))))\n  (store (store a!2 2 (lift-Berry (mk-Berry 2.0)))\n         5\n         (lift-SeedyFruit (mk-SeedyFruit 8.0 9.0 6))))))",
   "json1": {
+    "type": "Model",
+    "imports": [],
     "annotations": [],
     "decls": [
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [],
         "ident": "Fruit",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "mass",
-            "ty": {
-              "type": "RealType"
-            },
-            "type": "PropertyDecl"
-          }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "mass",
+          "ty": {"type": "RealType"}
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "args": [],
-            "ident": {
-              "names": [
-                "Fruit"
-              ],
-              "type": "QualifiedName"
-            },
-            "type": "IdentType"
-          }
-        ],
         "ident": "CitrusFruit",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "vitC",
-            "ty": {
-              "type": "RealType"
-            },
-            "type": "PropertyDecl"
-          }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Fruit"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "vitC",
+          "ty": {"type": "RealType"}
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "args": [],
-            "ident": {
-              "names": [
-                "Fruit"
-              ],
-              "type": "QualifiedName"
-            },
-            "type": "IdentType"
-          }
-        ],
         "ident": "Legume",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "protein",
-            "ty": {
-              "type": "RealType"
-            },
-            "type": "PropertyDecl"
-          }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Fruit"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "protein",
+          "ty": {"type": "RealType"}
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "args": [],
-            "ident": {
-              "names": [
-                "Fruit"
-              ],
-              "type": "QualifiedName"
-            },
-            "type": "IdentType"
-          }
-        ],
         "ident": "Berry",
-        "members": [],
-        "type": "EntityDecl",
-        "typeparams": []
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Fruit"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": []
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
+        "ident": "SeedyFruit",
+        "typeparams": [],
         "extending": [
           {
             "args": [],
             "ident": {
-              "names": [
-                "Fruit"
-              ],
+              "names": ["Fruit"],
               "type": "QualifiedName"
             },
             "type": "IdentType"
@@ -115,60 +103,58 @@
           {
             "args": [],
             "ident": {
-              "names": [
-                "CitrusFruit"
-              ],
+              "names": ["CitrusFruit"],
               "type": "QualifiedName"
             },
             "type": "IdentType"
           }
         ],
-        "ident": "SeedyFruit",
         "members": [
           {
+            "type": "ShareDecl",
+            "types": "List(Fruit)"
+          },
+          {
+            "type": "PropertyDecl",
             "modifiers": [],
+            "annotations": [],
             "name": "seeds",
-            "ty": {
-              "type": "IntType"
-            },
-            "type": "PropertyDecl"
+            "ty": {"type": "IntType"}
           }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        ]
       },
       {
+        "type": "PropertyDecl",
         "modifiers": [],
+        "annotations": [],
         "name": "apple",
         "ty": {
           "args": [],
           "ident": {
-            "names": [
-              "CitrusFruit"
-            ],
+            "names": ["CitrusFruit"],
             "type": "QualifiedName"
           },
           "type": "IdentType"
-        },
-        "type": "PropertyDecl"
+        }
       },
       {
+        "type": "PropertyDecl",
         "modifiers": [],
+        "annotations": [],
         "name": "peanut",
         "ty": {
           "args": [],
           "ident": {
-            "names": [
-              "Legume"
-            ],
+            "names": ["Legume"],
             "type": "QualifiedName"
           },
           "type": "IdentType"
-        },
-        "type": "PropertyDecl"
+        }
       },
       {
+        "type": "ConstraintDecl",
         "exp": {
+          "type": "TypeCastCheckExp",
           "cast": "false",
           "exp": {
             "ident": "apple",
@@ -177,254 +163,155 @@
           "ty": {
             "args": [],
             "ident": {
-              "names": [
-                "SeedyFruit"
-              ],
+              "names": ["SeedyFruit"],
               "type": "QualifiedName"
             },
             "type": "IdentType"
-          },
-          "type": "TypeCastCheckExp"
+          }
         },
-        "type": "ConstraintDecl"
+        "annotations": []
       }
     ],
-    "imports": [],
-    "type": "Model"
+    "packages": []
   },
   "json2": {
+    "type": "Model",
+    "imports": [],
     "annotations": [],
     "decls": [
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [],
         "ident": "Fruit",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "mass",
-            "ty": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "RealType"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "PropertyDecl"
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "mass",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Double"
           }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "operand": [
-              {
-                "element": "ElementValue",
-                "type": "IdentType"
-              },
-              {
-                "names": [
-                  "Fruit"
-                ],
-                "type": "QualifiedName"
-              }
-            ],
-            "type": "Expression"
-          }
-        ],
         "ident": "CitrusFruit",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "vitC",
-            "ty": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "RealType"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "PropertyDecl"
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Fruit"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "vitC",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Double"
           }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "operand": [
-              {
-                "element": "ElementValue",
-                "type": "IdentType"
-              },
-              {
-                "names": [
-                  "Fruit"
-                ],
-                "type": "QualifiedName"
-              }
-            ],
-            "type": "Expression"
-          }
-        ],
         "ident": "Legume",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "protein",
-            "ty": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "RealType"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "PropertyDecl"
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Fruit"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "protein",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Double"
           }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        }]
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
-        "extending": [
-          {
-            "operand": [
-              {
-                "element": "ElementValue",
-                "type": "IdentType"
-              },
-              {
-                "names": [
-                  "Fruit"
-                ],
-                "type": "QualifiedName"
-              }
-            ],
-            "type": "Expression"
-          }
-        ],
         "ident": "Berry",
-        "members": [],
-        "type": "EntityDecl",
-        "typeparams": []
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Fruit"
+        }],
+        "members": []
       },
       {
+        "type": "EntityDecl",
         "annotations": [],
         "entityToken": "class",
+        "ident": "SeedyFruit",
+        "typeparams": [],
         "extending": [
           {
-            "operand": [
-              {
-                "element": "ElementValue",
-                "type": "IdentType"
-              },
-              {
-                "names": [
-                  "Fruit"
-                ],
-                "type": "QualifiedName"
-              }
-            ],
-            "type": "Expression"
+            "type": "ElementValue",
+            "element": "Fruit"
           },
           {
-            "operand": [
-              {
-                "element": "ElementValue",
-                "type": "IdentType"
-              },
-              {
-                "names": [
-                  "CitrusFruit"
-                ],
-                "type": "QualifiedName"
-              }
-            ],
-            "type": "Expression"
+            "type": "ElementValue",
+            "element": "CitrusFruit"
           }
         ],
-        "ident": "SeedyFruit",
         "members": [
           {
+            "type": "ShareDecl",
+            "types": "List(Fruit)"
+          },
+          {
+            "type": "PropertyDecl",
             "modifiers": [],
+            "annotations": [],
             "name": "seeds",
             "ty": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "IntType"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "PropertyDecl"
+              "type": "ElementValue",
+              "element": "Integer"
+            }
           }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
+        ]
       },
       {
+        "type": "PropertyDecl",
         "modifiers": [],
+        "annotations": [],
         "name": "apple",
         "ty": {
-          "operand": [
-            {
-              "element": "ElementValue",
-              "type": "IdentType"
-            },
-            {
-              "names": [
-                "CitrusFruit"
-              ],
-              "type": "QualifiedName"
-            }
-          ],
-          "type": "Expression"
-        },
-        "type": "PropertyDecl"
+          "type": "ElementValue",
+          "element": "CitrusFruit"
+        }
       },
       {
+        "type": "PropertyDecl",
         "modifiers": [],
+        "annotations": [],
         "name": "peanut",
         "ty": {
-          "operand": [
-            {
-              "element": "ElementValue",
-              "type": "IdentType"
-            },
-            {
-              "names": [
-                "Legume"
-              ],
-              "type": "QualifiedName"
-            }
-          ],
-          "type": "Expression"
-        },
-        "type": "PropertyDecl"
+          "type": "ElementValue",
+          "element": "Legume"
+        }
       },
       {
+        "type": "ConstraintDecl",
         "exp": {
+          "type": "Expression",
           "operand": [
             {
-              "element": "ElementValue",
-              "type": "TypeCastCheckExp"
+              "type": "ElementValue",
+              "element": "typeCastCheck"
             },
             "false",
             {
@@ -432,32 +319,14 @@
               "type": "ElementValue"
             },
             {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "IdentType"
-                },
-                {
-                  "names": [
-                    "SeedyFruit"
-                  ],
-                  "type": "QualifiedName"
-                }
-              ],
-              "type": "Expression"
+              "type": "ElementValue",
+              "element": "SeedyFruit"
             }
-          ],
-          "type": "Expression"
+          ]
         },
-        "type": "ConstraintDecl"
+        "annotations": []
       }
     ],
-    "imports": [],
-    "type": "Model"
-  },
-  "model": "\nclass Fruit {\n  mass:Real\n}\n\nclass CitrusFruit extending Fruit {\n  vitC:Real\n}\n\nclass Legume extending Fruit {\n  protein:Real\n}\n\nclass Berry extending Fruit\n\nclass SeedyFruit extending Fruit,CitrusFruit {\n  seeds:Int\n}\n\napple:CitrusFruit\n\npeanut:Legume\n\nreq apple is SeedyFruit\n\n",
-  "name": "is.k",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (apple Ref)(peanut Ref)))))\n(declare-datatypes () ((Fruit (mk-Fruit (mass Real)))))\n(declare-datatypes () ((CitrusFruit (mk-CitrusFruit (mass Real)(vitC Real)))))\n(declare-datatypes () ((Legume (mk-Legume (mass Real)(protein Real)))))\n(declare-datatypes () ((Berry (mk-Berry (mass Real)))))\n(declare-datatypes () ((SeedyFruit (mk-SeedyFruit (mass Real)(vitC Real)(seeds Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Fruit (sel-Fruit Fruit))\n  (lift-CitrusFruit (sel-CitrusFruit CitrusFruit))\n  (lift-Legume (sel-Legume Legume))\n  (lift-Berry (sel-Berry Berry))\n  (lift-SeedyFruit (sel-SeedyFruit SeedyFruit))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Fruit ((this Ref)) Bool\n  (is-lift-Fruit (deref this))\n)\n\n(define-fun deref-Fruit ((this Ref)) Fruit\n  (sel-Fruit (deref this))\n)\n\n(define-fun deref-is-CitrusFruit ((this Ref)) Bool\n  (is-lift-CitrusFruit (deref this))\n)\n\n(define-fun deref-CitrusFruit ((this Ref)) CitrusFruit\n  (sel-CitrusFruit (deref this))\n)\n\n(define-fun deref-is-Legume ((this Ref)) Bool\n  (is-lift-Legume (deref this))\n)\n\n(define-fun deref-Legume ((this Ref)) Legume\n  (sel-Legume (deref this))\n)\n\n(define-fun deref-is-Berry ((this Ref)) Bool\n  (is-lift-Berry (deref this))\n)\n\n(define-fun deref-Berry ((this Ref)) Berry\n  (sel-Berry (deref this))\n)\n\n(define-fun deref-is-SeedyFruit ((this Ref)) Bool\n  (is-lift-SeedyFruit (deref this))\n)\n\n(define-fun deref-SeedyFruit ((this Ref)) SeedyFruit\n  (sel-SeedyFruit (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Fruit ((this Ref)) Bool\n  (or\n    (deref-is-Fruit this)\n    (deref-is-CitrusFruit this)\n    (deref-is-Legume this)\n    (deref-is-Berry this)\n    (deref-is-SeedyFruit this)\n  )\n)\n\n(define-fun deref-isa-CitrusFruit ((this Ref)) Bool\n  (or\n    (deref-is-CitrusFruit this)\n    (deref-is-SeedyFruit this)\n  )\n)\n\n(define-fun deref-isa-Legume ((this Ref)) Bool\n  (deref-is-Legume this)\n)\n\n(define-fun deref-isa-Berry ((this Ref)) Bool\n  (deref-is-Berry this)\n)\n\n(define-fun deref-isa-SeedyFruit ((this Ref)) Bool\n  (deref-is-SeedyFruit this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.apple: ---\n\n(define-fun TopLevelDeclarations!apple ((this Ref)) Ref\n  (apple (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.peanut: ---\n\n(define-fun TopLevelDeclarations!peanut ((this Ref)) Ref\n  (peanut (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-CitrusFruit (TopLevelDeclarations!apple this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert170))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Legume (TopLevelDeclarations!peanut this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert171))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-SeedyFruit (TopLevelDeclarations!apple this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert172))\n\n\n\n; ------------------------------\n;   Invariant for class Fruit:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Fruit Fruit)\n\n\n\n; ------------------------------------\n;   Invariant for class CitrusFruit:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-CitrusFruit CitrusFruit)\n(declare-const const-7-CitrusFruit CitrusFruit)\n\n\n\n; -------------------------------\n;   Invariant for class Legume:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Legume Legume)\n(declare-const const-4-Legume Legume)\n\n\n\n; ------------------------------\n;   Invariant for class Berry:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-Berry Berry)\n\n\n\n; -----------------------------------\n;   Invariant for class SeedyFruit:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-SeedyFruit SeedyFruit)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Fruit const-1-Fruit))\n        6 (lift-CitrusFruit const-6-CitrusFruit))\n        7 (lift-CitrusFruit const-7-CitrusFruit))\n        3 (lift-Legume const-3-Legume))\n        4 (lift-Legume const-4-Legume))\n        5 (lift-Berry const-5-Berry))\n        2 (lift-SeedyFruit const-2-SeedyFruit))\n  )\n)\n\n",
-  "smtModel": "(define-fun const-7-CitrusFruit () CitrusFruit\n  (mk-CitrusFruit 3.0 4.0))\n(define-fun const-5-Berry () Berry\n  (mk-Berry 7.0))\n(define-fun const-2-SeedyFruit () SeedyFruit\n  (mk-SeedyFruit 10.0 11.0 8))\n(define-fun const-1-Fruit () Fruit\n  (mk-Fruit 0.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2 3))\n(define-fun const-3-Legume () Legume\n  (mk-Legume 8.0 9.0))\n(define-fun const-4-Legume () Legume\n  (mk-Legume 5.0 6.0))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!8))\n(define-fun const-6-CitrusFruit () CitrusFruit\n  (mk-CitrusFruit 1.0 2.0))\n(define-fun k!7 ((x!1 Int)) Any\n  (ite (= x!1 5) (lift-Berry (mk-Berry 7.0))\n  (ite (= x!1 3) (lift-Legume (mk-Legume 8.0 9.0))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 7) (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0))\n  (ite (= x!1 4) (lift-Legume (mk-Legume 5.0 6.0))\n    null))))))))\n(define-fun k!4 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 7) (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n    null)))))\n(define-fun k!1 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n    null))\n(define-fun k!6 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Legume (mk-Legume 8.0 9.0))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 7) (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0))\n  (ite (= x!1 4) (lift-Legume (mk-Legume 5.0 6.0))\n    null)))))))\n(define-fun k!3 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n    null))))\n(define-fun k!0 ((x!1 Int)) Any\n  null)\n(define-fun k!8 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Legume (mk-Legume 8.0 9.0))\n  (ite (= x!1 5) (lift-Berry (mk-Berry 7.0))\n  (ite (= x!1 4) (lift-Legume (mk-Legume 5.0 6.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 2) (lift-SeedyFruit (mk-SeedyFruit 10.0 11.0 8))\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 7) (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n    null)))))))))\n(define-fun k!5 ((x!1 Int)) Any\n  (ite (= x!1 3) (lift-Legume (mk-Legume 8.0 9.0))\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n  (ite (= x!1 7) (lift-CitrusFruit (mk-CitrusFruit 3.0 4.0))\n  (ite (= x!1 6) (lift-CitrusFruit (mk-CitrusFruit 1.0 2.0))\n    null))))))\n(define-fun k!2 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-Fruit (mk-Fruit 0.0))\n  (ite (= x!1 0) (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2 3))\n    null)))",
-  "typeChecks": true
+    "packages": []
+  }
 }

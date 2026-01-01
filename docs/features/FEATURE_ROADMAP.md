@@ -42,6 +42,7 @@ This document tracks features that are missing or incomplete in K relative to SM
 
 | Feature | Priority | Complexity | Notes |
 |---------|----------|------------|-------|
+| **Share Individual Members** | High | Medium | `share Foo.bar;` to share only specific members from diamond ancestor, while renaming others |
 | **Preferred Solver Comment** | High | Low | `// @preferred_solver cvc5` comment to specify preferred solver per file |
 | **BAE Solver Integration** | High | Medium | Add kservices BAE as a solver backend |
 | **Solver Performance Annotations** | Medium | Low | Annotate test/example files with preferred solver when one significantly outperforms Z3 |

@@ -13,6 +13,7 @@ class Legume extends Fruit {
 class Berry extends Fruit
  
 class SeedyFruit extends Fruit, CitrusFruit {
+  share Fruit;  -- Resolve diamond (Fruit inherited via both direct and CitrusFruit paths)
   seeds : Int
 }
  
