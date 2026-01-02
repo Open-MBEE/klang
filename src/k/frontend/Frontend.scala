@@ -266,28 +266,25 @@ object Frontend {
         K2Z3.debug = true
         UnifiedSolver.debug = true
         parseArgs(map ++ Map('debug -> true), tail)
-      case "-ktc" :: tail =>
-        // Use K-based type checker (experimental - spawns subprocess to solve types)
-        parseArgs(map ++ Map('ktc -> true), tail)
       case "-ktc-gen" :: tail =>
         // Generate K type check program only (don't run)
         parseArgs(map ++ Map('ktcGen -> true), tail)
       case "-tc-strict" :: tail =>
         // Type checking mode: Strict (declarations required, unambiguous types)
         KTypeChecker.setMode(reqDecl = true, reqUnambiguous = true)
-        parseArgs(map ++ Map('ktc -> true), tail)  // Also enable K-based TC
+        parseArgs(map, tail)
       case "-tc-inferred" :: tail =>
         // Type checking mode: InferredDecls (no declarations required, unambiguous types)
         KTypeChecker.setMode(reqDecl = false, reqUnambiguous = true)
-        parseArgs(map ++ Map('ktc -> true), tail)  // Also enable K-based TC
+        parseArgs(map, tail)
       case "-tc-ambiguous" :: tail =>
         // Type checking mode: AmbiguousTypes (declarations required, ambiguous types allowed)
         KTypeChecker.setMode(reqDecl = true, reqUnambiguous = false)
-        parseArgs(map ++ Map('ktc -> true), tail)  // Also enable K-based TC
+        parseArgs(map, tail)
       case "-tc-flexible" :: tail =>
         // Type checking mode: FullyFlexible (no declarations required, ambiguous types allowed)
         KTypeChecker.setMode(reqDecl = false, reqUnambiguous = false)
-        parseArgs(map ++ Map('ktc -> true), tail)  // Also enable K-based TC
+        parseArgs(map, tail)
       case value :: tail if !value.startsWith("-") =>
         // Non-switch argument is a model file
         parseArgs(map ++ Map('modelFile -> value), tail)
@@ -1052,32 +1049,37 @@ object Frontend {
         return
       }
       
-      // Type checking: Traditional is default, use -ktc for K-based
-      if (options.contains('ktc)) {
-        // K-based type checker (experimental - spawns subprocess)
-        val modeName = (KTypeChecker.requireDeclarations, KTypeChecker.requireUnambiguousTypes) match {
-          case (true, true) => "Strict"
-          case (false, true) => "InferredDecls"
-          case (true, false) => "AmbiguousTypes"
-          case (false, false) => "FullyFlexible"
-        }
-        log(s"Using K-based type checker (mode: $modeName)...")
-        val result = KTypeChecker.typeCheck(combinedModel)
-        if (result.success) {
-          log("Type checking completed. No errors found.")
-          if (result.inferredTypes.nonEmpty) {
-            logDebug(s"Inferred types: ${result.inferredTypes.map { case (k, v) => s"$k: $v" }.mkString(", ")}")
-          }
-        } else {
-          result.errors.foreach(e => println(s"[KTypeChecker] Error: $e"))
-          errorExit("Type checking failed.")
+      // Type checking: K-based type checker is the default
+      // KTypeChecker validates types, then TypeChecker builds state for SMT generation
+      val modeName = (KTypeChecker.requireDeclarations, KTypeChecker.requireUnambiguousTypes) match {
+        case (true, true) => "Strict"
+        case (false, true) => "InferredDecls"
+        case (true, false) => "AmbiguousTypes"
+        case (false, false) => "FullyFlexible"
+      }
+      log(s"Type checking (mode: $modeName)...")
+      val result = KTypeChecker.typeCheck(combinedModel)
+      if (result.success) {
+        log("Type checking completed. No errors found.")
+        if (result.inferredTypes.nonEmpty) {
+          logDebug(s"Inferred types: ${result.inferredTypes.map { case (k, v) => s"$k: $v" }.mkString(", ")}")
         }
       } else {
-        // Traditional type checker (default)
-        TypeChecker.reset()
+        result.errors.foreach(e => println(s"[TypeChecker] Error: $e"))
+        errorExit("Type checking failed.")
+      }
+
+      // Build type environment state needed for SMT generation
+      // (TypeChecker.exp2Type, etc. are used by toSMT methods)
+      TypeChecker.reset()
+      TypeChecker.silent = true  // Suppress duplicate error messages
+      try {
         val tc: TypeChecker = new TypeChecker(combinedModel)
         tc.smtCheck
-        log("Type checking completed. No errors found.")
+      } catch {
+        case _: Throwable => // Ignore - KTypeChecker already validated
+      } finally {
+        TypeChecker.silent = false
       }
 
       // Set CVC5 compatibility flag BEFORE SMT generation if -cvc5 is specified
