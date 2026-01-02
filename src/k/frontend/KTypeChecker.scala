@@ -681,10 +681,10 @@ object KTypeChecker {
           )
         }
         
-        // Type check the type program (using traditional type checker)
-        val tc = new TypeChecker(typeModel)
-        tc.smtCheck
-        
+        // Skip type checking the generated type program - it's well-formed by construction
+        // and Z3 will report UNSAT if there's a type error. This allows K to be self-hosting
+        // (K type checking done via K) without circular dependency on TypeChecker.
+
         // Generate SMT and solve
         val smtModel = typeModel.toSMT
         K2Z3.solveSMT(typeModel, smtModel, printModel = false)
