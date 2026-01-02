@@ -1724,30 +1724,32 @@ class TypeChecker(model: Model) {
               else if (i == "subList") CollectType(it.args)
               else error(s"getExpType: error, type could not be discovered for $exp.")
             } else {
-              if (i == "collect") CollectType(List(it))
-              else if (i == "size" || i == "length") IntType  // size returns Int
-              else if (i == "sum") SumType(it.args)
-              else if (i == "at") SumType(it.args)
-              else if (i == "toString") StringType
-              else {
-                // get class type environment
-                val className = it.ident.toString
-                if (!classes.contains(className)) {
-                  error(s"Class $className not found in classes map")
-                }
+              // First check if it's a class property or function
+              val className = it.ident.toString
+              val classPropertyType: Option[Type] = if (classes.contains(className)) {
                 val classDecl = classes(className)
-                if (!decl2TypeEnvi.contains(classDecl)) {
-                  error(s"Class $className not found in decl2TypeEnvi")
-                }
-                val classTypeEnv = decl2TypeEnvi(classDecl)
-                logDebug(s"classTypeEnv is $classTypeEnv")
-                classTypeEnv(i) match {
-                  case pti @ PropertyTypeInfo(decl, _, _, _) => getPropertyDeclType(decl)
-                  case pti @ ParamTypeInfo(p)                => p.ty
-                  case pti @ FunctionTypeInfo(decl, _)       => decl.ty.get
-                  case _                                     => error(s"Given expression does not type check: $exp.")
+                if (decl2TypeEnvi.contains(classDecl)) {
+                  val classTypeEnv = decl2TypeEnvi(classDecl)
+                  logDebug(s"classTypeEnv is $classTypeEnv")
+                  if (classTypeEnv.contains(i)) {
+                    classTypeEnv(i) match {
+                      case pti @ PropertyTypeInfo(decl, _, _, _) => Some(getPropertyDeclType(decl))
+                      case pti @ ParamTypeInfo(p)                => Some(p.ty)
+                      case pti @ FunctionTypeInfo(decl, _)       => Some(decl.ty.get)
+                      case _                                     => None
+                    }
+                  } else None
+                } else None
+              } else None
 
-                }
+              // If found as class property, use that type; otherwise fall back to built-in methods
+              classPropertyType.getOrElse {
+                if (i == "collect") CollectType(List(it))
+                else if (i == "size" || i == "length") IntType  // size returns Int
+                else if (i == "sum") SumType(it.args)
+                else if (i == "at") SumType(it.args)
+                else if (i == "toString") StringType
+                else error(s"Given expression does not type check: $exp.")
               }
             }
           case StringType =>
