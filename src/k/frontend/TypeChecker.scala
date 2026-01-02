@@ -236,10 +236,17 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
     shadowedFields: Set[String] = Set(),
     sourceClassName: String = ""
   ): TypeEnv = {
-    // Start with te (accumulator) as the base
+    // Start with te (accumulator) as the base, but filter out shadowed fields
     var newMap = Map[String, TypeInfo]()
-    te.map.foreach { kv => newMap += (kv._1 -> kv._2) }
-    
+    te.map.foreach { kv =>
+      kv._2 match {
+        case PropertyTypeInfo(_, _, _, _) if shadowedFields.contains(kv._1) =>
+          // Skip shadowed fields from the accumulator (parent's fields)
+        case _ =>
+          newMap += (kv._1 -> kv._2)
+      }
+    }
+
     // Merge this.map (parent's fields) into newMap, applying renames
     map.foreach {
       kv =>
@@ -259,7 +266,9 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
             newMap += (kv._1 -> kv._2)
           case (pname, pti @ PropertyTypeInfo(pdecl, global, classMember, powner)) =>
             // Check if this field is shadowed (intentionally hidden)
-            if (shadowedFields.contains(pname)) {
+            // Only skip if it's an INHERITED field (from a parent), not the class's own field
+            val isInheritedField = powner != null && powner != decl
+            if (shadowedFields.contains(pname) && isInheritedField) {
               // Don't add the parent's field - it's being shadowed
             } else {
               // Check if this field should be renamed (lookup by source class and field name)

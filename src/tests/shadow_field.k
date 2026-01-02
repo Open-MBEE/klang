@@ -1,5 +1,6 @@
 -- Test shadow declaration for intentionally hiding parent's field
 -- This should compile and solve successfully
+-- @expected SAT
 
 class Parent {
   value : Int
