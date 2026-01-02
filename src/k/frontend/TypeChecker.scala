@@ -1059,8 +1059,9 @@ class TypeChecker(model: Model) {
       }
     }
     
-    // NOTE: processModelClassPropertiesInferred is called AFTER inheritance processing
-    // so that constructor calls like S(text:: "grammar") can find inherited properties
+    // pass: infer types for class properties without explicit types
+    // This must happen BEFORE top-level property inference so that expressions like rect.area work
+    processModelClassPropertiesInferred(model)
 
     // pass: get property info on global level - SECOND PASS: properties requiring type inference
     // Now that class type environments are built, we can infer types from expressions that reference class members
