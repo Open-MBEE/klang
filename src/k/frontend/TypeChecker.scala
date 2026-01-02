@@ -27,7 +27,10 @@ case object TypeChecker {
   var type2Decl = Map[Type, TopDecl]()
   var annotations = Map[String, AnnotationDecl]()
   var classes = Map[String, EntityDecl]()
-  
+
+  /** Map from nested class name to parent class name */
+  var nestedClassParent: Map[String, String] = Map()
+
   /** Synthetic property declarations created by type inference for undeclared variables */
   var syntheticProperties: List[PropertyDecl] = List()
 
@@ -55,6 +58,7 @@ case object TypeChecker {
     type2Decl = Map[Type, TopDecl]()
     annotations = Map[String, AnnotationDecl]()
     classes = Map[String, EntityDecl]()
+    nestedClassParent = Map()
     syntheticProperties = List()
     javaImports = Map[String, String]("Boolean" -> "java.lang.Boolean", "Byte" -> "java.lang.Byte", "Character" -> "java.lang.Character", "Class" -> "java.lang.Class", "Double" -> "java.lang.Double", "Enum" -> "java.lang.Enum", "Float" -> "java.lang.Float", "Integer" -> "java.lang.Integer", "Long" -> "java.lang.Long", "Math" -> "java.lang.Math", "Number" -> "java.lang.Number", "Object" -> "java.lang.Object", "Short" -> "java.lang.Short", "String" -> "java.lang.String", "StringBuilder" -> "java.lang.StringBuilder", "StringBuffer" -> "java.lang.StringBuffer", "System" -> "java.lang.System", "Thread" -> "java.lang.Thread", "Throwable" -> "java.lang.Throwable")
     pythonImports = Map[String, String]()
@@ -245,10 +249,10 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
               val ofdecl = newMap(functionName).asInstanceOf[FunctionTypeInfo].decl
               val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
               val areParamsEqual = ofdecl.params.length == fdecl.params.length && (ofdecl.params zip fdecl.params).forall { p => areTypesEqual(p._1.ty, p._2.ty, false) }
-              // Only error if BOTH functions have bodies (conflicting implementations)
-              // Allow: abstract parent (no body) overridden by concrete child (has body)
-              val bothHaveBodies = !fdecl.body.isEmpty && !ofdecl.body.isEmpty
-              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && bothHaveBodies) {
+              // Error if original function (already in newMap) has a body - no redefinition allowed
+              // Allow: abstract original (no body) overridden by concrete new (has body)
+              val originalHasBody = !ofdecl.body.isEmpty
+              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && originalHasBody) {
                 error(s"${fdecl.ident} redefined.")
               }
             }
@@ -318,10 +322,10 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
               val ofdecl = map(functionName).asInstanceOf[FunctionTypeInfo].decl
               val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
               val areParamsEqual = ofdecl.params.length == fdecl.params.length && (ofdecl.params zip fdecl.params).forall { p => areTypesEqual(p._1.ty, p._2.ty, false) }
-              // Only error if BOTH functions have bodies (conflicting implementations)
-              // Allow: abstract parent (no body) overridden by concrete child (has body)
-              val bothHaveBodies = !fdecl.body.isEmpty && !ofdecl.body.isEmpty
-              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && bothHaveBodies) {
+              // Error if existing function (in map) has a body - no redefinition allowed
+              // Allow: abstract existing (no body) overridden by concrete new (has body)
+              val existingHasBody = !ofdecl.body.isEmpty
+              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && existingHasBody) {
                 error(s"${fdecl.ident} redefined.")
               }
             }
@@ -765,7 +769,7 @@ class TypeChecker(model: Model) {
     // Track processed entity names to avoid duplicates from imports
     var processedEntityNames = Set[String]()
 
-    def processDecls(decls: List[TopDecl]): Unit = {
+    def processDecls(decls: List[TopDecl], parentClass: Option[String] = None): Unit = {
       decls.foreach { d =>
         d match {
           case ed @ EntityDecl(_, entityToken, _, ident, _, _, _, _) =>
@@ -783,13 +787,22 @@ class TypeChecker(model: Model) {
               }
               type2Decl = type2Decl + (IdentType(QualifiedName(List(ident)), List()) -> dED)
               classes = classes + (ident -> dED)
-              
+              // Track nesting relationship for nested classes
+              parentClass.foreach { parent =>
+                nestedClassParent = nestedClassParent + (ident -> parent)
+              }
+              // Recursively process nested classes within this EntityDecl
+              val nestedClasses = ed.members.collect { case nested: EntityDecl => nested }
+              if (nestedClasses.nonEmpty) {
+                processDecls(nestedClasses.asInstanceOf[List[TopDecl]], Some(ident))
+              }
+
               // For shorthand entity declarations like "event power_on", register as PropertyTypeInfo
               // so it can be used as both a type (via type2Decl/classes) and a value (via globalTypeEnv)
               // The entityToken is IdentifierToken for shorthand syntax (vs ClassToken/AssocToken)
               if (entityToken.isInstanceOf[IdentifierToken]) {
                 // Create a synthetic property declaration for the shorthand entity
-                val syntheticProp = PropertyDecl(Nil, ident, 
+                val syntheticProp = PropertyDecl(Nil, ident,
                   Some(IdentType(QualifiedName(List(ident)), List())), None, None, None)
                 globalTypeEnv = globalTypeEnv.union(ident -> PropertyTypeInfo(syntheticProp, true, false, null))
               } else {
@@ -894,11 +907,19 @@ class TypeChecker(model: Model) {
                   // Create a synthetic PropertyDecl for the shadow field
                   val syntheticProp = PropertyDecl(Nil, name, Some(ty), None, None, None)
                   classTypeEnv = classTypeEnv.overwrite(name -> PropertyTypeInfo(syntheticProp, false, true, ed))
+                case nestedEd @ EntityDecl(_, _, _, _, _, _, _, _) =>
+                  // Skip for now - will be processed via processDecls which finds all classes
+                  ()
                 case _ => ()
               }
             }
             decl2TypeEnvi += (d -> classTypeEnv)
             origTypeEnvironments += (d -> classTypeEnv)
+            // Recursively process nested classes
+            val nestedClasses = ed.members.collect { case nested: EntityDecl => nested }
+            if (nestedClasses.nonEmpty) {
+              processClassPropertiesExplicit(nestedClasses.asInstanceOf[List[TopDecl]])
+            }
         case ed @ EntityDecl(_, AssocToken, _, ident, _, _, _, _) =>
 
           // only support 2 members in associations
@@ -1167,6 +1188,42 @@ class TypeChecker(model: Model) {
     
     processModelInheritance(model)
 
+    // pass: merge enclosing class fields into nested class type environments
+    // This allows nested classes to access fields from their enclosing classes
+    def processNestedClassScoping(): Unit = {
+      // Process all nested classes
+      for ((nestedClassName, parentClassName) <- nestedClassParent) {
+        if (classes.contains(nestedClassName) && classes.contains(parentClassName)) {
+          val nestedDecl = classes(nestedClassName)
+          val parentDecl = classes(parentClassName)
+          if (decl2TypeEnvi.contains(nestedDecl) && decl2TypeEnvi.contains(parentDecl)) {
+            val nestedEnv = decl2TypeEnvi(nestedDecl)
+            val parentEnv = decl2TypeEnvi(parentDecl)
+            // Add parent fields to nested class environment (without overwriting local fields)
+            // Fields keep their original owning class for correct SMT generation
+            var mergedEnv = nestedEnv
+            for ((fieldName, typeInfo) <- parentEnv.map) {
+              if (!nestedEnv.map.contains(fieldName) && fieldName != "this") {
+                mergedEnv = mergedEnv.union(fieldName -> typeInfo)
+              }
+            }
+            decl2TypeEnvi += (nestedDecl -> mergedEnv)
+          }
+        }
+      }
+    }
+
+    // Process nesting multiple times to handle deep nesting (Very_Inner -> Inner -> Outer)
+    var nestedChanged = true
+    var nestedIterations = 0
+    while (nestedChanged && nestedIterations < 10) {
+      val beforeEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
+      processNestedClassScoping()
+      val afterEnvs = decl2TypeEnvi.mapValues(_.map.size).toMap
+      nestedChanged = beforeEnvs != afterEnvs
+      nestedIterations += 1
+    }
+
     decl2TypeEnvi.foreach(kv => logDebug(s"${kv._2}"))
 
     // pass: infer types for undeclared variables from constraints
@@ -1244,6 +1301,49 @@ class TypeChecker(model: Model) {
       }
     }
 
+    // Helper function to recursively process nested EntityDecl members
+    def processNestedEntityDecl(nestedEd: EntityDecl): Unit = {
+      if (decl2TypeEnvi.contains(nestedEd)) {
+        val nestedEnv = decl2TypeEnvi(nestedEd)
+        nestedEd.members.foreach { nm =>
+          nm match {
+            case cd @ ConstraintDecl(name, exp, _) =>
+              val ty = getExpType(nestedEnv, exp, nestedEd)
+              if (ty != BoolType && ty != AnyType) {
+                error(s"Condition $exp is not of type Bool.")
+              }
+              exp2Type.put(exp, ty)
+            case od @ OptimizeDecl(kind, exp, weight) =>
+              val ty = getExpType(nestedEnv, exp, nestedEd)
+              if (ty != IntType && ty != RealType && ty != AnyType) {
+                error(s"Optimization expression $exp must be numeric (Int or Real), found $ty.")
+              }
+              exp2Type.put(exp, ty)
+            case fd @ FunDecl(_, _, _, _, _, _) =>
+              processFunction(fd, nestedEnv, nestedEd)
+            case pd @ PropertyDecl(_, _, _, _, _, _) =>
+              pd.expr match {
+                case Some(e) =>
+                  val exprType = getExpType(nestedEnv, e, nestedEd)
+                  pd.ty match {
+                    case Some(explicitType) =>
+                      if (!areTypesEqual(exprType, explicitType, true)) {
+                        error(s"Type does not match: ${pd.name}. Expected $explicitType, Found $exprType")
+                      }
+                    case None =>
+                  }
+                  exp2Type.put(e, exprType)
+                case None => ()
+              }
+            case deeplyNestedEd @ EntityDecl(_, _, _, _, _, _, _, _) =>
+              // Recursively process deeply nested classes
+              processNestedEntityDecl(deeplyNestedEd)
+            case _ => ()
+          }
+        }
+      }
+    }
+
     // pass: now process function bodies, property initializations etc. etc.
     // Process all declarations including those in nested packages
     collectAllDecls(model).foreach { d =>
@@ -1305,6 +1405,9 @@ class TypeChecker(model: Model) {
                   error(s"Expression in class does not have unit type: $e\nMaybe you need to have the 'req' keyword before the expression?")
                 }
                 exp2Type.put(e, exprType)
+              case nestedEd @ EntityDecl(_, _, _, nestedIdent, _, _, _, _) =>
+                // Recursively process nested class members using the helper function
+                processNestedEntityDecl(nestedEd)
               case _ => ()
             }
           }

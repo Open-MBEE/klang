@@ -1,5 +1,6 @@
-// @expected SAT
-// KNOWN BUG: NullPointerException in parser (TerminalNode access)
+// @expected ERROR
+// KNOWN BUG: NullPointerException when parsing ===== block comments.
+// The ===== syntax is valid K comment syntax, but causes NPE in TerminalNode access.
 =====
 
 A start on a formal specification of K in K
@@ -97,7 +98,8 @@ class plusOp extends koperator {
 class eqOp extends koperator {
     req ktext = "=" 
 }
-class kcall extends 
+class kcall extends kexpression
+
 class kconstructorCall extends kcall {
     var class : kclass
     var constructor : kconstructor
@@ -128,15 +130,3 @@ native class Char
 
 native class Object
 native class Class
-
-native class  
-native class 
-native class 
-native class 
-native class 
-native class 
-native class 
-native class 
-native class 
-native class 
-native class 
