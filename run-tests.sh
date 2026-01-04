@@ -309,10 +309,6 @@ done
 # Sort and count
 TEST_FILES=$(echo "$TEST_FILES" | tr ' ' '\n' | grep -v '^$' | sort)
 
-# Exclude tests known to crash Z3 in batch mode
-# DSN_Pass-diagnostic.k causes Z3 to crash after timeout due to native code issues
-TEST_FILES=$(echo "$TEST_FILES" | grep -v "DSN_Pass-diagnostic.k" || true)
-
 TOTAL_TESTS=$(echo "$TEST_FILES" | grep -c . 2>/dev/null || true)
 TOTAL_TESTS=${TOTAL_TESTS:-0}
 
@@ -380,7 +376,7 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
     # Run batch mode - pipe test files to Java, capture ALL output first
     # Then filter to result lines. This avoids pipe buffering issues with long-running tests.
     BATCH_RAW_FILE=$(mktemp)
-    echo "$TEST_FILES" | java -Djava.library.path="$SCRIPT_DIR/export/lib" \
+    echo "$TEST_FILES" | java -Xmx8g -Djava.library.path="$SCRIPT_DIR/export/lib" \
         -Djava.awt.headless=true \
         -classpath "$CLASSPATH" \
         k.frontend.Main $JAVA_ARGS 2>&1 > "$BATCH_RAW_FILE"

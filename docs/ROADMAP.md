@@ -17,12 +17,19 @@ The long-term goal is for K to be **self-hosting** - the K language implementati
 - Z3 solves the constraints; UNSAT means type error
 - No longer depends on the Scala TypeChecker
 
+### Scoping as Constraints (2026-01-02)
+- Variable scoping is encoded in the generated K program
+- Type variables use qualified names: `_ty_global_x`, `_ty_ClassName_x`
+- Scope lookup searches current class → parent classes → global
+- Inheritance relationships are registered for proper scope resolution
+- This demonstrates the "K written in K" principle: scoping rules are constraints
+
 ## In Progress
 
 ### Remove Legacy TypeChecker
-- Replace Scala TypeChecker with KTypeChecker as default
-- Remove `-ktc` flag (K-based type checking becomes the only option)
-- Simplify codebase by ~2300 lines
+- TypeChecker still used for building SMT state (exp2Type, etc.)
+- Goal: move this state building to TypeResolver or eliminate need for it
+- Currently blocked by property-as-constraint and other complex patterns
 
 ## Future Opportunities
 
@@ -58,8 +65,22 @@ Diamond inheritance and field shadowing as constraint satisfaction.
 ### Baseline Comparison as K
 Model equivalence checking using K's equality constraints.
 
-### Code Generation as K
-Transform AST to target language (SMT-LIB, Scala, Java) via K programs.
+### K→SMT Translation as K
+The biggest win: express the K→SMT-LIB2 translation as a K program:
+```k
+class SMTTranslation {
+  input : KExpression
+  output : String
+
+  req (input.isIntLiteral => output = input.value.toString)
+  req (input.isBinExp && input.op = "+" =>
+       output = "(+ " + translate(input.left) + " " + translate(input.right) + ")")
+}
+```
+This would allow K to describe its own compilation semantics declaratively.
+
+### Other Code Generation as K
+Transform AST to other target languages (Scala, Java, Python) via K programs.
 
 ## Principles
 
