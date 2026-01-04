@@ -11,7 +11,7 @@ public class TestZ3 {
             s.add(b);
             Status status = s.check();
             System.out.println("Z3 solver status: " + status);
-            ctx.dispose();
+            ctx.close();
             System.out.println("Z3 test completed successfully!");
         } catch (Exception e) {
             System.out.println("Z3 test failed with exception:");
