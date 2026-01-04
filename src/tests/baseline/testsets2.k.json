@@ -1,945 +1,771 @@
 {
+  "name": "testsets2.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Sets {\n  s1:Set[Int]\n\n  req s1 = Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req Set{x | x : Int . 11 <= x && x <= 14} subset Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req 11 isin Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req 11 isin s1\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Sets (mk-Sets (s1 (Set Int))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Sets (sel-Sets Sets))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Sets ((this Ref)) Bool\n  (is-lift-Sets (deref this))\n)\n\n(define-fun deref-Sets ((this Ref)) Sets\n  (sel-Sets (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Sets ((this Ref)) Bool\n  (deref-is-Sets this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ---------------------------\n;   Getters for class Sets:\n; ---------------------------\n\n; --- getters for Sets.s1: ---\n\n(define-fun Sets!s1 ((this Ref)) (Set Int)\n  (s1 (deref-Sets this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; -----------------------------\n;   Invariant for class Sets:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Sets Sets)\n\n; --- Invariant 1: ---\n\n(define-fun Sets.inv1 ((this Ref)) Bool\n  (forall ((var_1 Int)) (= (select (Sets!s1 this) (+ var_1 1)) (and (<= 10 var_1) (<= var_1 15))))\n)\n\n(assert (! (Sets.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun Sets.inv2 ((this Ref)) Bool\n  (forall ((var_2 Int)) (=> (and (<= 11 (+ var_2 1)) (<= (+ var_2 1) 14)) (and (<= 10 var_2) (<= var_2 15))))\n)\n\n(assert (! (Sets.inv2 1) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun Sets.inv3 ((this Ref)) Bool\n  (exists ((x Int)) (and (= 11 (+ x 1)) (and (<= 10 x) (<= x 15))))\n)\n\n(assert (! (Sets.inv3 1) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun Sets.inv4 ((this Ref)) Bool\n  (select (Sets!s1 this) 11)\n)\n\n(assert (! (Sets.inv4 1) :named _xkassert3))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        1 (lift-Sets const-1-Sets))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-Sets () Sets\n  (let ((a!1 (store (store (store ((as const (Array Int Bool)) false) 16 true)\n                         13\n                         true)\n                  14\n                  true)))\n  (mk-Sets (store (store (store a!1 11 true) 15 true) 12 true))))\n(define-fun _xkassert2 () Bool\n  (exists ((x Int)) (and (= 11 (+ x 1)) (<= 10 x) (<= x 15))))\n(define-fun _xkassert3 () Bool\n  (select (s1 (sel-Sets (select heap 1))) 11))\n(define-fun _xkassert1 () Bool\n  (forall ((var_2 Int))\n  (=> (and (<= 11 (+ var_2 1)) (<= (+ var_2 1) 14))\n      (and (<= 10 var_2) (<= var_2 15)))))\n(define-fun _xkassert0 () Bool\n  (forall ((var_1 Int))\n  (let ((a!1 (select (s1 (sel-Sets (select heap 1))) (+ var_1 1))))\n    (= a!1 (and (<= 10 var_1) (<= var_1 15))))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store (store ((as const (Array Int Bool)) false) 16 true)\n                         13\n                         true)\n                  14\n                  true)))\n(let ((a!2 (mk-Sets (store (store (store a!1 11 true) 15 true) 12 true))))\n  (store ((as const (Array Int Any)) null) 1 (lift-Sets a!2)))))",
   "json1": {
+    "type": "Model",
+    "imports": [],
     "annotations": [],
-    "decls": [
-      {
-        "annotations": [],
-        "entityToken": "class",
-        "extending": [],
-        "ident": "Sets",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "s1",
-            "ty": {
-              "args": [
-                {
-                  "type": "IntType"
-                }
-              ],
-              "ident": {
-                "names": [
-                  "Set"
-                ],
-                "type": "QualifiedName"
-              },
-              "type": "IdentType"
+    "decls": [{
+      "type": "EntityDecl",
+      "annotations": [],
+      "entityToken": "class",
+      "ident": "Sets",
+      "typeparams": [],
+      "extending": [],
+      "members": [
+        {
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "s1",
+          "ty": {
+            "args": [{"type": "IntType"}],
+            "ident": {
+              "names": ["Set"],
+              "type": "QualifiedName"
             },
-            "type": "PropertyDecl"
-          },
-          {
-            "exp": {
-              "exp1": {
-                "ident": "s1",
-                "type": "IdentExp"
-              },
-              "exp2": {
-                "bindings": [
-                  {
-                    "collection": {
-                      "ty": {
-                        "type": "IntType"
-                      },
-                      "type": "TypeCollection"
-                    },
-                    "patterns": [
-                      {
-                        "ident": "x",
-                        "type": "IdentPattern"
-                      }
-                    ],
-                    "type": "RngBinding"
-                  }
-                ],
-                "exp1": {
-                  "exp1": {
-                    "ident": "x",
-                    "type": "IdentExp"
-                  },
-                  "exp2": {
-                    "i": 1,
-                    "type": "LiteralInteger"
-                  },
-                  "op": "Plus",
-                  "type": "BinExp"
-                },
-                "exp2": {
-                  "exp1": {
-                    "exp1": {
-                      "i": 10,
-                      "type": "LiteralInteger"
-                    },
-                    "exp2": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "exp2": {
-                    "exp1": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "exp2": {
-                      "i": 15,
-                      "type": "LiteralInteger"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "op": "And",
-                  "type": "BinExp"
-                },
-                "kind": "Set",
-                "type": "CollectionComprExp"
-              },
-              "op": "EQ",
-              "type": "BinExp"
+            "type": "IdentType"
+          }
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "EQ",
+            "exp1": {
+              "ident": "s1",
+              "type": "IdentExp"
             },
-            "type": "ConstraintDecl"
-          },
-          {
-            "exp": {
+            "exp2": {
+              "type": "CollectionComprExp",
+              "kind": "Set",
               "exp1": {
-                "bindings": [
-                  {
-                    "collection": {
-                      "ty": {
-                        "type": "IntType"
-                      },
-                      "type": "TypeCollection"
-                    },
-                    "patterns": [
-                      {
-                        "ident": "x",
-                        "type": "IdentPattern"
-                      }
-                    ],
-                    "type": "RngBinding"
-                  }
-                ],
+                "type": "BinExp",
+                "op": "Plus",
                 "exp1": {
                   "ident": "x",
                   "type": "IdentExp"
                 },
                 "exp2": {
+                  "i": 1,
+                  "type": "LiteralInteger"
+                }
+              },
+              "bindings": [{
+                "patterns": [{
+                  "ident": "x",
+                  "type": "IdentPattern"
+                }],
+                "collection": {
+                  "type": "ExpCollection",
+                  "exp": {
+                    "ident": "Int",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "RngBinding"
+              }],
+              "exp2": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "LTE",
                   "exp1": {
-                    "exp1": {
-                      "i": 11,
-                      "type": "LiteralInteger"
-                    },
-                    "exp2": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
+                    "i": 10,
+                    "type": "LiteralInteger"
                   },
                   "exp2": {
-                    "exp1": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "exp2": {
-                      "i": 14,
-                      "type": "LiteralInteger"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "op": "And",
-                  "type": "BinExp"
-                },
-                "kind": "Set",
-                "type": "CollectionComprExp"
-              },
-              "exp2": {
-                "bindings": [
-                  {
-                    "collection": {
-                      "ty": {
-                        "type": "IntType"
-                      },
-                      "type": "TypeCollection"
-                    },
-                    "patterns": [
-                      {
-                        "ident": "x",
-                        "type": "IdentPattern"
-                      }
-                    ],
-                    "type": "RngBinding"
+                    "ident": "x",
+                    "type": "IdentExp"
                   }
-                ],
-                "exp1": {
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "LTE",
                   "exp1": {
                     "ident": "x",
                     "type": "IdentExp"
                   },
                   "exp2": {
-                    "i": 1,
+                    "i": 15,
                     "type": "LiteralInteger"
-                  },
-                  "op": "Plus",
-                  "type": "BinExp"
-                },
-                "exp2": {
-                  "exp1": {
-                    "exp1": {
-                      "i": 10,
-                      "type": "LiteralInteger"
-                    },
-                    "exp2": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "exp2": {
-                    "exp1": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "exp2": {
-                      "i": 15,
-                      "type": "LiteralInteger"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "op": "And",
-                  "type": "BinExp"
-                },
-                "kind": "Set",
-                "type": "CollectionComprExp"
-              },
-              "op": "Subset",
-              "type": "BinExp"
-            },
-            "type": "ConstraintDecl"
-          },
-          {
-            "exp": {
-              "exp1": {
-                "i": 11,
-                "type": "LiteralInteger"
-              },
-              "exp2": {
-                "bindings": [
-                  {
-                    "collection": {
-                      "ty": {
-                        "type": "IntType"
-                      },
-                      "type": "TypeCollection"
-                    },
-                    "patterns": [
-                      {
-                        "ident": "x",
-                        "type": "IdentPattern"
-                      }
-                    ],
-                    "type": "RngBinding"
                   }
-                ],
-                "exp1": {
-                  "exp1": {
-                    "ident": "x",
-                    "type": "IdentExp"
-                  },
-                  "exp2": {
-                    "i": 1,
-                    "type": "LiteralInteger"
-                  },
-                  "op": "Plus",
-                  "type": "BinExp"
-                },
-                "exp2": {
-                  "exp1": {
-                    "exp1": {
-                      "i": 10,
-                      "type": "LiteralInteger"
-                    },
-                    "exp2": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "exp2": {
-                    "exp1": {
-                      "ident": "x",
-                      "type": "IdentExp"
-                    },
-                    "exp2": {
-                      "i": 15,
-                      "type": "LiteralInteger"
-                    },
-                    "op": "LTE",
-                    "type": "BinExp"
-                  },
-                  "op": "And",
-                  "type": "BinExp"
-                },
-                "kind": "Set",
-                "type": "CollectionComprExp"
-              },
-              "op": "IsIn",
-              "type": "BinExp"
-            },
-            "type": "ConstraintDecl"
+                }
+              }
+            }
           },
-          {
-            "exp": {
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "Subset",
+            "exp1": {
+              "type": "CollectionComprExp",
+              "kind": "Set",
               "exp1": {
-                "i": 11,
-                "type": "LiteralInteger"
-              },
-              "exp2": {
-                "ident": "s1",
+                "ident": "x",
                 "type": "IdentExp"
               },
-              "op": "IsIn",
-              "type": "BinExp"
+              "bindings": [{
+                "patterns": [{
+                  "ident": "x",
+                  "type": "IdentPattern"
+                }],
+                "collection": {
+                  "type": "ExpCollection",
+                  "exp": {
+                    "ident": "Int",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "RngBinding"
+              }],
+              "exp2": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "i": 11,
+                    "type": "LiteralInteger"
+                  },
+                  "exp2": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  }
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 14,
+                    "type": "LiteralInteger"
+                  }
+                }
+              }
             },
-            "type": "ConstraintDecl"
-          }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
-      }
-    ],
-    "imports": [],
-    "type": "Model"
+            "exp2": {
+              "type": "CollectionComprExp",
+              "kind": "Set",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 1,
+                  "type": "LiteralInteger"
+                }
+              },
+              "bindings": [{
+                "patterns": [{
+                  "ident": "x",
+                  "type": "IdentPattern"
+                }],
+                "collection": {
+                  "type": "ExpCollection",
+                  "exp": {
+                    "ident": "Int",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "RngBinding"
+              }],
+              "exp2": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "i": 10,
+                    "type": "LiteralInteger"
+                  },
+                  "exp2": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  }
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 15,
+                    "type": "LiteralInteger"
+                  }
+                }
+              }
+            }
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "IsIn",
+            "exp1": {
+              "i": 11,
+              "type": "LiteralInteger"
+            },
+            "exp2": {
+              "type": "CollectionComprExp",
+              "kind": "Set",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 1,
+                  "type": "LiteralInteger"
+                }
+              },
+              "bindings": [{
+                "patterns": [{
+                  "ident": "x",
+                  "type": "IdentPattern"
+                }],
+                "collection": {
+                  "type": "ExpCollection",
+                  "exp": {
+                    "ident": "Int",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "RngBinding"
+              }],
+              "exp2": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "i": 10,
+                    "type": "LiteralInteger"
+                  },
+                  "exp2": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  }
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "LTE",
+                  "exp1": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 15,
+                    "type": "LiteralInteger"
+                  }
+                }
+              }
+            }
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "IsIn",
+            "exp1": {
+              "i": 11,
+              "type": "LiteralInteger"
+            },
+            "exp2": {
+              "ident": "s1",
+              "type": "IdentExp"
+            }
+          },
+          "annotations": []
+        }
+      ]
+    }],
+    "packages": []
   },
   "json2": {
-    "annotations": [],
-    "decls": [
-      {
-        "annotations": [],
-        "entityToken": "class",
-        "extending": [],
-        "ident": "Sets",
-        "members": [
-          {
-            "modifiers": [],
-            "name": "s1",
-            "ty": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "IdentType"
-                },
-                {
-                  "names": [
-                    "Set"
-                  ],
-                  "type": "QualifiedName"
-                },
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "IntType"
-                    }
-                  ],
-                  "type": "Expression"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "PropertyDecl"
-          },
-          {
-            "exp": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "BinExp"
-                },
-                "EQ",
-                {
-                  "element": "s1",
-                  "type": "ElementValue"
-                },
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "CollectionComprExp"
-                    },
-                    "Set",
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "Plus",
-                        {
-                          "element": "x",
-                          "type": "ElementValue"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IntegerLiteral"
-                            },
-                            1
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "And",
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                10
-                              ],
-                              "type": "Expression"
-                            },
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                15
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "RngBinding"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "TypeCollection"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntType"
-                                }
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IdentPattern"
-                            },
-                            "x"
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    }
-                  ],
-                  "type": "Expression"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "ConstraintDecl"
-          },
-          {
-            "exp": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "BinExp"
-                },
-                "Subset",
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "CollectionComprExp"
-                    },
-                    "Set",
-                    {
-                      "element": "x",
-                      "type": "ElementValue"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "And",
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                11
-                              ],
-                              "type": "Expression"
-                            },
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                14
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "RngBinding"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "TypeCollection"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntType"
-                                }
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IdentPattern"
-                            },
-                            "x"
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    }
-                  ],
-                  "type": "Expression"
-                },
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "CollectionComprExp"
-                    },
-                    "Set",
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "Plus",
-                        {
-                          "element": "x",
-                          "type": "ElementValue"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IntegerLiteral"
-                            },
-                            1
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "And",
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                10
-                              ],
-                              "type": "Expression"
-                            },
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                15
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "RngBinding"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "TypeCollection"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntType"
-                                }
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IdentPattern"
-                            },
-                            "x"
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    }
-                  ],
-                  "type": "Expression"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "ConstraintDecl"
-          },
-          {
-            "exp": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "BinExp"
-                },
-                "IsIn",
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "IntegerLiteral"
-                    },
-                    11
-                  ],
-                  "type": "Expression"
-                },
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "CollectionComprExp"
-                    },
-                    "Set",
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "Plus",
-                        {
-                          "element": "x",
-                          "type": "ElementValue"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IntegerLiteral"
-                            },
-                            1
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "BinExp"
-                        },
-                        "And",
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                10
-                              ],
-                              "type": "Expression"
-                            },
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "BinExp"
-                            },
-                            "LTE",
-                            {
-                              "element": "x",
-                              "type": "ElementValue"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntegerLiteral"
-                                },
-                                15
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    },
-                    {
-                      "operand": [
-                        {
-                          "element": "ElementValue",
-                          "type": "RngBinding"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "TypeCollection"
-                            },
-                            {
-                              "operand": [
-                                {
-                                  "element": "ElementValue",
-                                  "type": "IntType"
-                                }
-                              ],
-                              "type": "Expression"
-                            }
-                          ],
-                          "type": "Expression"
-                        },
-                        {
-                          "operand": [
-                            {
-                              "element": "ElementValue",
-                              "type": "IdentPattern"
-                            },
-                            "x"
-                          ],
-                          "type": "Expression"
-                        }
-                      ],
-                      "type": "Expression"
-                    }
-                  ],
-                  "type": "Expression"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "ConstraintDecl"
-          },
-          {
-            "exp": {
-              "operand": [
-                {
-                  "element": "ElementValue",
-                  "type": "BinExp"
-                },
-                "IsIn",
-                {
-                  "operand": [
-                    {
-                      "element": "ElementValue",
-                      "type": "IntegerLiteral"
-                    },
-                    11
-                  ],
-                  "type": "Expression"
-                },
-                {
-                  "element": "s1",
-                  "type": "ElementValue"
-                }
-              ],
-              "type": "Expression"
-            },
-            "type": "ConstraintDecl"
-          }
-        ],
-        "type": "EntityDecl",
-        "typeparams": []
-      }
-    ],
+    "type": "Model",
     "imports": [],
-    "type": "Model"
-  },
-  "model": "\nclass Sets {\n  s1:Set[Int]\n\n  req s1 = Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req Set{x | x : Int . 11 <= x && x <= 14} subset Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req 11 isin Set{x + 1 | x : Int . 10 <= x && x <= 15}\n\n  req 11 isin s1\n}\n\n",
-  "name": "testsets2.k",
-  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n(define-sort Set (T) (Array T Bool))\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-sort TopLevelDeclarations) (declare-const mk-TopLevelDeclarations TopLevelDeclarations)\n(declare-datatypes () ((Sets (mk-Sets (s1 (Set Int))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Sets (sel-Sets Sets))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Sets ((this Ref)) Bool\n  (is-lift-Sets (deref this))\n)\n\n(define-fun deref-Sets ((this Ref)) Sets\n  (sel-Sets (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Sets ((this Ref)) Bool\n  (deref-is-Sets this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ---------------------------\n;   Getters for class Sets:\n; ---------------------------\n\n; --- getters for Sets.s1: ---\n\n(define-fun Sets!s1 ((this Ref)) (Set Int)\n  (s1 (deref-Sets this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n\n\n; -----------------------------\n;   Invariant for class Sets:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Sets Sets)\n\n; --- Invariant 1: ---\n\n(define-fun Sets.inv1 ((this Ref)) Bool\n  (forall ((var_9 Int)) (= (select (Sets!s1 this) (+ var_9 1)) (and (<= 10 var_9) (<= var_9 15))))\n)\n\n(assert (! (Sets.inv1 1) :named _xkassert233))\n\n; --- Invariant 2: ---\n\n(define-fun Sets.inv2 ((this Ref)) Bool\n  (forall ((var_10 Int)) (=> (and (<= 11 (+ var_10 1)) (<= (+ var_10 1) 14)) (and (<= 10 var_10) (<= var_10 15))))\n)\n\n(assert (! (Sets.inv2 1) :named _xkassert234))\n\n; --- Invariant 3: ---\n\n(define-fun Sets.inv3 ((this Ref)) Bool\n  (exists ((x Int)) (and (= 11 (+ x 1)) (and (<= 10 x) (<= x 15))))\n)\n\n(assert (! (Sets.inv3 1) :named _xkassert235))\n\n; --- Invariant 4: ---\n\n(define-fun Sets.inv4 ((this Ref)) Bool\n  (select (Sets!s1 this) 11)\n)\n\n(assert (! (Sets.inv4 1) :named _xkassert236))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Sets const-1-Sets))\n  )\n)\n\n",
-  "smtModel": ";; universe for TopLevelDeclarations:\n;;   TopLevelDeclarations!val!0 \n;; -----------\n;; definitions for universe elements:\n(declare-fun TopLevelDeclarations!val!0 () TopLevelDeclarations)\n;; cardinality constraint:\n(forall ((x TopLevelDeclarations)) (= x TopLevelDeclarations!val!0))\n;; -----------\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  TopLevelDeclarations!val!0)\n(define-fun const-1-Sets () Sets\n  (mk-Sets (_ as-array k!41)))\n(define-fun heap () (Array Int Any)\n  (_ as-array k!44))\n(define-fun x!0 () Int\n  10)\n(define-fun k!43 ((x!1 Int)) Any\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null))\n(define-fun k!44 ((x!1 Int)) Any\n  (ite (= x!1 1) (lift-Sets (mk-Sets (_ as-array k!41)))\n  (ite (= x!1 0) (lift-TopLevelDeclarations TopLevelDeclarations!val!0)\n    null)))\n(define-fun k!41 ((x!1 Int)) Bool\n  (ite (= x!1 12) true\n  (ite (= x!1 11) true\n  (ite (= x!1 14) true\n  (ite (= x!1 13) true\n  (ite (= x!1 16) true\n  (ite (= x!1 15) true\n    false)))))))\n(define-fun k!42 ((x!1 Int)) Any\n  null)",
-  "typeChecks": true
+    "annotations": [],
+    "decls": [{
+      "type": "EntityDecl",
+      "annotations": [],
+      "entityToken": "class",
+      "ident": "Sets",
+      "typeparams": [],
+      "extending": [],
+      "members": [
+        {
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "s1",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Set[Int]"
+          }
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "EQ"
+              },
+              {
+                "element": "s1",
+                "type": "ElementValue"
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Set"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Plus"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 1
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 10
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 15
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "RngBinding"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "ExpCollection"
+                          },
+                          {
+                            "element": "Int",
+                            "type": "ElementValue"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "x"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "Subset"
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Set"
+                  },
+                  {
+                    "element": "x",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 11
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 14
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "RngBinding"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "ExpCollection"
+                          },
+                          {
+                            "element": "Int",
+                            "type": "ElementValue"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "x"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Set"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Plus"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 1
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 10
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 15
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "RngBinding"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "ExpCollection"
+                          },
+                          {
+                            "element": "Int",
+                            "type": "ElementValue"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "x"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "IsIn"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 11
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Set"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Plus"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 1
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 10
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "element": "x",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 15
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "RngBinding"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "ExpCollection"
+                          },
+                          {
+                            "element": "Int",
+                            "type": "ElementValue"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "x"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "IsIn"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 11
+              },
+              {
+                "element": "s1",
+                "type": "ElementValue"
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        }
+      ]
+    }],
+    "packages": []
+  }
 }
