@@ -269,6 +269,9 @@ object Frontend {
       case "-ktc-gen" :: tail =>
         // Generate K type check program only (don't run)
         parseArgs(map ++ Map('ktcGen -> true), tail)
+      case "-ktc-direct" :: tail =>
+        // Use direct Z3 type checking with unsat core support
+        parseArgs(map ++ Map('ktcDirect -> true), tail)
       case "-tc-strict" :: tail =>
         // Type checking mode: Strict (declarations required, unambiguous types)
         KTypeChecker.setMode(reqDecl = true, reqUnambiguous = true)
@@ -601,6 +604,17 @@ object Frontend {
                 tCombine = t1 - t0
 
                 t0 = System.nanoTime()
+                // Option: use direct Z3 type checking with unsat core support
+                if (options.contains('ktcDirect)) {
+                  if (batchVerbose) log("Using KTypeChecker.typeCheckDirect (direct Z3 with unsat core)...")
+                  val ktcResult = KTypeChecker.typeCheckDirect(combinedModel)
+                  if (!ktcResult.success) {
+                    println("[KTypeChecker] Type error detected:")
+                    ktcResult.errors.foreach(e => println(s"  $e"))
+                    throw TypeCheckException
+                  }
+                  if (batchVerbose) log("KTypeChecker: Type checking passed.")
+                }
                 val tc: TypeChecker = new TypeChecker(combinedModel)
                 tc.smtCheck
                 t1 = System.nanoTime()
@@ -1058,29 +1072,23 @@ object Frontend {
         case (false, false) => "FullyFlexible"
       }
       log(s"Type checking (mode: $modeName)...")
-      val result = KTypeChecker.typeCheck(combinedModel)
-      if (result.success) {
-        log("Type checking completed. No errors found.")
-        if (result.inferredTypes.nonEmpty) {
-          logDebug(s"Inferred types: ${result.inferredTypes.map { case (k, v) => s"$k: $v" }.mkString(", ")}")
+
+      // Option: use direct Z3 type checking with unsat core support
+      if (options.contains('ktcDirect)) {
+        log("Using KTypeChecker.typeCheckDirect (direct Z3 with unsat core)...")
+        val ktcResult = KTypeChecker.typeCheckDirect(combinedModel)
+        if (!ktcResult.success) {
+          println("[KTypeChecker] Type error detected:")
+          ktcResult.errors.foreach(e => println(s"  $e"))
+          throw TypeCheckException
         }
-      } else {
-        result.errors.foreach(e => println(s"[TypeChecker] Error: $e"))
-        errorExit("Type checking failed.")
+        log("KTypeChecker: Type checking passed.")
       }
 
-      // Build type environment state needed for SMT generation
-      // (TypeChecker.exp2Type, etc. are used by toSMT methods)
-      TypeChecker.reset()
-      TypeChecker.silent = true  // Suppress duplicate error messages
-      try {
-        val tc: TypeChecker = new TypeChecker(combinedModel)
-        tc.smtCheck
-      } catch {
-        case _: Throwable => // Ignore - KTypeChecker already validated
-      } finally {
-        TypeChecker.silent = false
-      }
+      // Use TypeChecker for type checking and state building
+      val tc: TypeChecker = new TypeChecker(combinedModel)
+      tc.smtCheck
+      log("Type checking completed. No errors found.")
 
       // Set CVC5 compatibility flag BEFORE SMT generation if -cvc5 is specified
       val useCVC5 = options.getOrElse('cvc5, false).asInstanceOf[Boolean]

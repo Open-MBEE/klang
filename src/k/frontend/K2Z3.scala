@@ -548,17 +548,21 @@ object K2Z3 {
     datatypes = null
     hasSoftConstraints = false
     optimize = null  // Will be created lazily if needed via getOptimize()
+
     // NOTE: Do NOT close the old Z3 context. Calling ctx.close() can cause Z3
-    // to crash (SIGABRT/SIGSEGV) if there are pending operations or the context
-    // is in an inconsistent state after a timeout. The old context will be
-    // garbage collected eventually. This trades a small memory leak for stability.
-    // Create fresh Z3 context and solvers
+    // to crash (SIGABRT/SIGSEGV) even when called after creating a new context.
+    // Let the old context be garbage collected instead.
+
+    // Create fresh Z3 context
     ctx = new Context(cfg.asJava)
     params = ctx.mkParams
     params.add("unsat_core", true)
     solver = ctx.mkSolver
     solver.setParameters(params)
     clearInterrupt()  // Reset interrupt state for new solve
+
+    // Force garbage collection to help release old Z3 contexts
+    System.gc()
   }
 
   /** Get the Optimize solver, creating it lazily if needed */

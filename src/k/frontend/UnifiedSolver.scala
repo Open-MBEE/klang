@@ -744,15 +744,28 @@ object UnifiedSolver {
 
     // Find all class declarations - we need to traverse nested structures (packages)
     val allClasses = MSet[String]()
-    
+    // Track parent-child relationships for nested classes
+    val nestedClassParent = MMap[String, String]()  // child -> parent
+
     log(s"Processing model with ${model.decls.size} top-level declarations and ${model.packages.size} packages")
-    
-    def processDecl(decl: TopDecl): Unit = {
+
+    def processDecl(decl: TopDecl, parentClass: Option[String] = None): Unit = {
       decl match {
         case ed: EntityDecl if ed.entityToken == ClassToken =>
           allClasses += ed.ident
           objectBounds += (ed.ident -> 0)
-          log(s"  Found class: ${ed.ident}")
+          // Track nesting relationship
+          parentClass.foreach { parent =>
+            nestedClassParent += (ed.ident -> parent)
+            log(s"  Found nested class: ${ed.ident} (parent: $parent)")
+          }
+          if (parentClass.isEmpty) {
+            log(s"  Found class: ${ed.ident}")
+          }
+          // Recursively process members to find nested classes
+          for (member <- ed.members) {
+            processDecl(member, Some(ed.ident))
+          }
         case pd: PackageDecl =>
           log(s"  Found nested package: ${pd.name}")
           if (pd.model != null) {
@@ -800,6 +813,30 @@ object UnifiedSolver {
           }
         case _ =>
       }
+    }
+
+    // Auto-instantiate nested classes when their parent is instantiated
+    // This ensures that if Outer is instantiated, Inner and Very_Inner are too
+    def propagateToChildren(parentClass: String): Unit = {
+      val parentBound = objectBounds.getOrElse(parentClass, 0)
+      if (parentBound > 0) {
+        // Find all direct children of this parent
+        for ((child, parent) <- nestedClassParent if parent == parentClass) {
+          val currentChildBound = objectBounds.getOrElse(child, 0)
+          if (currentChildBound < parentBound) {
+            objectBounds(child) = parentBound
+            log(s"  Auto-instantiating nested class $child (parent $parentClass has $parentBound instances)")
+            // Recursively propagate to grandchildren
+            propagateToChildren(child)
+          }
+        }
+      }
+    }
+
+    // Propagate instantiation to nested classes
+    for (className <- allClasses if !nestedClassParent.contains(className)) {
+      // Only start propagation from top-level classes (those without parents)
+      propagateToChildren(className)
     }
 
     // Find Seq/Set/List types that might need dynamic objects
