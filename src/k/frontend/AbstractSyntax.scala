@@ -3029,11 +3029,11 @@ case class IdentExp(ident: String) extends Exp {
     if (substitution contains ident) substitution(ident).copyType(this) else this
 
   override def toSMT(className: String, subTyping: Boolean): String = {
-    // Check if this is an external Java class reference (e.g., "Character" in Character.isDigit)
+    // Check if this is an external Java or Python reference
     val myType = TypeChecker.exp2Type.get(this)
-    if (myType != null && myType.isInstanceOf[ExternalType]) {
-      // For external classes, return the class name as a constant
-      // This is used as a qualifier for static method calls
+    if (myType != null && (myType.isInstanceOf[ExternalType] || myType.isInstanceOf[PythonExternalType])) {
+      // For external references, return the identifier name as a constant
+      // This is used as a qualifier for static method/property calls
       return ident
     }
     if (isLocal(this) || UtilSMT.isCreatedLocal(ident))
@@ -6950,7 +6950,25 @@ case class RngBinding(patterns: List[Pattern], collection: Collection) extends H
     var result: Map[String, Type] = Map()
     val ty: Type = collection match {
       case TypeCollection(ty) => ty
-      case _                  => UtilSMT.error(s"collection $collection")
+      case ExpCollection(exp) =>
+        // Try to get type from exp2Type map (set during type checking)
+        val expType = TypeChecker.exp2Type.get(exp)
+        if (expType != null) {
+          expType match {
+            case IdentType(_, elemType :: _) if Misc.isCollection(expType.asInstanceOf[IdentType]) =>
+              elemType  // Return element type of collection
+            case _ => expType
+          }
+        } else {
+          // Fallback: expression might be a primitive type expression like IdentExp("Int")
+          exp match {
+            case IdentExp("Int") => IntType
+            case IdentExp("Real") => RealType
+            case IdentExp("Bool") => BoolType
+            case IdentExp("String") => StringType
+            case _ => UtilSMT.error(s"collection $collection")
+          }
+        }
     }
     for (pattern <- patterns) {
       pattern match {

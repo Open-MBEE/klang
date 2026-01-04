@@ -141,6 +141,16 @@ case object TypeChecker {
       case (UnsignedIntType(_), RealType) if compatibility => return true
       // Two BitVecs must have same width
       case (BitVecType(w1), BitVecType(w2)) => return w1 == w2
+      // PythonExternalType is compatible with numeric types (Real, Int) for arithmetic
+      case (PythonExternalType(_), RealType) if compatibility => return true
+      case (RealType, PythonExternalType(_)) if compatibility => return true
+      case (PythonExternalType(_), IntType) if compatibility => return true
+      case (IntType, PythonExternalType(_)) if compatibility => return true
+      // ExternalType (Java) is also compatible with numeric types
+      case (ExternalType(_), RealType) if compatibility => return true
+      case (RealType, ExternalType(_)) if compatibility => return true
+      case (ExternalType(_), IntType) if compatibility => return true
+      case (IntType, ExternalType(_)) if compatibility => return true
       case _ => Misc.areTypesEqual(ty1, ty2, compatibility)
     }
   }
@@ -183,6 +193,21 @@ case object TypeChecker {
   def getSubClasses(className: String): List[String] =
     if (className == "TopLevelDeclarations") Nil
     else ClassHierarchy.childrenTransitive(classes(className)).map(_.toString).toList
+
+  // Check if subType is a subtype of superType (for class types)
+  def isSubtypeOf(subType: Type, superType: Type): Boolean = {
+    (subType, superType) match {
+      case (IdentType(Nil, subName :: Nil), IdentType(Nil, superName :: Nil)) =>
+        // Both are simple class types - check class hierarchy
+        val subTypeName = subName.toString
+        val superTypeName = superName.toString
+        if (subTypeName == superTypeName) true
+        else if (classes.contains(subTypeName)) {
+          getSuperClasses(subTypeName).contains(superTypeName)
+        } else false
+      case _ => areTypesEqual(subType, superType, false)
+    }
+  }
 
   def isLocal(exp: IdentExp): Boolean = {
     val res = try {
@@ -1781,8 +1806,16 @@ class TypeChecker(model: Model) {
             if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             BoolType
           case MUL | DIV | ADD | SUB | REM =>
-            if (!areTypesEqual(ty1, ty2, false)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
-            ty1
+            // Use compatibility=true to allow implicit conversions (Int/Real, External/Real, etc.)
+            if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
+            // Return the more specific type (prefer Real over PythonExternalType, etc.)
+            (ty1, ty2) match {
+              case (PythonExternalType(_), _) => ty2
+              case (_, PythonExternalType(_)) => ty1
+              case (ExternalType(_), _) => ty2
+              case (_, ExternalType(_)) => ty1
+              case _ => ty1
+            }
           case ASSIGN =>
             if (!areTypesEqual(ty1, ty2, false)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             UnitType
@@ -1797,9 +1830,17 @@ class TypeChecker(model: Model) {
             }
             BoolType
           case SUBSET | PSUBSET =>
-            // For S1 subset S2, both should be collections with the same element type
-            val (typesCompat, cType) = Misc.typeTypeCollection(ty1, ty2)
-            if (!typesCompat) error(s"$exp does not type check. $ty1 and $ty2 are not compatible.")
+            // For S1 subset S2, S1's element type must be a subtype of S2's element type
+            (ty1, ty2) match {
+              case (IdentType(_, elemType1 :: _), IdentType(_, elemType2 :: _))
+                if Misc.isCollection(ty1.asInstanceOf[IdentType]) && Misc.isCollection(ty2.asInstanceOf[IdentType]) =>
+                // Check that element type of left is subtype of element type of right
+                if (!isSubtypeOf(elemType1, elemType2))
+                  error(s"$exp does not type check. $ty1 and $ty2 are not compatible.")
+              case _ =>
+                val (typesCompat, cType) = Misc.typeTypeCollection(ty1, ty2)
+                if (!typesCompat) error(s"$exp does not type check. $ty1 and $ty2 are not compatible.")
+            }
             BoolType
           case SETUNION | SETDIFF | SETINTER =>
             val (typesCompat, cType) = Misc.typeTypeCollection(ty1, ty2)
@@ -2116,14 +2157,21 @@ class TypeChecker(model: Model) {
         var blockTe = if (exp2TypeEnv.containsKey(exp)) exp2TypeEnv.get(exp) else processBody(body, te, owner)
 
         var lastType: Type = UnitType
-        val bodyTypes = body.foreach {
-          b =>
-            b match {
-              case ExpressionDecl(e)              => lastType = getExpType(blockTe, e, owner)
-              case PropertyDecl(_, _, _, _, _, _) => UnitType
-              case _                              => error(s"Unsupported member in block: $b")
-            }
+        body.foreach { b =>
+          b match {
+            case ExpressionDecl(e) =>
+              lastType = getExpType(blockTe, e, owner)
+              logDebug(s"BlockExp ExpressionDecl: $e -> $lastType")
+            case pd @ PropertyDecl(_, name, _, _, _, _) =>
+              // Process property declaration in block - update blockTe for subsequent expressions
+              pd.ty.foreach { t =>
+                blockTe = blockTe.overwrite(name -> PropertyTypeInfo(pd, false, false, owner))
+              }
+              logDebug(s"BlockExp PropertyDecl: $name")
+            case _ => error(s"Unsupported member in block: $b")
+          }
         }
+        logDebug(s"BlockExp result type: $lastType")
         lastType
       case UnaryExp(op, exp)   => getExpType(te, exp, owner)
       case TupleExp(exps)      => CartesianType(exps.map { e => getExpType(te, e, owner) })
