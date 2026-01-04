@@ -1,5 +1,7 @@
-
-annotation instances : Int
+-- Test: testsets3.k
+-- Tests set operations with class instances
+-- Note: @instances is a reserved annotation (no declaration needed)
+-- @expected SAT
 
 @instances(3)
 class A {
