@@ -1,3 +1,4 @@
+@expected SAT
 package ProjectSystem
 
 import Temporal

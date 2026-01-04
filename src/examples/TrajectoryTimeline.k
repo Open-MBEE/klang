@@ -166,7 +166,7 @@ class Nonconsumable extends InterpolatedTL[V] {
    }
 
    -- add an effect -- remove this since it's not being called
-   fun add( id : Any, effect : Effect ) : Bool {
+   fun add( id : Any, effect : Effect ) : Unit {
       req effects[id] = effect
    }
 
