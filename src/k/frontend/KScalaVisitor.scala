@@ -163,6 +163,18 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
     ParenType(t)
   }
 
+  // Java-style array types: Car[] becomes Seq[Car]
+  override def visitArrayType(ctx: ModelParser.ArrayTypeContext): AnyRef = {
+    val qn: QualifiedName = visit(ctx.classIdentifier()).asInstanceOf[QualifiedName]
+    val elementType = IdentType(qn, Nil)
+    // Count dimensions (number of [])
+    val dims = ctx.children.asScala.count(c => c.getText == "[")
+    // Build nested Seq types for multi-dimensional arrays
+    (1 to dims).foldLeft(elementType: Type) { (inner, _) =>
+      IdentType(QualifiedName(List("Seq")), List(inner))
+    }
+  }
+
   override def visitSubType(ctx: ModelParser.SubTypeContext): AnyRef = {
     var i: String = visit(ctx.Identifier()).asInstanceOf[String]
     var t: Type = visit(ctx.`type`()).asInstanceOf[Type]
@@ -396,12 +408,40 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   override def visitLambdaExp(ctx: ModelParser.LambdaExpContext): AnyRef = {
     val patCtx = ctx.pattern()
     val expCtx = ctx.expression()
-    if (patCtx == null || expCtx == null) {
+    if (patCtx == null) {
       Misc.errorExit("[visitLambdaExp]", s"Parse error at line ${ctx.getStart().getLine()}: malformed lambda expression")
+    }
+    // If there's no expression (no '->'), check if the pattern can be converted to a tuple
+    if (expCtx == null) {
+      patCtx match {
+        case cartesian: ModelParser.CartesianPatternContext =>
+          // Convert (a, b, ...) pattern to tuple expression
+          val patterns = cartesian.pattern().asScala.toList
+          val exps = patterns.map(patternToExp)
+          return TupleExp(exps)
+        case _ =>
+          Misc.errorExit("[visitLambdaExp]", s"Parse error at line ${ctx.getStart().getLine()}: malformed lambda expression (expected '->')")
+      }
     }
     var pat: Pattern = visit(patCtx).asInstanceOf[Pattern]
     var exp: Exp = visit(expCtx).asInstanceOf[Exp]
     LambdaExp(pat, exp)
+  }
+
+  // Helper to convert a pattern context to an expression
+  private def patternToExp(patCtx: ModelParser.PatternContext): Exp = {
+    patCtx match {
+      case lit: ModelParser.LiteralPatternContext =>
+        visit(lit.literal()).asInstanceOf[Exp]
+      case ident: ModelParser.IdentPatternContext =>
+        IdentExp(ident.Identifier().getText())
+      case cartesian: ModelParser.CartesianPatternContext =>
+        val patterns = cartesian.pattern().asScala.toList
+        TupleExp(patterns.map(patternToExp))
+      case _ =>
+        Misc.errorExit("[patternToExp]", s"Cannot convert pattern to expression: ${patCtx.getText}")
+        null
+    }
   }
 
   override def visitBinOp1Exp(ctx: ModelParser.BinOp1ExpContext): AnyRef = {
