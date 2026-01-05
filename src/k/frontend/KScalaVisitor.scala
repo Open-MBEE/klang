@@ -408,20 +408,8 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   override def visitLambdaExp(ctx: ModelParser.LambdaExpContext): AnyRef = {
     val patCtx = ctx.pattern()
     val expCtx = ctx.expression()
-    if (patCtx == null) {
+    if (patCtx == null || expCtx == null) {
       Misc.errorExit("[visitLambdaExp]", s"Parse error at line ${ctx.getStart().getLine()}: malformed lambda expression")
-    }
-    // If there's no expression (no '->'), check if the pattern can be converted to a tuple
-    if (expCtx == null) {
-      patCtx match {
-        case cartesian: ModelParser.CartesianPatternContext =>
-          // Convert (a, b, ...) pattern to tuple expression
-          val patterns = cartesian.pattern().asScala.toList
-          val exps = patterns.map(patternToExp)
-          return TupleExp(exps)
-        case _ =>
-          Misc.errorExit("[visitLambdaExp]", s"Parse error at line ${ctx.getStart().getLine()}: malformed lambda expression (expected '->')")
-      }
     }
     var pat: Pattern = visit(patCtx).asInstanceOf[Pattern]
     var exp: Exp = visit(expCtx).asInstanceOf[Exp]
