@@ -1,0 +1,29 @@
+Status: FEATURE NOT IMPLEMENTED
+Category: Type Inference Limitation
+
+Analysis:
+This test demonstrates various type inference scenarios:
+
+  class TypeInferenceTest {
+    explicitInt : Int = 42           // OK - explicit type
+    inferredInt = 100                // Needs inference from literal
+    inferredSum = explicitInt + 10   // Needs inference from expression
+    inferredConcat = explicitString + " there"  // Needs String inference
+  }
+
+The type checker reports an error. Issues may include:
+1. Inference from literals (100, "world", false, 3.14) may not be working
+2. Inference from expressions involving other properties may fail
+3. String concatenation type inference may be incomplete
+
+Order matters for type inference:
+- inferredSum depends on explicitInt being resolved first
+- The type checker must process properties in dependency order
+
+Verdict: Type inference needs to handle:
+- All literal types (Int, String, Bool, Real)
+- Expressions that reference other properties
+- Proper dependency ordering for inference
+
+Action: Debug TypeChecker.scala type inference for property initializers.
+Ensure dependency-aware ordering of type inference passes.

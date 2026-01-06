@@ -1,0 +1,29 @@
+Status: WRONG RESULT (BUG)
+Category: Set isEmpty() Constraint Not Enforced
+
+Analysis:
+The test has constraints requiring non-empty sets:
+  req HasAccounts: !(accounts.isEmpty())
+  req HasCustomers: !(customers.isEmpty())
+
+But the output shows ALL sets are empty:
+  accounts:: [Empty]
+  customers:: [Empty]
+  customerAccount:: [Empty]
+
+The solver returns SAT with empty sets, violating the constraints!
+
+This is a critical bug - the isEmpty() constraint is not being enforced.
+Either:
+1. isEmpty() is not translated to SMT correctly
+2. The negation !(...) is not working
+3. Set membership constraints are being ignored
+
+The model "verifies 2 hard constraints" but clearly the HasAccounts and
+HasCustomers constraints are NOT satisfied.
+
+Verdict: CRITICAL BUG - Set isEmpty() constraints silently ignored.
+
+Action: Debug how isEmpty() is translated to SMT. Check if the negation
+is properly applied. The constraint !(accounts.isEmpty()) should force
+at least one element in the accounts set.

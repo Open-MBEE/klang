@@ -1,0 +1,31 @@
+Status: BASELINE MISMATCH
+Category: Type Check Difference
+
+Analysis:
+This test uses the "is" operator to test subtype relationships:
+
+  class SeedyFruit extends Fruit, CitrusFruit { seeds : Int }
+  apple : CitrusFruit
+  req apple is SeedyFruit
+
+The "is" operator checks at runtime/solve-time if an object is an instance of
+a particular type. Here, it constrains 'apple' (declared as CitrusFruit) to
+actually be a SeedyFruit.
+
+Current behavior: type check error
+Baseline expected: type check success (and SAT result)
+
+Issues:
+1. The "is" operator may require the target type to be a subtype
+2. SeedyFruit extends BOTH Fruit AND CitrusFruit - this is a diamond
+3. The diamond without "share" clause may be causing the type error
+
+If the diamond is the issue:
+  class SeedyFruit extends Fruit, CitrusFruit share Fruit { ... }
+
+Verdict: Either "is" operator handling or diamond inheritance issue.
+
+Action:
+1. Check if the diamond needs "share Fruit" clause
+2. Verify "is" operator implementation in type checker
+3. Update test or fix type checker accordingly

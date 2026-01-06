@@ -1,0 +1,26 @@
+Status: FEATURE NOT IMPLEMENTED
+Category: Missing Language Feature
+
+Analysis:
+This test uses Duration literals in HH:MM:SS format, which requires parser support:
+  req length >= 0:00:00
+  req length <= 0:10:00
+  req clip1.length = 0:05:30
+  req audio1.duration = 0:00:15.250
+
+The Duration type exists but the HH:MM:SS.mmm literal syntax may not be fully
+implemented in the parser. The type checker reports an error.
+
+Related files:
+- TimeParser.java handles time/duration parsing
+- Model.g4 defines the grammar for literals
+
+Issue:
+Need to verify that:
+1. Duration type is properly defined
+2. HH:MM:SS literal syntax is in the grammar
+3. Parser correctly creates Duration literals from this syntax
+
+Verdict: Either parser or type checker issue with Duration literal syntax.
+
+Action: Check grammar for Duration literal syntax, debug parser/type checker.

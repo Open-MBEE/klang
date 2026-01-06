@@ -1,0 +1,32 @@
+Status: WRONG RESULT (BUG)
+Category: External Function Not Evaluated
+
+Analysis:
+The test has:
+  x : Int
+  var y : Int = java.lang.Math.abs(x - 5)
+  req x >= 0
+  req x <= 10
+  req y <= 3
+
+Output shows:
+  x = 0
+  y = 0
+
+But if x = 0, then y = abs(0 - 5) = abs(-5) = 5, NOT 0!
+
+The constraint y <= 3 should NOT be satisfied with y = 5.
+Either:
+1. y should be 5 and the result should be UNSAT (no valid x gives y <= 3)
+2. x should be in range [2, 8] so that y = abs(x-5) <= 3
+
+Correct solutions would be x in {2,3,4,5,6,7,8} giving y in {3,2,1,0,1,2,3}.
+For example: x=5, y=0 would work. x=2, y=3 would work.
+
+But the solver produced x=0, y=0 which violates y = abs(x-5).
+
+Verdict: CRITICAL BUG - external function java.lang.Math.abs() not being
+properly evaluated or constrained.
+
+Action: Debug external function handling in ExternalFunctions.scala.
+The constraint y = Math.abs(x - 5) is not being enforced.

@@ -1,0 +1,23 @@
+PROBLEM: Multiple issues - parse error, missing imports, type errors
+
+ROOT CAUSES:
+1. Invalid separator: ================== (not valid K syntax)
+2. Missing imports: nasa.jpl.physics, nasa.jpl.europa.trajectory
+3. Type error: assignment expressions in function bodies
+4. `if/then/else` without proper statement termination
+
+PARSE ERRORS:
+- Lines with `==================` fail parsing
+
+TYPE ERRORS:
+- Function bodies with assignments expect Unit type
+- Expressions like `operating := !operating` need proper handling
+
+FIX OPTIONS:
+1. Remove `==================` separators, use -- comments
+2. Create stub files for nasa.jpl.physics, nasa.jpl.europa.trajectory
+3. Fix function body type handling
+4. Mark as @expected ERROR until fixed
+
+RECOMMENDATION: Mark @expected ERROR, this is a complex test case
+PRIORITY: Low - example/demo file, not core functionality

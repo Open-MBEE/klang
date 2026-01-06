@@ -1,0 +1,40 @@
+Status: FIXED
+Category: Nested Classes - Now Working
+
+Analysis:
+The test defines:
+- Outer { x : Int }
+- Inner (nested) { y : Int; req x = y }
+- Very_Inner (deeply nested) { z : Int; req z = x }
+
+Previous behavior:
+- Nested classes were NOT discovered at all
+- Only Outer was found, Inner and Very_Inner were ignored
+
+Current behavior (after all fixes):
+- Nested classes ARE discovered: "Found 3 classes total: Very_Inner, Outer, Inner"
+- Nested classes ARE registered in TypeChecker with their own type environments
+- Parent class fields are merged into nested class type environments
+- Cross-scope field references are correctly resolved:
+  - x in Inner's constraint resolves to Outer!x
+  - z in Very_Inner's constraint resolves to Very_Inner!z
+  - x in Very_Inner's constraint resolves to Outer!x
+- Test now correctly returns SAT
+
+Fixes applied:
+1. UnifiedSolver.scala - Recursively discovers nested classes
+2. AbstractSyntax.scala - InstantiationGraph includes nested classes
+3. AbstractSyntax.scala - allEntityDecls collects nested classes
+4. TypeChecker.scala - nestedClassParent map tracks nesting relationships
+5. TypeChecker.scala - processDecls tracks parent class for nested classes
+6. TypeChecker.scala - processNestedClassScoping merges parent fields into nested class type envs
+7. TypeChecker.scala - processClassPropertiesExplicit recursively processes nested classes
+8. TypeChecker.scala - processNestedEntityDecl recursively type-checks nested class members
+9. AbstractSyntax.scala - IdentExp.toSMT uses owning entity's class name for getters
+10. AbstractSyntax.scala - IdentExp.toSMT uses parent's heap entry (not 'this') for parent fields
+
+Test result:
+- Output: Outer(x::2), Inner(y::2), Very_Inner(z::2)
+- Constraints x=y and z=x are satisfied (all equal to 2)
+
+Verdict: FIXED - nested classes now work correctly with cross-scope field references.

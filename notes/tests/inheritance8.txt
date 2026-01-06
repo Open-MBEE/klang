@@ -1,0 +1,32 @@
+Status: BASELINE MISMATCH
+Category: Type Check Difference
+
+Analysis:
+This test has complex diamond inheritance with multiple levels:
+  A       B         D(bb:B)
+      C             E
+            F       G
+                H(tsum:Int)
+
+The baseline expected different type check behavior. Current error: "ERROR (type check)"
+but baseline expected it to type check successfully.
+
+Key complexity:
+- Class F extends C, E (diamond with A,B as roots)
+- Class G extends E with embedded E field (ee : E)
+- Class H extends F, G (another diamond)
+- Computed field: tsum : Int = a + b + c + d + e + f + g + h
+
+This tests the type checker's handling of:
+1. Deep diamond inheritance
+2. Embedded object fields of parent types
+3. Field access across complex hierarchy
+
+The type checker may have become stricter or there may be a regression.
+
+Verdict: Need to investigate type check error vs baseline expectation.
+
+Action:
+1. Run with verbose type checking to see specific error
+2. Check if share clause is needed for diamond resolution
+3. Either fix type checker or update test with proper share clauses

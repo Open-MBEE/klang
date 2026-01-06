@@ -1,0 +1,40 @@
+Status: WRONG RESULT (BUG)
+Category: Solver Bug - False UNSAT with null
+
+Analysis:
+This test expects SAT but returns UNSAT incorrectly. The test should create a
+3-node linked list: head → n1 → n2 → null
+
+Constraints:
+- head != null, head.next != null, head.next.next != null
+- head.next.next.next = null (chain ends)
+- head.value = 1, head.next.value = 2, head.next.next.value = 3
+
+Observed behavior:
+1. Solver creates objects but reports UNSAT
+2. Partial model shows 3 correct objects with correct values
+3. But UNSAT Core claims these simple value assignments conflict:
+   • head.value = 1
+   • head.next.value = 2
+   • head.next.next.value = 3
+
+The partial model actually shows:
+- Ref 2: value=1, next=Ref 1
+- Ref 1: value=2, next=Ref 4
+- Ref 4: value=3, next=null
+
+This IS a valid solution! But the solver rejects it.
+
+Key difference from heap_tree.k (which works):
+- heap_linked_list uses null comparisons
+- heap_tree does NOT use null
+
+Possible causes:
+1. null handling in heap constraints is broken
+2. The constraint "head.next.next.next = null" cannot be satisfied
+3. Top-level "var head" is not being bound to a heap object
+
+Verdict: CRITICAL BUG - false UNSAT, likely related to null handling.
+
+Action: Debug null reference handling in HeapCEGAR / UnifiedSolver.
+Check if "var head: Node" is properly linked to a heap object.

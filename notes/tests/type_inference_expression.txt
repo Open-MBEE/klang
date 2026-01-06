@@ -1,0 +1,18 @@
+Status: EXPECTED BEHAVIOR
+Category: Negative Test
+
+Analysis:
+This test demonstrates a type error - attempting to add Real and String types.
+
+The code declares:
+  x : Real
+  y : String
+  z : Real
+  req z = 0.5 + x + y   // ERROR: Can't add Real + String
+
+This SHOULD produce a type check error because you cannot add numeric (Real) and
+String types together in K.
+
+Verdict: Working correctly - error is expected.
+
+Action: Add @expected(ERROR) annotation or update baseline to expect type check error.

@@ -1,0 +1,28 @@
+Status: K2SMT ERROR
+Category: Set Comprehension with Expression
+
+Analysis:
+This test uses set comprehensions with computed expressions:
+
+  req s1 = Set{x + 1 | x : Int :- 10 <= x && x <= 15}
+
+  req Set{x | x :- 11 <= x && x <= 14}
+      subset
+      Set{x + 1 | x : Int :- 10 <= x && x <= 15}
+
+The K2SMT translation fails. The issue is likely:
+1. Set comprehensions with expressions in the element position (x + 1)
+2. Comparing comprehension sets with subset/equality
+
+Set{x + 1 | ...} requires:
+1. Generating the set of values {11, 12, 13, 14, 15, 16} for x in 10..15
+2. Translating this to SMT-LIB set theory
+
+This is more complex than Set{x | ...} where x is just a filter.
+
+Verdict: Set comprehension with computed elements not fully implemented in K2SMT.
+
+Action:
+1. Check how set comprehensions are translated in AbstractSyntax.scala
+2. Add support for expression-based element computation
+3. May require expanding comprehension to explicit set at SMT level

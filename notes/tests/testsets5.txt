@@ -1,0 +1,34 @@
+Status: TYPE CHECK ERROR
+Category: Forall with Subtype and Subset
+
+Analysis:
+This test combines forall quantifiers with subtyping and set subset:
+
+  class Car { vin : Int }
+  class Honda extends Car { streetValue : Int }
+
+  class Garage {
+    cars : Set[Car]
+    req r2 : forall c : Car :- c isin cars => c.vin != Null
+  }
+
+  class ChopShop extends Garage {
+    goodCars : Set[Honda]
+    req r4 : goodCars subset cars  // Set[Honda] subset Set[Car]
+    req r5 : forall gc : Honda :- gc isin goodCars => gc.streetValue > 5000
+  }
+
+Type checker error, likely due to:
+1. Set[Honda] subset Set[Car] requires covariance handling
+2. Forall with subtype requires special handling
+3. Inherited set constraints (cars from Garage) in ChopShop
+
+The subset relationship between Set[Honda] and Set[Car] is valid because
+Honda extends Car, but the type checker may not support covariant sets.
+
+Verdict: Covariant set subtyping not fully implemented.
+
+Action:
+1. Check type checker handling of Set covariance
+2. Verify forall quantifier with subtype iterators
+3. May need explicit cast or type annotation workaround

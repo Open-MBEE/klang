@@ -1,0 +1,37 @@
+Status: WRONG RESULT (BUG)
+Category: Solver Bug - False UNSAT with Regex
+
+Analysis:
+This test expects SAT but returns UNSAT incorrectly. The test should find strings
+that satisfy regex constraints. Comment says "Expected: SAT".
+
+Constraints:
+- number.matches("[0-9]{3}") && number.length = 3  → e.g., "123"
+- word.matches("[a-z]+") && word.length = 4  → e.g., "test"
+- testId.matches("test[0-9]+") && testId.startsWith("test")  → e.g., "test123"
+- identifier.matches("[a-z][a-z0-9]*") && length 3-6  → e.g., "abc123"
+
+All these constraints are clearly satisfiable!
+
+Observed behavior:
+Partial model shows garbage/regex patterns instead of matching strings:
+- number = "STU" (does NOT match [0-9]{3}!)
+- word = "]{3}" (does NOT match [a-z]+!)
+- testId = "test[0-9]+" (the regex itself!)
+- identifier = "-9]{3}" (garbage!)
+
+UNSAT Core claims:
+  • number.matches("[0-9]{3}")
+  • number.length = 3
+
+These constraints DO NOT conflict! "123" satisfies both.
+
+Possible causes:
+1. Regex constraints are not being translated to SMT correctly
+2. The regex-to-SMT translation produces unsatisfiable formulas
+3. String length constraints conflict with regex encoding
+
+Verdict: CRITICAL BUG - regex solving is fundamentally broken.
+
+Action: Debug RegexToZ3.java or equivalent regex translation code.
+Check if regex constraints are being properly encoded as SMT formulas.

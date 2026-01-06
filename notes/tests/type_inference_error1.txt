@@ -1,0 +1,21 @@
+Status: EXPECTED BEHAVIOR
+Category: Negative Test
+
+Analysis:
+This test intentionally expects a type check error. The test verifies that a
+property declared without BOTH a type and an initializer is rejected.
+
+The class declares "missingBoth" with no type annotation and no initializer:
+  class BadClass {
+    missingBoth   // No type, no initializer - ERROR
+  }
+
+Type inference requires either:
+1. An explicit type annotation, OR
+2. An initializer expression from which to infer the type
+
+Having neither is an error.
+
+Verdict: Working correctly - error is expected.
+
+Action: Add @expected(ERROR) annotation or update baseline to expect type check error.

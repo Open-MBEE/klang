@@ -1,0 +1,23 @@
+PROBLEM: NullPointerException in parser (ParseTree access)
+
+ROOT CAUSES:
+1. Invalid separators: ==============
+2. Missing imports: nasa.jpl.physics, nasa.jpl.europa.trajectory
+3. Complex annotation class with axiom inside
+
+PARSE ERROR:
+The ====== separators cause parser to fail, then later
+accessing ParseTree nodes causes NullPointerException
+
+UNUSUAL SYNTAX:
+- `annotation ModelElement { ... }` with fields inside
+- `axiom location = Set("class","val","fun")` inside annotation
+
+FIX OPTIONS:
+1. Remove ====== separators, use -- comments
+2. Create stub imports
+3. Fix parser to handle unexpected tokens gracefully
+4. Mark as @expected ERROR until fixed
+
+RECOMMENDATION: Remove separators, mark @expected ERROR
+PRIORITY: Low - experimental/demo file

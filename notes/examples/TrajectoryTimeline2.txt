@@ -1,0 +1,22 @@
+PROBLEM: Type check error - "Could not find Real * Real"
+
+ROOT CAUSE: The type checker doesn't fully support tuple type syntax.
+The file uses `Real * Real` for 2D vector types.
+
+TYPE ERROR LOCATION:
+class _2DVector extends (Real * Real) { ... }
+
+The type checker cannot resolve the tuple type `Real * Real`
+
+RELATED ISSUES:
+- Tuple type syntax: Type1 * Type2
+- Tuple indexing: this # 1, this # 2
+- Extending tuple types not fully implemented
+
+FIX OPTIONS:
+1. Implement tuple type resolution in TypeChecker
+2. Use a wrapper class instead of extending tuples
+3. Mark as @expected ERROR until fixed
+
+RECOMMENDATION: Mark @expected ERROR, implement tuple types later
+PRIORITY: Medium - tuple types are useful for math/physics models

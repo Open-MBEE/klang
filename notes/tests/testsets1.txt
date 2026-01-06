@@ -1,0 +1,26 @@
+Status: BASELINE MISMATCH
+Category: SMT Model Difference
+
+Analysis:
+This test has a baseline mismatch for smtModel only. The test exercises many
+Set operations:
+- Set literals: Set{1,2,3}, Set{}
+- Range sets: Set{3..5}
+- Set operations: isin, !isin, inter, subset, psubset
+- Set comprehensions: Set{x | x : Int :- condition}
+- Nested sets: Set[Set[Int]]
+
+The smtModel mismatch could be due to:
+1. Different variable naming/ordering in SMT output
+2. Changes in how sets are encoded to SMT
+3. Different optimization or simplification of constraints
+
+The test logic should still work - this is likely a cosmetic/representation change
+in the SMT output rather than a functional issue.
+
+Verdict: Likely needs baseline regeneration if semantics haven't changed.
+
+Action:
+1. Run test in verbose mode to see actual vs expected smtModel
+2. If results are equivalent, regenerate baseline
+3. If results differ semantically, investigate Set encoding changes

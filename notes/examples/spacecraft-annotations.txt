@@ -1,0 +1,20 @@
+PROBLEM: Same issues as spacecraft.k + annotation handling
+
+ROOT CAUSES (same as spacecraft.k):
+1. Invalid separators: ============== and ==================
+2. Missing imports: nasa.jpl.physics, nasa.jpl.europa.trajectory
+
+ADDITIONAL ISSUES:
+- Complex annotation usage with @name, @id, @doc, @owner
+- Type errors in function bodies
+
+PARSE ERRORS:
+Lines with ======= fail parsing before annotations are processed
+
+FIX OPTIONS:
+1. Remove ======= separators, use -- comments
+2. Create stub imports for nasa.jpl.* packages
+3. Mark as @expected ERROR until fixed
+
+RECOMMENDATION: Same fix as spacecraft.k - remove separators
+PRIORITY: Low - demonstration file

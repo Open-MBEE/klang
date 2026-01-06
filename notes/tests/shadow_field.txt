@@ -1,0 +1,24 @@
+Status: FEATURE NOT IMPLEMENTED
+Category: Missing Language Feature
+
+Analysis:
+This test attempts to use the "shadow" declaration syntax to intentionally hide
+a parent's field:
+
+  class Child extends Parent {
+    shadow Int value;  // Hide parent's value and declare child's own
+  }
+
+The "shadow" keyword syntax is not currently implemented in the K parser/type checker.
+This causes a type check error instead of the expected SAT result.
+
+Issue:
+The parser/type checker needs to recognize the "shadow" declaration syntax and:
+1. Allow the child to declare a new field with the same name as parent
+2. Keep parent's field accessible via super or explicit type cast
+3. Child's field shadows (hides) the parent's field in normal access
+
+Verdict: Missing language feature.
+
+Action: Implement "shadow" declaration syntax in parser and type checker, OR
+remove test if feature is not planned.

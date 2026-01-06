@@ -1,0 +1,23 @@
+PROBLEM: Lambda expression parse error at line 17
+
+ROOT CAUSE: Array type syntax `String[]` may be conflicting with
+lambda expression parsing.
+
+LINE 17:
+  DMX_ID : String[]
+           ^^^^^^^^
+Parser interprets [] as malformed lambda
+
+ALSO FOUND:
+- ChannelID : Int[]
+- Tabs used for indentation (mixing with K style)
+- Class MTAK extends STAKR but STAKR not defined in file
+
+FIX OPTIONS:
+1. Use Seq[String] instead of String[]
+2. Use Seq[Int] instead of Int[]
+3. Define STAKR class before MTAK
+4. Fix parser to handle [] array syntax
+
+RECOMMENDATION: Change array syntax to Seq[T] format
+PRIORITY: Medium - array syntax is common

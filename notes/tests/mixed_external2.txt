@@ -1,0 +1,28 @@
+Status: FEATURE NOT IMPLEMENTED
+Category: External Function Issue
+
+Analysis:
+This test uses both Java and Python external functions together:
+  import java.lang.Math
+  import python math
+
+  req area_python = math.pi * math.pow(radius, 2.0)
+
+The type checker reports an error, likely because:
+1. The Python math module import/handling is incomplete
+2. math.pi and math.pow() require special handling for external function resolution
+
+The Java external functions (Math.sin, Math.cos) are handled, but Python math
+module functions may not be fully integrated with the type checker.
+
+Related files:
+- PythonExternalFunctions.scala
+- ExternalFunctions.scala
+
+Issue:
+Python math module functions need type signatures defined so the type checker
+can verify the function calls.
+
+Verdict: Python external function type checking not fully implemented.
+
+Action: Add type signatures for Python math module functions to PythonExternalFunctions.

@@ -1,0 +1,27 @@
+Status: BUG
+Category: Type Checker Error
+
+Analysis:
+This test fails with: "minVal already defined. Please check. Exiting."
+
+The test declares:
+  a : Int
+  b : Int
+  minVal : Int
+  maxVal : Int
+
+  minVal = java.lang.Math.min(a, b)
+  maxVal = java.lang.Math.max(a, b)
+
+The error suggests "minVal" is being defined twice somewhere. Possible causes:
+1. The assignment statement "minVal = ..." is being treated as a second definition
+2. There's a name collision with a built-in or reserved name
+3. The type checker is incorrectly tracking variable declarations
+
+In K, property declarations like "minVal : Int" followed by an assignment constraint
+"minVal = ..." should be valid - the assignment adds a constraint, not a redefinition.
+
+Verdict: Type checker bug - incorrectly flagging constraint as redefinition.
+
+Action: Debug type checker to understand why "minVal = ..." is treated as a definition.
+Check if external function result binding is triggering a secondary definition.

@@ -1,0 +1,37 @@
+Status: WRONG RESULT (BUG)
+Category: Constraint Verification Bug
+
+Analysis:
+The test has explicit constraints:
+  req x > 0.0
+  req x < 100.0
+  req y = java.lang.Math.sqrt(x)
+  req z = y * y
+  req z > x - 0.001
+  req z < x + 0.001
+
+Output shows:
+  x = 0.00
+  y = 0.0
+  z = 0.0
+
+The solver claims "All 9 hard constraints satisfied" but x = 0 clearly
+violates the constraint x > 0.0!
+
+This is either:
+1. A constraint verification bug - not checking x > 0.0 properly
+2. A display rounding issue hiding a very small positive x
+
+If x is truly 0, then:
+- x > 0.0 is FALSE (constraint violated)
+- The verification should have caught this
+
+The CEGAR refinement for external functions is also not working:
+- The test was designed to force CEGAR to find x where sqrt(x) = y
+- But x = 0 is the trivial solution (sqrt(0) = 0)
+- And it violates the explicit constraint x > 0.0
+
+Verdict: CRITICAL BUG - constraint verification falsely reports success
+when x > 0.0 is violated.
+
+Related: external2.k also has external function issues

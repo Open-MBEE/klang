@@ -1,0 +1,20 @@
+Status: EXPECTED BEHAVIOR
+Category: Negative Test
+
+Analysis:
+This test intentionally expects a type check error. The test verifies that diamond
+inheritance WITHOUT a "share" clause is properly rejected by the type checker.
+
+The class hierarchy creates a diamond:
+  F
+ / \
+D   E
+ \ /
+  B
+
+Class B extends both D and E (which both extend F), but doesn't use "share F" to
+resolve the diamond ambiguity. This SHOULD produce a type check error.
+
+Verdict: Working correctly - error is expected.
+
+Action: Add @expected(ERROR) annotation or update baseline to expect type check error.

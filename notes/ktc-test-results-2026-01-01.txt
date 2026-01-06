@@ -1,0 +1,356 @@
+======================================
+K Language Test Runner
+======================================
+
+Test directories: src/tests src/test src/examples
+Found 223 tests
+Mode: batch (single JVM)
+
+Progress:
+==========================================
+(Running all tests in single JVM with baseline checking...)
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+line 45:8 no viable alternative at input 'vartype'
+line 45:13 extraneous input ':' expecting Identifier
+line 50:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 65:19 no viable alternative at input '.type'
+line 65:24 extraneous input '=' expecting Identifier
+line 68:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 70:8 no viable alternative at input 'vartype'
+line 70:13 extraneous input ':' expecting Identifier
+line 72:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 73:8 mismatched input 'type' expecting {'{', 'java', 'python', '(', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 73:13 missing Identifier at '='
+line 77:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 104:8 no viable alternative at input 'varclass'
+line 104:14 extraneous input ':' expecting {Keyword, Identifier}
+line 106:25 mismatched input 'class' expecting {'{', 'java', 'python', '(', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 106:30 extraneous input '.' expecting {Keyword, Identifier}
+line 109:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 110:8 no viable alternative at input 'varclass'
+line 110:14 extraneous input ':' expecting {Keyword, Identifier}
+line 112:25 mismatched input 'class' expecting {'{', 'java', 'python', '(', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 112:30 extraneous input '.' expecting {Keyword, Identifier}
+line 122:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 125:13 no viable alternative at input 'classInt'
+line 126:13 no viable alternative at input 'classReal'
+line 127:13 no viable alternative at input 'classBool'
+line 128:13 no viable alternative at input 'classString'
+line 129:13 no viable alternative at input 'classChar'
+line 132:13 no viable alternative at input 'classClass'
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+line 45:4 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 48:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 32:2 extraneous input 'weight' expecting {'{', 'java', 'python', '@', '(', 'class', 'assoc', 'share', 'rename', 'shadow', 'minimize', 'maximize', 'type', 'part', 'var', 'val', 'ordered', 'unique', 'source', 'target', 'fun', 'req', 'soft', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 60:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 91:2 mismatched input 'weight' expecting '}'
+line 101:30 no viable alternative at input '.weight'
+line 104:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 107:44 no viable alternative at input '.weight'
+line 107:51 extraneous input ')' expecting '}'
+line 110:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 121:0 mismatched input '}' expecting <EOF>
+line 22:24 mismatched input '{' expecting ':'
+line 32:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 32:20 mismatched input '{' expecting ':'
+line 40:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 50:2 extraneous input 'weight' expecting {'{', 'java', 'python', '@', '(', 'class', 'assoc', 'share', 'rename', 'shadow', 'minimize', 'maximize', 'type', 'part', 'var', 'val', 'ordered', 'unique', 'source', 'target', 'fun', 'req', 'soft', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 78:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 109:2 mismatched input 'weight' expecting '}'
+line 119:30 no viable alternative at input '.weight'
+line 122:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 125:44 no viable alternative at input '.weight'
+line 125:51 mismatched input ')' expecting '}'
+line 126:2 mismatched input '}' expecting <EOF>
+line 19:2 mismatched input 'weight' expecting '}'
+line 38:0 mismatched input '}' expecting <EOF>
+line 17:6 mismatched input ';' expecting <EOF>
+line 95:42 extraneous input '/' expecting {')', ','}
+line 95:49 mismatched input ')' expecting '->'
+line 97:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 100:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 101:29 extraneous input '-' expecting {'(', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 101:34 mismatched input ',' expecting '->'
+line 102:33 mismatched input ',' expecting '->'
+line 121:7 mismatched input ':' expecting Identifier
+line 121:15 mismatched input ',' expecting '}'
+line 121:21 mismatched input ',' expecting '}'
+line 121:29 mismatched input ',' expecting <EOF>
+line 28:4 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 34:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 11:71 mismatched input ';' expecting <EOF>
+line 16:17 extraneous input ']' expecting {'{', '*', 'java', 'python', '(', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 17:11 mismatched input ':' expecting '->'
+line 17:17 mismatched input ']' expecting {'{', 'java', 'python', '(', '{|', 'Bool', 'Char', 'Int', 'Real', 'String', 'Unit', 'Time', 'Duration', 'BitVec', 'Float32', 'Float64', 'Int8', 'Int16', 'Int32', 'Int64', 'UInt8', 'UInt16', 'UInt32', 'UInt64', 'Class', 'Set', 'OSet', 'Bag', 'Seq', 'Tuple', 'new', '!', 'if', 'match', 'while', 'for', '-', 'assert', 'bnot', 'forall', 'exists', 'continue', 'break', 'return', '$result', '_', DateLiteral, DurationLiteral, IntegerLiteral, RealLiteral, BooleanLiteral, 'null', 'this', CharacterLiteral, StringLiteral, Identifier}
+line 21:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 99:13 no viable alternative at input 'endTime::'
+line 112:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 123:43 extraneous input ';' expecting '}'
+line 129:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 174:26 extraneous input '.' expecting {')', ','}
+line 174:36 mismatched input ',' expecting '}'
+line 174:41 mismatched input ')' expecting '}'
+line 181:2 mismatched input '}' expecting <EOF>
+line 144:3 missing Identifier at 'soft'
+line 144:7 missing 'req' at '('
+line 148:3 missing Identifier at 'soft'
+line 148:7 missing 'req' at '('
+line 159:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 5:11 extraneous input '.' expecting Identifier
+line 5:11 extraneous input '.' expecting Identifier
+WARNING: optimization with quantified constraints is not supported
+line 7:11 extraneous input '.' expecting Identifier
+line 6:11 extraneous input '.' expecting Identifier
+line 15:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+WARNING: optimization with quantified constraints is not supported
+line 7:6 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 11:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 11:6 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 15:2 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 9:4 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+line 13:0 rule expression failed predicate: {$ctx.parent instanceof ModelParser.ModelContext}?
+WARNING: optimization with quantified constraints is not supported
+[  1/223] [examples] a.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.97s]
+[  2/223] [examples] b.k                      ... ✅ PASSED (ERROR (expected)) [0.02s]
+[  3/223] [examples] b2.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.08s]
+[  4/223] [examples] Bank.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[  5/223] [examples] bnf.k                    ... ✅ PASSED (ERROR (expected)) [0.13s]
+[  6/223] [examples] borges.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[  7/223] [examples] c.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[  8/223] [examples] conservative-extension.k ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[  9/223] [examples] d.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 10/223] [examples] DSN_Pass-diagnostic.k    ... ✅ PASSED (TIMEOUT (expected)) [30.16s]
+[ 11/223] [examples] DSN_Pass.k               ... ✅ PASSED (SAT (expected), baseline OK) [1.28s]
+[ 12/223] [examples] e.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.04s]
+[ 13/223] [examples] e2.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 14/223] [examples] employee.k               ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 15/223] [examples] f.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 16/223] [examples] fibonacci.k              ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 17/223] [examples] flight.k                 ... ✅ PASSED (UNSAT (expected), baseline OK) [4.72s]
+[ 18/223] [examples] Fruits.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 19/223] [examples] function_with_class_params.k ... ✅ PASSED (SAT (expected)) [0.05s]
+[ 20/223] [examples] function_with_class_params2.k ... ✅ PASSED (SAT (expected)) [0.05s]
+[ 21/223] [examples] function_with_class_params3.k ... ✅ PASSED (ERROR (expected)) [0.02s]
+[ 22/223] [examples] FunctionSynthesis.k      ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 23/223] [examples] GravityScience.k         ... ✅ PASSED (SAT (expected), baseline OK) [0.85s]
+[ 24/223] [examples] k.k                      ... ✅ PASSED (ERROR (expected)) [0.03s]
+[ 25/223] [examples] library.k                ... ❌ FAILED (got ERROR (K2SMT), expected SAT) [0.03s]
+[ 26/223] [examples] lightswitch.k            ... ✅ PASSED (SAT (expected), baseline OK) [0.08s]
+[ 27/223] [examples] lisp-draft.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.25s]
+[ 28/223] [examples] lisp.k                   ... ❌ FAILED (got UNSAT, expected SAT; baseline mismatch: smtModel) [5.90s]
+[ 29/223] [examples] math.k                   ... ✅ PASSED (ERROR (expected)) [0.02s]
+[ 30/223] [examples] mathutil.k               ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 31/223] [examples] nesting.k                ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 32/223] [examples] orbital-petals.k         ... ✅ PASSED (SAT (expected), baseline OK) [0.11s]
+[ 33/223] [examples] order-transformed.k      ... ✅ PASSED (SAT (expected), baseline OK) [0.08s]
+[ 34/223] [examples] order.k                  ... ✅ PASSED (UNKNOWN) [0.05s]
+[ 35/223] [examples] pkg1.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 36/223] [examples] pkg2.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 37/223] [examples] planning-simple.k        ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 38/223] [examples] prepost.k                ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 39/223] [examples] scheduling.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 40/223] [examples] seq_vs_array.k           ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 41/223] [examples] Shapes.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 42/223] [examples] sm.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 43/223] [examples] small.k                  ... ✅ PASSED (ERROR (expected)) [0.03s]
+[ 44/223] [examples] spacecraft-annotations.k ... ❌ FAILED (got ERROR (type check), expected SAT) [0.03s]
+[ 45/223] [examples] spacecraft-aspects.k     ... ❌ FAILED (NullPointerException: Cannot invoke "org.antlr.v4.runtime.tree.ParseTree) [0.02s]
+[ 46/223] [examples] spacecraft.k             ... ❌ FAILED (got ERROR (type check), expected SAT) [0.02s]
+[ 47/223] [examples] stakr.k                  ... ✅ PASSED (SAT (expected), baseline OK) [0.18s]
+[ 48/223] [examples] StringDemo.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[ 49/223] [examples] sysml.k                  ... ✅ PASSED (UNKNOWN) [0.04s]
+[ 50/223] [examples] testsmt.k                ... ✅ PASSED (SAT (expected), baseline OK) [0.06s]
+[ 51/223] [examples] TrajectoryTimeline.k     ... ❌ FAILED (RuntimeException: [[visitLambdaExp]] Parse error at line 95: malform) [0.03s]
+[ 52/223] [examples] TrajectoryTimeline2.k    ... ❌ FAILED (got ERROR (type check), expected SAT) [0.08s]
+[ 53/223] [examples] util.k                   ... ❌ FAILED (got ERROR (type check), expected SAT) [0.04s]
+[ 54/223] [examples] WSTS.k                   ... ❌ FAILED (got ERROR (type check), expected SAT) [0.03s]
+[ 55/223] [examples] WSTS2.k                  ... ❌ FAILED (RuntimeException: [[visitLambdaExp]] Parse error at line 17: malform) [0.03s]
+[ 56/223] [test] AdvancedSolverTest.k         ... ❌ FAILED (ERROR (type check)) [0.03s]
+[ 57/223] [test] SimpleStringOpsTest.k        ... ✅ PASSED (SAT) [0.07s]
+[ 58/223] [test] SimpleStringTest.k           ... ✅ PASSED (SAT) [0.07s]
+[ 59/223] [test] StringConcatTest.k           ... ✅ PASSED (SAT) [0.07s]
+[ 60/223] [test] StringOperationsTest.k       ... ✅ PASSED (SAT) [0.07s]
+[ 61/223] [tests] array_comprehensive_test.k  ... ✅ PASSED (SAT) [0.08s]
+[ 62/223] [tests] array_test.k                ... ✅ PASSED (SAT) [0.07s]
+[ 63/223] [tests] as1.k                       ... ✅ PASSED (ERROR (expected)) [0.03s]
+[ 64/223] [tests] as2.k                       ... ✅ PASSED (SAT) [0.07s]
+[ 65/223] [tests] besteffort_partial1.k       ... ✅ PASSED (SAT) [0.07s]
+[ 66/223] [tests] besteffort1.k               ... ✅ PASSED (SAT) [0.07s]
+[ 67/223] [tests] bitvec_test.k               ... ✅ PASSED (SAT) [0.07s]
+[ 68/223] [tests] bitvector_real_conversions.k ... ✅ PASSED (SAT) [0.09s]
+[ 69/223] [tests] bitvector_width_conversions.k ... ✅ PASSED (SAT) [0.08s]
+[ 70/223] [tests] cast_test.k                 ... ✅ PASSED (SAT) [0.08s]
+[ 71/223] [tests] cegar1.k                    ... ✅ PASSED (SAT) [0.07s]
+[ 72/223] [tests] ctor_syntax_test.k          ... ✅ PASSED (SAT) [0.08s]
+[ 73/223] [tests] diamond_deep.k              ... ✅ PASSED (SAT) [0.08s]
+[ 74/223] [tests] diamond_error.k             ... ✅ PASSED (ERROR (expected)) [0.03s]
+[ 75/223] [tests] diamond_mixed_share_rename.k ... ✅ PASSED (SAT) [0.07s]
+[ 76/223] [tests] diamond_rename.k            ... ✅ PASSED (SAT) [0.08s]
+[ 77/223] [tests] diamond_share_multiple.k    ... ✅ PASSED (SAT) [0.08s]
+[ 78/223] [tests] diamond_share.k             ... ✅ PASSED (SAT) [0.08s]
+[ 79/223] [tests] duration_hms1.k             ... ✅ PASSED (SAT) [0.08s]
+[ 80/223] [tests] duration_microseconds1.k    ... ✅ PASSED (SAT) [0.08s]
+[ 81/223] [tests] empty_class.k               ... ✅ PASSED (SAT) [0.07s]
+[ 82/223] [tests] external1.k                 ... ✅ PASSED (SAT) [0.08s]
+[ 83/223] [tests] external2.k                 ... ✅ PASSED (SAT) [0.07s]
+[ 84/223] [tests] external3.k                 ... ✅ PASSED (SAT) [0.07s]
+[ 85/223] [tests] external4.k                 ... ✅ PASSED (SAT) [0.08s]
+[ 86/223] [tests] external5.k                 ... ✅ PASSED (UNKNOWN) [0.06s]
+[ 87/223] [tests] external6.k                 ... ✅ PASSED (SAT) [0.07s]
+[ 88/223] [tests] external7.k                 ... ✅ PASSED (SAT) [0.07s]
+[ 89/223] [tests] field_shadow_error.k        ... ✅ PASSED (ERROR (expected)) [0.03s]
+[ 90/223] [tests] float_minimal.k             ... ✅ PASSED (SAT) [0.07s]
+[ 91/223] [tests] global1.k                   ... ✅ PASSED (SAT, baseline OK) [0.07s]
+[ 92/223] [tests] heap_binary_search.k        ... ✅ PASSED (SAT) [0.07s]
+[ 93/223] [tests] heap_chain5.k               ... ✅ PASSED (UNSAT) [4.35s]
+[ 94/223] [tests] heap_cyclic_graph.k         ... ✅ PASSED (SAT) [0.08s]
+[ 95/223] [tests] heap_doubly_linked.k        ... ✅ PASSED (SAT) [0.08s]
+[ 96/223] [tests] heap_linked_list.k          ... ✅ PASSED (UNSAT) [4.38s]
+[ 97/223] [tests] heap_tree.k                 ... ✅ PASSED (SAT) [0.08s]
+[ 98/223] [tests] inheritance1.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[ 99/223] [tests] inheritance10.k             ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[100/223] [tests] inheritance11.k             ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[101/223] [tests] inheritance12.k             ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[102/223] [tests] inheritance2.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[103/223] [tests] inheritance3.k              ... ✅ PASSED (SAT, baseline OK) [0.07s]
+[104/223] [tests] inheritance4.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[105/223] [tests] inheritance5.k              ... ✅ PASSED (ERROR (expected)) [0.03s]
+[106/223] [tests] inheritance6.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[107/223] [tests] inheritance7.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[108/223] [tests] inheritance8.k              ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[109/223] [tests] inheritance9.k              ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[110/223] [tests] is.k                        ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[111/223] [tests] java_constructor_test.k     ... ✅ PASSED (SAT) [0.08s]
+[112/223] [tests] ktypechecker_test.k         ... ✅ PASSED (UNSAT) [0.81s]
+[113/223] [tests] mixed_external1.k           ... ✅ PASSED (SAT) [0.08s]
+[114/223] [tests] mixed_external2.k           ... ❌ FAILED (ERROR (type check)) [0.03s]
+[115/223] [tests] multi_dim_test.k            ... ✅ PASSED (SAT) [0.08s]
+[116/223] [tests] null_test.k                 ... ✅ PASSED (SAT) [0.08s]
+[117/223] [tests] numeric_types_test.k        ... ✅ PASSED (SAT) [0.12s]
+[118/223] [tests] nw1.k                       ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[119/223] [tests] object_bounds_dynamic1.k    ... ✅ PASSED (SAT) [0.08s]
+[120/223] [tests] object_bounds0.k            ... ✅ PASSED (SAT) [0.21s]
+[121/223] [tests] object_bounds1.k            ... ✅ PASSED (SAT) [0.07s]
+[122/223] [tests] object_bounds2.k            ... ✅ PASSED (SAT) [0.08s]
+[123/223] [tests] object_bounds3.k            ... ✅ PASSED (SAT) [0.08s]
+[124/223] [tests] opaque_uninterpreted1.k     ... ✅ PASSED (UNKNOWN) [0.06s]
+[125/223] [tests] opaque1.k                   ... ✅ PASSED (SAT) [0.07s]
+[126/223] [tests] opaque2.k                   ... ✅ PASSED (SAT) [0.08s]
+[127/223] [tests] opaque3.k                   ... ✅ PASSED (SAT) [0.07s]
+[128/223] [tests] opaque4.k                   ... ❌ FAILED (ERROR (type check)) [0.03s]
+[129/223] [tests] opt1.k                      ... ✅ PASSED (SAT) [0.08s]
+[130/223] [tests] opt2.k                      ... ✅ PASSED (SAT) [0.07s]
+[131/223] [tests] opt3.k                      ... ✅ PASSED (SAT) [0.07s]
+[132/223] [tests] optunsat1.k                 ... ✅ PASSED (UNSAT) [1.09s]
+[133/223] [tests] overflow_test.k             ... ✅ PASSED (SAT) [0.08s]
+[134/223] [tests] property_as_constraint1.k   ... ✅ PASSED (SAT) [0.08s]
+[135/223] [tests] python_external1.k          ... ✅ PASSED (SAT) [0.07s]
+[136/223] [tests] python_external2.k          ... ✅ PASSED (SAT) [0.85s]
+[137/223] [tests] python_external3.k          ... ✅ PASSED (SAT) [0.08s]
+[138/223] [tests] regex_alternation1.k        ... ✅ PASSED (UNSAT) [2.09s]
+[139/223] [tests] regex_dot1.k                ... ✅ PASSED (UNSAT) [1.22s]
+[140/223] [tests] regex_escapes1.k            ... ✅ PASSED (UNSAT) [2.55s]
+[141/223] [tests] regex_grouping1.k           ... ✅ PASSED (UNSAT) [1.70s]
+[142/223] [tests] regex_solver1.k             ... ✅ PASSED (UNSAT) [1.61s]
+[143/223] [tests] regex1.k                    ... ✅ PASSED (UNSAT) [1.28s]
+[144/223] [tests] regex2.k                    ... ✅ PASSED (UNSAT) [2.11s]
+[145/223] [tests] regex3.k                    ... ✅ PASSED (SAT) [0.08s]
+[146/223] [tests] rename_field.k              ... ✅ PASSED (SAT) [0.08s]
+[147/223] [tests] rename_method.k             ... ✅ PASSED (SAT) [0.08s]
+[148/223] [tests] rename_simple.k             ... ✅ PASSED (SAT) [0.08s]
+[149/223] [tests] reservedAnnotations1.k      ... ✅ PASSED (SAT) [0.08s]
+[150/223] [tests] scope1.k                    ... ✅ PASSED (ERROR (expected)) [0.03s]
+[151/223] [tests] seq1.k                      ... ✅ PASSED (SAT) [0.08s]
+[152/223] [tests] set_comprehensive_test.k    ... ✅ PASSED (UNKNOWN) [0.11s]
+[153/223] [tests] set_time_test.k             ... ✅ PASSED (SAT) [0.08s]
+[154/223] [tests] shadow_field.k              ... ✅ PASSED (SAT (expected)) [0.08s]
+[155/223] [tests] signed_cast_test.k          ... ✅ PASSED (SAT) [0.08s]
+[156/223] [tests] signed_minimal.k            ... ✅ PASSED (SAT) [0.08s]
+[157/223] [tests] simple_explicit_test.k      ... ✅ PASSED (SAT) [0.07s]
+[158/223] [tests] soft_constraint1.k          ... ✅ PASSED (SAT) [0.08s]
+[159/223] [tests] soft_constraint2.k          ... ✅ PASSED (SAT) [0.08s]
+[160/223] [tests] soft_constraint3.k          ... ✅ PASSED (SAT) [0.08s]
+[161/223] [tests] soft_constraint4.k          ... ✅ PASSED (SAT) [0.08s]
+[162/223] [tests] soft_constraint5.k          ... ✅ PASSED (SAT) [0.08s]
+[163/223] [tests] stringcase1.k               ... ✅ PASSED (SAT) [0.08s]
+[164/223] [tests] stringconcat1.k             ... ✅ PASSED (SAT) [0.08s]
+[165/223] [tests] stringedge1.k               ... ✅ PASSED (SAT) [0.08s]
+[166/223] [tests] stringfromint1.k            ... ✅ PASSED (SAT) [0.08s]
+[167/223] [tests] stringint1.k                ... ✅ PASSED (SAT) [0.08s]
+[168/223] [tests] stringops1.k                ... ✅ PASSED (SAT) [0.08s]
+[169/223] [tests] stringops2.k                ... ✅ PASSED (SAT) [0.08s]
+[170/223] [tests] stringpred1.k               ... ✅ PASSED (SAT) [0.08s]
+[171/223] [tests] stringsolver1.k             ... ✅ PASSED (SAT) [0.13s]
+[172/223] [tests] tc1.k                       ... ✅ PASSED (ERROR (expected)) [0.03s]
+[173/223] [tests] tc2.k                       ... ✅ PASSED (ERROR (expected)) [0.03s]
+[174/223] [tests] tc3.k                       ... ✅ PASSED (ERROR (expected)) [0.03s]
+[175/223] [tests] tc4.k                       ... ✅ PASSED (SAT (expected), baseline OK) [0.07s]
+[176/223] [tests] testsets1.k                 ... ❌ FAILED (baseline mismatch: smtModel) [0.15s]
+[177/223] [tests] testsets2.k                 ... ❌ FAILED (ERROR (K2SMT) - baseline expected different) [0.04s]
+[178/223] [tests] testsets3.k                 ... ❌ FAILED (ERROR (type check) - baseline expected different) [0.03s]
+[179/223] [tests] testsets4.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[180/223] [tests] testsets5.k                 ... ❌ FAILED (ERROR (type check) - baseline expected different) [0.03s]
+[181/223] [tests] testsets6.k                 ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[182/223] [tests] testsmt1.k                  ... ✅ PASSED (SAT, baseline OK) [0.10s]
+[183/223] [tests] testsmt10.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[184/223] [tests] testsmt11.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[185/223] [tests] testsmt12.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[186/223] [tests] testsmt13.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[187/223] [tests] testsmt14.k                 ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[188/223] [tests] testsmt15.k                 ... ❌ FAILED (ERROR (type check) - baseline expected different) [0.03s]
+[189/223] [tests] testsmt16.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[190/223] [tests] testsmt17.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[191/223] [tests] testsmt18.k                 ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[192/223] [tests] testsmt19.k                 ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[193/223] [tests] testsmt2.k                  ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[194/223] [tests] testsmt20.k                 ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[195/223] [tests] testsmt3.k                  ... ✅ PASSED (SAT, baseline OK) [0.11s]
+[196/223] [tests] testsmt4.k                  ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[197/223] [tests] testsmt5.k                  ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[198/223] [tests] testsmt6.k                  ... ✅ PASSED (SAT, baseline OK) [0.10s]
+[199/223] [tests] testsmt7.k                  ... ✅ PASSED (SAT, baseline OK) [0.09s]
+[200/223] [tests] testsmt8.k                  ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[201/223] [tests] testsmt9.k                  ... ✅ PASSED (SAT, baseline OK) [0.08s]
+[202/223] [tests] time_duration_demo.k        ... ✅ PASSED (SAT) [0.08s]
+[203/223] [tests] timeout_hard1.k             ... ✅ PASSED (UNKNOWN) [0.09s]
+[204/223] [tests] timeout_hard2.k             ... ✅ PASSED (UNKNOWN) [0.09s]
+[205/223] [tests] timeout1.k                  ... ✅ PASSED (SAT) [0.08s]
+[206/223] [tests] type_conversions_test.k     ... ✅ PASSED (SAT) [0.08s]
+[207/223] [tests] type_inference_advanced.k   ... ✅ PASSED (SAT) [0.09s]
+[208/223] [tests] type_inference_class.k      ... ✅ PASSED (SAT) [0.08s]
+[209/223] [tests] type_inference_constraint.k ... ✅ PASSED (SAT) [0.08s]
+[210/223] [tests] type_inference_error1.k     ... ✅ PASSED (ERROR (expected)) [0.03s]
+[211/223] [tests] type_inference_expression.k ... ✅ PASSED (ERROR (expected)) [0.03s]
+[212/223] [tests] type_inference_inheritance.k ... ✅ PASSED (SAT) [0.08s]
+[213/223] [tests] type_inference_test.k       ... ✅ PASSED (UNSAT) [1.19s]
+[214/223] [tests] type_inference_undeclared.k ... ✅ PASSED (SAT) [0.08s]
+[215/223] [tests] undeclared_variable_error.k ... ✅ PASSED (SAT) [0.08s]
+[216/223] [tests] unified_solver1.k           ... ✅ PASSED (SAT) [0.08s]
+[217/223] [tests] unsat_function.k            ... ✅ PASSED (UNSAT (expected), baseline OK) [0.80s]
+[218/223] [tests] unsat1.k                    ... ✅ PASSED (UNSAT, baseline OK) [0.83s]
+[219/223] [tests] unsat2.k                    ... ✅ PASSED (UNSAT, baseline OK) [1.15s]
+[220/223] [tests] unsat3.k                    ... ✅ PASSED (UNSAT, baseline OK) [0.81s]
+[221/223] [tests] unsat4.k                    ... ✅ PASSED (UNSAT, baseline OK) [1.45s]
+[222/223] [tests] unsat5.k                    ... ✅ PASSED (UNSAT, baseline OK) [1.14s]
+[223/223] [tests] unsigned_minimal.k          ... ✅ PASSED (SAT) [0.08s]
+==========================================
+
+Test Summary:
+  Total:    223
+  ✅ Passed:  205
+  ❌ Failed:  18
+  📋 Baseline matched:    76
+  ⚠️  Baseline mismatched: 6
+  ⏱️  CPU time: 89.64s
+  🕐 Wall time: 90.18s
+
+Pass rate: 91%
+

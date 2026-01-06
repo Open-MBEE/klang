@@ -1,0 +1,36 @@
+Status: TYPE CHECK ERROR
+Category: Block Expressions
+
+Analysis:
+This test uses block expressions with local variable declarations:
+
+  class A {
+    RESULT_6 : Int
+    req RESULT_6 =
+      { k1 : Int = 1
+        k1
+      }
+      +
+      { k2 : Int = 2
+        k3 : Int = 3
+        k2 + k3
+      }
+  }
+
+Block expressions { ... } with local declarations and a final expression value.
+This is a functional programming pattern where:
+1. Local variables are scoped to the block
+2. The last expression is the block's value
+3. Blocks can be used as expressions (here, added together)
+
+The type checker reports an error. Issues may be:
+1. Block expression syntax not fully implemented
+2. Local variable scoping within blocks
+3. Type inference for block expression result
+
+Verdict: Block expression feature not fully implemented in type checker.
+
+Action:
+1. Check grammar for block expression syntax
+2. Verify TypeChecker handles blocks with local declarations
+3. Ensure block result type is properly inferred

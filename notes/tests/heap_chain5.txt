@@ -1,0 +1,35 @@
+Status: WRONG RESULT (BUG)
+Category: Solver Bug - False UNSAT
+
+Analysis:
+This test expects SAT but returns UNSAT incorrectly. The test should create a
+5-object circular chain: c1 → c2 → c3 → c4 → c5 → c1, with all objects distinct.
+
+Constraints:
+- c1.id = 1, c1.next.id = 2, ... c1.next.next.next.next.id = 5
+- c1.next.next.next.next.next = c1 (circular)
+- All 10 distinctness constraints between pairs
+
+Observed behavior:
+1. Solver starts with 2 Chain instances
+2. Keeps doubling: 2 → 4 → 8 → 16 → 32 → 64 → 100 objects
+3. Still reports UNSAT even with 100 objects
+4. Only shows 3 objects in partial model (should be 5)
+
+UNSAT Core reported:
+  • c1 != c1.next
+  • c1 != c1.next.next
+  • c1.next != c1.next.next
+
+These constraints are NOT conflicting - they should all be satisfiable with 5
+distinct objects. The solver is incorrectly concluding UNSAT.
+
+Possible causes:
+1. The cyclic constraint (c1.next.next.next.next.next = c1) is not being handled
+2. The heap allocation is not properly creating distinct objects
+3. The "next" field is being unified incorrectly across iterations
+
+Verdict: CRITICAL BUG - solver returns false UNSAT for satisfiable problem.
+
+Action: Debug the HeapCEGAR loop to understand why 5 objects cannot be allocated.
+Check how cyclic references are handled in heap constraints.

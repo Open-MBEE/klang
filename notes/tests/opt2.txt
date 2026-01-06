@@ -1,0 +1,42 @@
+Status: WRONG RESULT (BUG)
+Category: Optimization Not Working
+
+Analysis:
+The test has:
+  req revenue >= 0
+  req revenue <= 1000
+  req expenses >= 0
+  req expenses <= 500
+  req profit = revenue - expenses
+  req expenses >= revenue / 5
+  req revenue >= 100
+  maximize profit
+
+Output shows:
+  revenue = 100
+  expenses = 20
+  profit = 80
+
+But the OPTIMAL solution is:
+  revenue = 1000
+  expenses = 200 (minimum = 1000/5)
+  profit = 1000 - 200 = 800
+
+The solver returned profit = 80 when profit = 800 is achievable!
+This is a 10x suboptimal result.
+
+The maximize/minimize directives are not being processed correctly.
+The solver appears to just find ANY satisfying solution, not the optimal one.
+
+Verdict: CRITICAL BUG - optimization objectives (maximize/minimize) 
+are not being applied. Z3 Optimize should be used.
+
+Related:
+- Soft constraint tests also show optimization not working
+- opt3.k: maximize speed got 43 instead of 100 (minimize energy=0 correct)
+
+Pattern: minimize sometimes gives correct results, maximize consistently fails.
+This suggests the Z3 Optimize API might be partially integrated but maximize
+direction is broken or inverted.
+
+Action: Implement proper Z3 Optimize integration for maximize/minimize.

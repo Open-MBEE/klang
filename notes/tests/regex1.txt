@@ -1,0 +1,15 @@
+Status: WRONG RESULT (BUG)
+Category: Solver Bug - False UNSAT with Regex
+
+Analysis:
+Comment says "Expected: SAT - strings match their patterns" but test returns UNSAT.
+
+This is part of a systematic bug where regex .matches() constraints are not being
+solved correctly. The regex-to-SMT translation appears to produce unsatisfiable
+formulas even for simple matching cases.
+
+See also: regex_solver1.txt for detailed analysis of the same bug.
+
+Verdict: CRITICAL BUG - regex matching returns false UNSAT.
+
+Action: Same as regex_solver1.txt - debug regex translation to SMT.

@@ -1,0 +1,23 @@
+PROBLEM: Parse error + type checker issues with tuple indexing
+
+ROOT CAUSES:
+1. Invalid separators: ======================================
+   (not valid K syntax, should use -- comments)
+2. Tuple indexing syntax `$result # 1` not fully supported
+3. `println` function not defined
+
+PARSE ERROR:
+Lines with ======= fail parsing before type checking begins
+
+TYPE ERRORS:
+- `$result # 1` tuple index access needs implementation
+- `println` is not a defined function
+
+FIX OPTIONS:
+1. Remove ======= separators, use -- comments
+2. Implement tuple indexing in type checker
+3. Add println as a built-in or external function
+4. Mark as @expected ERROR until fixed
+
+RECOMMENDATION: Remove invalid separators first, then mark @expected ERROR
+PRIORITY: Medium - tuple indexing is a useful feature

@@ -1,0 +1,24 @@
+PROBLEM: Parse/type errors with semicolons and type inference
+
+ROOT CAUSES:
+1. Semicolon usage: K doesn't use semicolons as statement terminators
+2. Type annotation issues: `val StartCMD : DurativeEvent("StartCMD")`
+   - Mixing type annotation with constructor call
+3. Statement continuation with tabs: indented lines after val
+
+SYNTAX ERRORS:
+- Line 12: `val Functioncall Exit() = ...` - unusual syntax
+- Line 17: `val StartCMD : DurativeEvent("StartCMD")` - should be:
+  `val StartCMD : DurativeEvent = DurativeEvent("StartCMD")`
+
+TYPE ERRORS:
+- DurativeEvent used both as type and constructor incorrectly
+- Top-level val declarations with complex initialization
+
+FIX OPTIONS:
+1. Fix val declarations to use proper syntax: `val x : Type = value`
+2. Remove semicolons (or make them optional)
+3. Mark as @expected ERROR until syntax is corrected
+
+RECOMMENDATION: This file needs syntax cleanup
+PRIORITY: Low - appears to be a draft/experiment file

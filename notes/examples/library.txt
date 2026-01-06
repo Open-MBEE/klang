@@ -1,0 +1,18 @@
+PROBLEM: K2SMT error - Set comprehensions not translated
+
+ROOT CAUSE: The file uses set comprehension syntax:
+  Set{l | l : Loan :- l isin library.loans && l.book = this}
+This syntax is not yet supported in the K-to-SMT translation.
+
+FEATURES MISSING:
+1. Set comprehension translation to SMT (forall/exists patterns)
+2. The `isin` operator in set comprehensions
+3. Quantified filtering in SMT
+
+FIX OPTIONS:
+1. Implement set comprehension translation in K2Z3.scala
+2. Rewrite without comprehensions (manual expansion)
+3. Mark as @expected ERROR until feature is implemented
+
+RECOMMENDATION: Mark @expected ERROR, implement comprehensions later
+PRIORITY: Medium - common pattern in specification languages

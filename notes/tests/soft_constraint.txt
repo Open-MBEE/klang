@@ -1,0 +1,33 @@
+Status: WRONG RESULT (BUG/LIMITATION)
+Category: Soft Constraints Not Optimized
+
+Analysis:
+Tested: soft_constraint1.k, soft_constraint2.k, soft_constraint3.k
+
+All soft constraint tests show the same issue:
+The solver satisfies hard constraints but IGNORES soft constraints entirely.
+It does NOT try to maximize soft constraint satisfaction.
+
+soft_constraint1.k:
+  - x=0, y=43 satisfies NEITHER soft constraint (x+y=50, x=y)
+  - x=25, y=25 would satisfy BOTH soft constraints
+
+soft_constraint2.k:
+  - x=0 satisfies 1 of 3 soft constraints
+  - x=3 would satisfy ALL 3 soft constraints
+
+soft_constraint3.k:
+  - value=50 satisfies 0 of 2 soft constraints
+  - value=100-120 would satisfy BOTH soft constraints
+
+The pattern is clear: Z3 Optimize is NOT being used to maximize soft
+constraint satisfaction. The solver treats soft constraints as optional
+and ignores them when finding any satisfying solution.
+
+Verdict: LIMITATION - soft constraints are parsed but not optimized.
+The Z3 Optimize API should be used to maximize soft constraint satisfaction.
+
+Action: 
+1. Use Z3's Optimize solver with soft constraints as weighted assertions
+2. Or use MaxSAT-style optimization
+3. At minimum, document this as a known limitation

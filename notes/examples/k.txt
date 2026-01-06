@@ -1,0 +1,13 @@
+PROBLEM: NullPointerException in parser when processing TerminalNode
+
+ROOT CAUSE: The file uses unconventional syntax:
+- `=====` separators which are not valid K syntax
+- Parser fails to handle this gracefully
+
+FIX OPTIONS:
+1. Remove the `=====` separators and use standard K comments (-- or //)
+2. Fix parser to handle unexpected tokens without NPE
+3. Mark as @expected ERROR until parser is fixed
+
+RECOMMENDATION: Remove `=====` lines, change to standard comments
+PRIORITY: Low - this is a meta/documentation file

@@ -1,0 +1,35 @@
+Status: WRONG RESULT (BUG)
+Category: External Function Not Constrained (Symbolic Arguments)
+
+Analysis:
+The test has:
+  x : Real
+  y : Real
+  req x > 0
+  req y = java.lang.Math.sqrt(x)
+
+Output shows:
+  x = 0.50
+  y = 2.0
+
+But sqrt(0.50) = 0.7071..., NOT 2.0!
+
+The constraint y = sqrt(x) is NOT being enforced. The solver treats
+the external function as uninterpreted and picks arbitrary values.
+
+This is the SAME BUG as cegar1.k - when external function arguments
+are symbolic (not concrete), the function call is not evaluated
+and no constraint relates the output to the input.
+
+For concrete arguments (like sqrt(100.0)), it works correctly.
+For symbolic arguments (like sqrt(x)), it's completely broken.
+
+Verdict: CRITICAL BUG - external functions with symbolic arguments
+are treated as uninterpreted functions with no constraints.
+
+Related: cegar1.k has the same bug with Math.abs(x - 5)
+
+Action: The solver needs to either:
+1. Add SMT constraints for common math functions (sqrt, abs, etc.)
+2. Use CEGAR-style verification to check function values
+3. At minimum, warn the user that symbolic external calls are unconstrained

@@ -1,0 +1,35 @@
+Status: FEATURE NOT IMPLEMENTED
+Category: Type Inference Limitation
+
+Analysis:
+This test uses advanced type inference features that may not be fully implemented:
+
+  class Rectangle {
+    width : Int = 10
+    height : Int = 20
+    area = width * height        // Infer Int from width * height
+    perimeter = 2 * (width + height)  // Infer Int
+  }
+
+  // Top-level inference
+  sum = 1 + 2
+  piValue = 3.14159
+  px = p.x                       // Infer type from class member
+
+The type checker reports an error, likely because:
+1. Type inference from expressions inside class bodies is not fully working
+2. Top-level property type inference may have limitations
+
+Current type inference seems to work for:
+- Simple literals: x = 42 (infers Int)
+- Simple expressions with known types
+
+May not work for:
+- Class member references in expressions
+- Complex arithmetic expressions
+
+Verdict: Type inference needs expansion to handle more expression forms.
+
+Action: Extend type inference in TypeChecker.scala to handle:
+- Member references (p.x)
+- Arithmetic expressions involving inferred types

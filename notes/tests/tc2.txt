@@ -1,0 +1,33 @@
+Status: BASELINE MISMATCH
+Category: Needs Investigation
+
+Analysis:
+The test has a baseline mismatch for: typeChecks, model, json1, json2, smt
+
+The test code:
+  class A {
+    fun foo(x : Int) : Int { x + 1 }
+  }
+
+  class B extends A {
+    fun foo(x : Int) : Int   // Override without body
+  }
+
+The comment says "should not type check", but the current behavior differs from
+the baseline. This could mean:
+1. The baseline was created when it DID type check (incorrectly)
+2. Type checking behavior changed and now correctly rejects this
+3. The test's expected behavior needs clarification
+
+A function override without a body is problematic:
+- If B.foo should use A.foo's body, it needs explicit syntax
+- If B.foo is abstract, class B must be abstract
+- Having just a signature without body is ambiguous
+
+Verdict: Need to clarify intended behavior for function override without body.
+
+Action:
+1. Determine if this SHOULD type check or not
+2. If it should NOT type check: add @expected(ERROR) annotation
+3. If it SHOULD type check: fix the type checker
+4. Update baseline accordingly

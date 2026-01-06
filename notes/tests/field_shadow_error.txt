@@ -1,0 +1,15 @@
+Status: EXPECTED BEHAVIOR
+Category: Negative Test
+
+Analysis:
+This test intentionally expects a type check error. The test verifies that field
+shadowing (redefining a parent field with the same name) WITHOUT a "rename" clause
+is properly rejected.
+
+The Child class declares "value : Int" which shadows Parent's "value : Int".
+This SHOULD produce a type check error - explicit shadowing requires the "shadow"
+or "rename" declaration.
+
+Verdict: Working correctly - error is expected.
+
+Action: Add @expected(ERROR) annotation or update baseline to expect type check error.

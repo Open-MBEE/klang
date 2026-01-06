@@ -1,0 +1,37 @@
+Status: SOLVER RESULT CHANGE
+Category: Was SAT, now UNSAT
+
+Analysis:
+This test expects SAT but gets UNSAT. It also has a baseline smtModel mismatch.
+The test uses @preferred_options -heapcegar-cvc5 (CVC5 solver).
+
+The test models Lisp S-expressions:
+  class S_Exp { text : String }
+  class Atom extends S_Exp { req !text.contains("(")... }
+  class ListExp extends S_Exp {
+    leftExp : S_Exp
+    rightExp : S_Exp
+    req text = "(" + leftExp.text + "." + rightExp.text + ")"
+    req leftExp is Atom || leftExp is ListExp
+    req rightExp is Atom || rightExp is ListExp
+  }
+
+  var myList : ListExp
+  req myList.text = "(A.B)"
+
+The constraint solving needs to:
+1. Create an Atom with text = "A"
+2. Create an Atom with text = "B"
+3. Create a ListExp where leftExp and rightExp satisfy constraints
+
+The UNSAT result suggests either:
+1. String constraint solving is incomplete
+2. The "is" operator is not working correctly
+3. HeapCEGAR bounds are too restrictive
+
+Verdict: Complex string + subtype + heap constraints may exceed solver capability.
+
+Action:
+1. Try without heapcegar-cvc5 to see if Z3 can solve it
+2. Check if heap bounds are sufficient for the object structure
+3. Investigate "is" operator with heap allocation

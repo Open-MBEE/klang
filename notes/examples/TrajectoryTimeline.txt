@@ -1,0 +1,18 @@
+PROBLEM: Lambda expression parse error at line 95
+
+ROOT CAUSE: The expression `(t1, t2, force / mass)` is being
+parsed as a malformed lambda expression instead of a tuple.
+
+PARSE ERROR LINE 95:
+  acceleration.add(id, (t1, t2, force / mass))
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+The parser sees `(t1, t2, ...` and expects a lambda `->` operator
+
+FIX OPTIONS:
+1. Fix lambda expression parsing to handle tuples correctly
+2. Use explicit tuple constructor: Tuple(t1, t2, force / mass)
+3. Change syntax to avoid ambiguity
+4. Mark as @expected ERROR until parser is fixed
+
+RECOMMENDATION: Fix parser to distinguish tuples from lambdas
+PRIORITY: Medium - affects common tuple syntax
