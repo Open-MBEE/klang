@@ -276,7 +276,11 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
     map.foreach {
       kv =>
         (kv._1, kv._2) match {
-          case (functionName, FunctionTypeInfo(fdecl, fowner)) =>
+          case (functionName, fti @ FunctionTypeInfo(fdecl, fowner)) =>
+            // Check if this function comes from a shared type
+            val ownerClass = if (fowner != null) fowner.ident else ""
+            val isFromSharedType = shareTypes.contains(ownerClass)
+            
             if (newMap.contains(functionName)) {
               val ofdecl = newMap(functionName).asInstanceOf[FunctionTypeInfo].decl
               val areReturnTypesEqual = areTypesEqual(fdecl.ty.getOrElse(UnitType), ofdecl.ty.getOrElse(UnitType), false)
@@ -284,11 +288,27 @@ case class TypeEnv(decl: TopDecl, map: Map[String, TypeInfo]) {
               // Error if original function (already in newMap) has a body - no redefinition allowed
               // Allow: abstract original (no body) overridden by concrete new (has body)
               val originalHasBody = !ofdecl.body.isEmpty
-              if ((areReturnTypesEqual && areParamsEqual) && fowner != null && originalHasBody) {
+              
+              // Diamond case: check if this is a shared function
+              val funcKey = s"func:$functionName"
+              if (isFromSharedType && sharedFields.contains(funcKey)) {
+                // Already included via share - skip duplicate, don't add again
+              } else if (isFromSharedType) {
+                // First time seeing this shared function - include it and track
+                sharedFields += funcKey
+                newMap += (kv._1 -> kv._2)
+              } else if ((areReturnTypesEqual && areParamsEqual) && fowner != null && originalHasBody) {
                 error(s"${fdecl.ident} redefined.")
+              } else {
+                newMap += (kv._1 -> kv._2)
               }
+            } else {
+              // Track shared functions
+              if (isFromSharedType) {
+                sharedFields += s"func:$functionName"
+              }
+              newMap += (kv._1 -> kv._2)
             }
-            newMap += (kv._1 -> kv._2)
           case (pname, pti @ PropertyTypeInfo(pdecl, global, classMember, powner)) =>
             // Check if this field is shadowed (intentionally hidden)
             // Only skip if it's an INHERITED field (from a parent), not the class's own field
@@ -1135,11 +1155,30 @@ class TypeChecker(model: Model) {
           val immediateParents = (explicitParents ++ keywordParents).distinct
           
           
-          // Extract share and rename modifiers from members
-          val shareTypes = ed.shareTypes.map {
+          // Extract explicit share modifiers from members
+          val explicitShareTypes = ed.shareTypes.map {
             case it: IdentType => it.ident.toString
             case _ => ""
           }.toSet
+          
+          // Expand shareTypes to include all ancestors of explicitly shared types
+          // If you share Triangle, you implicitly share Shape (and any other ancestors)
+          val expandedShareTypes = explicitShareTypes.flatMap { typeName =>
+            if (classes.contains(typeName)) {
+              val decl = classes(typeName)
+              val ancestors = ClassHierarchy.parentsTransitive(decl).map(_.toString).toSet
+              ancestors + typeName
+            } else {
+              Set(typeName)
+            }
+          }
+          
+          // Detect diamond ancestors
+          val diamondAncestors = ClassHierarchy.findDiamondAncestors(ed)
+          
+          // Auto-share all diamond ancestors by default (unless explicitly renamed)
+          // This makes multiple inheritance "just work" in the common case
+          val shareTypes = expandedShareTypes ++ diamondAncestors
           
           // Renames are keyed by (fromClass, fromField) -> toField
           val renames = ed.renames.map { r =>
@@ -1151,36 +1190,9 @@ class TypeChecker(model: Model) {
           
           val shadowedFields = ed.shadows.map(_.name).toSet
           
-          // Detect diamond ancestors
-          val diamondAncestors = ClassHierarchy.findDiamondAncestors(ed)
-          
-          // Check that all diamond ancestors have share modifier or renamed fields
-          val unsharedDiamonds = diamondAncestors -- shareTypes
-          if (unsharedDiamonds.nonEmpty) {
-            // Get immediate parents for rename checking
-            val immediateParents = ClassHierarchy.parents.getOrElse(ed, Set()).map(_.toString).toList
-            
-            // Get fields from the unshared diamond ancestors
-            unsharedDiamonds.foreach { ancestorName =>
-              if (classes.contains(ancestorName)) {
-                val ancestorDecl = classes(ancestorName)
-                // Get only the directly declared property fields from the ancestor
-                val fieldNames = ancestorDecl.getPropertyDecls.map(_.name).toSet
-                
-                // Check if all fields are renamed from all parent paths
-                // For rename to resolve diamond, each parent path must have a rename for each field
-                val allFieldsRenamed = fieldNames.forall { fname =>
-                  immediateParents.forall { parentName =>
-                    renames.contains((parentName, fname))
-                  }
-                }
-                
-                if (fieldNames.nonEmpty && !allFieldsRenamed) {
-                  error(s"Diamond inheritance: ${fieldNames.mkString(", ")} inherited multiple times from $ancestorName. Use 'share $ancestorName;' or rename from each parent path to resolve.")
-                }
-              }
-            }
-          }
+          // Note: With auto-sharing of diamond ancestors, we no longer error on unshared diamonds.
+          // All diamond inheritance is automatically resolved by sharing.
+          // Users can still use explicit 'rename' to create separate copies if needed.
           
           val sharedFields = scala.collection.mutable.Set[String]()
           
