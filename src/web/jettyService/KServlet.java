@@ -135,7 +135,7 @@ public class KServlet extends AbstractHandler
 	    Random rand = new Random();
 	    int  n = rand.nextInt(50) + 1;
 
-	    File file = new File("/tmp/file" + n);
+	    File file = new File("/tmp/file" + n + ".k");
 	    if (!file.exists()) {
 		file.createNewFile();
 	    }
