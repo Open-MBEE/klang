@@ -46,3 +46,4 @@ src/tests/test.k
 /.vscode
 .tmp/
 .copilot-inbox
+.claude/
