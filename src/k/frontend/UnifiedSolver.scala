@@ -231,18 +231,21 @@ object UnifiedSolver {
         logHeap(s"Per-class multipliers: ${bounds.perClassBounds}")
       }
 
-      // Set the global instance multiplier
+      // Get the multiplier to use
       val previousMultiplier = ASTOptions.instanceMultiplier
       val currentMultiplier = bounds.effectiveMultiplier
-      ASTOptions.instanceMultiplier = currentMultiplier
-      logHeap(s"Set ASTOptions.instanceMultiplier = $currentMultiplier")
 
       try {
         // Regenerate the SMT model with new bounds
         logHeap(s"Regenerating SMT model with ${currentMultiplier}x instances...")
 
-        // Clear previous state
+        // Clear previous state FIRST
         UtilSMT.reset
+
+        // Set the global instance multiplier AFTER reset
+        // (reset() sets multiplier back to 1, so we must set it after)
+        ASTOptions.instanceMultiplier = currentMultiplier
+        logHeap(s"Set ASTOptions.instanceMultiplier = $currentMultiplier")
 
         // CVC5 compatibility is set in Frontend before SMT generation
 

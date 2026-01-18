@@ -1077,32 +1077,15 @@ class HeapLayout(model: Model) {
     base * ASTOptions.instanceMultiplier
   }
 
-  // Track classes that were counted via a parent's DFS traversal
-  // These should NOT be counted again when their own DFS starts
-  private var countedViaParent: Set[graph.ClassName] = Set()
-
   private def dfs(node: graph.ClassName) {
-    // Skip direct DFS call if already counted via parent traversal
-    // This prevents double-counting: once from parent, once from direct call
-    if (countedViaParent.contains(node)) {
-      if (K2Z3.debug) println(s"  skipping direct dfs($node) - already counted via parent")
-      return
-    }
     dfs(List(node))
   }
 
   private def dfs(stack: List[graph.ClassName]) {
     if (K2Z3.debug) println(stack.reverse)
     val top = stack.head
-    
     val count = instancesByComputation.getOrElse(top, 0)
     instancesByComputation += (top -> (count + 1))
-    
-    // Mark as counted via parent if this is a child traversal (stack has more than 1 element)
-    if (stack.length > 1) {
-      countedViaParent += top
-    }
-    
     val children = graph.getInstances(top)
     for (child <- children) {
       if (stack.contains(child)) {
@@ -1146,7 +1129,9 @@ class HeapLayout(model: Model) {
   updateInstancesByComputation(model)
   def updateInstancesByComputation(model: Model): Unit = {
     if (K2Z3.debug) println("\n--- dfs instance search:\n")
-    for (className <- graph.getClassesToChase(2))
+    // Use strategy 1: only classes not instantiated by other classes (top-level roots)
+    // This prevents double-counting classes that are created by other classes
+    for (className <- graph.getClassesToChase(1))
       dfs(className)
     //for (pd <- model.packages.asInstanceOf[List[PackageDecl]]) {
     //  var m = pd.model
