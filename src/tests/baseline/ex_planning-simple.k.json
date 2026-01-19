@@ -1,0 +1,902 @@
+{
+  "name": "ex_planning-simple.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage examples.planning {\n\nclass Event {\n  t1:Int\n  t2:Int\n\n  req t1 >= 0\n\n  req t2 > t1\n\n  fun before(e:Event) : Bool\n  {\n    t2 < e.t1\n  }\n\n  fun meets(e:Event) : Bool\n  {\n    t2 = e.t1\n  }\n\n  fun contains(e:Event) : Bool\n  {\n    t1 <= e.t1 && e.t2 <= t2\n  }\n}\n\nclass Schedule {\n  a:Event\n  b:Event\n  c:Event\n  schedule1:Bool = a.meets(b) && b.contains(c)\n  schedule2:Bool = a.contains(b) && a.contains(c)\n\n  req schedule1 || schedule2\n}\n\nmySchedule:Schedule\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (mySchedule Ref)))))\n(declare-datatypes () ((Event (mk-Event (t1 Int)(t2 Int)))))\n(declare-datatypes () ((Schedule (mk-Schedule (a Ref)(b Ref)(c Ref)(schedule1 Bool)(schedule2 Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Event (sel-Event Event))\n  (lift-Schedule (sel-Schedule Schedule))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Event ((this Ref)) Bool\n  (is-lift-Event (deref this))\n)\n\n(define-fun deref-Event ((this Ref)) Event\n  (sel-Event (deref this))\n)\n\n(define-fun deref-is-Schedule ((this Ref)) Bool\n  (is-lift-Schedule (deref this))\n)\n\n(define-fun deref-Schedule ((this Ref)) Schedule\n  (sel-Schedule (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Event ((this Ref)) Bool\n  (deref-is-Event this)\n)\n\n(define-fun deref-isa-Schedule ((this Ref)) Bool\n  (deref-is-Schedule this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.mySchedule: ---\n\n(define-fun TopLevelDeclarations!mySchedule ((this Ref)) Ref\n  (mySchedule (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------\n;   Getters for class Event:\n; ----------------------------\n\n; --- getters for Event.t1: ---\n\n(define-fun Event.t1 ((this Ref)) Int\n  (t1 (deref-Event this))\n)\n\n(define-fun Event!t1 ((this Ref)) Int\n  (t1 (deref-Event this))\n)\n\n; --- getters for Event.t2: ---\n\n(define-fun Event.t2 ((this Ref)) Int\n  (t2 (deref-Event this))\n)\n\n(define-fun Event!t2 ((this Ref)) Int\n  (t2 (deref-Event this))\n)\n\n; -------------------------------\n;   Getters for class Schedule:\n; -------------------------------\n\n; --- getters for Schedule.a: ---\n\n(define-fun Schedule!a ((this Ref)) Ref\n  (a (deref-Schedule this))\n)\n\n; --- getters for Schedule.b: ---\n\n(define-fun Schedule!b ((this Ref)) Ref\n  (b (deref-Schedule this))\n)\n\n; --- getters for Schedule.c: ---\n\n(define-fun Schedule!c ((this Ref)) Ref\n  (c (deref-Schedule this))\n)\n\n; --- getters for Schedule.schedule1: ---\n\n(define-fun Schedule!schedule1 ((this Ref)) Bool\n  (schedule1 (deref-Schedule this))\n)\n\n; --- getters for Schedule.schedule2: ---\n\n(define-fun Schedule!schedule2 ((this Ref)) Bool\n  (schedule2 (deref-Schedule this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ----------------------------\n;   Methods for class Event:\n; ----------------------------\n\n(define-fun Event.before ((this Ref)(e Ref)) Bool\n  (< (Event.t2 this) (Event.t1 e))\n)\n\n(define-fun Event!before ((this Ref)(e Ref)) Bool\n  (< (Event!t2 this) (Event.t1 e))\n)\n\n(define-fun Event.meets ((this Ref)(e Ref)) Bool\n  (= (Event.t2 this) (Event.t1 e))\n)\n\n(define-fun Event!meets ((this Ref)(e Ref)) Bool\n  (= (Event!t2 this) (Event.t1 e))\n)\n\n(define-fun Event.contains ((this Ref)(e Ref)) Bool\n  (and (<= (Event.t1 this) (Event.t1 e)) (<= (Event.t2 e) (Event.t2 this)))\n)\n\n(define-fun Event!contains ((this Ref)(e Ref)) Bool\n  (and (<= (Event!t1 this) (Event.t1 e)) (<= (Event.t2 e) (Event!t2 this)))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Schedule (TopLevelDeclarations!mySchedule this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------\n;   Invariant for class Event:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Event Event)\n(declare-const const-2-Event Event)\n(declare-const const-3-Event Event)\n\n; --- Invariant 1: ---\n\n(define-fun Event.inv1 ((this Ref)) Bool\n  (>= (Event!t1 this) 0)\n)\n\n(assert (! (Event.inv1 1) :named _xkassert1))\n(assert (! (Event.inv1 2) :named _xkassert2))\n(assert (! (Event.inv1 3) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun Event.inv2 ((this Ref)) Bool\n  (> (Event!t2 this) (Event!t1 this))\n)\n\n(assert (! (Event.inv2 1) :named _xkassert4))\n(assert (! (Event.inv2 2) :named _xkassert5))\n(assert (! (Event.inv2 3) :named _xkassert6))\n\n\n\n; ---------------------------------\n;   Invariant for class Schedule:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-Schedule Schedule)\n\n; --- Invariant 1: ---\n\n(define-fun Schedule.inv1 ((this Ref)) Bool\n  (= (Schedule!schedule1 this) (and (Event.meets (Schedule!a this) (Schedule!b this)) (Event.contains (Schedule!b this) (Schedule!c this))))\n)\n\n(assert (! (Schedule.inv1 4) :named _xkassert7))\n\n; --- Invariant 2: ---\n\n(define-fun Schedule.inv2 ((this Ref)) Bool\n  (= (Schedule!schedule2 this) (and (Event.contains (Schedule!a this) (Schedule!b this)) (Event.contains (Schedule!a this) (Schedule!c this))))\n)\n\n(assert (! (Schedule.inv2 4) :named _xkassert8))\n\n; --- Invariant 3: ---\n\n(define-fun Schedule.inv3 ((this Ref)) Bool\n  (deref-isa-Event (Schedule!a this))\n)\n\n(assert (! (Schedule.inv3 4) :named _xkassert9))\n\n; --- Invariant 4: ---\n\n(define-fun Schedule.inv4 ((this Ref)) Bool\n  (deref-isa-Event (Schedule!b this))\n)\n\n(assert (! (Schedule.inv4 4) :named _xkassert10))\n\n; --- Invariant 5: ---\n\n(define-fun Schedule.inv5 ((this Ref)) Bool\n  (deref-isa-Event (Schedule!c this))\n)\n\n(assert (! (Schedule.inv5 4) :named _xkassert11))\n\n; --- Invariant 6: ---\n\n(define-fun Schedule.inv6 ((this Ref)) Bool\n  (or (Schedule!schedule1 this) (Schedule!schedule2 this))\n)\n\n(assert (! (Schedule.inv6 4) :named _xkassert12))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Event const-1-Event))\n        2 (lift-Event const-2-Event))\n        3 (lift-Event const-3-Event))\n        4 (lift-Schedule const-4-Schedule))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-Event () Event\n  (mk-Event 29534 29536))\n(define-fun const-1-Event () Event\n  (mk-Event 29533 29537))\n(define-fun const-4-Schedule () Schedule\n  (mk-Schedule 2 3 2 false true))\n(define-fun const-3-Event () Event\n  (mk-Event 29535 29536))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 4))\n(define-fun _xkassert2 () Bool\n  (>= (t1 (sel-Event (select heap 2))) 0))\n(define-fun _xkassert5 () Bool\n  (> (t2 (sel-Event (select heap 2))) (t1 (sel-Event (select heap 2)))))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (a (sel-Schedule (select heap 4)))))\n      (a!2 (select heap (b (sel-Schedule (select heap 4)))))\n      (a!3 (select heap (c (sel-Schedule (select heap 4))))))\n(let ((a!4 (and (= (t2 (sel-Event a!1)) (t1 (sel-Event a!2)))\n                (<= (t1 (sel-Event a!2)) (t1 (sel-Event a!3)))\n                (<= (t2 (sel-Event a!3)) (t2 (sel-Event a!2))))))\n  (= (schedule1 (sel-Schedule (select heap 4))) a!4))))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (a (sel-Schedule (select heap 4))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (mySchedule (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Schedule a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (a (sel-Schedule (select heap 4)))))\n      (a!2 (select heap (b (sel-Schedule (select heap 4)))))\n      (a!3 (select heap (c (sel-Schedule (select heap 4))))))\n(let ((a!4 (and (<= (t1 (sel-Event a!1)) (t1 (sel-Event a!2)))\n                (<= (t2 (sel-Event a!2)) (t2 (sel-Event a!1)))\n                (<= (t1 (sel-Event a!1)) (t1 (sel-Event a!3)))\n                (<= (t2 (sel-Event a!3)) (t2 (sel-Event a!1))))))\n  (= (schedule2 (sel-Schedule (select heap 4))) a!4))))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (b (sel-Schedule (select heap 4))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert12 () Bool\n  (or (schedule1 (sel-Schedule (select heap 4)))\n    (schedule2 (sel-Schedule (select heap 4)))))\n(define-fun _xkassert3 () Bool\n  (>= (t1 (sel-Event (select heap 3))) 0))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (c (sel-Schedule (select heap 4))))))\n  (is-lift-Event a!1)))\n(define-fun _xkassert6 () Bool\n  (> (t2 (sel-Event (select heap 3))) (t1 (sel-Event (select heap 3)))))\n(define-fun _xkassert1 () Bool\n  (>= (t1 (sel-Event (select heap 1))) 0))\n(define-fun _xkassert4 () Bool\n  (> (t2 (sel-Event (select heap 1))) (t1 (sel-Event (select heap 1)))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 4)))\n                  1\n                  (lift-Event (mk-Event 29533 29537)))))\n(let ((a!2 (store (store a!1 2 (lift-Event (mk-Event 29534 29536)))\n                  3\n                  (lift-Event (mk-Event 29535 29536)))))\n  (store a!2 4 (lift-Schedule (mk-Schedule 2 3 2 false true))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "planning"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.planning",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Event",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "t1",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "t2",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "GTE",
+                  "exp1": {
+                    "ident": "t1",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "GT",
+                  "exp1": {
+                    "ident": "t2",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "t1",
+                    "type": "IdentExp"
+                  }
+                },
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "before",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["Event"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                }],
+                "ty": {"type": "BoolType"},
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "LT",
+                    "exp1": {
+                      "ident": "t2",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "t1",
+                      "exp": {
+                        "ident": "e",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    }
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "meets",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["Event"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                }],
+                "ty": {"type": "BoolType"},
+                "spec": [],
+                "body": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "t2",
+                  "assignment": false,
+                  "expr": {
+                    "ident": "t1",
+                    "exp": {
+                      "ident": "e",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                }],
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "contains",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["Event"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                }],
+                "ty": {"type": "BoolType"},
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "And",
+                    "exp1": {
+                      "type": "BinExp",
+                      "op": "LTE",
+                      "exp1": {
+                        "ident": "t1",
+                        "type": "IdentExp"
+                      },
+                      "exp2": {
+                        "ident": "t1",
+                        "exp": {
+                          "ident": "e",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      }
+                    },
+                    "exp2": {
+                      "type": "BinExp",
+                      "op": "LTE",
+                      "exp1": {
+                        "ident": "t2",
+                        "exp": {
+                          "ident": "e",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      },
+                      "exp2": {
+                        "ident": "t2",
+                        "type": "IdentExp"
+                      }
+                    }
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Schedule",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "a",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "b",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "c",
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Event"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "schedule1",
+                "ty": {"type": "BoolType"},
+                "assignment": false,
+                "expr": {
+                  "type": "BinExp",
+                  "op": "And",
+                  "exp1": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "meets",
+                      "exp": {
+                        "ident": "a",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "b",
+                        "type": "IdentExp"
+                      }
+                    }]
+                  },
+                  "exp2": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "contains",
+                      "exp": {
+                        "ident": "b",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "c",
+                        "type": "IdentExp"
+                      }
+                    }]
+                  }
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "schedule2",
+                "ty": {"type": "BoolType"},
+                "assignment": false,
+                "expr": {
+                  "type": "BinExp",
+                  "op": "And",
+                  "exp1": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "contains",
+                      "exp": {
+                        "ident": "a",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "b",
+                        "type": "IdentExp"
+                      }
+                    }]
+                  },
+                  "exp2": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "contains",
+                      "exp": {
+                        "ident": "a",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "c",
+                        "type": "IdentExp"
+                      }
+                    }]
+                  }
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "OR",
+                  "exp1": {
+                    "ident": "schedule1",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "schedule2",
+                    "type": "IdentExp"
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mySchedule",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Schedule"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "examples",
+          "planning"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "examples.planning",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Event",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "t1",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "t2",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "GTE"
+                    },
+                    {
+                      "element": "t1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "GT"
+                    },
+                    {
+                      "element": "t2",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "t1",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "before",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Event"
+                  }
+                }],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "LT"
+                      },
+                      {
+                        "element": "t2",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "getProperty"
+                          },
+                          {
+                            "element": "e",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "t1"
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "meets",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Event"
+                  }
+                }],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "spec": [],
+                "body": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "t2",
+                  "assignment": false,
+                  "expr": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "getProperty"
+                      },
+                      {
+                        "element": "e",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "t1"
+                      }
+                    ],
+                    "type": "Expression"
+                  }
+                }],
+                "annotations": []
+              },
+              {
+                "type": "FunDecl",
+                "ident": "contains",
+                "typeParams": [],
+                "params": [{
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Event"
+                  }
+                }],
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "spec": [],
+                "body": [{
+                  "type": "ExpressionDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "element": "t1",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "e",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "t1"
+                              }
+                            ],
+                            "type": "Expression"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "LTE"
+                          },
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "e",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "t2"
+                              }
+                            ],
+                            "type": "Expression"
+                          },
+                          {
+                            "element": "t2",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                }],
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "Schedule",
+            "typeparams": [],
+            "extending": [],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "a",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "b",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "c",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Event"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "schedule1",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "assignment": false,
+                "expr": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "And"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "a",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "meets"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "b",
+                          "type": "ElementValue"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "b",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "contains"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "c",
+                          "type": "ElementValue"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              },
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "schedule2",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Boolean"
+                },
+                "assignment": false,
+                "expr": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "And"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "a",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "contains"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "b",
+                          "type": "ElementValue"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "a",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "contains"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "element": "c",
+                          "type": "ElementValue"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "OR"
+                    },
+                    {
+                      "element": "schedule1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "schedule2",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mySchedule",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Schedule"
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  }
+}

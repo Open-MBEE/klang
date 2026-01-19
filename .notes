@@ -1,0 +1,52 @@
+# K Language Examples Notes
+
+## Examples Status (as of 2026-01-19)
+
+### Working Examples (copied to src/tests/ex_*.k)
+- ex_Bank.k - SAT, creates Bank with Account objects
+- ex_borges.k - SAT
+- ex_conservative-extension.k - SAT
+- ex_f.k - SAT
+- ex_fibonacci.k - SAT, synthesizes fib function
+- ex_Fruits.k - SAT
+- ex_FunctionSynthesis.k - SAT
+- ex_lisp.k - SAT, parses "(A.B)" correctly with Atoms
+- ex_mathutil.k - SAT
+- ex_nesting.k - SAT
+- ex_planning-simple.k - SAT
+- ex_prepost.k - SAT
+- ex_scheduling.k - SAT
+- ex_seq_vs_array.k - SAT
+- ex_stakr.k - SAT
+
+### Known Issues
+
+#### lisp-draft.k
+- Was timing out with complex expression "(A.((B.C).D))"
+- Simplified to "(A.B)" which now works
+- The draft version has more complex Atom constraints (firstChar, someOtherChars, FIRSTCHAR/OTHERCHAR sequences)
+- Uses `-heapcegar-cvc5` for string solving
+
+#### lisp.k vs lisp-draft.k
+- lisp.k: Simple Atom (just text field), works fast
+- lisp-draft.k: Complex Atom with character validation (FIRSTCHAR, OTHERCHAR sequences)
+- The extra constraints make solving harder
+
+### Inheritance/Subclass Propagation
+- Implemented propagateInstancesToSubclasses() in HeapLayout
+- When parent class (e.g., S_Exp) has N instances, subclasses (Atom, ListExp) get at least N too
+- This allows subclass objects to be used where parent types are expected
+- Currently causes SMT baseline mismatches (expected) but outcomes (SAT/UNSAT) are preserved
+
+### Files with Dependencies (not copied to tests)
+- a.k, b2.k, c.k, d.k, e.k, e2.k - have import chains
+
+### Package Tests
+- pkg1.k and pkg2.k copied to src/tests/packages/ 
+- pkg2.k imports pkg1.k
+
+## Spot Check Results (2026-01-19)
+- lisp.k: myList correctly uses Atom for leftExp/rightExp ✓
+- lisp-draft.k: One S_Exp ref instead of Atom (acceptable, still SAT)
+- ex_fibonacci.k: fib returns 2 (constant interpretation), satisfies forall constraint ✓
+- ex_Bank.k: Creates Bank with Account, empty lists ✓

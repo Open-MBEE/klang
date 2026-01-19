@@ -1139,6 +1139,34 @@ class HeapLayout(model: Model) {
     //}
   }
 
+  // Propagate instance counts to subclasses:
+  // If a parent class has N instances, each subclass should also have at least N instances
+  // This allows child objects (e.g., Atom) to be used where parent types (e.g., S_Exp) are expected
+  propagateInstancesToSubclasses()
+  def propagateInstancesToSubclasses(): Unit = {
+    if (K2Z3.debug) println("\n--- propagating instances to subclasses:\n")
+    // Iterate until fixed point (parent counts may propagate through multiple levels)
+    var changed = true
+    while (changed) {
+      changed = false
+      for (parentClass <- graph.getAllClasses) {
+        val parentCount = instancesByComputation.getOrElse(parentClass, 0)
+        if (parentCount > 0) {
+          // Get direct and transitive subclasses
+          val subClasses = UtilSMT.getSubClassesTransitive(parentClass)
+          for (subClass <- subClasses) {
+            val currentSubCount = instancesByComputation.getOrElse(subClass, 0)
+            if (currentSubCount < parentCount) {
+              if (K2Z3.debug) println(s"  Increasing $subClass from $currentSubCount to $parentCount (inherited from $parentClass)")
+              instancesByComputation += (subClass -> parentCount)
+              changed = true
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Increase instances for classes used as element types in Seq[Class]
   // This ensures we have enough objects to satisfy sequence constraints
   increaseInstancesForSeqElementTypes(model)

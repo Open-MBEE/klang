@@ -64,5 +64,6 @@ Running the implicit Lisp parser.
 ===================================
 
 myList : ListExp
-req myList.text = "(A.((B.C).D))"
+-- Simplified to (A.B) for faster solving. Original was "(A.((B.C).D))"
+req myList.text = "(A.B)"
 

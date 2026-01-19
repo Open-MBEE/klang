@@ -1,0 +1,777 @@
+{
+  "name": "ex_lisp.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass S_Exp {\n  var text:String\n}\n\nclass Atom extending S_Exp {\n\n  req !text.contains(\"(\") && !text.contains(\")\") && !text.contains(\".\")\n}\n\nclass ListExp extending S_Exp {\n  var leftExp:S_Exp\n  var rightExp:S_Exp\n\n  req text = \"(\" + leftExp.text + \".\" + rightExp.text + \")\"\n\n  req leftExp is Atom || leftExp is ListExp\n\n  req rightExp is Atom || rightExp is ListExp\n}\n\nvar myList:ListExp\n\nreq myList.text = \"(A.B)\"\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n; Note: Tuples are generated as concrete types when used\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatype TopLevelDeclarations ((mk-TopLevelDeclarations (myList Ref))))\n(declare-datatype S_Exp ((mk-S_Exp (text String))))\n(declare-datatype Atom ((mk-Atom (text String))))\n(declare-datatype ListExp ((mk-ListExp (text String)(leftExp Ref)(rightExp Ref))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatype Any (\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-S_Exp (sel-S_Exp S_Exp))\n  (lift-Atom (sel-Atom Atom))\n  (lift-ListExp (sel-ListExp ListExp))\n  (null)\n))\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-S_Exp ((this Ref)) Bool\n  (is-lift-S_Exp (deref this))\n)\n\n(define-fun deref-S_Exp ((this Ref)) S_Exp\n  (sel-S_Exp (deref this))\n)\n\n(define-fun deref-is-Atom ((this Ref)) Bool\n  (is-lift-Atom (deref this))\n)\n\n(define-fun deref-Atom ((this Ref)) Atom\n  (sel-Atom (deref this))\n)\n\n(define-fun deref-is-ListExp ((this Ref)) Bool\n  (is-lift-ListExp (deref this))\n)\n\n(define-fun deref-ListExp ((this Ref)) ListExp\n  (sel-ListExp (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-S_Exp ((this Ref)) Bool\n  (or\n    (deref-is-S_Exp this)\n    (deref-is-Atom this)\n    (deref-is-ListExp this)\n  )\n)\n\n(define-fun deref-isa-Atom ((this Ref)) Bool\n  (deref-is-Atom this)\n)\n\n(define-fun deref-isa-ListExp ((this Ref)) Bool\n  (deref-is-ListExp this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.myList: ---\n\n(define-fun TopLevelDeclarations!myList ((this Ref)) Ref\n  (myList (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------\n;   Getters for class S_Exp:\n; ----------------------------\n\n; --- getters for S_Exp.text: ---\n\n(define-fun S_Exp.text ((this Ref)) String\n  (ite (deref-is-S_Exp this) (text (deref-S_Exp this))\n  (ite (deref-is-Atom this) (text (deref-Atom this))\n  (text (deref-ListExp this))))\n)\n\n; ---------------------------\n;   Getters for class Atom:\n; ---------------------------\n\n; --- getters for Atom.text: ---\n\n(define-fun Atom!text ((this Ref)) String\n  (text (deref-Atom this))\n)\n\n; ------------------------------\n;   Getters for class ListExp:\n; ------------------------------\n\n; --- getters for ListExp.text: ---\n\n(define-fun ListExp.text ((this Ref)) String\n  (text (deref-ListExp this))\n)\n\n(define-fun ListExp!text ((this Ref)) String\n  (text (deref-ListExp this))\n)\n\n; --- getters for ListExp.leftExp: ---\n\n(define-fun ListExp!leftExp ((this Ref)) Ref\n  (leftExp (deref-ListExp this))\n)\n\n; --- getters for ListExp.rightExp: ---\n\n(define-fun ListExp!rightExp ((this Ref)) Ref\n  (rightExp (deref-ListExp this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-ListExp (TopLevelDeclarations!myList this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (= (ListExp.text (TopLevelDeclarations!myList this)) \"(A.B)\")\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n\n\n; ------------------------------\n;   Invariant for class S_Exp:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-S_Exp S_Exp)\n(declare-const const-2-S_Exp S_Exp)\n\n\n\n; -----------------------------\n;   Invariant for class Atom:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Atom Atom)\n(declare-const const-4-Atom Atom)\n\n; --- Invariant 1: ---\n\n(define-fun Atom.inv1 ((this Ref)) Bool\n  (and (and (not (str.contains (Atom!text this) \"(\")) (not (str.contains (Atom!text this) \")\"))) (not (str.contains (Atom!text this) \".\")))\n)\n\n(assert (! (Atom.inv1 3) :named _xkassert2))\n(assert (! (Atom.inv1 4) :named _xkassert3))\n\n\n\n; --------------------------------\n;   Invariant for class ListExp:\n; --------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-ListExp ListExp)\n(declare-const const-6-ListExp ListExp)\n\n; --- Invariant 1: ---\n\n(define-fun ListExp.inv1 ((this Ref)) Bool\n  (deref-isa-S_Exp (ListExp!leftExp this))\n)\n\n(assert (! (ListExp.inv1 5) :named _xkassert4))\n(assert (! (ListExp.inv1 6) :named _xkassert5))\n\n; --- Invariant 2: ---\n\n(define-fun ListExp.inv2 ((this Ref)) Bool\n  (deref-isa-S_Exp (ListExp!rightExp this))\n)\n\n(assert (! (ListExp.inv2 5) :named _xkassert6))\n(assert (! (ListExp.inv2 6) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun ListExp.inv3 ((this Ref)) Bool\n  (= (ListExp!text this) (str.++ (str.++ (str.++ (str.++ \"(\" (S_Exp.text (ListExp!leftExp this))) \".\") (S_Exp.text (ListExp!rightExp this))) \")\"))\n)\n\n(assert (! (ListExp.inv3 5) :named _xkassert8))\n(assert (! (ListExp.inv3 6) :named _xkassert9))\n\n; --- Invariant 4: ---\n\n(define-fun ListExp.inv4 ((this Ref)) Bool\n  (or (deref-isa-Atom (ListExp!leftExp this)) (deref-isa-ListExp (ListExp!leftExp this)))\n)\n\n(assert (! (ListExp.inv4 5) :named _xkassert10))\n(assert (! (ListExp.inv4 6) :named _xkassert11))\n\n; --- Invariant 5: ---\n\n(define-fun ListExp.inv5 ((this Ref)) Bool\n  (or (deref-isa-Atom (ListExp!rightExp this)) (deref-isa-ListExp (ListExp!rightExp this)))\n)\n\n(assert (! (ListExp.inv5 5) :named _xkassert12))\n(assert (! (ListExp.inv5 6) :named _xkassert13))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-S_Exp const-1-S_Exp))\n        2 (lift-S_Exp const-2-S_Exp))\n        3 (lift-Atom const-3-Atom))\n        4 (lift-Atom const-4-Atom))\n        5 (lift-ListExp const-5-ListExp))\n        6 (lift-ListExp const-6-ListExp))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-S_Exp () S_Exp\n  (mk-S_Exp \".(A.B))\"))\n(define-fun const-3-Atom () Atom\n  (mk-Atom \"A\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 6))\n(define-fun const-1-S_Exp () S_Exp\n  (mk-S_Exp \".(A.B))\"))\n(define-fun const-5-ListExp () ListExp\n  (mk-ListExp \"((A.B).(A.B))\" 6 6))\n(define-fun const-4-Atom () Atom\n  (mk-Atom \"B\"))\n(define-fun const-6-ListExp () ListExp\n  (mk-ListExp \"(A.B)\" 3 4))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))\n  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.contains (text (sel-Atom (select heap 3))) \"(\"))\n      (a!2 (str.contains (text (sel-Atom (select heap 3))) \")\"))\n      (a!3 (str.contains (text (sel-Atom (select heap 3))) \".\")))\n  (and (not a!1) (not a!2) (not a!3))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))\n  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))\n  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6)))))\n      (a!3 (select heap (rightExp (sel-ListExp (select heap 6))))))\n(let ((a!2 (ite (is-lift-S_Exp a!1)\n                (text (sel-S_Exp a!1))\n                (ite (is-lift-Atom a!1)\n                     (text (sel-Atom a!1))\n                     (text (sel-ListExp a!1)))))\n      (a!4 (ite (is-lift-S_Exp a!3)\n                (text (sel-S_Exp a!3))\n                (ite (is-lift-Atom a!3)\n                     (text (sel-Atom a!3))\n                     (text (sel-ListExp a!3))))))\n  (= (text (sel-ListExp (select heap 6))) (str.++ \"(\" a!2 \".\" a!4 \")\")))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-ListExp a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 5)))))\n      (a!3 (select heap (rightExp (sel-ListExp (select heap 5))))))\n(let ((a!2 (ite (is-lift-S_Exp a!1)\n                (text (sel-S_Exp a!1))\n                (ite (is-lift-Atom a!1)\n                     (text (sel-Atom a!1))\n                     (text (sel-ListExp a!1)))))\n      (a!4 (ite (is-lift-S_Exp a!3)\n                (text (sel-S_Exp a!3))\n                (ite (is-lift-Atom a!3)\n                     (text (sel-Atom a!3))\n                     (text (sel-ListExp a!3))))))\n  (= (text (sel-ListExp (select heap 5))) (str.++ \"(\" a!2 \".\" a!4 \")\")))))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 5))))))\n  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (str.contains (text (sel-Atom (select heap 4))) \"(\"))\n      (a!2 (str.contains (text (sel-Atom (select heap 4))) \")\"))\n      (a!3 (str.contains (text (sel-Atom (select heap 4))) \".\")))\n  (and (not a!1) (not a!2) (not a!3))))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 5))))))\n  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))\n  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 5))))))\n  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))\n  (= (text (sel-ListExp a!1)) \"(A.B)\")))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 5))))))\n  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun k!heap_full!S_Exp () Bool\n  true)\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 6)))\n                  1\n                  (lift-S_Exp (mk-S_Exp \".(A.B))\")))))\n(let ((a!2 (store (store a!1 2 (lift-S_Exp (mk-S_Exp \".(A.B))\")))\n                  3\n                  (lift-Atom (mk-Atom \"A\")))))\n(let ((a!3 (store (store a!2 4 (lift-Atom (mk-Atom \"B\")))\n                  5\n                  (lift-ListExp (mk-ListExp \"((A.B).(A.B))\" 6 6)))))\n  (store a!3 6 (lift-ListExp (mk-ListExp \"(A.B)\" 3 4)))))))\n(define-fun k!heap_full!ListExp () Bool\n  true)\n(define-fun k!heap_full!Atom () Bool\n  true)",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "S_Exp",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": ["var"],
+          "annotations": [],
+          "name": "text",
+          "ty": {"type": "StringType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Atom",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["S_Exp"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "ConstraintDecl",
+          "exp": {
+            "type": "BinExp",
+            "op": "And",
+            "exp1": {
+              "type": "BinExp",
+              "op": "And",
+              "exp1": {
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "contains",
+                    "exp": {
+                      "ident": "text",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": "(",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "type": "UnaryExp",
+                "op": "Not"
+              },
+              "exp2": {
+                "exp": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "contains",
+                    "exp": {
+                      "ident": "text",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": ")",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "type": "UnaryExp",
+                "op": "Not"
+              }
+            },
+            "exp2": {
+              "exp": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "contains",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": ".",
+                    "type": "StringLiteral"
+                  }
+                }]
+              },
+              "type": "UnaryExp",
+              "op": "Not"
+            }
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ListExp",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["S_Exp"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": ["var"],
+            "annotations": [],
+            "name": "leftExp",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["S_Exp"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": ["var"],
+            "annotations": [],
+            "name": "rightExp",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["S_Exp"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "Plus",
+                  "exp1": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "type": "BinExp",
+                      "op": "Plus",
+                      "exp1": {
+                        "string": "(",
+                        "type": "StringLiteral"
+                      },
+                      "exp2": {
+                        "ident": "text",
+                        "exp": {
+                          "ident": "leftExp",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      }
+                    },
+                    "exp2": {
+                      "string": ".",
+                      "type": "StringLiteral"
+                    }
+                  },
+                  "exp2": {
+                    "ident": "text",
+                    "exp": {
+                      "ident": "rightExp",
+                      "type": "IdentExp"
+                    },
+                    "type": "DotExp"
+                  }
+                },
+                "exp2": {
+                  "string": ")",
+                  "type": "StringLiteral"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "OR",
+              "exp1": {
+                "type": "TypeCastCheckExp",
+                "cast": "false",
+                "exp": {
+                  "ident": "leftExp",
+                  "type": "IdentExp"
+                },
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Atom"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              "exp2": {
+                "type": "TypeCastCheckExp",
+                "cast": "false",
+                "exp": {
+                  "ident": "leftExp",
+                  "type": "IdentExp"
+                },
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["ListExp"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "OR",
+              "exp1": {
+                "type": "TypeCastCheckExp",
+                "cast": "false",
+                "exp": {
+                  "ident": "rightExp",
+                  "type": "IdentExp"
+                },
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["Atom"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              },
+              "exp2": {
+                "type": "TypeCastCheckExp",
+                "cast": "false",
+                "exp": {
+                  "ident": "rightExp",
+                  "type": "IdentExp"
+                },
+                "ty": {
+                  "args": [],
+                  "ident": {
+                    "names": ["ListExp"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": ["var"],
+        "annotations": [],
+        "name": "myList",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["ListExp"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "text",
+            "exp": {
+              "ident": "myList",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "(A.B)",
+            "type": "StringLiteral"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "S_Exp",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": ["var"],
+          "annotations": [],
+          "name": "text",
+          "ty": {
+            "type": "ElementValue",
+            "element": "String"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Atom",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "S_Exp"
+        }],
+        "members": [{
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "And"
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "And"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Not"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "text",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "contains"
+                              }
+                            ],
+                            "type": "Expression"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "("
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "Not"
+                      },
+                      {
+                        "type": "Expression",
+                        "operand": [
+                          {
+                            "operand": [
+                              {
+                                "type": "ElementValue",
+                                "element": "getProperty"
+                              },
+                              {
+                                "element": "text",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "type": "LiteralString",
+                                "string": "contains"
+                              }
+                            ],
+                            "type": "Expression"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": ")"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "type": "Expression"
+              },
+              {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Not"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "getProperty"
+                          },
+                          {
+                            "element": "text",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralString",
+                            "string": "contains"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ListExp",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "S_Exp"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": ["var"],
+            "annotations": [],
+            "name": "leftExp",
+            "ty": {
+              "type": "ElementValue",
+              "element": "S_Exp"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": ["var"],
+            "annotations": [],
+            "name": "rightExp",
+            "ty": {
+              "type": "ElementValue",
+              "element": "S_Exp"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "Plus"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "Plus"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "("
+                                },
+                                {
+                                  "operand": [
+                                    {
+                                      "type": "ElementValue",
+                                      "element": "getProperty"
+                                    },
+                                    {
+                                      "element": "leftExp",
+                                      "type": "ElementValue"
+                                    },
+                                    {
+                                      "type": "LiteralString",
+                                      "string": "text"
+                                    }
+                                  ],
+                                  "type": "Expression"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "."
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "element": "rightExp",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "text"
+                            }
+                          ],
+                          "type": "Expression"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": ")"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "OR"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "typeCastCheck"
+                    },
+                    "false",
+                    {
+                      "element": "leftExp",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "ElementValue",
+                      "element": "Atom"
+                    }
+                  ]
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "typeCastCheck"
+                    },
+                    "false",
+                    {
+                      "element": "leftExp",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "ElementValue",
+                      "element": "ListExp"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "OR"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "typeCastCheck"
+                    },
+                    "false",
+                    {
+                      "element": "rightExp",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "ElementValue",
+                      "element": "Atom"
+                    }
+                  ]
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "typeCastCheck"
+                    },
+                    "false",
+                    {
+                      "element": "rightExp",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "ElementValue",
+                      "element": "ListExp"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": ["var"],
+        "annotations": [],
+        "name": "myList",
+        "ty": {
+          "type": "ElementValue",
+          "element": "ListExp"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "myList",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "text"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "(A.B)"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}
