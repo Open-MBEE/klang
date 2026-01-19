@@ -25,6 +25,9 @@ object ASTOptions {
 
   /** Generate CVC5-compatible SMT output (also works with Z3) */
   var cvc5Compatible: Boolean = false
+  
+  /** Use 'used' flags for heap instances to allow over-allocation without performance penalty */
+  var useHeapUsedFlags: Boolean = false
 }
 
 object UtilAST {
@@ -1108,6 +1111,11 @@ class HeapLayout(model: Model) {
         List()
     }
   }
+  
+  /** Get the computed instance count for a class (strategy 1 result) */
+  def getComputedInstanceCount(className: String): Int = {
+    instancesByComputation.getOrElse(className, 0)
+  }
 
   // --- Populate state: ---
 
@@ -1871,6 +1879,9 @@ case class EntityDecl(
     var result: String = ""
     var invFunctionCount: Int = 0
     val heapEntries: List[Int] = UtilSMT.objectGraph.getHeapEntries(ident)
+    
+    // Helper to get used flag name for a heap entry
+    def usedFlagName(index: Int): String = s"used_${ident}_$index"
 
     def mkInvFunAndAssert(ident: String, constraintSMT: String, outputString: String): String = {
       invFunctionCount += 1
@@ -1883,7 +1894,12 @@ case class EntityDecl(
       result += "\n"
       for (index <- heapEntries) {
         val assertName = s"_xkassert${UtilSMT.constraintCounter}"
-        result += s"(assert (! ($functionName $index) :named $assertName))\n"
+        if (ASTOptions.useHeapUsedFlags) {
+          // Wrap constraint: if used then constraint else true
+          result += s"(assert (! (=> ${usedFlagName(index)} ($functionName $index)) :named $assertName))\n"
+        } else {
+          result += s"(assert (! ($functionName $index) :named $assertName))\n"
+        }
         UtilSMT.saveConstraintMapping((s"$outputString"))
       }
       result += "\n"
@@ -1899,6 +1915,42 @@ case class EntityDecl(
       UtilSMT.heapInitializerConstants ::= (index, ident, const)
     }
     result += "\n"
+    
+    // Declare used flags for heap entries when useHeapUsedFlags is enabled
+    if (ASTOptions.useHeapUsedFlags && heapEntries.nonEmpty) {
+      result += UtilSMT.headline3("Used flags")
+      for (index <- heapEntries) {
+        result += s"(declare-const ${usedFlagName(index)} Bool)\n"
+      }
+      result += "\n"
+      
+      // Add monotonicity constraints: used_i+1 => used_i (task 5)
+      // This ensures if entry i+1 is used, then entry i must also be used
+      val sortedEntries = heapEntries.sorted
+      if (sortedEntries.size > 1) {
+        result += UtilSMT.headline3("Used flag monotonicity")
+        for (Seq(prev, curr) <- sortedEntries.sliding(2).toSeq) {
+          result += s"(assert (=> ${usedFlagName(curr)} ${usedFlagName(prev)}))\n"
+        }
+        result += "\n"
+      }
+      
+      // Restrict total used instances based on strategy 1 counts (task 6)
+      // The number of used flags set to true should be at most the computed instance count
+      val maxInstances = UtilSMT.objectGraph.getComputedInstanceCount(ident)
+      if (maxInstances < heapEntries.size) {
+        result += UtilSMT.headline3("Used flag count limit")
+        // Express: at most maxInstances used flags can be true
+        // Using the monotonicity property: if used_k is true, then used_0..used_{k-1} are also true
+        // So we just need to assert that used_{maxInstances} is false (if it exists)
+        if (maxInstances < sortedEntries.size) {
+          val limitIndex = sortedEntries(maxInstances)
+          result += s"; At most $maxInstances instances can be used (entry $limitIndex and beyond must be unused)\n"
+          result += s"(assert (not ${usedFlagName(limitIndex)}))\n"
+          result += "\n"
+        }
+      }
+    }
 
     // ------------------------------
     // Open heap (this did not work):

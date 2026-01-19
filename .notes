@@ -45,6 +45,26 @@
 - pkg1.k and pkg2.k copied to src/tests/packages/ 
 - pkg2.k imports pkg1.k
 
+## Heap Used Flags Feature (2026-01-19)
+
+### Implementation Status
+- **Task 4**: Added `ASTOptions.useHeapUsedFlags` flag
+  - Each heap entry gets `(declare-const used_<class>_<index> Bool)`
+  - Constraints are wrapped: `(=> used_X (invariant X))` instead of just `(invariant X)`
+- **Task 5**: Monotonicity constraints added
+  - `(assert (=> used_<class>_i+1 used_<class>_i))`
+  - Ensures if entry i+1 is used, entry i must also be used
+- **Task 6**: Upper limit constraint added
+  - Based on `getComputedInstanceCount(className)` from strategy 1
+  - `(assert (not used_<class>_k))` where k >= maxInstances
+- **Task 7**: Minimize via Z3 optimize (NOT YET IMPLEMENTED)
+  - Would use `(minimize (count_used))` or similar
+  - Currently just uses upper bound constraint
+
+### How to Enable
+Set `ASTOptions.useHeapUsedFlags = true` before SMT generation.
+Could add a command-line flag like `-use-heap-flags`.
+
 ## Spot Check Results (2026-01-19)
 - lisp.k: myList correctly uses Atom for leftExp/rightExp ✓
 - lisp-draft.k: One S_Exp ref instead of Atom (acceptable, still SAT)
