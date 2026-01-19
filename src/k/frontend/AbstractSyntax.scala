@@ -63,6 +63,9 @@ object UtilSMT {
   var variableCounter: Int = 0
   var heapInitializerConstants: List[(Int, String, String)] = Nil // index into heap, class name, constant
   
+  // Track all used flag names for global instance limit constraint (heap used flags feature)
+  var usedFlagNames: List[String] = Nil
+  
   // Track function declarations and calls for synthetic call generation
   // Functions that are declared but never called need synthetic calls to check their body constraints
   var functionDeclarations: List[(String, FunDecl)] = Nil  // (className, funDecl) pairs
@@ -168,6 +171,7 @@ object UtilSMT {
     externalFuncDecls = Set()
     functionDeclarations = Nil
     functionCalls = Set()
+    usedFlagNames = Nil
     ExternalFunctions.reset()
     PythonExternalFunctions.reset()
     // Reset heap CEGAR multiplier - must be reset between batch tests
@@ -1116,6 +1120,11 @@ class HeapLayout(model: Model) {
   def getComputedInstanceCount(className: String): Int = {
     instancesByComputation.getOrElse(className, 0)
   }
+  
+  /** Get the total computed instance count across all classes (strategy 1 total) */
+  def getTotalComputedInstanceCount: Int = {
+    instancesByComputation.values.sum
+  }
 
   // --- Populate state: ---
 
@@ -1476,6 +1485,24 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       result2 += "\n"
     }
     result2 += "\n"
+    
+    // Add global used flag count limit (task 6)
+    // This limits the TOTAL used instances across all classes, allowing flexibility
+    // in which child classes are instantiated for parent class slots
+    if (ASTOptions.useHeapUsedFlags && UtilSMT.usedFlagNames.nonEmpty) {
+      val totalMaxInstances = UtilSMT.objectGraph.getTotalComputedInstanceCount
+      val totalHeapSlots = UtilSMT.usedFlagNames.size
+      if (totalMaxInstances < totalHeapSlots) {
+        result2 += UtilSMT.headline2("Global used flag limit")
+        result2 += s"; Total computed instances (strategy 1): $totalMaxInstances\n"
+        result2 += s"; Total heap slots: $totalHeapSlots\n"
+        // Express: sum of all used flags <= totalMaxInstances
+        // Using pseudo-boolean constraint: (+ (ite used_1 1 0) (ite used_2 1 0) ...) <= limit
+        val sumExpr = UtilSMT.usedFlagNames.map(f => s"(ite $f 1 0)").mkString("(+ ", " ", ")")
+        result2 += s"(assert (<= $sumExpr $totalMaxInstances))\n"
+        result2 += "\n"
+      }
+    }
 
     // Generate heap:
 
@@ -1919,14 +1946,17 @@ case class EntityDecl(
     // Declare used flags for heap entries when useHeapUsedFlags is enabled
     if (ASTOptions.useHeapUsedFlags && heapEntries.nonEmpty) {
       result += UtilSMT.headline3("Used flags")
-      for (index <- heapEntries) {
-        result += s"(declare-const ${usedFlagName(index)} Bool)\n"
+      val sortedEntries = heapEntries.sorted
+      for (index <- sortedEntries) {
+        val flagName = usedFlagName(index)
+        result += s"(declare-const $flagName Bool)\n"
+        // Register this used flag for global constraint (task 6)
+        UtilSMT.usedFlagNames = UtilSMT.usedFlagNames :+ flagName
       }
       result += "\n"
       
       // Add monotonicity constraints: used_i+1 => used_i (task 5)
       // This ensures if entry i+1 is used, then entry i must also be used
-      val sortedEntries = heapEntries.sorted
       if (sortedEntries.size > 1) {
         result += UtilSMT.headline3("Used flag monotonicity")
         for (Seq(prev, curr) <- sortedEntries.sliding(2).toSeq) {
@@ -1935,21 +1965,7 @@ case class EntityDecl(
         result += "\n"
       }
       
-      // Restrict total used instances based on strategy 1 counts (task 6)
-      // The number of used flags set to true should be at most the computed instance count
-      val maxInstances = UtilSMT.objectGraph.getComputedInstanceCount(ident)
-      if (maxInstances < heapEntries.size) {
-        result += UtilSMT.headline3("Used flag count limit")
-        // Express: at most maxInstances used flags can be true
-        // Using the monotonicity property: if used_k is true, then used_0..used_{k-1} are also true
-        // So we just need to assert that used_{maxInstances} is false (if it exists)
-        if (maxInstances < sortedEntries.size) {
-          val limitIndex = sortedEntries(maxInstances)
-          result += s"; At most $maxInstances instances can be used (entry $limitIndex and beyond must be unused)\n"
-          result += s"(assert (not ${usedFlagName(limitIndex)}))\n"
-          result += "\n"
-        }
-      }
+      // Note: Per-class limit removed - global limit is applied after all invariants (task 6)
     }
 
     // ------------------------------
