@@ -555,6 +555,14 @@ object K2Z3 {
       if (lastSolveTimedOut) {
         logDebug("Creating fresh Z3 context after timeout")
       }
+      // Close the old context to free native memory before creating a new one
+      if (ctx != null) {
+        try {
+          ctx.close()
+        } catch {
+          case _: Exception => // Ignore close errors
+        }
+      }
       ctx = new Context(cfg.asJava)
       lastSolveTimedOut = false
     }
