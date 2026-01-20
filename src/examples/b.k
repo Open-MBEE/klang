@@ -1,5 +1,5 @@
--- @expected ERROR
--- (multiple inheritance without share declarations)
+-- @expected SAT
+-- (multiple inheritance with auto-shared diamond ancestors)
 package b
 
 import a

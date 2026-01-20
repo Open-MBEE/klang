@@ -1,0 +1,66 @@
+# b.k - Diamond Inheritance Test Case
+
+## Status ✅ FIXED
+- **Fixed**: 2026-01-19
+- **Current**: `@expected SAT` - test passes, diamond auto-sharing works
+
+## The Issue (RESOLVED)
+
+`b.k` tests diamond inheritance:
+
+```
+       F (freal: Real)
+       |
+       E (eint: Int) - extends F
+       |
+       D (j: Bool) - extends E
+      /|\
+     A  C  (x: Int)  (z: Real)
+      \|/
+       B (y: Int)
+```
+
+Class B extends A, C, and E:
+- A extends D
+- C extends D  
+- E extends F
+- D extends E
+
+Diamond path: B → A → D and B → C → D
+
+## The Bug (FIXED)
+
+The `findDiamondAncestors` function was using `intersect` which finds ancestors
+that appear in ALL paths. But a diamond only requires appearing in 2+ paths.
+
+Example: B extends A, C, E
+- Path via A: A, D, E, F
+- Path via C: C, D, E, F
+- Path via E (direct): E, F
+
+Old algorithm (intersection of all): E, F (D was missing!)
+New algorithm (appears in 2+ paths): D, E, F ✅
+
+## The Fix
+
+Changed `findDiamondAncestors` in TypeChecker.scala to count ancestor
+occurrences and return any that appear more than once, rather than
+requiring them to appear in ALL paths.
+
+## Current Policy (Auto-Share)
+
+From TypeChecker.scala:
+```scala
+// Auto-share all diamond ancestors by default (unless explicitly renamed)
+val shareTypes = expandedShareTypes ++ diamondAncestors
+```
+
+With auto-sharing, the field `j` from D is shared (not duplicated).
+Therefore b.k type-checks and is SAT.
+
+## Related Files
+
+- `b2.k` - Multiple explicit share declarations variant (also works)
+- `Shapes.k` - Another diamond inheritance example
+- `TypeChecker.scala` - Diamond detection and sharing logic
+

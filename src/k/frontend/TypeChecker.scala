@@ -519,17 +519,22 @@ object ClassHierarchy {
     val immediateParents = parents.getOrElse(e, Nil).toList
     if (immediateParents.size <= 1) return Set()
     
-    // For each immediate parent, find all ancestors
+    // For each immediate parent, find all ancestors (including the parent itself)
     val ancestorSets = immediateParents.map { p =>
       val parentDecl = type2Decl(p).asInstanceOf[EntityDecl]
       (parentsTransitive(parentDecl).map(_.toString) :+ p.toString).toSet
     }
     
-    // Find ancestors that appear in multiple paths (intersection of 2+ sets)
+    // Find ancestors that appear in 2 or more paths (not intersection of ALL sets)
+    // An ancestor is a diamond if it appears in at least 2 different inheritance paths
     if (ancestorSets.size < 2) return Set()
     
-    val commonAncestors = ancestorSets.reduce(_ intersect _)
-    commonAncestors
+    // Count how many times each ancestor appears across all paths
+    val allAncestors = ancestorSets.flatten
+    val ancestorCounts = allAncestors.groupBy(identity).view.mapValues(_.size)
+    
+    // Return ancestors that appear in more than one path
+    ancestorCounts.filter(_._2 > 1).keys.toSet
   }
 
   def buildHierarchy(d: EntityDecl, types: Map[Type, TopDecl], visited: Set[EntityDecl]): Set[Type] = {

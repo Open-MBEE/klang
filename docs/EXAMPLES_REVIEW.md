@@ -29,10 +29,10 @@ But the solver returns SAT with empty sets, violating the constraints. See [note
 
 ---
 
-## b.k - Diamond Inheritance Policy
+## b.k - Diamond Inheritance Policy ✅ FIXED
 
-**Status**: ❌ Remove from tests  
-**Issue**: Fails for wrong reason; policy unclear
+**Status**: ✅ Working correctly  
+**Fixed**: 2026-01-19
 
 ### Current Policy (per TypeChecker.scala)
 ```scala
@@ -44,22 +44,16 @@ val shareTypes = expandedShareTypes ++ diamondAncestors
 // All diamond inheritance is automatically resolved by sharing.
 ```
 
-### The Bug
-- `b.k` has `@expected ERROR` but this is **wrong** - should be `@expected SAT`
-- Current policy auto-shares diamond ancestors, so b.k should type-check and be SAT
-- The typecheck error b.k receives is a **bug** - auto-sharing should make this work
+### The Bug (FIXED)
+The `findDiamondAncestors` function was using intersection which only finds
+ancestors appearing in ALL paths. Changed to count occurrences and return
+any ancestor appearing in 2+ paths.
 
-### Historical Context
-- Originally, diamond inheritance was allowed (no error)
-- At some point, it was changed to require `share` or `rename`
-- More recently, when uncommenting the `Wrong` line in Shapes.k produced ERROR instead of UNSAT, diamond was changed back to auto-share by default
-- **Current policy**: Auto-share all diamond ancestors by default
-
-### Actions
-- [ ] Document current policy in notes/examples/b.k.txt
-- [ ] Fix the typecheck bug that prevents auto-sharing from working
-- [ ] Update `b.k` to have `@expected SAT` annotation
-- [ ] Remove `ex_b.k` from tests until bug is fixed
+### Actions (COMPLETED)
+- [x] Document current policy in notes/examples/b.k.txt
+- [x] Fix the typecheck bug that prevents auto-sharing from working
+- [x] Update `b.k` to have `@expected SAT` annotation
+- [x] ex_b.k was already removed
 
 ---
 
@@ -312,7 +306,7 @@ The function synthesis output is confusing. Should the synthesized function be r
 | File | Issue | Priority | Removed from tests? | Fixed? |
 |------|-------|----------|---------------------|--------|
 | Bank.k | isEmpty() ignored | CRITICAL | ❌ | ❌ |
-| b.k | Typecheck bug (should SAT) | HIGH | ❌ | ❌ |
+| b.k | Diamond auto-sharing | HIGH | N/A | ✅ FIXED |
 | b2.k | Multiple shares | MEDIUM | ❌ | ❌ |
 | c.k | Excessive instances | LOW | N/A | ❌ |
 | conservative-extension.k | Unverified behavior | MEDIUM | ❌ | ❌ |
