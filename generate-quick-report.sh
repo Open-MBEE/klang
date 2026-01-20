@@ -50,32 +50,59 @@ cat > "$REPORT_FILE" << 'HTMLHEAD'
   .filter-btn { margin: 5px; padding: 8px 16px; cursor: pointer; border: none; border-radius: 4px; }
   .filter-btn.active { background: #569cd6; color: white; }
   .filter-btn:not(.active) { background: #3c3c3c; color: #d4d4d4; }
+  .filter-group { display: inline-block; margin: 0 15px; }
+  .filter-group-label { color: #888; margin-right: 5px; }
   .hidden { display: none; }
 </style>
 <script>
-function filterTests(type) {
+var statusFilter = 'all';
+var categoryFilter = 'all';
+
+function updateFilters() {
   const tests = document.querySelectorAll('.test');
-  const btns = document.querySelectorAll('.filter-btn');
-  btns.forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
   tests.forEach(t => {
-    if (type === 'all') {
-      t.classList.remove('hidden');
-    } else if (type === 'fail') {
-      t.classList.toggle('hidden', !t.classList.contains('fail'));
-    } else if (type === 'pass') {
-      t.classList.toggle('hidden', t.classList.contains('fail'));
-    }
+    const isPass = !t.classList.contains('fail');
+    const category = t.dataset.category;
+    
+    let showByStatus = statusFilter === 'all' || 
+                       (statusFilter === 'pass' && isPass) || 
+                       (statusFilter === 'fail' && !isPass);
+    let showByCategory = categoryFilter === 'all' || category === categoryFilter;
+    
+    t.classList.toggle('hidden', !(showByStatus && showByCategory));
   });
+}
+
+function filterStatus(type) {
+  statusFilter = type;
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  updateFilters();
+}
+
+function filterCategory(type) {
+  categoryFilter = type;
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  updateFilters();
 }
 </script>
 </head>
 <body>
 <h1>K Language Test Report</h1>
 <div class="summary">
-  <button class="filter-btn active" onclick="filterTests('all')">All Tests</button>
-  <button class="filter-btn" onclick="filterTests('fail')">Failures Only</button>
-  <button class="filter-btn" onclick="filterTests('pass')">Passing Only</button>
+  <span class="filter-group">
+    <span class="filter-group-label">Status:</span>
+    <button class="filter-btn status-btn active" onclick="filterStatus('all')">All</button>
+    <button class="filter-btn status-btn" onclick="filterStatus('fail')">Failures</button>
+    <button class="filter-btn status-btn" onclick="filterStatus('pass')">Passing</button>
+  </span>
+  <span class="filter-group">
+    <span class="filter-group-label">Category:</span>
+    <button class="filter-btn category-btn active" onclick="filterCategory('all')">All</button>
+    <button class="filter-btn category-btn" onclick="filterCategory('tests')">Tests</button>
+    <button class="filter-btn category-btn" onclick="filterCategory('examples')">Examples</button>
+  </span>
 </div>
 HTMLHEAD
 
@@ -99,6 +126,50 @@ else
 fi
 BATCH_RESULTS=$(cat /tmp/batch_results.txt)
 echo "Captured $(echo "$BATCH_RESULTS" | wc -l | tr -d ' ') batch result lines"
+
+# Calculate stats from batch results
+TOTAL_TESTS=$(echo "$BATCH_RESULTS" | wc -l | tr -d ' ')
+PASSED_TESTS=$(echo "$BATCH_RESULTS" | grep -c "^PASSED" || echo "0")
+FAILED_TESTS=$(echo "$BATCH_RESULTS" | grep -c "^FAILED" || echo "0")
+TESTS_COUNT=$(echo "$BATCH_RESULTS" | grep "|tests|" | wc -l | tr -d ' ')
+EXAMPLES_COUNT=$(echo "$BATCH_RESULTS" | grep "|examples|" | wc -l | tr -d ' ')
+TESTS_PASSED=$(echo "$BATCH_RESULTS" | grep "^PASSED" | grep "|tests|" | wc -l | tr -d ' ')
+TESTS_FAILED=$(echo "$BATCH_RESULTS" | grep "^FAILED" | grep "|tests|" | wc -l | tr -d ' ')
+EXAMPLES_PASSED=$(echo "$BATCH_RESULTS" | grep "^PASSED" | grep "|examples|" | wc -l | tr -d ' ')
+EXAMPLES_FAILED=$(echo "$BATCH_RESULTS" | grep "^FAILED" | grep "|examples|" | wc -l | tr -d ' ')
+if [ "$TOTAL_TESTS" -gt 0 ]; then
+  PASS_RATE=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+else
+  PASS_RATE=0
+fi
+
+# Write summary stats into report
+cat >> "$REPORT_FILE" << STATSHTML
+<div class="summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+  <div>
+    <h3 style="margin: 0 0 10px 0; color: #569cd6;">Overall</h3>
+    <div style="font-size: 1.2em;">
+      <span class="pass">✅ $PASSED_TESTS passed</span> /
+      <span class="fail">❌ $FAILED_TESTS failed</span>
+      <div style="margin-top: 5px; color: #888;">Pass rate: $PASS_RATE%</div>
+    </div>
+  </div>
+  <div>
+    <h3 style="margin: 0 0 10px 0; color: #4ec9b0;">Tests ($TESTS_COUNT)</h3>
+    <div>
+      <span class="pass">✅ $TESTS_PASSED passed</span> /
+      <span class="fail">❌ $TESTS_FAILED failed</span>
+    </div>
+  </div>
+  <div>
+    <h3 style="margin: 0 0 10px 0; color: #ce9178;">Examples ($EXAMPLES_COUNT)</h3>
+    <div>
+      <span class="pass">✅ $EXAMPLES_PASSED passed</span> /
+      <span class="fail">❌ $EXAMPLES_FAILED failed</span>
+    </div>
+  </div>
+</div>
+STATSHTML
 
 # Process each test file
 for dir in $DIRS; do
@@ -169,7 +240,7 @@ for dir in $DIRS; do
 
     # Write test entry
     cat >> "$REPORT_FILE" << TESTHTML
-<div class="$css_class">
+<div class="$css_class" data-category="$dir_name">
   <div class="test-name">$test_name
     <span class="$status_class">[$status_text]</span>
     $([ -n "$expected" ] && echo "<span style=\"color:#888\">@expected: $expected</span>")
