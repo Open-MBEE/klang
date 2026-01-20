@@ -175,8 +175,9 @@ object UnifiedSolver {
       // Extract configuration from model annotations
       var config = extractConfig(model)
       
-      // Override timeout from command line if provided
-      val finalTimeout = timeoutMs.orElse(config.timeout)
+      // Model annotation @timeout takes precedence over CLI default (30000ms)
+      // Only override if CLI explicitly provided a timeout AND model doesn't have one
+      val finalTimeout = config.timeout.orElse(timeoutMs)
       config = config.copy(timeout = finalTimeout)
 
       // Extract soft constraints from model
@@ -722,9 +723,11 @@ object UnifiedSolver {
       for (decl <- model.decls) {
         decl match {
           case ed: EntityDecl =>
+            log(s"[extractConfig] Checking EntityDecl: ${ed.ident}, annotations: ${ed.annotations}")
             for (ann <- ed.annotations) {
               ann match {
                 case Annotation("timeout", IntegerLiteral(ms)) =>
+                  log(s"[extractConfig] Found @timeout(${ms})")
                   timeout = Some(ms.toLong)
                 case Annotation("bestEffort", _) =>
                   bestEffort = true
@@ -1336,9 +1339,13 @@ object UnifiedSolver {
     
     // Set timeout
     config.timeout.foreach { ms =>
+      log(s"Setting Z3 solver timeout to ${ms}ms")
       val params = K2Z3.ctx.mkParams()
       params.add("timeout", ms.toInt)
       solver.setParameters(params)
+    }
+    if (config.timeout.isEmpty) {
+      log("WARNING: No timeout configured for solver")
     }
     
     // Add all constraints

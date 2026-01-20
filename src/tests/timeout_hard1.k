@@ -1,6 +1,7 @@
 // Test case for @timeout without @bestEffort
 // This problem is designed to be difficult enough to trigger a timeout
 // Uses non-linear constraints and large search space
+// @expected UNKNOWN
 
 @timeout(500)  // 500ms timeout - should be too short for this problem
 class HardProblem1 {

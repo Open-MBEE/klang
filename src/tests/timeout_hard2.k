@@ -1,6 +1,7 @@
 // Test case for @timeout WITH @bestEffort
 // This problem is designed to be difficult enough to trigger a timeout
 // With @bestEffort, we should get a partial/best result found so far
+// @expected SAT
 
 @timeout(500)  // 500ms timeout - should be too short for this problem
 @bestEffort    // Return whatever solution we have when time runs out
