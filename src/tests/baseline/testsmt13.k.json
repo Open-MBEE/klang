@@ -1,426 +1,382 @@
 {
-    "name": "testsmt13.k",
-    "outcome": "SAT",
-    "typeChecks": true,
-    "model": "\nclass A {\n  a:Int\n}\n\nclass B extending A {\n  b:Int\n}\n\nclass C extending B {\n  c:Int\n}\n\nclass D {\n  d:Int\n}\n\na:A = C(a :: 1,b :: 2,c :: 3)\n\nreq a is A\n\nreq a is B\n\nreq a is C\n\n",
-    "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (a Ref)))))\n(declare-datatypes () ((A (mk-A (a Int)))))\n(declare-datatypes () ((B (mk-B (a Int)(b Int)))))\n(declare-datatypes () ((C (mk-C (a Int)(b Int)(c Int)))))\n(declare-datatypes () ((D (mk-D (d Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n    (deref-is-C this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (or\n    (deref-is-B this)\n    (deref-is-C this)\n  )\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (deref-is-D this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.a: ---\n\n(define-fun TopLevelDeclarations!a ((this Ref)) Ref\n  (a (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!a this)) (lift-C (mk-C 1 2 3)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-A (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-A (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (deref-isa-B (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (deref-isa-C (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n(declare-const const-2-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-B B)\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-C C)\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-D D)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-A const-1-A))\n        2 (lift-A const-2-A))\n        3 (lift-B const-3-B))\n        4 (lift-C const-4-C))\n        5 (lift-D const-5-D))\n  )\n)\n\n",
-    "smtModel": "(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (= a!1 (lift-C (mk-C 1 2 3)))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-A a!1) (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-A a!1) (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-C a!1)))\n(define-fun const-4-C () C\n  (mk-C 1 2 3))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 4))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-1-A () A\n  (mk-A 0))\n(define-fun const-2-A () A\n  (mk-A 0))\n(define-fun const-3-B () B\n  (mk-B 0 0))\n(define-fun const-5-D () D\n  (mk-D 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 4)))\n                  1\n                  (lift-A (mk-A 0)))))\n(let ((a!2 (store (store a!1 2 (lift-A (mk-A 0))) 3 (lift-B (mk-B 0 0)))))\n  (store (store a!2 4 (lift-C (mk-C 1 2 3))) 5 (lift-D (mk-D 0))))))",
-    "json1": {
-        "type": "Model",
-        "imports": [],
+  "name": "testsmt13.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass A {\n  a:Int\n}\n\nclass B extending A {\n  b:Int\n}\n\nclass C extending B {\n  c:Int\n}\n\nclass D {\n  d:Int\n}\n\na:A = C(a :: 1,b :: 2,c :: 3)\n\nreq a is A\n\nreq a is B\n\nreq a is C\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (a Ref)))))\n(declare-datatypes () ((A (mk-A (a Int)))))\n(declare-datatypes () ((B (mk-B (a Int)(b Int)))))\n(declare-datatypes () ((C (mk-C (a Int)(b Int)(c Int)))))\n(declare-datatypes () ((D (mk-D (d Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-A (sel-A A))\n  (lift-B (sel-B B))\n  (lift-C (sel-C C))\n  (lift-D (sel-D D))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n    (deref-is-C this)\n  )\n)\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (or\n    (deref-is-B this)\n    (deref-is-C this)\n  )\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (deref-is-C this)\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (deref-is-D this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.a: ---\n\n(define-fun TopLevelDeclarations!a ((this Ref)) Ref\n  (a (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (deref (TopLevelDeclarations!a this)) (lift-C (mk-C 1 2 3)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-A (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-A (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (deref-isa-B (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (deref-isa-C (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-A A)\n\n\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-B B)\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-C C)\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-D D)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-A const-1-A))\n        2 (lift-B const-2-B))\n        3 (lift-C const-3-C))\n        4 (lift-D const-4-D))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-C () C\n  (mk-C 1 2 3))\n(define-fun const-2-B () B\n  (mk-B 5 6))\n(define-fun const-1-A () A\n  (mk-A 7))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 3))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-A a!1) (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (= a!1 (lift-C (mk-C 1 2 3)))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (or (is-lift-A a!1) (is-lift-B a!1) (is-lift-C a!1))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-C a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-4-D () D\n  (mk-D 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3)))\n                  1\n                  (lift-A (mk-A 7)))))\n(let ((a!2 (store (store a!1 2 (lift-B (mk-B 5 6))) 3 (lift-C (mk-C 1 2 3)))))\n  (store a!2 4 (lift-D (mk-D 0))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
         "annotations": [],
-        "decls": [
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "A",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "a",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "B",
-                "typeparams": [],
-                "extending": [
-                    {
-                        "args": [],
-                        "ident": {
-                            "names": [
-                                "A"
-                            ],
-                            "type": "QualifiedName"
-                        },
-                        "type": "IdentType"
-                    }
-                ],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "b",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "C",
-                "typeparams": [],
-                "extending": [
-                    {
-                        "args": [],
-                        "ident": {
-                            "names": [
-                                "B"
-                            ],
-                            "type": "QualifiedName"
-                        },
-                        "type": "IdentType"
-                    }
-                ],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "c",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "D",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "d",
-                        "ty": {
-                            "type": "IntType"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "PropertyDecl",
-                "modifiers": [],
-                "annotations": [],
-                "name": "a",
-                "ty": {
-                    "args": [],
-                    "ident": {
-                        "names": [
-                            "A"
-                        ],
-                        "type": "QualifiedName"
-                    },
-                    "type": "IdentType"
-                },
-                "assignment": false,
-                "expr": {
-                    "type": "FunApplExp",
-                    "exp1": {
-                        "ident": "C",
-                        "type": "IdentExp"
-                    },
-                    "args": [
-                        {
-                            "type": "NamedArgument",
-                            "ident": "a",
-                            "exp": {
-                                "i": 1,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        {
-                            "type": "NamedArgument",
-                            "ident": "b",
-                            "exp": {
-                                "i": 2,
-                                "type": "LiteralInteger"
-                            }
-                        },
-                        {
-                            "type": "NamedArgument",
-                            "ident": "c",
-                            "exp": {
-                                "i": 3,
-                                "type": "LiteralInteger"
-                            }
-                        }
-                    ]
-                }
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "TypeCastCheckExp",
-                    "cast": "false",
-                    "exp": {
-                        "ident": "a",
-                        "type": "IdentExp"
-                    },
-                    "ty": {
-                        "args": [],
-                        "ident": {
-                            "names": [
-                                "A"
-                            ],
-                            "type": "QualifiedName"
-                        },
-                        "type": "IdentType"
-                    }
-                },
-                "annotations": []
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "TypeCastCheckExp",
-                    "cast": "false",
-                    "exp": {
-                        "ident": "a",
-                        "type": "IdentExp"
-                    },
-                    "ty": {
-                        "args": [],
-                        "ident": {
-                            "names": [
-                                "B"
-                            ],
-                            "type": "QualifiedName"
-                        },
-                        "type": "IdentType"
-                    }
-                },
-                "annotations": []
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "TypeCastCheckExp",
-                    "cast": "false",
-                    "exp": {
-                        "ident": "a",
-                        "type": "IdentExp"
-                    },
-                    "ty": {
-                        "args": [],
-                        "ident": {
-                            "names": [
-                                "C"
-                            ],
-                            "type": "QualifiedName"
-                        },
-                        "type": "IdentType"
-                    }
-                },
-                "annotations": []
-            }
-        ],
-        "packages": []
-    },
-    "json2": {
-        "type": "Model",
-        "imports": [],
+        "entityToken": "class",
+        "ident": "A",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "a",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
         "annotations": [],
-        "decls": [
+        "entityToken": "class",
+        "ident": "B",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["A"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "b",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "C",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["B"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "c",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "D",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "d",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "a",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["A"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        },
+        "assignment": false,
+        "expr": {
+          "type": "FunApplExp",
+          "exp1": {
+            "ident": "C",
+            "type": "IdentExp"
+          },
+          "args": [
             {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "A",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "a",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    }
-                ]
+              "type": "NamedArgument",
+              "ident": "a",
+              "exp": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
             },
             {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "B",
-                "typeparams": [],
-                "extending": [
-                    {
-                        "type": "ElementValue",
-                        "element": "A"
-                    }
-                ],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "b",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    }
-                ]
+              "type": "NamedArgument",
+              "ident": "b",
+              "exp": {
+                "i": 2,
+                "type": "LiteralInteger"
+              }
             },
             {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "C",
-                "typeparams": [],
-                "extending": [
-                    {
-                        "type": "ElementValue",
-                        "element": "B"
-                    }
-                ],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "c",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "EntityDecl",
-                "annotations": [],
-                "entityToken": "class",
-                "ident": "D",
-                "typeparams": [],
-                "extending": [],
-                "members": [
-                    {
-                        "type": "PropertyDecl",
-                        "modifiers": [],
-                        "annotations": [],
-                        "name": "d",
-                        "ty": {
-                            "type": "ElementValue",
-                            "element": "Integer"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "PropertyDecl",
-                "modifiers": [],
-                "annotations": [],
-                "name": "a",
-                "ty": {
-                    "type": "ElementValue",
-                    "element": "A"
-                },
-                "assignment": false,
-                "expr": {
-                    "type": "Expression",
-                    "operand": [
-                        {
-                            "element": "C",
-                            "type": "ElementValue"
-                        },
-                        {
-                            "type": "LiteralInteger",
-                            "integer": 1
-                        },
-                        {
-                            "type": "LiteralInteger",
-                            "integer": 2
-                        },
-                        {
-                            "type": "LiteralInteger",
-                            "integer": 3
-                        }
-                    ]
-                }
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "Expression",
-                    "operand": [
-                        {
-                            "type": "ElementValue",
-                            "element": "typeCastCheck"
-                        },
-                        "false",
-                        {
-                            "element": "a",
-                            "type": "ElementValue"
-                        },
-                        {
-                            "type": "ElementValue",
-                            "element": "A"
-                        }
-                    ]
-                },
-                "annotations": []
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "Expression",
-                    "operand": [
-                        {
-                            "type": "ElementValue",
-                            "element": "typeCastCheck"
-                        },
-                        "false",
-                        {
-                            "element": "a",
-                            "type": "ElementValue"
-                        },
-                        {
-                            "type": "ElementValue",
-                            "element": "B"
-                        }
-                    ]
-                },
-                "annotations": []
-            },
-            {
-                "type": "ConstraintDecl",
-                "exp": {
-                    "type": "Expression",
-                    "operand": [
-                        {
-                            "type": "ElementValue",
-                            "element": "typeCastCheck"
-                        },
-                        "false",
-                        {
-                            "element": "a",
-                            "type": "ElementValue"
-                        },
-                        {
-                            "type": "ElementValue",
-                            "element": "C"
-                        }
-                    ]
-                },
-                "annotations": []
+              "type": "NamedArgument",
+              "ident": "c",
+              "exp": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
             }
-        ],
-        "packages": []
-    }
+          ]
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "TypeCastCheckExp",
+          "cast": "false",
+          "exp": {
+            "ident": "a",
+            "type": "IdentExp"
+          },
+          "ty": {
+            "args": [],
+            "ident": {
+              "names": ["A"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "TypeCastCheckExp",
+          "cast": "false",
+          "exp": {
+            "ident": "a",
+            "type": "IdentExp"
+          },
+          "ty": {
+            "args": [],
+            "ident": {
+              "names": ["B"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "TypeCastCheckExp",
+          "cast": "false",
+          "exp": {
+            "ident": "a",
+            "type": "IdentExp"
+          },
+          "ty": {
+            "args": [],
+            "ident": {
+              "names": ["C"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "A",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "a",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "B",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "A"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "b",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "C",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "B"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "c",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "D",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "d",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "a",
+        "ty": {
+          "type": "ElementValue",
+          "element": "A"
+        },
+        "assignment": false,
+        "expr": {
+          "type": "Expression",
+          "operand": [
+            {
+              "element": "C",
+              "type": "ElementValue"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 1
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 2
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 3
+            }
+          ]
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "Expression",
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "typeCastCheck"
+            },
+            "false",
+            {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            {
+              "type": "ElementValue",
+              "element": "A"
+            }
+          ]
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "Expression",
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "typeCastCheck"
+            },
+            "false",
+            {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            {
+              "type": "ElementValue",
+              "element": "B"
+            }
+          ]
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "Expression",
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "typeCastCheck"
+            },
+            "false",
+            {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            {
+              "type": "ElementValue",
+              "element": "C"
+            }
+          ]
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
 }

@@ -1,3 +1,4 @@
+-- @expected SAT
 
 class Person {
   age : Int

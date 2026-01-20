@@ -1,0 +1,77 @@
+ANALYSIS: Subclass Instance Count Propagation
+=============================================
+Date: 2026-01-18
+
+PROPOSED CHANGE:
+----------------
+Propagate instance counts from parent classes to subclasses during heap layout.
+When we have `var leftExp: S_Exp` and Atom/ListExp extend S_Exp, ensure each 
+subclass has at least as many instances as the parent.
+
+Rationale: A reference to S_Exp can hold any subclass, so we need enough 
+subclass instances to cover all parent references.
+
+TEST RESULTS:
+-------------
+Before Change (commit 664f571):
+  - 229 tests, 200 passed, 29 failed
+  - 19 baseline mismatches
+
+After Change (uncommitted):
+  - 230 tests, 197 passed, 33 failed
+  - 22 baseline mismatches
+
+OUTCOME CHANGES (5 tests affected):
+-----------------------------------
+
+1. inheritance1.2.k: N/A → SAT
+   - New test file, not a regression
+
+2. lisp.k: SAT (matched baseline) → SAT (baseline mismatch)
+   - OUTCOME UNCHANGED (still SAT)
+   - Without change: Needs HeapCEGAR iteration (2x multiplier) to find solution
+   - With change: Finds solution on first try (more instances allocated)
+   - Baseline mismatch is cosmetic (different heap layout in SMT)
+
+3. lisp-draft.k: SAT (0.54s) → TIMEOUT (30s)
+   - REGRESSION!
+   - Without change: 2 S_Exp, 1 Atom, 1 ListExp → SAT quickly
+   - With change: 2 S_Exp, 2 Atom, 2 ListExp → TIMEOUT
+   - Extra instances make search space too large for this complex test
+
+4. testsmt18.k: SAT (baseline OK) → SAT (baseline mismatch)
+   - OUTCOME UNCHANGED (still SAT)
+   - Baseline mismatch is cosmetic
+
+5. testsmt3.k: SAT (baseline OK) → SAT (baseline mismatch)
+   - OUTCOME UNCHANGED (still SAT)
+   - Baseline mismatch is cosmetic
+
+CONCLUSION:
+-----------
+The propagation approach has a critical flaw: it can INCREASE search space
+unnecessarily, causing timeouts on tests that previously passed.
+
+The HeapCEGAR loop already handles under-allocation by increasing multiplier.
+Pre-allocating extra instances is counter-productive when the initial 
+allocation is sufficient.
+
+Additionally, the lisp.k issue was ALREADY FIXED by commit 664f571 
+("Fix HeapCEGAR: use strategy 1 for DFS and fix multiplier ordering").
+The propagation change was unnecessary - lisp.k passes without it!
+
+RECOMMENDATION:
+---------------
+DISCARDED this change. The lisp-draft.k regression is unacceptable and
+the change was solving an already-solved problem.
+
+Alternative approaches to explore (if ever needed in future):
+1. Allow parent slots to hold child objects (polymorphic heap slots)
+   - See stash "polymorphic-heap-slots-approach"
+2. Use "used" flags to make extra instances optional
+3. Only propagate when HeapCEGAR indicates UNSAT with all-full heap
+
+DISPOSITION:
+------------
+Changes have been DISCARDED via `git stash drop`.
+The getHeapEntriesWithSubclasses() method was also removed.

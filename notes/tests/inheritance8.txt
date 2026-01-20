@@ -1,5 +1,5 @@
-Status: BASELINE MISMATCH
-Category: Type Check Difference
+Status: PASSING
+Category: Diamond Inheritance Resolution
 
 Analysis:
 This test has complex diamond inheritance with multiple levels:
@@ -8,25 +8,25 @@ This test has complex diamond inheritance with multiple levels:
             F       G
                 H(tsum:Int)
 
-The baseline expected different type check behavior. Current error: "ERROR (type check)"
-but baseline expected it to type check successfully.
-
 Key complexity:
 - Class F extends C, E (diamond with A,B as roots)
 - Class G extends E with embedded E field (ee : E)
-- Class H extends F, G (another diamond)
+- Class H extends F, G (another diamond requiring share clauses)
 - Computed field: tsum : Int = a + b + c + d + e + f + g + h
 
-This tests the type checker's handling of:
-1. Deep diamond inheritance
-2. Embedded object fields of parent types
-3. Field access across complex hierarchy
+Result (2026-01-19):
+- Test now passes with SAT
+- h object correctly has: a::1, b::2, c::3, d::4, e::5, f::6, g::7, h::8
+- tsum correctly computed as 36 (1+2+3+4+5+6+7+8 = 36)
+- RESULT_36 correctly = 36
 
-The type checker may have become stricter or there may be a regression.
+The share clauses in class H properly resolve the diamond inheritance:
+  share E;  -- Resolve E inherited via both F and G
+  share D;  -- D is also inherited via E from both paths
 
-Verdict: Need to investigate type check error vs baseline expectation.
+This demonstrates that:
+1. Deep diamond inheritance works with explicit share clauses
+2. Computed fields work across complex hierarchies  
+3. Embedded object fields of parent types work correctly
 
-Action:
-1. Run with verbose type checking to see specific error
-2. Check if share clause is needed for diamond resolution
-3. Either fix type checker or update test with proper share clauses
+Verdict: PASS - Complex diamond inheritance with share clauses works correctly.

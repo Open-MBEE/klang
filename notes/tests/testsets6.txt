@@ -1,0 +1,33 @@
+Status: BUG - Test should remain FAILING until fixed
+Category: Set Constraint Bug
+Date: 2026-01-19
+
+Issue:
+The solver returns `FeasibleLowCostSCFleet(deployedSC:: [Empty])` despite the constraint:
+  req deployedSC != Set{}
+
+This is a constraint satisfaction bug - the Set is empty when it explicitly should NOT be.
+
+Details:
+- LowCostSCFleet has the `req deployedSC != Set{}` commented out, so [Empty] is valid
+- FeasibleLowCostSCFleet has `req deployedSC != Set{}` as an active constraint
+- But FeasibleLowCostSCFleet also shows `deployedSC:: [Empty]`
+
+This appears related to the Bank.k isEmpty() bug mentioned in EXAMPLES_REVIEW.md:
+"Set isEmpty() constraints are silently ignored"
+
+The `!= Set{}` comparison may not be properly translated to SMT, similar to how
+isEmpty() constraints are being dropped.
+
+Investigation Steps:
+1. Check how `!= Set{}` is translated to SMT in AbstractSyntax.scala
+2. Look at SetExp.toSMT and related Set comparison methods
+3. Check if this is the same root cause as the isEmpty() bug
+
+Action:
+DO NOT update the baseline for this test. Keep it failing until the bug is fixed.
+The test is a good regression test for this bug.
+
+Related Issues:
+- Bank.k isEmpty() bug
+- EXAMPLES_REVIEW.md entry for Bank.k

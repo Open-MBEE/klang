@@ -1,3 +1,4 @@
+-- @expected SAT
 
 ERROR : Int req ERROR < 0 
 fun CHECK(b:Bool):Int {if b then 42 else ERROR}

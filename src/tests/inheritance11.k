@@ -1,3 +1,4 @@
+-- @expected SAT
 
 class A {
   a : Int

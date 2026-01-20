@@ -1,0 +1,36 @@
+Status: PASSING
+Category: Instance Count / Heap Model
+Date: 2026-01-19
+
+Test Description:
+Tests class constraints with Employee having:
+- boss : Person (must be > 30 years old)
+- officemate : Employee 
+- Constraint: this = officemate.officemate (mutual officemates)
+- Constraint: avoid(boss) meaning officemate != boss
+
+Current Behavior (2026-01-19):
+Creates more instances (10 objects: 5 Person + 5 Employee) than the original baseline
+(which had 4 objects: 2 Person + 2 Employee).
+
+This is expected because:
+1. The new heap model starts with multiple instances per class to handle general cases
+2. The solver is not currently minimizing the number of instances
+3. All constraints are still satisfied
+
+Compact Answer:
+The minimal solution is one Person (the boss) and one Employee who is its own officemate.
+Example: Employee(age::32304, boss:: Ref_Person, officemate:: Ref_Self)
+This works because:
+- if officemate = this, then officemate.officemate = this.officemate = this ✓
+- avoid(boss) is satisfied since officemate (self) != boss (a Person) ✓
+
+The current solution also includes such self-officemate cases:
+- Ref 6: Employee(age::29552, boss:: Ref 5, officemate:: Ref 6) - self-officemate
+
+Future Improvement (ROADMAP item):
+Consider deferring the "add child class instances for parent class instances" strategy
+to the second loop iteration. The first iteration could use the simpler approach (like
+the old baseline), and only expand if needed.
+
+Verdict: PASS - Solution is correct, just not minimal.

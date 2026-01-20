@@ -1,3 +1,4 @@
+-- @expected SAT
 -- Testing layout of fields in datatypes.
 
 ===

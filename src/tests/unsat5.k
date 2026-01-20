@@ -1,3 +1,6 @@
+-- @expected UNSAT
+-- Unsatisfiable: A.x > 10 conflicts with B.a.x < 1
+
 class A {
   x : Int
  
