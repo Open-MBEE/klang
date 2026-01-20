@@ -720,36 +720,71 @@ object K2Z3 {
    * - ((as const (Array Int Bool)) false) -> Set() (empty set)
    * - (store ((as const (Array Int Bool)) true) X false) -> Set(*\X) (universal minus element)
    * - (store ((as const (Array Int Bool)) false) X true) -> Set(X) (singleton/finite set)
+   * - (store (store (store a!1 11 true) 15 true) 12 true) -> Set(11, 12, 15)
    */
-  def parseInlineSetExpression(expr: String): String = {
+  def parseInlineSetExpression(expr: String, isRefType: Boolean = false): String = {
     val normalized = expr.replaceAll("\\s+", " ").trim
     
-    // Pattern: ((as const (Array T Bool)) true) - universal set
-    if (normalized.contains("(as const") && normalized.endsWith("true)")) {
-      // Check if there are store operations that modify it
-      if (normalized.startsWith("(store")) {
-        // Pattern: (store ((as const ...) true) X false) - universal set minus elements
-        val storePattern = """store\s+\(\(as const[^)]+\)\)\s+true\)\s+(\d+)\s+false""".r
-        val excluded = storePattern.findAllMatchIn(normalized).map(_.group(1)).toList
+    // Check for nested store expressions: (store (store ... X true) Y true) Z true)
+    // This is the most common pattern for finite sets
+    if (normalized.contains("store")) {
+      // Simpler approach: find all patterns of "NUMBER true)" or "NUMBER false)" 
+      // These indicate set membership changes in the store chain
+      val included = scala.collection.mutable.ListBuffer[String]()
+      val excluded = scala.collection.mutable.ListBuffer[String]()
+      
+      // Pattern to find "NUMBER true)" or "NUMBER false)" anywhere in the expression
+      val elementPattern = """\s(-?\d+)\s+(true|false)\)""".r
+      
+      for (m <- elementPattern.findAllMatchIn(normalized)) {
+        val element = m.group(1)
+        val value = m.group(2)
+        if (value == "true") included += element
+        else excluded += element
+      }
+      
+      // Determine the base: look for "(as const (Array T Bool)) true/false)"
+      // If base is false (empty set), included elements are in the set
+      // If base is true (universal set), excluded elements are not in the set
+      val basePattern = """\(as const \(Array [A-Za-z]+ Bool\)\) (true|false)""".r
+      val baseValue = basePattern.findFirstMatchIn(normalized).map(_.group(1)).getOrElse("false")
+      
+      if (baseValue == "true") {
+        // Universal set minus excluded elements
         if (excluded.nonEmpty) {
-          return s"Set(*\\{${excluded.mkString(",")}})"
+          return s"Set(*\\{${excluded.toList.sorted.mkString(",")}})"
         }
+        return "Set(*)"
+      } else {
+        // Empty set plus included elements
+        if (included.nonEmpty) {
+          val sortedElements = included.map(_.toInt).toList.sorted
+          val formatted = if (isRefType) {
+            sortedElements.map(i => s"Ref $i").mkString(", ")
+          } else {
+            sortedElements.mkString(", ")
+          }
+          return s"Set($formatted)"
+        }
+        return "Set()"
       }
-      return "Set(*)"  // Universal set
     }
     
-    // Pattern: ((as const (Array T Bool)) false) - empty set
-    if (normalized.contains("(as const") && normalized.endsWith("false)") && !normalized.startsWith("(store")) {
-      return "Set()"  // Empty set
+    // Pattern: ((as const (Array T Bool)) true) - universal set (no stores)
+    if (normalized.contains("(as const") && normalized.endsWith("true)") && !normalized.contains("store")) {
+      return "Set(*)"
     }
     
-    // Pattern: (store ((as const ...) false) X true) - finite set with elements
-    if (normalized.startsWith("(store") && normalized.contains("false)")) {
-      val storePattern = """store[^)]*\)\)\s+false\)\s+(\d+)\s+true""".r
-      val included = storePattern.findAllMatchIn(normalized).map(_.group(1)).toList
-      if (included.nonEmpty) {
-        return s"Set(${included.map(i => s"Ref $i").mkString(",")})"
-      }
+    // Pattern: ((as const (Array T Bool)) false) - empty set (no stores)
+    if (normalized.contains("(as const") && normalized.endsWith("false)") && !normalized.contains("store")) {
+      return "Set()"
+    }
+    
+    // Handle a!N references - look up the definition
+    if (normalized.matches("[a-zA-Z]![0-9]+")) {
+      // This is a reference to a defined array - we don't have context to resolve it
+      // Return as unknown set
+      return "Set(?)"
     }
     
     // Fallback: show raw expression (truncated if too long)
@@ -856,9 +891,11 @@ object K2Z3 {
               // For Set/Bag, use the FuncDecl lookup
               val setName = x._2.split("!").last.replace(")", "")
               val setValue = z3Model.getFuncDecls.find { x => x.getName.toString == setName }
+              val innerType = Misc.getInnerTypeFromCollectionType(propType)
+              val isRefType = !TypeChecker.isPrimitiveType(innerType)
               if (setValue.isEmpty) {
                 // FuncDecl lookup failed - try parsing inline Set expression
-                x._1.name + ":: " + parseInlineSetExpression(x._2)
+                x._1.name + ":: " + parseInlineSetExpression(x._2, isRefType)
               } else {
                 x._1.name + ":: " + getStringForSets(setValue.get, propType)
               }

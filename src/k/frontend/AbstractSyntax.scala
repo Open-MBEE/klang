@@ -4691,6 +4691,13 @@ case class BinExp(exp1: Exp, op: BinaryOp, exp2: Exp) extends Exp {
               case _ =>
                 s"(= $exp1SMT $exp2SMT)"
             }
+          // Set operations - generate proper Z3 array map expressions
+          case SETINTER =>
+            s"((_ map and) $exp1SMT $exp2SMT)"
+          case SETUNION =>
+            s"((_ map or) $exp1SMT $exp2SMT)"
+          case SETDIFF =>
+            s"((_ map and) $exp1SMT ((_ map not) $exp2SMT))"
           case _ =>
             val opSMT = op.toSMT
             s"($opSMT $exp1SMT $exp2SMT)"
