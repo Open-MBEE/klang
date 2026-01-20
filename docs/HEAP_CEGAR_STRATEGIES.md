@@ -76,3 +76,44 @@ heap_tree.k               SAT      530ms SAT      533ms SAT      534ms SAT      
 - Refinement doubles bounds (up to `maxBound`, default 256)
 - See `UnifiedSolver.scala` for implementation details
 
+## Instance Creation Strategy
+
+The current implementation creates instances in two phases during SMT generation:
+
+1. **Strategy 1 (DFS from roots)**: Traverse from top-level class instances via
+   `getClassesToChase(1)`, counting required objects based on class properties
+
+2. **Subclass Propagation**: If parent class has N instances, all subclasses get
+   at least N instances (`propagateInstancesToSubclasses()`)
+
+### ROADMAP: Deferred Subclass Instance Strategy
+
+**Issue**: The subclass propagation phase creates many instances upfront, even when
+simpler solutions exist. For example, a constraint requiring one `S_Exp` creates
+instances for all subclasses (`Atom`, `List`, etc.) even if a simple `Atom` suffices.
+
+**Proposed Improvement**: Defer subclass instance creation across CEGAR iterations:
+
+| Iteration | Strategy |
+|-----------|----------|
+| 1 | Strategy 1 only (roots, no subclass propagation) |
+| 2 | Add child class instances for parent class instances |
+| 3+ | Double instance multiplier |
+
+**Benefits**:
+- Simpler solutions found faster (often iteration 1 suffices)
+- More minimal models (fewer spurious objects)
+- Faster first-iteration solve times
+
+**Implementation Notes**:
+- Control via flag in `ASTOptions` or `UnifiedSolver`
+- CEGAR loop in `solveWithHeapCegar()` tracks iteration count
+- Iteration 1: set `skipSubclassPropagation = true`
+- Iteration 2: set `skipSubclassPropagation = false`, re-generate SMT
+- Iteration 3+: increase multiplier as before
+
+**Related Code**:
+- `AbstractSyntax.scala` lines 1160-1185: `propagateInstancesToSubclasses()`
+- `UnifiedSolver.scala` lines 215-330: `solveWithHeapCegar()`
+- `ASTOptions.instanceMultiplier`: controls instance count per class
+

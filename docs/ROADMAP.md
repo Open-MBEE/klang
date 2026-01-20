@@ -31,6 +31,17 @@ The long-term goal is for K to be **self-hosting** - the K language implementati
 - Goal: move this state building to TypeResolver or eliminate need for it
 - Currently blocked by property-as-constraint and other complex patterns
 
+### Deferred Subclass Instance Strategy (Heap CEGAR Optimization)
+- **Problem**: Current heap CEGAR creates subclass instances immediately when parent
+  class instances are required. This inflates models with unnecessary objects.
+- **Example**: `req s: S_Exp` creates `Atom`, `List`, etc. even if just `Atom` works
+- **Proposed**: Defer subclass instance creation to second CEGAR iteration:
+  - Iteration 1: Strategy 1 only (DFS from roots, no subclass propagation)
+  - Iteration 2: Add child class instances for parent class requirements  
+  - Iteration 3+: Double the instance multiplier
+- **Benefit**: Simpler solutions found faster; more minimal models
+- **See**: [HEAP_CEGAR_STRATEGIES.md](HEAP_CEGAR_STRATEGIES.md) for implementation details
+
 ## Future Opportunities
 
 ### Test Infrastructure as K
