@@ -549,20 +549,21 @@ object K2Z3 {
     hasSoftConstraints = false
     optimize = null  // Will be created lazily if needed via getOptimize()
 
-    // NOTE: Do NOT close the old Z3 context. Calling ctx.close() can cause Z3
-    // to crash (SIGABRT/SIGSEGV) even when called after creating a new context.
-    // Let the old context be garbage collected instead.
-
-    // Create fresh Z3 context
-    ctx = new Context(cfg.asJava)
+    // If the last solve timed out, we need a fresh Z3 context to avoid 
+    // corruption in the Z3 native library. Otherwise, reuse the existing context.
+    if (ctx == null || lastSolveTimedOut) {
+      if (lastSolveTimedOut) {
+        logDebug("Creating fresh Z3 context after timeout")
+      }
+      ctx = new Context(cfg.asJava)
+      lastSolveTimedOut = false
+    }
+    
     params = ctx.mkParams
     params.add("unsat_core", true)
     solver = ctx.mkSolver
     solver.setParameters(params)
     clearInterrupt()  // Reset interrupt state for new solve
-
-    // Force garbage collection to help release old Z3 contexts
-    System.gc()
   }
 
   /** Get the Optimize solver, creating it lazily if needed */
@@ -1310,6 +1311,7 @@ object K2Z3 {
   var solverTimeout: Option[Long] = None
   var bestEffortMode: Boolean = false
   var lastPartialModel: Option[com.microsoft.z3.Model] = None
+  var lastSolveTimedOut: Boolean = false  // Track if last solve timed out - needs fresh context
 
   /**
    * Extract @timeout and @bestEffort annotations from model
@@ -1960,6 +1962,7 @@ object K2Z3 {
             z3Model = null
         }
       } else if (isTimeout && bestEffortMode) {
+        lastSolveTimedOut = true  // Mark that we need fresh context on next reset
         log("⚠️  TIMEOUT - Returning best-effort result")
         log(s"Solver timed out after ${solverTimeout.getOrElse("unknown")}ms")
         // Try to get whatever model state we have
@@ -1979,6 +1982,7 @@ object K2Z3 {
             z3Model = null
         }
       } else if (isTimeout) {
+        lastSolveTimedOut = true  // Mark that we need fresh context on next reset
         log(s"⛔ TIMEOUT after ${solverTimeout.getOrElse("unknown")}ms")
         log("Solver did not complete. Use @bestEffort annotation to get partial results.")
         z3Model = null
