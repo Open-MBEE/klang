@@ -110,8 +110,12 @@ typeDeclaration:
   'type' Identifier (typeParameters? '=' type )?
 ;
 
+// Property declaration requires EITHER an explicit type OR an initialization expression (or both).
+// A bare identifier alone does NOT match propertyDeclaration - it will match expression instead.
 propertyDeclaration:
-  propertyModifier* Identifier (':' type)? multiplicity? (('='|':=') expression)?
+  propertyModifier+ Identifier (':' type)? multiplicity? (('='|':=') expression)?   // with modifier(s)
+| propertyModifier* Identifier ':' type multiplicity? (('='|':=') expression)?      // with explicit type
+| propertyModifier* Identifier multiplicity? ('='|':=') expression                  // with initializer (type inferred)
 ;
 
 propertyModifier:
