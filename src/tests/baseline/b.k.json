@@ -1,0 +1,955 @@
+{
+  "name": "b.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage b {\n\nimport a\nimport c\nimport e\n\nclass B extending A,C,E {\n  y:Int\n}\n\n\npackage e {\n\nimport f\n\nclass E extending F {\n  eint:Int\n}\n\n\npackage f {\n\nclass F {\n  freal:Real\n}\n\n\n}\n\n\n}\n\npackage c {\n\nimport d\n\nclass C extending D {\n  z:Real\n}\n\n\npackage d {\n\nimport e\n\nclass D extending E {\n  j:Bool\n}\n\n\npackage e {\n\nimport f\n\nclass E extending F {\n  eint:Int\n}\n\n\npackage f {\n\nclass F {\n  freal:Real\n}\n\n\n}\n\n\n}\n\n\n}\n\n\n}\n\npackage a {\n\nimport d\n\nclass A extending D {\n  x:Int\n}\n\n\npackage d {\n\nimport e\n\nclass D extending E {\n  j:Bool\n}\n\n\npackage e {\n\nimport f\n\nclass E extending F {\n  eint:Int\n}\n\n\npackage f {\n\nclass F {\n  freal:Real\n}\n\n\n}\n\n\n}\n\n\n}\n\n\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((B (mk-B (freal Real)(eint Int)(j Bool)(x Int)(z Real)(y Int)))))\n(declare-datatypes () ((E (mk-E (freal Real)(eint Int)))))\n(declare-datatypes () ((D (mk-D (freal Real)(eint Int)(j Bool)))))\n(declare-datatypes () ((F (mk-F (freal Real)))))\n(declare-datatypes () ((C (mk-C (freal Real)(eint Int)(j Bool)(z Real)))))\n(declare-datatypes () ((A (mk-A (freal Real)(eint Int)(j Bool)(x Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-B (sel-B B))\n  (lift-E (sel-E E))\n  (lift-D (sel-D D))\n  (lift-F (sel-F F))\n  (lift-C (sel-C C))\n  (lift-A (sel-A A))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-B ((this Ref)) Bool\n  (is-lift-B (deref this))\n)\n\n(define-fun deref-B ((this Ref)) B\n  (sel-B (deref this))\n)\n\n(define-fun deref-is-E ((this Ref)) Bool\n  (is-lift-E (deref this))\n)\n\n(define-fun deref-E ((this Ref)) E\n  (sel-E (deref this))\n)\n\n(define-fun deref-is-D ((this Ref)) Bool\n  (is-lift-D (deref this))\n)\n\n(define-fun deref-D ((this Ref)) D\n  (sel-D (deref this))\n)\n\n(define-fun deref-is-F ((this Ref)) Bool\n  (is-lift-F (deref this))\n)\n\n(define-fun deref-F ((this Ref)) F\n  (sel-F (deref this))\n)\n\n(define-fun deref-is-C ((this Ref)) Bool\n  (is-lift-C (deref this))\n)\n\n(define-fun deref-C ((this Ref)) C\n  (sel-C (deref this))\n)\n\n(define-fun deref-is-A ((this Ref)) Bool\n  (is-lift-A (deref this))\n)\n\n(define-fun deref-A ((this Ref)) A\n  (sel-A (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-B ((this Ref)) Bool\n  (deref-is-B this)\n)\n\n(define-fun deref-isa-E ((this Ref)) Bool\n  (or\n    (deref-is-E this)\n    (deref-is-B this)\n    (deref-is-D this)\n    (deref-is-C this)\n    (deref-is-A this)\n  )\n)\n\n(define-fun deref-isa-D ((this Ref)) Bool\n  (or\n    (deref-is-D this)\n    (deref-is-C this)\n    (deref-is-A this)\n    (deref-is-B this)\n  )\n)\n\n(define-fun deref-isa-F ((this Ref)) Bool\n  (or\n    (deref-is-F this)\n    (deref-is-E this)\n    (deref-is-B this)\n    (deref-is-D this)\n    (deref-is-C this)\n    (deref-is-A this)\n  )\n)\n\n(define-fun deref-isa-C ((this Ref)) Bool\n  (or\n    (deref-is-C this)\n    (deref-is-B this)\n  )\n)\n\n(define-fun deref-isa-A ((this Ref)) Bool\n  (or\n    (deref-is-A this)\n    (deref-is-B this)\n  )\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; --------------------------\n;   Invariant for class B:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-B B)\n\n\n\n; --------------------------\n;   Invariant for class E:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-E E)\n\n\n\n; --------------------------\n;   Invariant for class D:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-D D)\n\n\n\n; --------------------------\n;   Invariant for class F:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-F F)\n\n\n\n; --------------------------\n;   Invariant for class C:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-C C)\n\n\n\n; --------------------------\n;   Invariant for class A:\n; --------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-A A)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        4 (lift-B const-4-B))\n        1 (lift-E const-1-E))\n        6 (lift-D const-6-D))\n        2 (lift-F const-2-F))\n        5 (lift-C const-5-C))\n        3 (lift-A const-3-A))\n  )\n)\n\n",
+  "smtModel": "(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun const-4-B () B\n  (mk-B 0.0 0 false 0 0.0 0))\n(define-fun const-1-E () E\n  (mk-E 0.0 0))\n(define-fun const-6-D () D\n  (mk-D 0.0 0 false))\n(define-fun const-2-F () F\n  (mk-F 0.0))\n(define-fun const-5-C () C\n  (mk-C 0.0 0 false 0.0))\n(define-fun const-3-A () A\n  (mk-A 0.0 0 false 0))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         4\n                         (lift-B (mk-B 0.0 0 false 0 0.0 0)))\n                  1\n                  (lift-E (mk-E 0.0 0)))))\n(let ((a!2 (store (store a!1 6 (lift-D (mk-D 0.0 0 false)))\n                  2\n                  (lift-F (mk-F 0.0)))))\n  (store (store a!2 5 (lift-C (mk-C 0.0 0 false 0.0)))\n         3\n         (lift-A (mk-A 0.0 0 false 0))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["b"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "b",
+        "imports": [
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["a"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          },
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["c"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          },
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["e"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          }
+        ],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "B",
+          "typeparams": [],
+          "extending": [
+            {
+              "args": [],
+              "ident": {
+                "names": ["A"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            {
+              "args": [],
+              "ident": {
+                "names": ["C"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            {
+              "args": [],
+              "ident": {
+                "names": ["E"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          ],
+          "members": [{
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"}
+          }]
+        }],
+        "packages": [
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["e"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "e",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["f"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "E",
+                "typeparams": [],
+                "extending": [{
+                  "args": [],
+                  "ident": {
+                    "names": ["F"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "eint",
+                  "ty": {"type": "IntType"}
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["f"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "f",
+                  "imports": [],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "F",
+                    "typeparams": [],
+                    "extending": [],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "freal",
+                      "ty": {"type": "RealType"}
+                    }]
+                  }],
+                  "packages": []
+                }
+              }]
+            }
+          },
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["c"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "c",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [{
+                  "args": [],
+                  "ident": {
+                    "names": ["D"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "z",
+                  "ty": {"type": "RealType"}
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "d",
+                  "imports": [{
+                    "type": "ImportDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "star": "false",
+                    "language": "DefaultImport"
+                  }],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "D",
+                    "typeparams": [],
+                    "extending": [{
+                      "args": [],
+                      "ident": {
+                        "names": ["E"],
+                        "type": "QualifiedName"
+                      },
+                      "type": "IdentType"
+                    }],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "j",
+                      "ty": {"type": "BoolType"}
+                    }]
+                  }],
+                  "packages": [{
+                    "type": "PackageDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "model": {
+                      "type": "Model",
+                      "packageName": "e",
+                      "imports": [{
+                        "type": "ImportDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "star": "false",
+                        "language": "DefaultImport"
+                      }],
+                      "annotations": [],
+                      "decls": [{
+                        "type": "EntityDecl",
+                        "annotations": [],
+                        "entityToken": "class",
+                        "ident": "E",
+                        "typeparams": [],
+                        "extending": [{
+                          "args": [],
+                          "ident": {
+                            "names": ["F"],
+                            "type": "QualifiedName"
+                          },
+                          "type": "IdentType"
+                        }],
+                        "members": [{
+                          "type": "PropertyDecl",
+                          "modifiers": [],
+                          "annotations": [],
+                          "name": "eint",
+                          "ty": {"type": "IntType"}
+                        }]
+                      }],
+                      "packages": [{
+                        "type": "PackageDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "model": {
+                          "type": "Model",
+                          "packageName": "f",
+                          "imports": [],
+                          "annotations": [],
+                          "decls": [{
+                            "type": "EntityDecl",
+                            "annotations": [],
+                            "entityToken": "class",
+                            "ident": "F",
+                            "typeparams": [],
+                            "extending": [],
+                            "members": [{
+                              "type": "PropertyDecl",
+                              "modifiers": [],
+                              "annotations": [],
+                              "name": "freal",
+                              "ty": {"type": "RealType"}
+                            }]
+                          }],
+                          "packages": []
+                        }
+                      }]
+                    }
+                  }]
+                }
+              }]
+            }
+          },
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["a"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "a",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [{
+                  "args": [],
+                  "ident": {
+                    "names": ["D"],
+                    "type": "QualifiedName"
+                  },
+                  "type": "IdentType"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "x",
+                  "ty": {"type": "IntType"}
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "d",
+                  "imports": [{
+                    "type": "ImportDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "star": "false",
+                    "language": "DefaultImport"
+                  }],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "D",
+                    "typeparams": [],
+                    "extending": [{
+                      "args": [],
+                      "ident": {
+                        "names": ["E"],
+                        "type": "QualifiedName"
+                      },
+                      "type": "IdentType"
+                    }],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "j",
+                      "ty": {"type": "BoolType"}
+                    }]
+                  }],
+                  "packages": [{
+                    "type": "PackageDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "model": {
+                      "type": "Model",
+                      "packageName": "e",
+                      "imports": [{
+                        "type": "ImportDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "star": "false",
+                        "language": "DefaultImport"
+                      }],
+                      "annotations": [],
+                      "decls": [{
+                        "type": "EntityDecl",
+                        "annotations": [],
+                        "entityToken": "class",
+                        "ident": "E",
+                        "typeparams": [],
+                        "extending": [{
+                          "args": [],
+                          "ident": {
+                            "names": ["F"],
+                            "type": "QualifiedName"
+                          },
+                          "type": "IdentType"
+                        }],
+                        "members": [{
+                          "type": "PropertyDecl",
+                          "modifiers": [],
+                          "annotations": [],
+                          "name": "eint",
+                          "ty": {"type": "IntType"}
+                        }]
+                      }],
+                      "packages": [{
+                        "type": "PackageDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "model": {
+                          "type": "Model",
+                          "packageName": "f",
+                          "imports": [],
+                          "annotations": [],
+                          "decls": [{
+                            "type": "EntityDecl",
+                            "annotations": [],
+                            "entityToken": "class",
+                            "ident": "F",
+                            "typeparams": [],
+                            "extending": [],
+                            "members": [{
+                              "type": "PropertyDecl",
+                              "modifiers": [],
+                              "annotations": [],
+                              "name": "freal",
+                              "ty": {"type": "RealType"}
+                            }]
+                          }],
+                          "packages": []
+                        }
+                      }]
+                    }
+                  }]
+                }
+              }]
+            }
+          }
+        ]
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["b"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "b",
+        "imports": [
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["a"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          },
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["c"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          },
+          {
+            "type": "ImportDecl",
+            "name": {
+              "names": ["e"],
+              "type": "QualifiedName"
+            },
+            "star": "false",
+            "language": "DefaultImport"
+          }
+        ],
+        "annotations": [],
+        "decls": [{
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "B",
+          "typeparams": [],
+          "extending": [
+            {
+              "type": "ElementValue",
+              "element": "A"
+            },
+            {
+              "type": "ElementValue",
+              "element": "C"
+            },
+            {
+              "type": "ElementValue",
+              "element": "E"
+            }
+          ],
+          "members": [{
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }]
+        }],
+        "packages": [
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["e"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "e",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["f"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "E",
+                "typeparams": [],
+                "extending": [{
+                  "type": "ElementValue",
+                  "element": "F"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "eint",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Integer"
+                  }
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["f"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "f",
+                  "imports": [],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "F",
+                    "typeparams": [],
+                    "extending": [],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "freal",
+                      "ty": {
+                        "type": "ElementValue",
+                        "element": "Double"
+                      }
+                    }]
+                  }],
+                  "packages": []
+                }
+              }]
+            }
+          },
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["c"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "c",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "C",
+                "typeparams": [],
+                "extending": [{
+                  "type": "ElementValue",
+                  "element": "D"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "z",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Double"
+                  }
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "d",
+                  "imports": [{
+                    "type": "ImportDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "star": "false",
+                    "language": "DefaultImport"
+                  }],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "D",
+                    "typeparams": [],
+                    "extending": [{
+                      "type": "ElementValue",
+                      "element": "E"
+                    }],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "j",
+                      "ty": {
+                        "type": "ElementValue",
+                        "element": "Boolean"
+                      }
+                    }]
+                  }],
+                  "packages": [{
+                    "type": "PackageDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "model": {
+                      "type": "Model",
+                      "packageName": "e",
+                      "imports": [{
+                        "type": "ImportDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "star": "false",
+                        "language": "DefaultImport"
+                      }],
+                      "annotations": [],
+                      "decls": [{
+                        "type": "EntityDecl",
+                        "annotations": [],
+                        "entityToken": "class",
+                        "ident": "E",
+                        "typeparams": [],
+                        "extending": [{
+                          "type": "ElementValue",
+                          "element": "F"
+                        }],
+                        "members": [{
+                          "type": "PropertyDecl",
+                          "modifiers": [],
+                          "annotations": [],
+                          "name": "eint",
+                          "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                          }
+                        }]
+                      }],
+                      "packages": [{
+                        "type": "PackageDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "model": {
+                          "type": "Model",
+                          "packageName": "f",
+                          "imports": [],
+                          "annotations": [],
+                          "decls": [{
+                            "type": "EntityDecl",
+                            "annotations": [],
+                            "entityToken": "class",
+                            "ident": "F",
+                            "typeparams": [],
+                            "extending": [],
+                            "members": [{
+                              "type": "PropertyDecl",
+                              "modifiers": [],
+                              "annotations": [],
+                              "name": "freal",
+                              "ty": {
+                                "type": "ElementValue",
+                                "element": "Double"
+                              }
+                            }]
+                          }],
+                          "packages": []
+                        }
+                      }]
+                    }
+                  }]
+                }
+              }]
+            }
+          },
+          {
+            "type": "PackageDecl",
+            "name": {
+              "names": ["a"],
+              "type": "QualifiedName"
+            },
+            "model": {
+              "type": "Model",
+              "packageName": "a",
+              "imports": [{
+                "type": "ImportDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "star": "false",
+                "language": "DefaultImport"
+              }],
+              "annotations": [],
+              "decls": [{
+                "type": "EntityDecl",
+                "annotations": [],
+                "entityToken": "class",
+                "ident": "A",
+                "typeparams": [],
+                "extending": [{
+                  "type": "ElementValue",
+                  "element": "D"
+                }],
+                "members": [{
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "x",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Integer"
+                  }
+                }]
+              }],
+              "packages": [{
+                "type": "PackageDecl",
+                "name": {
+                  "names": ["d"],
+                  "type": "QualifiedName"
+                },
+                "model": {
+                  "type": "Model",
+                  "packageName": "d",
+                  "imports": [{
+                    "type": "ImportDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "star": "false",
+                    "language": "DefaultImport"
+                  }],
+                  "annotations": [],
+                  "decls": [{
+                    "type": "EntityDecl",
+                    "annotations": [],
+                    "entityToken": "class",
+                    "ident": "D",
+                    "typeparams": [],
+                    "extending": [{
+                      "type": "ElementValue",
+                      "element": "E"
+                    }],
+                    "members": [{
+                      "type": "PropertyDecl",
+                      "modifiers": [],
+                      "annotations": [],
+                      "name": "j",
+                      "ty": {
+                        "type": "ElementValue",
+                        "element": "Boolean"
+                      }
+                    }]
+                  }],
+                  "packages": [{
+                    "type": "PackageDecl",
+                    "name": {
+                      "names": ["e"],
+                      "type": "QualifiedName"
+                    },
+                    "model": {
+                      "type": "Model",
+                      "packageName": "e",
+                      "imports": [{
+                        "type": "ImportDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "star": "false",
+                        "language": "DefaultImport"
+                      }],
+                      "annotations": [],
+                      "decls": [{
+                        "type": "EntityDecl",
+                        "annotations": [],
+                        "entityToken": "class",
+                        "ident": "E",
+                        "typeparams": [],
+                        "extending": [{
+                          "type": "ElementValue",
+                          "element": "F"
+                        }],
+                        "members": [{
+                          "type": "PropertyDecl",
+                          "modifiers": [],
+                          "annotations": [],
+                          "name": "eint",
+                          "ty": {
+                            "type": "ElementValue",
+                            "element": "Integer"
+                          }
+                        }]
+                      }],
+                      "packages": [{
+                        "type": "PackageDecl",
+                        "name": {
+                          "names": ["f"],
+                          "type": "QualifiedName"
+                        },
+                        "model": {
+                          "type": "Model",
+                          "packageName": "f",
+                          "imports": [],
+                          "annotations": [],
+                          "decls": [{
+                            "type": "EntityDecl",
+                            "annotations": [],
+                            "entityToken": "class",
+                            "ident": "F",
+                            "typeparams": [],
+                            "extending": [],
+                            "members": [{
+                              "type": "PropertyDecl",
+                              "modifiers": [],
+                              "annotations": [],
+                              "name": "freal",
+                              "ty": {
+                                "type": "ElementValue",
+                                "element": "Double"
+                              }
+                            }]
+                          }],
+                          "packages": []
+                        }
+                      }]
+                    }
+                  }]
+                }
+              }]
+            }
+          }
+        ]
+      }
+    }]
+  }
+}

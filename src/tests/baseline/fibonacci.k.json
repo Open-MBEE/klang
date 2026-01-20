@@ -1,0 +1,407 @@
+{
+  "name": "fibonacci.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage nasa.jpl.k.fibonacci {\n\nfun fib(n:Int) : Int\n{\n  match n with\n    case 0 => 0\n    case 1 => 1\n    case x => fib(x - 1) + fib(x - 2)\n  }\n}\n\nfib_5:Int = fib(5)\n\nfib_7:Int = fib(7)\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (fib_5 Int)(fib_7 Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.fib_5: ---\n\n(define-fun TopLevelDeclarations!fib_5 ((this Ref)) Int\n  (fib_5 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.fib_7: ---\n\n(define-fun TopLevelDeclarations!fib_7 ((this Ref)) Int\n  (fib_7 (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; -------------------------------------------\n;   Methods for class TopLevelDeclarations:\n; -------------------------------------------\n\n(define-fun-rec TopLevelDeclarations.fib ((this Ref)(n Int)) Int\n  (ite (= n 0) 0 (ite (= n 1) 1 (let ((x n)) (+ (TopLevelDeclarations.fib this (- x 1)) (TopLevelDeclarations.fib this (- x 2))))))\n)\n\n(define-fun-rec TopLevelDeclarations!fib ((this Ref)(n Int)) Int\n  (ite (= n 0) 0 (ite (= n 1) 1 (let ((x n)) (+ (TopLevelDeclarations!fib this (- x 1)) (TopLevelDeclarations!fib this (- x 2))))))\n)\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (TopLevelDeclarations!fib_5 this) (TopLevelDeclarations!fib this 5))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (= (TopLevelDeclarations!fib_7 this) (TopLevelDeclarations!fib this 7))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 5 13))\n(define-fun _xkassert0 () Bool\n  (= (fib_5 (sel-TopLevelDeclarations (select heap 0)))\n   ((_ TopLevelDeclarations!fib 0) 0 5)))\n(define-fun _xkassert1 () Bool\n  (= (fib_7 (sel-TopLevelDeclarations (select heap 0)))\n   ((_ TopLevelDeclarations!fib 0) 0 7)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store ((as const (Array Int Any)) null)\n       0\n       (lift-TopLevelDeclarations (mk-TopLevelDeclarations 5 13))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "nasa",
+          "jpl",
+          "k",
+          "fibonacci"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "nasa.jpl.k.fibonacci",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "FunDecl",
+            "ident": "fib",
+            "typeParams": [],
+            "params": [{
+              "type": "Param",
+              "name": "n",
+              "ty": {"type": "IntType"}
+            }],
+            "ty": {"type": "IntType"},
+            "spec": [],
+            "body": [{
+              "type": "ExpressionDecl",
+              "exp": {
+                "type": "MatchExp",
+                "exp": {
+                  "ident": "n",
+                  "type": "IdentExp"
+                },
+                "m": [
+                  {
+                    "type": "MatchCase",
+                    "patterns": [{
+                      "type": "LiteralPattern",
+                      "literal": {
+                        "i": 0,
+                        "type": "LiteralInteger"
+                      }
+                    }],
+                    "exp": {
+                      "i": 0,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  {
+                    "type": "MatchCase",
+                    "patterns": [{
+                      "type": "LiteralPattern",
+                      "literal": {
+                        "i": 1,
+                        "type": "LiteralInteger"
+                      }
+                    }],
+                    "exp": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  {
+                    "type": "MatchCase",
+                    "patterns": [{
+                      "ident": "x",
+                      "type": "IdentPattern"
+                    }],
+                    "exp": {
+                      "type": "BinExp",
+                      "op": "Plus",
+                      "exp1": {
+                        "type": "FunApplExp",
+                        "exp1": {
+                          "ident": "fib",
+                          "type": "IdentExp"
+                        },
+                        "args": [{
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "type": "BinExp",
+                            "op": "Minus",
+                            "exp1": {
+                              "ident": "x",
+                              "type": "IdentExp"
+                            },
+                            "exp2": {
+                              "i": 1,
+                              "type": "LiteralInteger"
+                            }
+                          }
+                        }]
+                      },
+                      "exp2": {
+                        "type": "FunApplExp",
+                        "exp1": {
+                          "ident": "fib",
+                          "type": "IdentExp"
+                        },
+                        "args": [{
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "type": "BinExp",
+                            "op": "Minus",
+                            "exp1": {
+                              "ident": "x",
+                              "type": "IdentExp"
+                            },
+                            "exp2": {
+                              "i": 2,
+                              "type": "LiteralInteger"
+                            }
+                          }
+                        }]
+                      }
+                    }
+                  }
+                ]
+              },
+              "annotations": []
+            }],
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fib_5",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "fib",
+                "type": "IdentExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "i": 5,
+                  "type": "LiteralInteger"
+                }
+              }]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fib_7",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "fib",
+                "type": "IdentExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "i": 7,
+                  "type": "LiteralInteger"
+                }
+              }]
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": [
+          "nasa",
+          "jpl",
+          "k",
+          "fibonacci"
+        ],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "nasa.jpl.k.fibonacci",
+        "imports": [],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "FunDecl",
+            "ident": "fib",
+            "typeParams": [],
+            "params": [{
+              "type": "Param",
+              "name": "n",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Integer"
+              }
+            }],
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "spec": [],
+            "body": [{
+              "type": "ExpressionDecl",
+              "exp": {
+                "type": "Expression",
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "MatchExp"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "MatchCase"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 0
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 0
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "MatchCase"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 1
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 1
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "MatchCase"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "Plus"
+                          },
+                          {
+                            "type": "Expression",
+                            "operand": [
+                              {
+                                "element": "fib",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "operand": [
+                                  {
+                                    "type": "ElementValue",
+                                    "element": "Minus"
+                                  },
+                                  {
+                                    "element": "x",
+                                    "type": "ElementValue"
+                                  },
+                                  {
+                                    "type": "LiteralInteger",
+                                    "integer": 1
+                                  }
+                                ],
+                                "type": "Expression"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Expression",
+                            "operand": [
+                              {
+                                "element": "fib",
+                                "type": "ElementValue"
+                              },
+                              {
+                                "operand": [
+                                  {
+                                    "type": "ElementValue",
+                                    "element": "Minus"
+                                  },
+                                  {
+                                    "element": "x",
+                                    "type": "ElementValue"
+                                  },
+                                  {
+                                    "type": "LiteralInteger",
+                                    "integer": 2
+                                  }
+                                ],
+                                "type": "Expression"
+                              }
+                            ]
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "x"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "annotations": []
+            }],
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fib_5",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "element": "fib",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 5
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "fib_7",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "element": "fib",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 7
+                }
+              ]
+            }
+          }
+        ],
+        "packages": []
+      }
+    }]
+  }
+}
