@@ -1,5 +1,5 @@
--- @expected UNKNOWN
--- BUG: event keyword not fully implemented - creates unknown constants
+-- @expected SAT
+-- BUG: event keyword not fully implemented - gets UNKNOWN
 package examples.order
 
 class <event> Event {

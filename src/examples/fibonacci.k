@@ -1,5 +1,5 @@
--- @expected ERROR
--- Recursive functions are not supported
+-- @expected SAT
+-- BUG: Recursive functions are not supported (gets ERROR)
 package nasa.jpl.k.fibonacci
 
 fun fib (n: Int) : Int {

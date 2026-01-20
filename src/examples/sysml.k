@@ -1,5 +1,5 @@
--- @expected UNKNOWN
--- BUG: Multiple issues with SMT generation for this file
+-- @expected SAT
+-- BUG: Multiple issues with SMT generation - gets UNKNOWN
 -- Package
 // how do i create a new package?
 // how do i say what package it is inside of?
