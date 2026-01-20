@@ -224,7 +224,7 @@ expression:
   | '!' expression #NotExp
   | '{' block  '}' {$ctx.parent instanceof ModelParser.ModelContext}? #BlockExp
   | 'if' expression 'then' expression ('else' expression)? #IfExp
-  | 'match' expression 'with' match+  #MatchExp
+  | 'match' expression 'with' match+ 'end' #MatchExp
   | 'while' expression 'do' expression  #WhileExp
   | 'for' pattern 'in' expression 'do' expression # ForExp 
   | collectionKind '{' expressionList? '}' #SetEnumExp

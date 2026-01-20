@@ -1,4 +1,4 @@
-// Generated from /Users/bclement/git/klang2/src/grammar/Model.g4 by ANTLR 4.7
+// Generated from /Users/bclement/git/klang/src/grammar/Model.g4 by ANTLR 4.7
 package k.frontend;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

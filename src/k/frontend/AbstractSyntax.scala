@@ -2693,6 +2693,23 @@ case class FunDecl(ident: String,
   // Get the effective return type (explicit or inferred)
   def getReturnType: Option[Type] = ty.orElse(inferredType)
 
+  // Check if this function is recursive (calls itself)
+  def isRecursive: Boolean = {
+    def containsSelfCall(exp: Exp): Boolean = {
+      exp match {
+        case FunApplExp(IdentExp(name), _) if name == ident => true
+        case _ => exp.children.exists {
+          case e: Exp => containsSelfCall(e)
+          case _ => false
+        }
+      }
+    }
+    body.exists {
+      case ExpressionDecl(e) => containsSelfCall(e)
+      case _ => false
+    }
+  }
+
   // Get the return type, defaulting to UnitType if not available
   def getReturnTypeOrUnit: Type = getReturnType.getOrElse(UnitType)
 
@@ -2770,13 +2787,16 @@ case class FunDecl(ident: String,
         result += ")"
       }
     } else {
+      // For recursive functions, use define-fun-rec
+      val defineKeyword = if (isRecursive) "define-fun-rec" else "define-fun"
+      
       val bodySMTWithSubtyping = UtilSMT.memberList2SMT(body, className, true)
-      result += s"(define-fun $className.$ident ($parameters) $resultType\n"
+      result += s"($defineKeyword $className.$ident ($parameters) $resultType\n"
       result += s"$bodySMTWithSubtyping\n"
       result += ")\n"
       result += "\n"
       val bodySMTNoSubtyping = UtilSMT.memberList2SMT(body, className, false)
-      result += s"(define-fun $className!$ident ($parameters) $resultType\n"
+      result += s"($defineKeyword $className!$ident ($parameters) $resultType\n"
       result += s"$bodySMTNoSubtyping\n"
       result += ")"
     }
@@ -4179,6 +4199,68 @@ case class MatchExp(exp: Exp, m: List[MatchCase]) extends Exp {
     moveOut
     result += indent + "}"
     result
+  }
+
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Convert match expression to nested ite (if-then-else) expressions
+    // match n with
+    //   case 0 => result0
+    //   case 1 => result1
+    //   case x => resultX
+    // becomes:
+    //   (ite (= n 0) result0 (ite (= n 1) result1 (let ((x n)) resultX)))
+    
+    val expSMT = exp.toSMT(className, subTyping)
+    
+    def patternToCondition(pattern: Pattern): (String, Map[String, String]) = {
+      pattern match {
+        case LiteralPattern(lit) =>
+          val litSMT = lit.toSMT(className, subTyping)
+          (s"(= $expSMT $litSMT)", Map.empty)
+        case IdentPattern(ident) =>
+          // Identifier pattern always matches, binding the value
+          ("true", Map(ident -> expSMT))
+        case _ =>
+          UtilSMT.error(s"Unsupported pattern type in match expression: $pattern")
+      }
+    }
+    
+    def casesToSMT(cases: List[MatchCase]): String = {
+      cases match {
+        case Nil =>
+          // Should not happen if match is exhaustive
+          UtilSMT.error("Empty match expression")
+        case MatchCase(patterns, resultExp) :: Nil =>
+          // Last case - can be a catch-all
+          patterns.head match {
+            case IdentPattern(ident) =>
+              // Catch-all pattern with binding: (let ((x expr)) result)
+              val resultSMT = resultExp.toSMT(className, subTyping)
+              // For SMT, we substitute the identifier with the expression value
+              s"(let (($ident $expSMT)) $resultSMT)"
+            case _ =>
+              val (cond, _) = patternToCondition(patterns.head)
+              val resultSMT = resultExp.toSMT(className, subTyping)
+              // For the last case with a literal, we still need it to be conditional
+              // but since it's last, the false branch won't be reached if prior cases failed
+              resultSMT
+          }
+        case MatchCase(patterns, resultExp) :: rest =>
+          val (cond, bindings) = patternToCondition(patterns.head)
+          val resultSMT = resultExp.toSMT(className, subTyping)
+          val restSMT = casesToSMT(rest)
+          
+          if (cond == "true") {
+            // Binding pattern, use let
+            val ident = bindings.keys.head
+            s"(let (($ident $expSMT)) $resultSMT)"
+          } else {
+            s"(ite $cond $resultSMT $restSMT)"
+          }
+      }
+    }
+    
+    casesToSMT(m)
   }
 
   override def toJson1 = {

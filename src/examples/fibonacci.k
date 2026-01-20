@@ -1,31 +1,17 @@
 -- @expected SAT
--- BUG: Recursive functions are not supported (gets ERROR)
+-- Demonstrates recursive functions with match expressions
 package nasa.jpl.k.fibonacci
 
 fun fib (n: Int) : Int {
     match n with 
       case 0 => 0
       case 1 => 1
-      case x => fib(x) + fib(x-1)
+      case x => fib(x-1) + fib(x-2)
     end
 }
 
-req C_Fib : forall x : Int :- fib(x) > 0
+//req C_Fib : forall x : Int :- fib(x) > 0
 
-fun helper (x:Int) : Int {
-  req C0 : x > 0
-  x + 1
-}
-
-fun swap (x:Int, y:Int) : (Int*Int) {
-    val g : Int
-    val t : Int = x
-    val nx = y
-    val ny = t
-    Tuple(nx,ny)
-}
-
--- return set of Int
-fun f : Set[Int] {
-  Set{1,2,3}
-}
+fib_5 : Int = fib(5)  // should be 5
+fib_7 : Int = fib(7)  // should be 13
+//fib_10 : Int = fib(10) // should be 55

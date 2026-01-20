@@ -2193,6 +2193,38 @@ class TypeChecker(model: Model) {
       case UnaryExp(op, exp)   => getExpType(te, exp, owner)
       case TupleExp(exps)      => CartesianType(exps.map { e => getExpType(te, e, owner) })
       case LambdaExp(pat, exp) => getExpType(te, exp, owner)
+      case MatchExp(matchedExp, cases) =>
+        // Get the type of the expression being matched
+        val matchedType = getExpType(te, matchedExp, owner)
+        // Type check each case and collect result types
+        val caseTypes = cases.map { mc =>
+          // For each pattern in the case, extend type environment
+          val caseTypeEnv = mc.patterns.foldLeft(te) { (env, pattern) =>
+            pattern match {
+              case IdentPattern(ident) =>
+                // Bind the pattern identifier to the matched type
+                env.overwrite(ident -> PatternTypeInfo(pattern, matchedType))
+              case LiteralPattern(_) =>
+                // Literal patterns don't introduce bindings
+                env
+              case _ =>
+                // Other patterns may need more complex handling
+                env
+            }
+          }
+          // Get the type of the case's result expression
+          getExpType(caseTypeEnv, mc.exp, owner)
+        }
+        // All cases should return compatible types
+        if (caseTypes.nonEmpty) {
+          val resultType = caseTypes.head
+          if (!caseTypes.tail.forall(t => areTypesEqual(t, resultType, true))) {
+            error(s"Match cases have incompatible result types: ${caseTypes.mkString(", ")}")
+          }
+          resultType
+        } else {
+          UnitType
+        }
       case ReturnExp(exp)      => getExpType(te, exp, owner)
       case ForExp(pattern, exp, body) =>
         val newTe = pattern match {

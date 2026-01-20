@@ -594,7 +594,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
   }
 
   override def visitLiteralPattern(ctx: ModelParser.LiteralPatternContext): AnyRef = {
-    visit(ctx.literal())
+    LiteralPattern(visit(ctx.literal()).asInstanceOf[Literal])
   }
 
   override def visitTypedPattern(ctx: ModelParser.TypedPatternContext): AnyRef = {
@@ -787,7 +787,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
 
   override def visitMatchExp(ctx: ModelParser.MatchExpContext): AnyRef = {
     var exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
-    var m: List[MatchCase] = ctx.`match`().asScala.map(visit(_)).asInstanceOf[List[MatchCase]]
+    var m: List[MatchCase] = ctx.`match`().asScala.toList.map(visit(_)).asInstanceOf[List[MatchCase]]
     MatchExp(exp, m)
   }
 
