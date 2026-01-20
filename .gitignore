@@ -47,3 +47,4 @@ src/tests/test.k
 .tmp/
 .copilot-inbox
 .claude/
+test-report*.html
