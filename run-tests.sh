@@ -379,7 +379,7 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
     echo "$TEST_FILES" | java -Xmx8g -Djava.library.path="$SCRIPT_DIR/export/lib" \
         -Djava.awt.headless=true \
         -classpath "$CLASSPATH" \
-        k.frontend.Main $JAVA_ARGS 2>&1 > "$BATCH_RAW_FILE"
+        k.frontend.Main $JAVA_ARGS > "$BATCH_RAW_FILE" 2>&1
 
     # Filter to only lines that look like results (STATUS|...)
     grep -E "^(PASSED|FAILED|NOTFOUND|UNKNOWN|SUMMARY)\|" "$BATCH_RAW_FILE" > "$BATCH_OUTPUT_FILE" || true

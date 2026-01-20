@@ -186,6 +186,9 @@ object UtilSMT {
     // Reset heap CEGAR multiplier - must be reset between batch tests
     // to prevent one test's heap expansion from affecting subsequent tests
     ASTOptions.instanceMultiplier = 1
+    // Reset CEGAR iteration counter - must be reset between batch tests
+    // to ensure deferSubclassInstances works correctly for first iteration
+    ASTOptions.cegarIteration = 1
   }
 
   def error(msg: String) = {
