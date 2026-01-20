@@ -1,10 +1,15 @@
 #!/bin/bash
 # Generate quick HTML report using batch mode results
-# Usage: ./generate-quick-report.sh [examples|tests|all]
+# Usage: ./generate-quick-report.sh [examples|tests|all] [--batch-only]
+# --batch-only: Skip single-mode runs (much faster)
 
 set -e
 
 TEST_DIR="${1:-examples}"
+BATCH_ONLY=false
+if [ "$2" = "--batch-only" ]; then
+  BATCH_ONLY=true
+fi
 REPORT_FILE=".tmp/test-report.html"
 mkdir -p .tmp
 
@@ -82,10 +87,18 @@ case "$TEST_DIR" in
   all) BATCH_FLAG="-all" ;;
 esac
 
-# Capture batch results to temp file first for reliability
-./run-tests.sh $BATCH_FLAG 2>&1 | grep -E "^\[.*\].*\.\.\." > /tmp/batch_results.txt || true
+# Run batch tests - this saves output to .tmp/batch_raw_output.txt
+# Batch output format: PASSED|time|category|name|result or FAILED|time|category|name|result
+./run-tests.sh $BATCH_FLAG 2>&1 || true
+# Read from the saved batch output file
+BATCH_RAW_FILE=".tmp/batch_raw_output.txt"
+if [ -f "$BATCH_RAW_FILE" ]; then
+  grep -E "^(PASSED|FAILED)\|" "$BATCH_RAW_FILE" > /tmp/batch_results.txt 2>/dev/null || true
+else
+  echo "" > /tmp/batch_results.txt
+fi
 BATCH_RESULTS=$(cat /tmp/batch_results.txt)
-echo "Captured $(echo "$BATCH_RESULTS" | wc -l) batch result lines"
+echo "Captured $(echo "$BATCH_RESULTS" | wc -l | tr -d ' ') batch result lines"
 
 # Process each test file
 for dir in $DIRS; do
@@ -98,12 +111,16 @@ for dir in $DIRS; do
     test_name=$(basename "$kfile")
     echo "  Processing $test_name..."
 
-    # Get batch result for this test (use "] name " pattern to avoid substring matches like k.k matching Bank.k)
-    batch_result=$(echo "$BATCH_RESULTS" | grep "] $test_name " | head -1 || echo "")
+    # Get batch result for this test
+    # Batch format: STATUS|time|category|name|result
+    batch_result=$(echo "$BATCH_RESULTS" | grep "|${test_name}|" | head -1 || echo "")
 
-    # Run single mode to get full output
-    #single_output=$(./run-tests.sh -test "$kfile" 2>&1 | tail -40 || true)
-    single_output=$(./run-tests.sh -test "$kfile" 2>&1 || true)
+    # Run single mode to get full output (skip if --batch-only)
+    if [ "$BATCH_ONLY" = true ]; then
+      single_output="(Skipped - batch-only mode)"
+    else
+      single_output=$(./run-tests.sh -test "$kfile" 2>&1 || true)
+    fi
 
     # Determine pass/fail
     is_pass=0
