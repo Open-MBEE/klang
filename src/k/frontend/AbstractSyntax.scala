@@ -28,6 +28,15 @@ object ASTOptions {
   
   /** Use 'used' flags for heap instances to allow over-allocation without performance penalty */
   var useHeapUsedFlags: Boolean = false
+  
+  /** Defer subclass instance creation to later CEGAR iterations.
+   *  When true, propagateInstancesToSubclasses() is skipped on iteration 1.
+   *  This produces simpler models initially, only adding subclass instances if needed.
+   */
+  var deferSubclassInstances: Boolean = true
+  
+  /** Current CEGAR iteration (1-based). Used to control deferred subclass strategy. */
+  var cegarIteration: Int = 1
 }
 
 object UtilAST {
@@ -1159,9 +1168,17 @@ class HeapLayout(model: Model) {
   // Propagate instance counts to subclasses:
   // If a parent class has N instances, each subclass should also have at least N instances
   // This allows child objects (e.g., Atom) to be used where parent types (e.g., S_Exp) are expected
+  // 
+  // DEFERRED SUBCLASS STRATEGY: On CEGAR iteration 1, skip propagation to produce
+  // simpler models. If UNSAT, iteration 2+ will add subclass instances.
   propagateInstancesToSubclasses()
   def propagateInstancesToSubclasses(): Unit = {
-    if (K2Z3.debug) println("\n--- propagating instances to subclasses:\n")
+    // Check if we should defer subclass propagation (iteration 1 only)
+    if (ASTOptions.deferSubclassInstances && ASTOptions.cegarIteration == 1) {
+      if (K2Z3.debug) println("\n--- DEFERRING subclass propagation (iteration 1, deferSubclassInstances=true)\n")
+      return
+    }
+    if (K2Z3.debug) println(s"\n--- propagating instances to subclasses (iteration ${ASTOptions.cegarIteration}):\n")
     // Iterate until fixed point (parent counts may propagate through multiple levels)
     var changed = true
     while (changed) {

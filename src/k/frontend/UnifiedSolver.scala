@@ -218,6 +218,9 @@ object UnifiedSolver {
     var heapIteration = 0
     var result: SolveResult = SolveResult.Unknown("Not started")
     var lastTightClasses: List[String] = Nil
+    
+    // Reset CEGAR iteration counter for deferred subclass strategy
+    ASTOptions.cegarIteration = 1
 
     logHeap(s"Starting Heap CEGAR loop with strategy: $heapStrategy")
     logHeap(s"Initial multiplier: ${bounds.defaultBound} (max: ${bounds.maxBound})")
@@ -246,6 +249,18 @@ object UnifiedSolver {
         // (reset() sets multiplier back to 1, so we must set it after)
         ASTOptions.instanceMultiplier = currentMultiplier
         logHeap(s"Set ASTOptions.instanceMultiplier = $currentMultiplier")
+        
+        // Set CEGAR iteration for deferred subclass strategy
+        // Iteration 1: skip subclass propagation (simpler models)
+        // Iteration 2+: include subclass instances if needed
+        ASTOptions.cegarIteration = heapIteration
+        if (ASTOptions.deferSubclassInstances) {
+          if (heapIteration == 1) {
+            logHeap(s"Deferred subclass strategy: skipping subclass propagation on iteration 1")
+          } else {
+            logHeap(s"Deferred subclass strategy: including subclass instances (iteration $heapIteration)")
+          }
+        }
 
         // CVC5 compatibility is set in Frontend before SMT generation
 
