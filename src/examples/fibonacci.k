@@ -1,12 +1,13 @@
--- @expected SAT
+-- @expected ERROR
+-- Recursive functions are not supported
 package nasa.jpl.k.fibonacci
 
 fun fib (n: Int) : Int {
-    --match n with 
-      --case 0 => 0
-      --case 1 => 1
-      --case x => fib(x) + fib(x-1)
-    --end
+    match n with 
+      case 0 => 0
+      case 1 => 1
+      case x => fib(x) + fib(x-1)
+    end
 }
 
 req C_Fib : forall x : Int :- fib(x) > 0

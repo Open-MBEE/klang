@@ -1,0 +1,45 @@
+# seq_vs_array.k - Seq vs Array Tutorial
+
+## Status
+- **Current**: SAT (passes)
+- **Issue**: Model display shows raw Z3 expressions for 2D arrays
+
+## Description
+
+Educational example demonstrating the difference between:
+- `Seq[T]` - Finite sequences with length
+- `Array[K,V]` - Total functions (maps) without length
+
+## Display Issues
+
+The model output shows raw Z3 syntax for some values:
+
+```
+Grid2D(cells:: Ref a!1)
+SparseData(scores:: Ref a!1)
+Configuration(settings:: Ref (store ((as const (Array String Int)) 8080) "timeout" 30))
+ArrayExample(lookup:: Ref (store (store ((as const (Array Int Int)) 200) 0 10) 26 28))
+```
+
+### Problems:
+1. `Ref a!1` - Z3's internal symbol, meaningless to user
+2. `(store ((as const ...) val) key val2)` - raw SMT-LIB syntax
+
+### Expected Output:
+```
+Grid2D(cells:: [[...], [...], ...])
+Configuration(settings:: {"timeout": 30, default: 8080})
+ArrayExample(lookup:: {0: 10, 26: 28, default: 200})
+```
+
+## Fix Required
+
+K2Z3.scala's model printing needs:
+1. Better handling of 2D arrays (Array[Int, Array[Int, T]])
+2. Parsing nested `store` operations
+3. Displaying default values from `(as const ...)` patterns
+
+## Test Status
+
+- ex_seq_vs_array.k removed from tests (redundant with examples/seq_vs_array.k)
+- Original in examples/ kept for documentation purposes

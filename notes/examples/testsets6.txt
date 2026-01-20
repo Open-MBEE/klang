@@ -1,0 +1,44 @@
+# testsets6.k - Set Display and Universal Sets
+
+## Status
+- **Current**: SAT (working correctly)
+- **Set Display**: Fixed as of 2026-01-19
+
+## Description
+
+Tests Set constraints with spacecraft fleets:
+- `LowCostSCFleet` - all spacecraft must have cost < 1e6
+- `FeasibleLowCostSCFleet` - all spacecraft must go to Earth
+
+## Set Display Fix (2026-01-19)
+
+Previously, Sets were displaying as `[Empty]` when they should
+show `Set(*)` for universal sets or `Set()` for empty sets.
+
+### The Problem
+Z3 represents Sets as `Array[T, Bool]`:
+- Universal set: `((as const (Array T Bool)) true)`
+- Empty set: `((as const (Array T Bool)) false)`
+
+The old code tried to look up FuncDecls but failed for inline
+constant arrays, resulting in `[Empty]` display.
+
+### The Fix
+Added `parseInlineSetExpression()` in K2Z3.scala to handle:
+- Inline constant arrays with `true` → `Set(*)`
+- Inline constant arrays with `false` → `Set()`
+- Store operations for modified sets
+
+### Current Output
+```
+FeasibleLowCostSCFleet(deployedSC:: Set(*))
+LowCostSCFleet(deployedSC:: Set(*))
+```
+
+The `Set(*)` indicates a universal set (all Spacecraft are members).
+This is correct because the constraints use `sc isin deployedSC =>`,
+which is trivially satisfied when deployedSC is universal.
+
+## Related Files
+- `K2Z3.scala` - `parseInlineSetExpression()` function
+- `testsets*.k` - other Set test files

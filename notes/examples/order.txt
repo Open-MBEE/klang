@@ -1,0 +1,54 @@
+# order.k - Event Scheduling Example
+
+## Status
+- **Current**: UNKNOWN (bug)
+- **Expected**: Should be UNSAT (the constraints are unsatisfiable)
+- **Issue**: `event` keyword not fully implemented
+
+## Description
+
+This example demonstrates temporal ordering of spacecraft boot events.
+It uses the `event` shorthand to declare instances of an Event class
+with a timestamp field `t: Real`.
+
+## The Bug
+
+The `event` keyword parses correctly but doesn't generate proper SMT:
+```
+(error "unknown constant TopLevelDeclarations!power_on (Int)")
+```
+
+Events like `power_on`, `boot`, etc. are not being instantiated
+as Event objects with the `t` field accessible.
+
+## Intended Behavior
+
+```k
+class <event> Event { t : Real }
+event power_on  -- should create: power_on : Event
+```
+
+The `event` keyword should:
+1. Create an instance of the Event class
+2. Make the instance accessible by name
+3. Allow accessing fields like `power_on.t`
+
+## The Constraints
+
+The file specifies a boot sequence where events must occur in order:
+- power_on < power_off_cameras < pick_boot_image < boot
+- boot < establish_clock
+- etc.
+
+The final constraint makes the schedule impossible:
+```k
+req power_on_navigation.t = power_on_star_sensor.t
+```
+
+This creates a cycle in the ordering constraints, so the result
+should be UNSAT.
+
+## Fix Required
+
+The `event` keyword handling in TypeChecker or AbstractSyntax needs
+to properly create instances of the stereotyped class.

@@ -1,0 +1,66 @@
+# sysml.k - SysML Constructs Example
+
+## Status
+- **Current**: UNKNOWN (bugs)
+- **Expected**: Should compile and run (SAT or specific result)
+- **Issue**: Multiple SMT generation errors
+
+## Description
+
+This file demonstrates various SysML constructs translated to K:
+- Packages (nested)
+- Literals (Real, Integer, String, Boolean)
+- Expressions
+- Null values
+- Opaque expressions
+- And more...
+
+## The Bugs
+
+### 1. Sort Mismatch
+```
+(error "line 92 column 0: invalid function/constant definition, sort mismatch")
+```
+This suggests a type inference or SMT generation issue.
+
+### 2. Unknown Constants
+```
+(error "line 94 column 39: unknown constant TopLevelDeclarations.inv1 (Int)")
+```
+Constraints are referencing undeclared symbols.
+
+## Issues in the File
+
+The file has several problematic patterns:
+
+1. **Multiple package declarations** - unusual pattern
+   ```k
+   package k.examples
+   package k.examples.sysml
+   package j.more.sysml
+   ```
+
+2. **Standalone expressions** - expressions without context
+   ```k
+   0.1212;
+   -1;
+   "K SysML rocks!";
+   ```
+
+3. **Undefined variables in expressions**
+   ```k
+   (a + b * (c + d));
+   ```
+
+## Fix Required
+
+1. Clarify how multiple packages should work
+2. Handle standalone literal expressions
+3. Ensure undefined variables are caught in type checking
+4. Fix the SMT generation for whatever is causing sort mismatches
+
+## Historical Context
+
+This file appears to be an exploratory test of how SysML concepts
+map to K. It's incomplete and contains various "TODO" comments
+indicating unfinished work.

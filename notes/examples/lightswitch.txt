@@ -1,0 +1,44 @@
+# lightswitch.k - Refinement and Abstraction Example
+
+## Status
+- **Current**: SAT (working correctly)
+- **Purpose**: Demonstrates refinement checking using inheritance
+
+## Description
+
+This example shows how K can verify that a concrete implementation
+correctly refines an abstract specification using:
+- Abstract specification with symbolic states (off, on)
+- Concrete implementation using integers (0, 1)
+- Abstraction function mapping concrete to abstract
+- Quantified requirement proving behavioral equivalence
+
+## Key Concepts
+
+### Specification (LightSwitchSpec)
+- Uses abstract State type with off/on values
+- Specifies toggle behavior: toggle(off) = on, toggle(on) = off
+- Purely declarative - no implementation details
+
+### Implementation (LightSwitchImpl)
+- Uses Int (0 and 1) to represent states
+- Provides concrete toggle implementation
+- Includes postcondition on result
+
+### Abstraction Function (Main.abs)
+- Maps concrete Int states to abstract State values
+- abs(1) = on, abs(0) = off
+
+### Refinement Check
+```k
+req forall concreteState: Int :-
+  abstract.toggle(abs(concreteState)) = abs(concrete.toggle(concreteState))
+```
+This proves: toggling the abstraction equals abstracting the toggle.
+
+## Why This Matters
+
+Refinement checking is fundamental to:
+- Proving implementation correctness
+- Verifying that optimizations preserve behavior
+- Validating state machine encodings
