@@ -1,0 +1,76 @@
+======================================
+K Language Test Runner
+======================================
+
+Test directories: src/examples
+Found 52 tests
+Mode: batch (single JVM)
+
+Progress:
+==========================================
+(Running all tests in single JVM with baseline checking...)
+[  1/ 52] [examples] a.k                      ... ✅ PASSED (SAT (expected), baseline OK) [1.07s]
+[  2/ 52] [examples] b.k                      ... ✅ PASSED (ERROR (expected)) [0.01s]
+[  3/ 52] [examples] b2.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[  4/ 52] [examples] Bank.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.04s]
+[  5/ 52] [examples] bnf.k                    ... ✅ PASSED (ERROR (expected)) [0.13s]
+[  6/ 52] [examples] borges.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.04s]
+[  7/ 52] [examples] c.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[  8/ 52] [examples] conservative-extension.k ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[  9/ 52] [examples] d.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 10/ 52] [examples] DSN_Pass-diagnostic.k    ... ✅ PASSED (SAT, baseline OK) [24.28s]
+[ 11/ 52] [examples] DSN_Pass.k               ... ✅ PASSED (SAT (expected), baseline OK) [1.19s]
+[ 12/ 52] [examples] e.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 13/ 52] [examples] e2.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 14/ 52] [examples] employee.k               ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 15/ 52] [examples] f.k                      ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 16/ 52] [examples] fibonacci.k              ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 17/ 52] [examples] flight.k                 ... ✅ PASSED (UNSAT (expected), baseline OK) [0.68s]
+[ 18/ 52] [examples] Fruits.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 19/ 52] [examples] FunctionSynthesis.k      ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 20/ 52] [examples] GravityScience.k         ... ✅ PASSED (SAT (expected), baseline OK) [0.32s]
+[ 21/ 52] [examples] k.k                      ... ❌ FAILED (NullPointerException: Cannot invoke "org.antlr.v4.runtime.tree.TerminalN) [0.01s]
+[ 22/ 52] [examples] library.k                ... ✅ PASSED (ERROR (expected)) [0.01s]
+[ 23/ 52] [examples] lightswitch.k            ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 24/ 52] [examples] lisp-draft.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.17s]
+[ 25/ 52] [examples] lisp.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.11s]
+[ 26/ 52] [examples] math.k                   ... ✅ PASSED (ERROR (expected)) [0.00s]
+[ 27/ 52] [examples] mathutil.k               ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 28/ 52] [examples] nesting.k                ... ❌ FAILED (got SAT, expected ERROR) [0.01s]
+[ 29/ 52] [examples] orbital-petals.k         ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 30/ 52] [examples] order-transformed.k      ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 31/ 52] [examples] order.k                  ... ❌ FAILED (ERROR (K2Z3)) [0.01s]
+[ 32/ 52] [examples] pkg1.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 33/ 52] [examples] pkg2.k                   ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 34/ 52] [examples] planning-simple.k        ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 35/ 52] [examples] prepost.k                ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 36/ 52] [examples] scheduling.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 37/ 52] [examples] seq_vs_array.k           ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 38/ 52] [examples] Shapes.k                 ... ✅ PASSED (SAT (expected), baseline OK) [0.03s]
+[ 39/ 52] [examples] sm.k                     ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 40/ 52] [examples] small.k                  ... ❌ FAILED (ERROR (type check)) [0.01s]
+[ 41/ 52] [examples] spacecraft-annotations.k ... ❌ FAILED (ERROR (type check)) [0.01s]
+[ 42/ 52] [examples] spacecraft-aspects.k     ... ❌ FAILED (NullPointerException: Cannot invoke "org.antlr.v4.runtime.tree.ParseTree) [0.00s]
+[ 43/ 52] [examples] spacecraft.k             ... ❌ FAILED (ERROR (type check)) [0.00s]
+[ 44/ 52] [examples] stakr.k                  ... ✅ PASSED (SAT (expected), baseline OK) [0.05s]
+[ 45/ 52] [examples] StringDemo.k             ... ✅ PASSED (SAT (expected), baseline OK) [0.02s]
+[ 46/ 52] [examples] sysml.k                  ... ❌ FAILED (ERROR (K2Z3)) [0.01s]
+[ 47/ 52] [examples] testsmt.k                ... ✅ PASSED (SAT (expected), baseline OK) [0.01s]
+[ 48/ 52] [examples] TrajectoryTimeline.k     ... ❌ FAILED (RuntimeException: [[visitLambdaExp]] Parse error at line 93: malform) [0.01s]
+[ 49/ 52] [examples] TrajectoryTimeline2.k    ... ❌ FAILED (ERROR (type check)) [0.06s]
+[ 50/ 52] [examples] util.k                   ... ❌ FAILED (ERROR (type check)) [0.02s]
+[ 51/ 52] [examples] WSTS.k                   ... ❌ FAILED (ERROR (type check)) [0.00s]
+[ 52/ 52] [examples] WSTS2.k                  ... ❌ FAILED (RuntimeException: [[visitLambdaExp]] Parse error at line 15: malform) [0.01s]
+==========================================
+
+Test Summary:
+  Total:    52
+  ✅ Passed:  39
+  ❌ Failed:  13
+  📋 Baseline matched:    36
+  ⚠️  Baseline mismatched: 0
+  ⏱️  CPU time: 28.83s
+  🕐 Wall time: 29.02s
+
+Pass rate: 75%
+

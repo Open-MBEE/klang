@@ -704,6 +704,53 @@ object K2Z3 {
       ")"
   }
 
+  /**
+   * Parse an inline Set expression from Z3 model when no FuncDecl is available.
+   * Handles patterns like:
+   * - ((as const (Array Int Bool)) true)  -> Set(*) (universal set)
+   * - ((as const (Array Int Bool)) false) -> Set() (empty set)
+   * - (store ((as const (Array Int Bool)) true) X false) -> Set(*\X) (universal minus element)
+   * - (store ((as const (Array Int Bool)) false) X true) -> Set(X) (singleton/finite set)
+   */
+  def parseInlineSetExpression(expr: String): String = {
+    val normalized = expr.replaceAll("\\s+", " ").trim
+    
+    // Pattern: ((as const (Array T Bool)) true) - universal set
+    if (normalized.contains("(as const") && normalized.endsWith("true)")) {
+      // Check if there are store operations that modify it
+      if (normalized.startsWith("(store")) {
+        // Pattern: (store ((as const ...) true) X false) - universal set minus elements
+        val storePattern = """store\s+\(\(as const[^)]+\)\)\s+true\)\s+(\d+)\s+false""".r
+        val excluded = storePattern.findAllMatchIn(normalized).map(_.group(1)).toList
+        if (excluded.nonEmpty) {
+          return s"Set(*\\{${excluded.mkString(",")}})"
+        }
+      }
+      return "Set(*)"  // Universal set
+    }
+    
+    // Pattern: ((as const (Array T Bool)) false) - empty set
+    if (normalized.contains("(as const") && normalized.endsWith("false)") && !normalized.startsWith("(store")) {
+      return "Set()"  // Empty set
+    }
+    
+    // Pattern: (store ((as const ...) false) X true) - finite set with elements
+    if (normalized.startsWith("(store") && normalized.contains("false)")) {
+      val storePattern = """store[^)]*\)\)\s+false\)\s+(\d+)\s+true""".r
+      val included = storePattern.findAllMatchIn(normalized).map(_.group(1)).toList
+      if (included.nonEmpty) {
+        return s"Set(${included.map(i => s"Ref $i").mkString(",")})"
+      }
+    }
+    
+    // Fallback: show raw expression (truncated if too long)
+    if (normalized.length > 50) {
+      s"Set(${normalized.take(47)}...)"
+    } else {
+      s"Set($normalized)"
+    }
+  }
+
   def printObjectValue(name: String, heap: Map[String, String],
                        v: String, visited: Set[String],
                        refNum: String, force: Boolean): (Set[String], List[List[String]]) = {
@@ -800,8 +847,12 @@ object K2Z3 {
               // For Set/Bag, use the FuncDecl lookup
               val setName = x._2.split("!").last.replace(")", "")
               val setValue = z3Model.getFuncDecls.find { x => x.getName.toString == setName }
-              if (setValue.isEmpty) x._1.name + ":: [Empty]"
-              else x._1.name + ":: " + getStringForSets(setValue.get, propType)
+              if (setValue.isEmpty) {
+                // FuncDecl lookup failed - try parsing inline Set expression
+                x._1.name + ":: " + parseInlineSetExpression(x._2)
+              } else {
+                x._1.name + ":: " + getStringForSets(setValue.get, propType)
+              }
             }
           } else if (!TypeChecker.isPrimitiveType(propType)) {
             toPrint = x._2 :: toPrint

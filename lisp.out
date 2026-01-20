@@ -1,0 +1,1515 @@
+======================================
+K Language Test Runner
+======================================
+
+Running test: src/examples/lisp.k
+
+k.frontend.Main -batch -batch-verbose -prefer-file-options[-batch, -batch-verbose, -prefer-file-options]
+[main] Found @preferred_options: List(-heapcegar-cvc5)
+[main] Processing src/examples/lisp.k
+PARSE TREE:
+(model (modelThings (modelThing (topDeclaration (entityDeclaration class S_Exp { (block (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) text : (type (primitiveType String)))))) }))) (modelThing (topDeclaration (entityDeclaration class Atom (extending extends (type (classIdentifier (qualifiedName S_Exp)))) { (block (blockDeclaration (memberDeclaration (constraint req (expression (expression (expression ! (expression (expression (expression text) . contains) ( (argumentList (positionalArgumentList (expression (literal "(")))) ))) && (expression ! (expression (expression (expression text) . contains) ( (argumentList (positionalArgumentList (expression (literal ")")))) )))) && (expression ! (expression (expression (expression text) . contains) ( (argumentList (positionalArgumentList (expression (literal ".")))) )))))))) }))) (modelThing (topDeclaration (entityDeclaration class ListExp (extending extends (type (classIdentifier (qualifiedName S_Exp)))) { (block (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) leftExp : (type (classIdentifier (qualifiedName S_Exp)))))) (blockDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) rightExp : (type (classIdentifier (qualifiedName S_Exp)))))) (blockDeclaration (memberDeclaration (constraint req (expression (expression text) = (expression (expression (expression (expression (expression (literal "(")) + (expression (expression leftExp) . text)) + (expression (literal "."))) + (expression (expression rightExp) . text)) + (expression (literal ")"))))))) (blockDeclaration (memberDeclaration (constraint req (expression (expression (expression leftExp) is (type (classIdentifier (qualifiedName Atom)))) || (expression (expression leftExp) is (type (classIdentifier (qualifiedName ListExp)))))))) (blockDeclaration (memberDeclaration (constraint req (expression (expression (expression rightExp) is (type (classIdentifier (qualifiedName Atom)))) || (expression (expression rightExp) is (type (classIdentifier (qualifiedName ListExp))))))))) }))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) myList : (type (classIdentifier (qualifiedName ListExp))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression myList) . text) = (expression (literal "(A.B)"))))))) (modelThing (topDeclaration (memberDeclaration (propertyDeclaration (propertyModifier var) myList2 : (type (classIdentifier (qualifiedName ListExp))))))) (modelThing (topDeclaration (memberDeclaration (constraint req (expression (expression (expression myList2) . text) = (expression (literal "((A.B).(C.D))")))))))) <EOF>)
+[main] Type checking completed. No errors found.
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+        
+        ==============================
+                 STATISTICS:
+        ==============================
+        --- declarations: ------------
+        class definitions        : 3
+        class extensions         : 2
+        properties               : 5
+        constraints              : 6
+        --- types: -------------------
+        ref types                : 8
+        string types             : 1
+        --- expressions: -------------
+        dot exp                  : 7
+        dot exp max              : 1
+        fun appl exp             : 3
+        binary exp               : 11
+        unary exp                : 3
+        type check exp           : 4
+        string literal exp       : 8
+        ------------------------------
+
+[HeapCEGAR] Starting Heap CEGAR loop with strategy: CegarBounded
+[HeapCEGAR] Initial multiplier: 1 (max: 16)
+[HeapCEGAR] 
+[HeapCEGAR] ========== Heap CEGAR Iteration 1 ==========
+[HeapCEGAR] Current multiplier: 1x
+[HeapCEGAR] Regenerating SMT model with 1x instances...
+[HeapCEGAR] Set ASTOptions.instanceMultiplier = 1
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[HeapCEGAR] Heap layout:
+[HeapCEGAR]   TopLevelDeclarations: 1 instances (refs 0 to 0)
+[HeapCEGAR]   S_Exp: 4 instances (refs 1 to 4)
+[HeapCEGAR]   Atom: 1 instances (refs 5 to 5)
+[HeapCEGAR]   ListExp: 2 instances (refs 6 to 7)
+[HeapCEGAR] SMT model generated, solving...
+[UnifiedSolver] Starting unified solver...
+[UnifiedSolver]Processing model with 7 top-level declarations and 0 packages
+[UnifiedSolver]  Found class: S_Exp
+[UnifiedSolver]  Found class: Atom
+[UnifiedSolver]  Found class: ListExp
+[UnifiedSolver]Found 3 classes total: S_Exp, Atom, ListExp
+[UnifiedSolver] Entering unified loop...
+[UnifiedSolver]=== Iteration 1 ===
+[UnifiedSolver]Generated SMT with 2 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 1 -> 2
+[UnifiedSolver]Increased bound for ListExp: 1 -> 2
+[UnifiedSolver]=== Iteration 2 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 2, Atom -> 0, ListExp -> 2 (instanceMultiplier=2)
+[UnifiedSolver]Generated SMT with 4 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 2 -> 4
+[UnifiedSolver]Increased bound for ListExp: 2 -> 4
+[UnifiedSolver]=== Iteration 3 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 4, Atom -> 0, ListExp -> 4 (instanceMultiplier=4)
+[UnifiedSolver]Generated SMT with 8 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 4 -> 8
+[UnifiedSolver]Increased bound for ListExp: 4 -> 8
+[UnifiedSolver]=== Iteration 4 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 8, Atom -> 0, ListExp -> 8 (instanceMultiplier=8)
+[UnifiedSolver]Generated SMT with 16 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 8 -> 16
+[UnifiedSolver]Increased bound for ListExp: 8 -> 16
+[UnifiedSolver]=== Iteration 5 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 16, Atom -> 0, ListExp -> 16 (instanceMultiplier=16)
+[UnifiedSolver]Generated SMT with 32 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 16 -> 32
+[UnifiedSolver]Increased bound for ListExp: 16 -> 32
+[UnifiedSolver]=== Iteration 6 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 32, Atom -> 0, ListExp -> 32 (instanceMultiplier=32)
+[UnifiedSolver]Generated SMT with 64 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 32 -> 64
+[UnifiedSolver]Increased bound for ListExp: 32 -> 64
+[UnifiedSolver]=== Iteration 7 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 64, Atom -> 0, ListExp -> 64 (instanceMultiplier=64)
+[UnifiedSolver]Generated SMT with 128 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 64 -> 100
+[UnifiedSolver]Increased bound for ListExp: 64 -> 100
+[UnifiedSolver]=== Iteration 8 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 100, Atom -> 0, ListExp -> 100 (instanceMultiplier=100)
+[UnifiedSolver]Generated SMT with 200 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=false
+
+============================================================
+UNSAT - Partial Model (max-SAT: maximally satisfiable subset)
+============================================================
+[K2Z3] DEBUG (define-fun NULL$Ref () Int
+  (- 1))
+(define-fun _xkassert7 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert12 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert5 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert2 () Bool
+  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))
+  (= (text (sel-ListExp a!1)) "(A.B)")))
+(define-fun _xkassert4 () Bool
+  (let ((a!1 (str.contains (text (sel-Atom (select heap 5))) "("))
+      (a!2 (str.contains (text (sel-Atom (select heap 5))) ")"))
+      (a!3 (str.contains (text (sel-Atom (select heap 5))) ".")))
+  (and (not a!1) (not a!2) (not a!3))))
+(define-fun _xkassert6 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert9 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6)))))
+      (a!3 (select heap (rightExp (sel-ListExp (select heap 6))))))
+(let ((a!2 (ite (is-lift-S_Exp a!1)
+                (text (sel-S_Exp a!1))
+                (ite (is-lift-Atom a!1)
+                     (text (sel-Atom a!1))
+                     (text (sel-ListExp a!1)))))
+      (a!4 (ite (is-lift-S_Exp a!3)
+                (text (sel-S_Exp a!3))
+                (ite (is-lift-Atom a!3)
+                     (text (sel-Atom a!3))
+                     (text (sel-ListExp a!3))))))
+  (= (text (sel-ListExp (select heap 6))) (str.++ "(" a!2 "." a!4 ")")))))
+(define-fun _xkassert8 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-4-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun const-6-ListExp () ListExp
+  (mk-ListExp "" 28 26))
+(define-fun _xkassert11 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-7-ListExp () ListExp
+  (mk-ListExp "" 25 24))
+(define-fun heap () (Array Int Any)
+  (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let ((a!2 (store (store a!1
+                         33
+                         (lift-ListExp (mk-ListExp "((A.B).(C.D))" 23 22)))
+                  34
+                  (lift-Atom (mk-Atom "")))))
+(let ((a!3 (store (store (store a!2 5 null)
+                         32
+                         (lift-ListExp (mk-ListExp "(A.B)" 21 19)))
+                  0
+                  null)))
+  (store (store a!3
+                4
+                (lift-TopLevelDeclarations (mk-TopLevelDeclarations 153 66)))
+         6
+         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 18 14)))))))
+(define-fun const-1-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun _xkassert14 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert3 () Bool
+  (let ((a!1 (select heap (myList2 (sel-TopLevelDeclarations (select heap 0))))))
+  (= (text (sel-ListExp a!1)) "((A.B).(C.D))")))
+(define-fun _xkassert0 () Bool
+  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))
+  (is-lift-ListExp a!1)))
+(define-fun const-3-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun const-2-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun _xkassert13 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-5-Atom () Atom
+  (mk-Atom ".B)"))
+(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations
+  (mk-TopLevelDeclarations 30 29))
+(define-fun _xkassert10 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7)))))
+      (a!3 (select heap (rightExp (sel-ListExp (select heap 7))))))
+(let ((a!2 (ite (is-lift-S_Exp a!1)
+                (text (sel-S_Exp a!1))
+                (ite (is-lift-Atom a!1)
+                     (text (sel-Atom a!1))
+                     (text (sel-ListExp a!1)))))
+      (a!4 (ite (is-lift-S_Exp a!3)
+                (text (sel-S_Exp a!3))
+                (ite (is-lift-Atom a!3)
+                     (text (sel-Atom a!3))
+                     (text (sel-ListExp a!3))))))
+  (= (text (sel-ListExp (select heap 7))) (str.++ "(" a!2 "." a!4 ")")))))
+(define-fun _xkassert1 () Bool
+  (let ((a!1 (select heap (myList2 (sel-TopLevelDeclarations (select heap 0))))))
+  (is-lift-ListExp a!1)))
+[K2Z3] DEBUG [PrintModel] heapExpr from getConstInterp: (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let (
+[K2Z3] DEBUG [PrintModel] selectExpr: (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let (
+[K2Z3] DEBUG [PrintModel] Ref 0 value: null
+[K2Z3] DEBUG [PrintModel] Ref 0 value (no completion): null
+[K2Z3] DEBUG [API] Ref 0 value doesn't match expected format (null or no lift-): null
+[K2Z3] DEBUG [API] Extracted ref 1: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 2: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 3: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 4: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 153 66))
+[K2Z3] DEBUG [API] Extracted ref 6: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 18 14))
+[K2Z3] DEBUG [API] Extracted ref 7: (lift-Atom (mk-Atom "FE"))
+[K2Z3] DEBUG [API] Extracted ref 8: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 9: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 10: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 11: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 12: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 13: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 14: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 15: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 16: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 17: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [PrintModel] heapMap keys: 12, 8, 4, 16, 10, 2, 7, 3, 15, 11, 9, 13, else, 6, 1, 17, 14
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [printObjectValue] Unknown class 'TopLevelDeclarations' in value: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 153, 66
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 18, 14
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+
+	No instance variables were declared at the top level.
+
+	Extra objects created during analysis:
+
+	+--------+-----+----------------+
+	|Variable|Ref  |Value           |
+	+--------+-----+----------------+
+	|        |Ref 7|Atom(text::"FE")|
+	+--------+-----+----------------+
+
+============================================================
+
+[HeapCEGAR] UNSAT with current multiplier (1x).
+[HeapCEGAR] Increasing multiplier: 1x -> 2x
+[HeapCEGAR] 
+[HeapCEGAR] ========== Heap CEGAR Iteration 2 ==========
+[HeapCEGAR] Current multiplier: 2x
+[HeapCEGAR] Regenerating SMT model with 2x instances...
+[HeapCEGAR] Set ASTOptions.instanceMultiplier = 2
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,8)
+  Atom -> (9,10)
+  ListExp -> (11,14)
+---------------------------
+
+
+[HeapCEGAR] Heap layout:
+[HeapCEGAR]   TopLevelDeclarations: 1 instances (refs 0 to 0)
+[HeapCEGAR]   S_Exp: 8 instances (refs 1 to 8)
+[HeapCEGAR]   Atom: 2 instances (refs 9 to 10)
+[HeapCEGAR]   ListExp: 4 instances (refs 11 to 14)
+[HeapCEGAR] SMT model generated, solving...
+[UnifiedSolver] Starting unified solver...
+[UnifiedSolver]Processing model with 7 top-level declarations and 0 packages
+[UnifiedSolver]  Found class: S_Exp
+[UnifiedSolver]  Found class: Atom
+[UnifiedSolver]  Found class: ListExp
+[UnifiedSolver]Found 3 classes total: S_Exp, Atom, ListExp
+[UnifiedSolver] Entering unified loop...
+[UnifiedSolver]=== Iteration 1 ===
+[UnifiedSolver]Generated SMT with 2 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 1 -> 2
+[UnifiedSolver]Increased bound for ListExp: 1 -> 2
+[UnifiedSolver]=== Iteration 2 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 2, Atom -> 0, ListExp -> 2 (instanceMultiplier=2)
+[UnifiedSolver]Generated SMT with 4 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 2 -> 4
+[UnifiedSolver]Increased bound for ListExp: 2 -> 4
+[UnifiedSolver]=== Iteration 3 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 4, Atom -> 0, ListExp -> 4 (instanceMultiplier=4)
+[UnifiedSolver]Generated SMT with 8 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 4 -> 8
+[UnifiedSolver]Increased bound for ListExp: 4 -> 8
+[UnifiedSolver]=== Iteration 4 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 8, Atom -> 0, ListExp -> 8 (instanceMultiplier=8)
+[UnifiedSolver]Generated SMT with 16 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 8 -> 16
+[UnifiedSolver]Increased bound for ListExp: 8 -> 16
+[UnifiedSolver]=== Iteration 5 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 16, Atom -> 0, ListExp -> 16 (instanceMultiplier=16)
+[UnifiedSolver]Generated SMT with 32 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 16 -> 32
+[UnifiedSolver]Increased bound for ListExp: 16 -> 32
+[UnifiedSolver]=== Iteration 6 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 32, Atom -> 0, ListExp -> 32 (instanceMultiplier=32)
+[UnifiedSolver]Generated SMT with 64 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 32 -> 64
+[UnifiedSolver]Increased bound for ListExp: 32 -> 64
+[UnifiedSolver]=== Iteration 7 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 64, Atom -> 0, ListExp -> 64 (instanceMultiplier=64)
+[UnifiedSolver]Generated SMT with 128 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=true
+[UnifiedSolver]Trying with more objects
+[UnifiedSolver]Increased bound for S_Exp: 64 -> 100
+[UnifiedSolver]Increased bound for ListExp: 64 -> 100
+[UnifiedSolver]=== Iteration 8 ===
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,4)
+  Atom -> (5,5)
+  ListExp -> (6,7)
+---------------------------
+
+
+[UnifiedSolver]Regenerated SMT with object bounds: S_Exp -> 100, Atom -> 0, ListExp -> 100 (instanceMultiplier=100)
+[UnifiedSolver]Generated SMT with 200 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+[UnifiedSolver] Regular Solver: UNSAT - attempting to get partial model via Optimize...
+[UnifiedSolver]UNSAT - checking if can relax
+[UnifiedSolver]canIncreaseObjectBounds: classes=2, result=false
+
+============================================================
+UNSAT - Partial Model (max-SAT: maximally satisfiable subset)
+============================================================
+[K2Z3] DEBUG (define-fun NULL$Ref () Int
+  (- 1))
+(define-fun _xkassert7 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert12 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert5 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert2 () Bool
+  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))
+  (= (text (sel-ListExp a!1)) "(A.B)")))
+(define-fun _xkassert4 () Bool
+  (let ((a!1 (str.contains (text (sel-Atom (select heap 5))) "("))
+      (a!2 (str.contains (text (sel-Atom (select heap 5))) ")"))
+      (a!3 (str.contains (text (sel-Atom (select heap 5))) ".")))
+  (and (not a!1) (not a!2) (not a!3))))
+(define-fun _xkassert6 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert9 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6)))))
+      (a!3 (select heap (rightExp (sel-ListExp (select heap 6))))))
+(let ((a!2 (ite (is-lift-S_Exp a!1)
+                (text (sel-S_Exp a!1))
+                (ite (is-lift-Atom a!1)
+                     (text (sel-Atom a!1))
+                     (text (sel-ListExp a!1)))))
+      (a!4 (ite (is-lift-S_Exp a!3)
+                (text (sel-S_Exp a!3))
+                (ite (is-lift-Atom a!3)
+                     (text (sel-Atom a!3))
+                     (text (sel-ListExp a!3))))))
+  (= (text (sel-ListExp (select heap 6))) (str.++ "(" a!2 "." a!4 ")")))))
+(define-fun _xkassert8 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-S_Exp a!1) (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-4-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun const-6-ListExp () ListExp
+  (mk-ListExp "" 28 26))
+(define-fun _xkassert11 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-7-ListExp () ListExp
+  (mk-ListExp "" 25 24))
+(define-fun heap () (Array Int Any)
+  (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let ((a!2 (store (store a!1
+                         33
+                         (lift-ListExp (mk-ListExp "((A.B).(C.D))" 23 22)))
+                  34
+                  (lift-Atom (mk-Atom "")))))
+(let ((a!3 (store (store (store a!2 5 null)
+                         32
+                         (lift-ListExp (mk-ListExp "(A.B)" 21 19)))
+                  0
+                  null)))
+  (store (store a!3
+                4
+                (lift-TopLevelDeclarations (mk-TopLevelDeclarations 153 66)))
+         6
+         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 18 14)))))))
+(define-fun const-1-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun _xkassert14 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 7))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun _xkassert3 () Bool
+  (let ((a!1 (select heap (myList2 (sel-TopLevelDeclarations (select heap 0))))))
+  (= (text (sel-ListExp a!1)) "((A.B).(C.D))")))
+(define-fun _xkassert0 () Bool
+  (let ((a!1 (select heap (myList (sel-TopLevelDeclarations (select heap 0))))))
+  (is-lift-ListExp a!1)))
+(define-fun const-3-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun const-2-S_Exp () S_Exp
+  (mk-S_Exp ""))
+(define-fun _xkassert13 () Bool
+  (let ((a!1 (select heap (rightExp (sel-ListExp (select heap 6))))))
+  (or (is-lift-Atom a!1) (is-lift-ListExp a!1))))
+(define-fun const-5-Atom () Atom
+  (mk-Atom ".B)"))
+(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations
+  (mk-TopLevelDeclarations 30 29))
+(define-fun _xkassert10 () Bool
+  (let ((a!1 (select heap (leftExp (sel-ListExp (select heap 7)))))
+      (a!3 (select heap (rightExp (sel-ListExp (select heap 7))))))
+(let ((a!2 (ite (is-lift-S_Exp a!1)
+                (text (sel-S_Exp a!1))
+                (ite (is-lift-Atom a!1)
+                     (text (sel-Atom a!1))
+                     (text (sel-ListExp a!1)))))
+      (a!4 (ite (is-lift-S_Exp a!3)
+                (text (sel-S_Exp a!3))
+                (ite (is-lift-Atom a!3)
+                     (text (sel-Atom a!3))
+                     (text (sel-ListExp a!3))))))
+  (= (text (sel-ListExp (select heap 7))) (str.++ "(" a!2 "." a!4 ")")))))
+(define-fun _xkassert1 () Bool
+  (let ((a!1 (select heap (myList2 (sel-TopLevelDeclarations (select heap 0))))))
+  (is-lift-ListExp a!1)))
+[K2Z3] DEBUG [PrintModel] heapExpr from getConstInterp: (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let (
+[K2Z3] DEBUG [PrintModel] selectExpr: (let ((a!1 (store ((as const (Array Int Any))
+                    (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8)))
+                  7
+                  (lift-Atom (mk-Atom "FE")))))
+(let (
+[K2Z3] DEBUG [PrintModel] Ref 0 value: null
+[K2Z3] DEBUG [PrintModel] Ref 0 value (no completion): null
+[K2Z3] DEBUG [API] Ref 0 value doesn't match expected format (null or no lift-): null
+[K2Z3] DEBUG [API] Extracted ref 1: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 2: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 3: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 4: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 153 66))
+[K2Z3] DEBUG [API] Extracted ref 6: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 18 14))
+[K2Z3] DEBUG [API] Extracted ref 7: (lift-Atom (mk-Atom "FE"))
+[K2Z3] DEBUG [API] Extracted ref 8: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 9: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 10: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 11: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 12: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 13: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 14: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 15: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 16: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [API] Extracted ref 17: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [PrintModel] heapMap keys: 12, 8, 4, 16, 10, 2, 7, 3, 15, 11, 9, 13, else, 6, 1, 17, 14
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [printObjectValue] Unknown class 'TopLevelDeclarations' in value: (lift-TopLevelDeclarations (mk-TopLevelDeclarations 31 8))
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 153, 66
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 18, 14
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+[K2Z3] DEBUG [collectTopLevelProperties] model.decls has 7 entries: EntityDecl, EntityDecl, EntityDecl, PropertyDecl, ConstraintDecl, PropertyDecl, ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: EntityDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: PropertyDecl
+[K2Z3] DEBUG [collectTopLevelProperties] Examining decl: ConstraintDecl
+[K2Z3] DEBUG [PrintModel] Found 2 top-level variables: myList2, myList
+[K2Z3] DEBUG [PrintModel] objectValues length: 2, objectValues: 31, 8
+
+	No instance variables were declared at the top level.
+
+	Extra objects created during analysis:
+
+	+--------+-----+----------------+
+	|Variable|Ref  |Value           |
+	+--------+-----+----------------+
+	|        |Ref 7|Atom(text::"FE")|
+	+--------+-----+----------------+
+
+============================================================
+
+[HeapCEGAR] UNSAT with current multiplier (2x).
+[HeapCEGAR] Increasing multiplier: 2x -> 4x
+[HeapCEGAR] 
+[HeapCEGAR] ========== Heap CEGAR Iteration 3 ==========
+[HeapCEGAR] Current multiplier: 4x
+[HeapCEGAR] Regenerating SMT model with 4x instances...
+[HeapCEGAR] Set ASTOptions.instanceMultiplier = 4
+
+--- dfs instance search with strategy 1:
+
+List(TopLevelDeclarations)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(TopLevelDeclarations, ListExp, S_Exp)
+List(Atom)
+
+------ heap layout: ------
+instantiation graph:
+  TopLevelDeclarations -> List(ListExp, ListExp)
+  S_Exp -> List()
+  Atom -> List()
+  ListExp -> List(S_Exp, S_Exp)
+
+instancesByAnnotation:
+  
+
+instancesByComputation:
+  TopLevelDeclarations -> 1
+  ListExp -> 2
+  S_Exp -> 4
+  Atom -> 1
+
+heapEntries:
+  TopLevelDeclarations -> (0,0)
+  S_Exp -> (1,16)
+  Atom -> (17,20)
+  ListExp -> (21,28)
+---------------------------
+
+
+[HeapCEGAR] Heap layout:
+[HeapCEGAR]   TopLevelDeclarations: 1 instances (refs 0 to 0)
+[HeapCEGAR]   S_Exp: 16 instances (refs 1 to 16)
+[HeapCEGAR]   Atom: 4 instances (refs 17 to 20)
+[HeapCEGAR]   ListExp: 8 instances (refs 21 to 28)
+[HeapCEGAR] SMT model generated, solving...
+[UnifiedSolver] Starting unified solver...
+[UnifiedSolver]Processing model with 7 top-level declarations and 0 packages
+[UnifiedSolver]  Found class: S_Exp
+[UnifiedSolver]  Found class: Atom
+[UnifiedSolver]  Found class: ListExp
+[UnifiedSolver]Found 3 classes total: S_Exp, Atom, ListExp
+[UnifiedSolver] Entering unified loop...
+[UnifiedSolver]=== Iteration 1 ===
+[UnifiedSolver]Generated SMT with 2 potential objects
+[UnifiedSolver] Step 1: Checking satisfiability with regular Solver...
+FAILED|30.21|examples|lisp.k|TimeoutException: Future timed out after [30000 milliseconds]
+SUMMARY|30.22|1|0|1|0|0
+
+==========================================
+📋 Baseline: src/examples/baseline/lisp.k.json
+   Baseline outcome: SAT
+🎯 @expected: SAT
+==========================================
