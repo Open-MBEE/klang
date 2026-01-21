@@ -1195,11 +1195,21 @@ object UnifiedSolver {
 
         case SolveResult.Timeout =>
           log("TIMEOUT")
-          // If we have a best-effort solution, return it (unified loop's max-SAT behavior)
+          // If we have a best-effort solution, verify it before returning
           if (config.bestEffort && bestSoFar.isDefined) {
-            log("Returning best-effort result (partial solution from timeout)")
-            done = true
-            result = SolveResult.Sat(bestSoFar.get)
+            log("TIMEOUT - checking if best-effort solution satisfies hard constraints")
+            K2Z3.z3Model = bestSoFar.get
+            val currentScenario = if (useScenarioTracking && viableScenarios.nonEmpty) Some(viableScenarios.head) else None
+            val satisfiesHardConstraints = verifyHardConstraints(model, currentSMT, bestSoFar.get, currentScenario)
+            if (satisfiesHardConstraints) {
+              log("✓ Best-effort solution satisfies hard constraints - returning as SAT")
+              done = true
+              result = SolveResult.Sat(bestSoFar.get)
+            } else {
+              log("⚠️ Best-effort solution does NOT satisfy hard constraints - returning UNKNOWN")
+              done = true
+              result = SolveResult.Unknown("Timeout with partial solution that violates hard constraints")
+            }
           } else if (useScenarioTracking && viableScenarios.size > 1) {
             // Try next viable scenario
             val currentScenario = viableScenarios.head
@@ -1207,10 +1217,19 @@ object UnifiedSolver {
             log(s"Scenario $currentScenario timed out - trying next scenario")
             // Continue loop to try next scenario
           } else if (useScenarioTracking && viableScenarios.isEmpty && bestSoFar.isDefined) {
-            // All scenarios exhausted, return best effort if available
-            log("All scenarios exhausted - returning best-effort result")
-            done = true
-            result = SolveResult.Sat(bestSoFar.get)
+            // All scenarios exhausted, verify best effort before returning
+            log("All scenarios exhausted - checking best-effort solution")
+            K2Z3.z3Model = bestSoFar.get
+            val satisfiesHardConstraints = verifyHardConstraints(model, currentSMT, bestSoFar.get, None)
+            if (satisfiesHardConstraints) {
+              log("✓ Best-effort solution satisfies hard constraints - returning as SAT")
+              done = true
+              result = SolveResult.Sat(bestSoFar.get)
+            } else {
+              log("⚠️ Best-effort solution does NOT satisfy hard constraints - returning UNKNOWN")
+              done = true
+              result = SolveResult.Unknown("All scenarios exhausted, partial solution violates hard constraints")
+            }
           } else if (canIncreaseObjectBounds()) {
             // Maybe simpler problem with fewer objects?
             // Actually, don't increase on timeout - that makes it harder
@@ -1224,8 +1243,20 @@ object UnifiedSolver {
         case SolveResult.Unknown(reason) =>
           log(s"UNKNOWN: $reason")
           if (config.bestEffort && bestSoFar.isDefined) {
-            done = true
-            result = SolveResult.Sat(bestSoFar.get)
+            // Verify best-effort solution before returning
+            log("UNKNOWN - checking if best-effort solution satisfies hard constraints")
+            K2Z3.z3Model = bestSoFar.get
+            val currentScenario = if (useScenarioTracking && viableScenarios.nonEmpty) Some(viableScenarios.head) else None
+            val satisfiesHardConstraints = verifyHardConstraints(model, currentSMT, bestSoFar.get, currentScenario)
+            if (satisfiesHardConstraints) {
+              log("✓ Best-effort solution satisfies hard constraints - returning as SAT")
+              done = true
+              result = SolveResult.Sat(bestSoFar.get)
+            } else {
+              log("⚠️ Best-effort solution does NOT satisfy hard constraints - returning UNKNOWN")
+              done = true
+              result = SolveResult.Unknown(s"$reason (partial solution violates hard constraints)")
+            }
           } else {
             done = true
             result = SolveResult.Unknown(reason)
@@ -1235,8 +1266,11 @@ object UnifiedSolver {
 
     if (!done && iteration >= maxIterations) {
       log(s"Max iterations ($maxIterations) reached")
+      // Note: We can't verify hard constraints here because we're outside the solve loop
+      // Best practice: don't return partial solutions as SAT on max iterations
       result = if (bestSoFar.isDefined && config.bestEffort) {
-        SolveResult.Sat(bestSoFar.get)
+        log("Max iterations reached - returning best-effort result as UNKNOWN (constraints not verified)")
+        SolveResult.Unknown("Max iterations reached (partial solution, constraints not verified)")
       } else {
         SolveResult.Unknown(s"Max iterations reached")
       }
@@ -1244,8 +1278,12 @@ object UnifiedSolver {
 
     if (interrupted) {
       log("Interrupted")
+      // Note: We can't verify hard constraints here because we're outside the solve loop
       result = if (bestSoFar.isDefined) {
-        SolveResult.Sat(bestSoFar.get)
+        log("Interrupted - returning best model as UNKNOWN (constraints not verified)")
+        K2Z3.z3Model = bestSoFar.get
+        // Can't guarantee the partial solution satisfies all constraints
+        SolveResult.Unknown("Interrupted (partial solution, constraints not verified)")
       } else {
         SolveResult.Unknown("Interrupted")
       }
