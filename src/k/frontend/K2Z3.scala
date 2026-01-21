@@ -891,7 +891,7 @@ object K2Z3 {
    * Can be either ArrayType case class or IdentType with "Array" name.
    */
   def isArrayType(ty: Type): Boolean = ty match {
-    case ArrayType(_, _) => true
+    case ArrayType(_, _) => true 
     case IdentType(QualifiedName(List("Array")), _) => true
     case _ => false
   }
