@@ -1,5 +1,5 @@
-// @expected DISPLAY_FIX_NEEDED
-// BUG: Model output shows raw Z3 expressions instead of readable values
+// @expected SAT
+// NOTE: Array display still shows raw Z3 expressions (store/const) - future improvement
 // ============================================================
 // Seq vs Array: Understanding the Differences
 // ============================================================
