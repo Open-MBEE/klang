@@ -1,7 +1,11 @@
-Status: TYPE CHECK ERROR
+Status: PASSING (as of 2026-01-20)
 Category: Set of Objects with Instances Annotation
 
-Analysis:
+History:
+- Was: TYPE CHECK ERROR
+- Fixed: @instances annotation with sets of objects now works
+
+Description:
 This test uses @instances annotation with sets of objects:
 
   @instances(3)
@@ -17,17 +21,6 @@ This test uses @instances annotation with sets of objects:
     req s2 = Set{a | a : A :- a.x = 10 && (a = a1 || a = a2)}
   }
 
-The type checker reports an error. Possible issues:
-1. @instances annotation parsing/handling
-2. Set comprehension over object type (Set{a | a : A :- ...})
-3. Combining heap-bounded objects with set constraints
-
-The @instances annotation controls the heap CEGAR bounds, limiting how many
-objects of each class can exist. This interacts with set cardinality.
-
-Verdict: Interaction between @instances annotation and Set[Object] types.
-
-Action:
-1. Verify @instances annotation is being parsed correctly
-2. Check type checker handling of Set comprehension over object types
-3. May need coordination between instances bounds and set constraints
+The test combines heap-bounded objects (@instances) with set constraints.
+Both explicit set literals (Set{a1, a2}) and set comprehensions over
+object types (Set{a | a : A :- ...}) are now working correctly.

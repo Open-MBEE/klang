@@ -3,6 +3,7 @@
 ## Status
 - **Current**: SAT (working correctly)
 - **Set Display**: Fixed as of 2026-01-19
+- **Let-Binding Resolution**: Fixed as of 2026-01-20
 
 ## Description
 
@@ -10,12 +11,14 @@ Tests Set constraints with spacecraft fleets:
 - `LowCostSCFleet` - all spacecraft must have cost < 1e6
 - `FeasibleLowCostSCFleet` - all spacecraft must go to Earth
 
-## Set Display Fix (2026-01-19)
+## Set Display Fixes
+
+### Fix 1: Universal/Empty Sets (2026-01-19)
 
 Previously, Sets were displaying as `[Empty]` when they should
 show `Set(*)` for universal sets or `Set()` for empty sets.
 
-### The Problem
+#### The Problem
 Z3 represents Sets as `Array[T, Bool]`:
 - Universal set: `((as const (Array T Bool)) true)`
 - Empty set: `((as const (Array T Bool)) false)`
@@ -23,22 +26,36 @@ Z3 represents Sets as `Array[T, Bool]`:
 The old code tried to look up FuncDecls but failed for inline
 constant arrays, resulting in `[Empty]` display.
 
-### The Fix
+#### The Fix
 Added `parseInlineSetExpression()` in K2Z3.scala to handle:
 - Inline constant arrays with `true` → `Set(*)`
 - Inline constant arrays with `false` → `Set()`
 - Store operations for modified sets
 
+### Fix 2: Let-Binding Resolution (2026-01-20)
+
+Sets with actual elements were showing `Set(?)` instead of
+`Set(1, 2, 3)` because Z3 uses let-bindings like `a!1`, `a!2`
+to define set contents, and these references weren't being resolved.
+
+#### The Problem
+Z3 output like:
+```
+(let ((a!1 (store (store ... 1 true) 2 true))) a!1)
+```
+Was displaying as `Set(?)` because `a!1` wasn't resolved.
+
+#### The Fix
+Added `extractLetBindings()` to parse let blocks from the LOCAL
+value context (not global model) and cache bindings. Modified
+`parseInlineSetExpression()` to recursively resolve `a!N` refs.
+
 ### Current Output
 ```
+Sets(s1:: Set(1, 2, 3), s2:: Set(), s3:: Set(3, 4, 5), ...)
 FeasibleLowCostSCFleet(deployedSC:: Set(*))
-LowCostSCFleet(deployedSC:: Set(*))
 ```
 
-The `Set(*)` indicates a universal set (all Spacecraft are members).
-This is correct because the constraints use `sc isin deployedSC =>`,
-which is trivially satisfied when deployedSC is universal.
-
 ## Related Files
-- `K2Z3.scala` - `parseInlineSetExpression()` function
+- `K2Z3.scala` - `parseInlineSetExpression()`, `extractLetBindings()`
 - `testsets*.k` - other Set test files

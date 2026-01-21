@@ -1,26 +1,21 @@
-Status: BASELINE MISMATCH
-Category: SMT Model Difference
+Status: PASSING (as of 2026-01-20)
+Category: Set Operations
 
-Analysis:
-This test has a baseline mismatch for smtModel only. The test exercises many
-Set operations:
+History:
+- Was: BASELINE MISMATCH (smtModel difference)
+- Fixed: 2026-01-20 - Set display let-binding resolution
+
+Description:
+This test exercises many Set operations:
 - Set literals: Set{1,2,3}, Set{}
 - Range sets: Set{3..5}
 - Set operations: isin, !isin, inter, subset, psubset
 - Set comprehensions: Set{x | x : Int :- condition}
 - Nested sets: Set[Set[Int]]
 
-The smtModel mismatch could be due to:
-1. Different variable naming/ordering in SMT output
-2. Changes in how sets are encoded to SMT
-3. Different optimization or simplification of constraints
+Current Output:
+Sets(s1:: Set(1, 2, 3), s2:: Set(), s3:: Set(3, 4, 5), s4:: Set(3), 
+     s5:: Set(11, 12, 13), s6:: Set(11, 12), min::9, max::14, s7:: Set(), s8:: Set())
 
-The test logic should still work - this is likely a cosmetic/representation change
-in the SMT output rather than a functional issue.
-
-Verdict: Likely needs baseline regeneration if semantics haven't changed.
-
-Action:
-1. Run test in verbose mode to see actual vs expected smtModel
-2. If results are equivalent, regenerate baseline
-3. If results differ semantically, investigate Set encoding changes
+The set display now correctly shows set contents by resolving Z3 let-bindings
+(a!1, a!2, etc.) that define set membership via store operations.

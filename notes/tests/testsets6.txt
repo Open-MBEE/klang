@@ -1,33 +1,25 @@
-Status: BUG - Test should remain FAILING until fixed
-Category: Set Constraint Bug
-Date: 2026-01-19
+Status: PASSING (as of 2026-01-20)
+Category: Set Display and Universal Sets
 
-Issue:
-The solver returns `FeasibleLowCostSCFleet(deployedSC:: [Empty])` despite the constraint:
-  req deployedSC != Set{}
+History:
+- Was: BUG - Displaying [Empty] for universal sets
+- Fixed: 2026-01-19 - Set display for universal/empty sets
+- Fixed: 2026-01-20 - Let-binding resolution for finite sets
 
-This is a constraint satisfaction bug - the Set is empty when it explicitly should NOT be.
+Description:
+Tests Set constraints with spacecraft fleets:
+- LowCostSCFleet - all spacecraft must have cost < 1e6
+- FeasibleLowCostSCFleet - all spacecraft must go to Earth
 
-Details:
-- LowCostSCFleet has the `req deployedSC != Set{}` commented out, so [Empty] is valid
-- FeasibleLowCostSCFleet has `req deployedSC != Set{}` as an active constraint
-- But FeasibleLowCostSCFleet also shows `deployedSC:: [Empty]`
+Current Output:
+  FeasibleLowCostSCFleet(deployedSC:: Set(*))
+  LowCostSCFleet(deployedSC:: Set(*))
 
-This appears related to the Bank.k isEmpty() bug mentioned in EXAMPLES_REVIEW.md:
-"Set isEmpty() constraints are silently ignored"
+The Set(*) indicates a universal set (all Spacecraft are members).
+This is correct because the constraints use `sc isin deployedSC =>`,
+which is trivially satisfied when deployedSC is universal.
 
-The `!= Set{}` comparison may not be properly translated to SMT, similar to how
-isEmpty() constraints are being dropped.
-
-Investigation Steps:
-1. Check how `!= Set{}` is translated to SMT in AbstractSyntax.scala
-2. Look at SetExp.toSMT and related Set comparison methods
-3. Check if this is the same root cause as the isEmpty() bug
-
-Action:
-DO NOT update the baseline for this test. Keep it failing until the bug is fixed.
-The test is a good regression test for this bug.
-
-Related Issues:
-- Bank.k isEmpty() bug
-- EXAMPLES_REVIEW.md entry for Bank.k
+Fixes Applied:
+1. parseInlineSetExpression() - handles Z3 constant arrays (Set(*), Set())
+2. extractLetBindings() - resolves a!N let-binding references
+3. formatArrayValue() - formats Array types (used by sets internally)
