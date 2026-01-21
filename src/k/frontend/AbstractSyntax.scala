@@ -438,6 +438,281 @@ object UtilSMT {
     }
   }
 
+  // =========================================================================
+  // Mutual Recursion Support
+  // =========================================================================
+  // 
+  // SMT-LIB2 requires mutually recursive functions to be declared together
+  // using define-funs-rec (plural). This section provides:
+  // 1. Function call graph building
+  // 2. Strongly connected component (SCC) detection
+  // 3. SMT generation for function groups
+  
+  /** 
+   * Represents a function with its class context.
+   * fullName is "ClassName.funcName" for unique identification.
+   */
+  case class FunctionInfo(className: String, funDecl: FunDecl) {
+    def fullName: String = s"$className.${funDecl.ident}"
+    def fullNameBang: String = s"$className!${funDecl.ident}"
+  }
+  
+  /** All functions registered during SMT generation, indexed by fullName */
+  var allFunctions: Map[String, FunctionInfo] = Map()
+  
+  /** Call graph: maps function fullName to set of called function fullNames */
+  var functionCallGraph: Map[String, Set[String]] = Map()
+  
+  /** Functions that have been processed (to avoid double-generation) */
+  var processedFunctions: Set[String] = Set()
+  
+  /** Reset mutual recursion tracking */
+  def resetMutualRecursion(): Unit = {
+    allFunctions = Map()
+    functionCallGraph = Map()
+    processedFunctions = Set()
+  }
+  
+  /**
+   * Register a function for mutual recursion analysis.
+   * Must be called before SMT generation.
+   */
+  def registerFunction(className: String, fd: FunDecl): Unit = {
+    val info = FunctionInfo(className, fd)
+    allFunctions = allFunctions + (info.fullName -> info)
+  }
+  
+  /**
+   * Build the function call graph by scanning all function bodies.
+   * Must be called after all functions are registered.
+   */
+  def buildFunctionCallGraph(): Unit = {
+    functionCallGraph = Map()
+    for ((fullName, info) <- allFunctions) {
+      val calls = findFunctionCalls(info.funDecl.body, info.className)
+      functionCallGraph = functionCallGraph + (fullName -> calls)
+    }
+  }
+  
+  /**
+   * Find all function calls in a list of member declarations.
+   * Returns the set of fullNames of called functions.
+   */
+  private def findFunctionCalls(members: List[MemberDecl], currentClass: String): Set[String] = {
+    var calls = Set[String]()
+    
+    def scanExp(exp: Exp): Unit = {
+      exp match {
+        case FunApplExp(IdentExp(funcName), args) =>
+          // Top-level function or same-class function
+          val possibleNames = List(
+            s"$currentClass.$funcName",
+            s"${Names.mainClass}.$funcName"
+          )
+          for (name <- possibleNames if allFunctions.contains(name)) {
+            calls = calls + name
+          }
+          args.foreach(scanExp)
+          
+        case FunApplExp(DotExp(obj, funcName), args) =>
+          // Method call on an object - we'd need type info to resolve this
+          // For now, scan the object expression and args
+          scanExp(obj)
+          args.foreach(scanExp)
+          
+        case FunApplExp(func, args) =>
+          scanExp(func)
+          args.foreach(scanExp)
+          
+        case _ =>
+          // Recursively scan children
+          exp.children.foreach {
+            case e: Exp => scanExp(e)
+            case _ =>
+          }
+      }
+    }
+    
+    for (member <- members) {
+      member match {
+        case ExpressionDecl(e) => scanExp(e)
+        case ConstraintDecl(_, e, _) => scanExp(e)
+        case PropertyDecl(_, _, _, _, _, Some(e)) => scanExp(e)
+        case _ =>
+      }
+    }
+    
+    calls
+  }
+  
+  /**
+   * Find strongly connected components using Tarjan's algorithm.
+   * Returns list of SCCs, where each SCC is a set of function fullNames.
+   * SCCs are returned in reverse topological order (dependencies first).
+   */
+  def findSCCs(): List[Set[String]] = {
+    var index = 0
+    var stack = List[String]()
+    var onStack = Set[String]()
+    var indices = Map[String, Int]()
+    var lowlinks = Map[String, Int]()
+    var sccs = List[Set[String]]()
+    
+    def strongConnect(v: String): Unit = {
+      indices = indices + (v -> index)
+      lowlinks = lowlinks + (v -> index)
+      index += 1
+      stack = v :: stack
+      onStack = onStack + v
+      
+      val neighbors = functionCallGraph.getOrElse(v, Set())
+      for (w <- neighbors if allFunctions.contains(w)) {
+        if (!indices.contains(w)) {
+          strongConnect(w)
+          lowlinks = lowlinks + (v -> Math.min(lowlinks(v), lowlinks(w)))
+        } else if (onStack.contains(w)) {
+          lowlinks = lowlinks + (v -> Math.min(lowlinks(v), indices(w)))
+        }
+      }
+      
+      if (lowlinks(v) == indices(v)) {
+        // v is root of an SCC
+        var scc = Set[String]()
+        var done = false
+        while (!done) {
+          val w = stack.head
+          stack = stack.tail
+          onStack = onStack - w
+          scc = scc + w
+          if (w == v) done = true
+        }
+        sccs = scc :: sccs
+      }
+    }
+    
+    for (v <- allFunctions.keys if !indices.contains(v)) {
+      strongConnect(v)
+    }
+    
+    sccs.reverse  // Return in dependency order
+  }
+  
+  /**
+   * Determine if an SCC represents mutual recursion (size > 1) or 
+   * potentially self-recursion (size == 1 with self-call).
+   */
+  def isMutuallyRecursive(scc: Set[String]): Boolean = scc.size > 1
+  
+  def isSelfRecursive(scc: Set[String]): Boolean = {
+    if (scc.size != 1) false
+    else {
+      val funcName = scc.head
+      functionCallGraph.getOrElse(funcName, Set()).contains(funcName)
+    }
+  }
+  
+  /**
+   * Generate SMT for a mutually recursive function group using define-funs-rec.
+   * This generates both the .name and !name versions.
+   */
+  def generateMutualRecursionSMT(scc: Set[String]): String = {
+    if (scc.isEmpty) return ""
+    
+    val funcs = scc.toList.flatMap(allFunctions.get)
+    if (funcs.isEmpty) return ""
+    
+    var result = ""
+    
+    // Mark these functions as processed
+    for (f <- funcs) processedFunctions = processedFunctions + f.fullName
+    
+    // Generate define-funs-rec with subtyping (.name version)
+    result += generateDefineFunsRec(funcs, withSubtyping = true)
+    result += "\n"
+    
+    // Generate define-funs-rec without subtyping (!name version)
+    result += generateDefineFunsRec(funcs, withSubtyping = false)
+    
+    result
+  }
+  
+  /**
+   * Generate a define-funs-rec block for a list of mutually recursive functions.
+   */
+  private def generateDefineFunsRec(funcs: List[FunctionInfo], withSubtyping: Boolean): String = {
+    val suffix = if (withSubtyping) "." else "!"
+    
+    var result = "(define-funs-rec\n"
+    
+    // First part: function signatures
+    result += "  (\n"
+    for (info <- funcs) {
+      val fd = info.funDecl
+      val className = info.className
+      val funcName = s"$className$suffix${fd.ident}"
+      val parameters = s"(this Ref)" + fd.params.map(_.toSMT).mkString
+      val resultType = fd.ty match {
+        case Some(t) => t.toSMT
+        case None => "Bool"
+      }
+      result += s"    ($funcName ($parameters) $resultType)\n"
+    }
+    result += "  )\n"
+    
+    // Second part: function bodies
+    result += "  (\n"
+    for (info <- funcs) {
+      val fd = info.funDecl
+      val className = info.className
+      val bodySMT = if (fd.body.isEmpty) {
+        "true"
+      } else {
+        memberList2SMT(fd.body, className, withSubtyping)
+      }
+      result += s"    $bodySMT\n"
+    }
+    result += "  )\n"
+    
+    result += ")"
+    result
+  }
+  
+  /**
+   * Check if a function has been processed by mutual recursion handling.
+   */
+  def isFunctionProcessed(className: String, funcName: String): Boolean = {
+    processedFunctions.contains(s"$className.$funcName")
+  }
+  
+  /**
+   * Generate SMT for all functions, handling mutual recursion properly.
+   * This should be called instead of individual FunDecl.toSMT for proper grouping.
+   */
+  def generateAllFunctionsSMT(): String = {
+    // Build the call graph
+    buildFunctionCallGraph()
+    
+    // Find SCCs
+    val sccs = findSCCs()
+    
+    var result = ""
+    
+    for (scc <- sccs) {
+      if (scc.forall(name => !processedFunctions.contains(name))) {
+        if (isMutuallyRecursive(scc)) {
+          // Generate define-funs-rec for mutual recursion group
+          result += headline3(s"Mutually recursive functions: ${scc.map(_.split("\\.").last).mkString(", ")}")
+          result += generateMutualRecursionSMT(scc)
+          result += "\n\n"
+        }
+        // Note: self-recursive and non-recursive functions will be handled
+        // by the normal FunDecl.toSMT flow - we just skip already-processed ones
+      }
+    }
+    
+    result
+  }
+
   // TODO: should these refer to the TypeChecker?:
   def log(msg: String) = if (!ASTOptions.silent) Misc.log("TypeChecker", msg)
   def logDebug(msg: String) = if (ASTOptions.debug && !ASTOptions.silent) Misc.log("TypeChecker", s"DEBUG $msg")
@@ -1485,7 +1760,24 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // --- result2.                            ---
     // -------------------------------------------
 
-    // Generate methods:
+    // Register all functions for mutual recursion analysis:
+    UtilSMT.resetMutualRecursion()
+    for (ed <- entityDecls) {
+      val funDecls = UtilSMT.compressFunDecls(ed.getAllFunDecls)
+      for (fd <- funDecls) {
+        UtilSMT.registerFunction(ed.ident, fd)
+      }
+    }
+    
+    // Generate mutually recursive function groups first:
+    val mutualRecursionSMT = UtilSMT.generateAllFunctionsSMT()
+    if (mutualRecursionSMT.nonEmpty) {
+      result2 += UtilSMT.headline1("Mutually Recursive Functions")
+      result2 += mutualRecursionSMT
+      result2 += "\n"
+    }
+
+    // Generate remaining methods (non-mutually-recursive):
 
     result2 += UtilSMT.headline1("Methods")
     for (ed <- entityDecls) {
@@ -1913,8 +2205,12 @@ case class EntityDecl(
     var result: String = ""
     val funDecls = UtilSMT.compressFunDecls(getAllFunDecls)
     if (!funDecls.isEmpty) {
-      result += UtilSMT.headline2(s"Methods for class $ident")
-      result += funDecls.map(_.toSMT(ident)).mkString("\n\n")
+      // Filter out functions that were already processed by mutual recursion handling
+      val remainingFunDecls = funDecls.filterNot(fd => UtilSMT.isFunctionProcessed(ident, fd.ident))
+      if (remainingFunDecls.nonEmpty) {
+        result += UtilSMT.headline2(s"Methods for class $ident")
+        result += remainingFunDecls.map(_.toSMT(ident)).mkString("\n\n")
+      }
     }
     result
   }

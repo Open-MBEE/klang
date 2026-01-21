@@ -1,12 +1,10 @@
--- @expected UNKNOWN
--- NOTE: Mutual recursion is not yet supported in K.
--- K generates define-fun-rec for self-recursive functions, but SMT-LIB2 requires
--- define-funs-rec (plural) for mutually recursive functions to declare all of them
--- together. This test documents this limitation.
+-- @expected SAT
+-- Test: Mutual recursion with three-way cycle computing factorial
+-- f1 -> f2 -> f3 -> f1 in a cycle, but computing factorial via alternating
 --
--- See factorial_simple.k for a working self-recursive example.
+-- Now supported via define-funs-rec in SMT-LIB2!
 
-// Mutually recursive functions - NOT YET SUPPORTED
+// Mutually recursive functions computing factorial via a three-way cycle
 fun f1(n: Int) : Int {
   if n <= 1 then 1
   else n * f2(n - 1)

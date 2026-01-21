@@ -1,0 +1,581 @@
+{
+  "name": "factorial.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nfun f1(n:Int) : Int\n{\n  if n <= 1 then\n    1\n  else\n    n * f2(n - 1)\n}\n\nfun f2(n:Int) : Int\n{\n  if n <= 1 then\n    1\n  else\n    n * f3(n - 1)\n}\n\nfun f3(n:Int) : Int\n{\n  if n <= 1 then\n    1\n  else\n    n * f1(n - 1)\n}\n\nr2:Int = f1(8)\n\nreq r2 = 40320\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (r2 Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.r2: ---\n\n(define-fun TopLevelDeclarations!r2 ((this Ref)) Int\n  (r2 (deref-TopLevelDeclarations this))\n)\n\n; =====================================\n; === Mutually Recursive Functions: ===\n; =====================================\n\n; --- Mutually recursive functions: f3, f2, f1: ---\n\n(define-funs-rec\n  (\n    (TopLevelDeclarations.f3 ((this Ref)(n Int)) Int)\n    (TopLevelDeclarations.f2 ((this Ref)(n Int)) Int)\n    (TopLevelDeclarations.f1 ((this Ref)(n Int)) Int)\n  )\n  (\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations.f1 this (- n 1))))\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations.f3 this (- n 1))))\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations.f2 this (- n 1))))\n  )\n)\n(define-funs-rec\n  (\n    (TopLevelDeclarations!f3 ((this Ref)(n Int)) Int)\n    (TopLevelDeclarations!f2 ((this Ref)(n Int)) Int)\n    (TopLevelDeclarations!f1 ((this Ref)(n Int)) Int)\n  )\n  (\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations!f1 this (- n 1))))\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations!f3 this (- n 1))))\n      (ite (<= n 1) 1 (* n (TopLevelDeclarations!f2 this (- n 1))))\n  )\n)\n\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (TopLevelDeclarations!r2 this) (TopLevelDeclarations!f1 this 8))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (= (TopLevelDeclarations!r2 this) 40320)\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 40320))\n(define-fun _xkassert0 () Bool\n  (= (r2 (sel-TopLevelDeclarations (select heap 0)))\n   ((_ TopLevelDeclarations!f1 0) 0 8)))\n(define-fun _xkassert1 () Bool\n  (= (r2 (sel-TopLevelDeclarations (select heap 0))) 40320))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store ((as const (Array Int Any)) null)\n       0\n       (lift-TopLevelDeclarations (mk-TopLevelDeclarations 40320))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "FunDecl",
+        "ident": "f1",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {"type": "IntType"}
+        }],
+        "ty": {"type": "IntType"},
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "IfExp",
+            "cond": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "trueBranch": {
+              "i": 1,
+              "type": "LiteralInteger"
+            },
+            "falseBranch": {
+              "type": "BinExp",
+              "op": "Times",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "f2",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Minus",
+                    "exp1": {
+                      "ident": "n",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                }]
+              }
+            }
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "FunDecl",
+        "ident": "f2",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {"type": "IntType"}
+        }],
+        "ty": {"type": "IntType"},
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "IfExp",
+            "cond": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "trueBranch": {
+              "i": 1,
+              "type": "LiteralInteger"
+            },
+            "falseBranch": {
+              "type": "BinExp",
+              "op": "Times",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "f3",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Minus",
+                    "exp1": {
+                      "ident": "n",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                }]
+              }
+            }
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "FunDecl",
+        "ident": "f3",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {"type": "IntType"}
+        }],
+        "ty": {"type": "IntType"},
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "IfExp",
+            "cond": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "trueBranch": {
+              "i": 1,
+              "type": "LiteralInteger"
+            },
+            "falseBranch": {
+              "type": "BinExp",
+              "op": "Times",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "f1",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Minus",
+                    "exp1": {
+                      "ident": "n",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                }]
+              }
+            }
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "r2",
+        "ty": {"type": "IntType"},
+        "assignment": false,
+        "expr": {
+          "type": "FunApplExp",
+          "exp1": {
+            "ident": "f1",
+            "type": "IdentExp"
+          },
+          "args": [{
+            "type": "PositionalArgument",
+            "exp": {
+              "i": 8,
+              "type": "LiteralInteger"
+            }
+          }]
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "r2",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "i": 40320,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "FunDecl",
+        "ident": "f1",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }],
+        "ty": {
+          "type": "ElementValue",
+          "element": "Integer"
+        },
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "Expression",
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "If"
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "LTE"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "LiteralInteger",
+                    "integer": 1
+                  }
+                ],
+                "type": "Expression"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 1
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Times"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "f2",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "Minus"
+                          },
+                          {
+                            "element": "n",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 1
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ]
+                  }
+                ],
+                "type": "Expression"
+              }
+            ]
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "FunDecl",
+        "ident": "f2",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }],
+        "ty": {
+          "type": "ElementValue",
+          "element": "Integer"
+        },
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "Expression",
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "If"
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "LTE"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "LiteralInteger",
+                    "integer": 1
+                  }
+                ],
+                "type": "Expression"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 1
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Times"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "f3",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "Minus"
+                          },
+                          {
+                            "element": "n",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 1
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ]
+                  }
+                ],
+                "type": "Expression"
+              }
+            ]
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "FunDecl",
+        "ident": "f3",
+        "typeParams": [],
+        "params": [{
+          "type": "Param",
+          "name": "n",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }],
+        "ty": {
+          "type": "ElementValue",
+          "element": "Integer"
+        },
+        "spec": [],
+        "body": [{
+          "type": "ExpressionDecl",
+          "exp": {
+            "type": "Expression",
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "If"
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "LTE"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "LiteralInteger",
+                    "integer": 1
+                  }
+                ],
+                "type": "Expression"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 1
+              },
+              {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "Times"
+                  },
+                  {
+                    "element": "n",
+                    "type": "ElementValue"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "f1",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "Minus"
+                          },
+                          {
+                            "element": "n",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "type": "LiteralInteger",
+                            "integer": 1
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ]
+                  }
+                ],
+                "type": "Expression"
+              }
+            ]
+          },
+          "annotations": []
+        }],
+        "annotations": []
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "r2",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Integer"
+        },
+        "assignment": false,
+        "expr": {
+          "type": "Expression",
+          "operand": [
+            {
+              "element": "f1",
+              "type": "ElementValue"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 8
+            }
+          ]
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "r2",
+              "type": "ElementValue"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 40320
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}
