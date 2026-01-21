@@ -1,0 +1,598 @@
+{
+  "name": "regex_alternation1.k",
+  "outcome": "UNSAT",
+  "typeChecks": true,
+  "model": "\nclass RegexAlternation1 {\n  pet1:String\n\n  req pet1 = \"cat\"\n\n  req pet1.matches(\"cat|dog\")\n  pet2:String\n\n  req pet2 = \"dog\"\n\n  req pet2.matches(\"cat|dog\")\n  color1:String\n\n  req color1 = \"red\"\n\n  req color1.matches(\"red|green|blue\")\n  color2:String\n\n  req color2 = \"green\"\n\n  req color2.matches(\"red|green|blue\")\n  color3:String\n\n  req color3 = \"blue\"\n\n  req color3.matches(\"red|green|blue\")\n}\n\nmain:RegexAlternation1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((RegexAlternation1 (mk-RegexAlternation1 (pet1 String)(pet2 String)(color1 String)(color2 String)(color3 String)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-RegexAlternation1 (sel-RegexAlternation1 RegexAlternation1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-RegexAlternation1 ((this Ref)) Bool\n  (is-lift-RegexAlternation1 (deref this))\n)\n\n(define-fun deref-RegexAlternation1 ((this Ref)) RegexAlternation1\n  (sel-RegexAlternation1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-RegexAlternation1 ((this Ref)) Bool\n  (deref-is-RegexAlternation1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------------------\n;   Getters for class RegexAlternation1:\n; ----------------------------------------\n\n; --- getters for RegexAlternation1.pet1: ---\n\n(define-fun RegexAlternation1!pet1 ((this Ref)) String\n  (pet1 (deref-RegexAlternation1 this))\n)\n\n; --- getters for RegexAlternation1.pet2: ---\n\n(define-fun RegexAlternation1!pet2 ((this Ref)) String\n  (pet2 (deref-RegexAlternation1 this))\n)\n\n; --- getters for RegexAlternation1.color1: ---\n\n(define-fun RegexAlternation1!color1 ((this Ref)) String\n  (color1 (deref-RegexAlternation1 this))\n)\n\n; --- getters for RegexAlternation1.color2: ---\n\n(define-fun RegexAlternation1!color2 ((this Ref)) String\n  (color2 (deref-RegexAlternation1 this))\n)\n\n; --- getters for RegexAlternation1.color3: ---\n\n(define-fun RegexAlternation1!color3 ((this Ref)) String\n  (color3 (deref-RegexAlternation1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-RegexAlternation1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------------------\n;   Invariant for class RegexAlternation1:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-RegexAlternation1 RegexAlternation1)\n\n; --- Invariant 1: ---\n\n(define-fun RegexAlternation1.inv1 ((this Ref)) Bool\n  (= (RegexAlternation1!pet1 this) \"cat\")\n)\n\n(assert (! (RegexAlternation1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun RegexAlternation1.inv2 ((this Ref)) Bool\n  (str.in_re (RegexAlternation1!pet1 this) (str.to_re \"cat|dog\"))\n)\n\n(assert (! (RegexAlternation1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun RegexAlternation1.inv3 ((this Ref)) Bool\n  (= (RegexAlternation1!pet2 this) \"dog\")\n)\n\n(assert (! (RegexAlternation1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun RegexAlternation1.inv4 ((this Ref)) Bool\n  (str.in_re (RegexAlternation1!pet2 this) (str.to_re \"cat|dog\"))\n)\n\n(assert (! (RegexAlternation1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun RegexAlternation1.inv5 ((this Ref)) Bool\n  (= (RegexAlternation1!color1 this) \"red\")\n)\n\n(assert (! (RegexAlternation1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun RegexAlternation1.inv6 ((this Ref)) Bool\n  (str.in_re (RegexAlternation1!color1 this) (str.to_re \"red|green|blue\"))\n)\n\n(assert (! (RegexAlternation1.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun RegexAlternation1.inv7 ((this Ref)) Bool\n  (= (RegexAlternation1!color2 this) \"green\")\n)\n\n(assert (! (RegexAlternation1.inv7 1) :named _xkassert7))\n\n; --- Invariant 8: ---\n\n(define-fun RegexAlternation1.inv8 ((this Ref)) Bool\n  (str.in_re (RegexAlternation1!color2 this) (str.to_re \"red|green|blue\"))\n)\n\n(assert (! (RegexAlternation1.inv8 1) :named _xkassert8))\n\n; --- Invariant 9: ---\n\n(define-fun RegexAlternation1.inv9 ((this Ref)) Bool\n  (= (RegexAlternation1!color3 this) \"blue\")\n)\n\n(assert (! (RegexAlternation1.inv9 1) :named _xkassert9))\n\n; --- Invariant 10: ---\n\n(define-fun RegexAlternation1.inv10 ((this Ref)) Bool\n  (str.in_re (RegexAlternation1!color3 this) (str.to_re \"red|green|blue\"))\n)\n\n(assert (! (RegexAlternation1.inv10 1) :named _xkassert10))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-RegexAlternation1 const-1-RegexAlternation1))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert9 () Bool\n  (= (color3 (sel-RegexAlternation1 (select heap 1))) \"blue\"))\n(define-fun _xkassert6 () Bool\n  (str.in_re (color1 (sel-RegexAlternation1 (select heap 1)))\n           (str.to_re \"red|green|blue\")))\n(define-fun _xkassert2 () Bool\n  (str.in_re (pet1 (sel-RegexAlternation1 (select heap 1))) (str.to_re \"cat|dog\")))\n(define-fun _xkassert1 () Bool\n  (= (pet1 (sel-RegexAlternation1 (select heap 1))) \"cat\"))\n(define-fun _xkassert4 () Bool\n  (str.in_re (pet2 (sel-RegexAlternation1 (select heap 1))) (str.to_re \"cat|dog\")))\n(define-fun _xkassert8 () Bool\n  (str.in_re (color2 (sel-RegexAlternation1 (select heap 1)))\n           (str.to_re \"red|green|blue\")))\n(define-fun _xkassert3 () Bool\n  (= (pet2 (sel-RegexAlternation1 (select heap 1))) \"dog\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert7 () Bool\n  (= (color2 (sel-RegexAlternation1 (select heap 1))) \"green\"))\n(define-fun _xkassert10 () Bool\n  (str.in_re (color3 (sel-RegexAlternation1 (select heap 1)))\n           (str.to_re \"red|green|blue\")))\n(define-fun const-1-RegexAlternation1 () RegexAlternation1\n  (mk-RegexAlternation1 \"cat\" \"dog\" \"red\" \"green\" \"blue\"))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-RegexAlternation1 a!1)))\n(define-fun _xkassert5 () Bool\n  (= (color1 (sel-RegexAlternation1 (select heap 1))) \"red\"))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              1\n              (lift-RegexAlternation1\n                (mk-RegexAlternation1 \"cat\" \"dog\" \"red\" \"green\" \"blue\")))\n       0\n       (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexAlternation1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pet1",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "pet1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "cat",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "pet1",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "cat|dog",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pet2",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "pet2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "dog",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "pet2",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "cat|dog",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color1",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "color1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "red",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "color1",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "red|green|blue",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color2",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "color2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "green",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "color2",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "red|green|blue",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color3",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "color3",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "blue",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "color3",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "red|green|blue",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["RegexAlternation1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexAlternation1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pet1",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "pet1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "cat"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "pet1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "cat|dog"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pet2",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "pet2",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "dog"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "pet2",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "cat|dog"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color1",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "color1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "red"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "color1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "red|green|blue"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color2",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "color2",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "green"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "color2",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "red|green|blue"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "color3",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "color3",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "blue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "color3",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "red|green|blue"
+                }
+              ]
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "RegexAlternation1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

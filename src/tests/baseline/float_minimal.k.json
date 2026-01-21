@@ -1,0 +1,269 @@
+{
+  "name": "float_minimal.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass FloatMinimal {\n  intVal:Int = 42\n  f32:Float32 = intVal as Float32\n  realBack:Real = f32 as Real\n\n  req realBack > 4.1E1\n\n  req realBack < 4.3E1\n}\n\nmain:FloatMinimal\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((FloatMinimal (mk-FloatMinimal (intVal Int)(f32 (_ FloatingPoint 8 24))(realBack Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-FloatMinimal (sel-FloatMinimal FloatMinimal))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-FloatMinimal ((this Ref)) Bool\n  (is-lift-FloatMinimal (deref this))\n)\n\n(define-fun deref-FloatMinimal ((this Ref)) FloatMinimal\n  (sel-FloatMinimal (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-FloatMinimal ((this Ref)) Bool\n  (deref-is-FloatMinimal this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -----------------------------------\n;   Getters for class FloatMinimal:\n; -----------------------------------\n\n; --- getters for FloatMinimal.intVal: ---\n\n(define-fun FloatMinimal!intVal ((this Ref)) Int\n  (intVal (deref-FloatMinimal this))\n)\n\n; --- getters for FloatMinimal.f32: ---\n\n(define-fun FloatMinimal!f32 ((this Ref)) (_ FloatingPoint 8 24)\n  (f32 (deref-FloatMinimal this))\n)\n\n; --- getters for FloatMinimal.realBack: ---\n\n(define-fun FloatMinimal!realBack ((this Ref)) Real\n  (realBack (deref-FloatMinimal this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-FloatMinimal (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -------------------------------------\n;   Invariant for class FloatMinimal:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-FloatMinimal FloatMinimal)\n\n; --- Invariant 1: ---\n\n(define-fun FloatMinimal.inv1 ((this Ref)) Bool\n  (= (FloatMinimal!intVal this) 42)\n)\n\n(assert (! (FloatMinimal.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun FloatMinimal.inv2 ((this Ref)) Bool\n  (= (FloatMinimal!f32 this) ((_ to_fp 8 24) RNE (to_real (FloatMinimal!intVal this))))\n)\n\n(assert (! (FloatMinimal.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun FloatMinimal.inv3 ((this Ref)) Bool\n  (= (FloatMinimal!realBack this) (fp.to_real (FloatMinimal!f32 this)))\n)\n\n(assert (! (FloatMinimal.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun FloatMinimal.inv4 ((this Ref)) Bool\n  (> (FloatMinimal!realBack this) 41.0000000000000000)\n)\n\n(assert (! (FloatMinimal.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun FloatMinimal.inv5 ((this Ref)) Bool\n  (< (FloatMinimal!realBack this) 43.0000000000000000)\n)\n\n(assert (! (FloatMinimal.inv5 1) :named _xkassert5))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-FloatMinimal const-1-FloatMinimal))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-FloatMinimal () FloatMinimal\n  (mk-FloatMinimal 42 (fp #b0 #x84 #b01010000000000000000000) 42.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (to_real (intVal (sel-FloatMinimal (select heap 1))))))\n  (= (f32 (sel-FloatMinimal (select heap 1)))\n     ((_ to_fp 8 24) roundNearestTiesToEven a!1))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (fp.to_real (f32 (sel-FloatMinimal (select heap 1))))))\n  (= (realBack (sel-FloatMinimal (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (< (realBack (sel-FloatMinimal (select heap 1))) 43.0))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-FloatMinimal a!1)))\n(define-fun _xkassert1 () Bool\n  (= (intVal (sel-FloatMinimal (select heap 1))) 42))\n(define-fun _xkassert4 () Bool\n  (> (realBack (sel-FloatMinimal (select heap 1))) 41.0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-FloatMinimal\n         (mk-FloatMinimal 42 (fp #b0 #x84 #b01010000000000000000000) 42.0))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "FloatMinimal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "intVal",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 42,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "f32",
+            "ty": {
+              "type": "FloatType",
+              "ebits": 8,
+              "sbits": 24
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "intVal",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "FloatType",
+                "ebits": 8,
+                "sbits": 24
+              }
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "realBack",
+            "ty": {"type": "RealType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "f32",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "RealType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "ident": "realBack",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "41.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "realBack",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "43.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["FloatMinimal"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "FloatMinimal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "intVal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 42
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "f32",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Float32"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "intVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Float32"
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "realBack",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "f32",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Double"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "element": "realBack",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 41
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "realBack",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 43
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "FloatMinimal"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

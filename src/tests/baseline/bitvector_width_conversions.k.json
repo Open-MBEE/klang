@@ -1,0 +1,1440 @@
+{
+  "name": "bitvector_width_conversions.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Int8ToInt16 {\n  x:Int8 = 255\n  y:Int16 = x as Int16\n}\n\nclass UInt8ToUInt16 {\n  x:UInt8 = 255\n  y:UInt16 = x as UInt16\n}\n\nclass Int16ToInt8 {\n  x:Int16 = 513\n  y:Int8 = x as Int8\n}\n\nclass UInt16ToUInt8 {\n  x:UInt16 = 65408\n  y:UInt8 = x as UInt8\n}\n\nclass Int8ToUInt16 {\n  x:Int8 = 255\n  y:UInt16 = x as UInt16\n}\n\nclass UInt8ToInt16 {\n  x:UInt8 = 255\n  y:Int16 = x as Int16\n}\n\nclass Int16ToUInt8 {\n  x:Int16 = 65280\n  y:UInt8 = x as UInt8\n}\n\nclass UInt16ToInt8 {\n  x:UInt16 = 128\n  y:Int8 = x as Int8\n}\n\nclass Int8ToUInt8 {\n  x:Int8 = 255\n  y:UInt8 = x as UInt8\n}\n\nclass UInt8ToInt8 {\n  x:UInt8 = 128\n  y:Int8 = x as Int8\n}\n\nclass Int32ToInt64 {\n  x:Int32 = 4294967295\n  y:Int64 = x as Int64\n}\n\nclass UInt32ToUInt64 {\n  x:UInt32 = 4294967295\n  y:UInt64 = x as UInt64\n}\n\nclass SignedBvToInt {\n  x:Int8 = 255\n  y:Int = x as Int\n}\n\nclass UnsignedBvToInt {\n  x:UInt8 = 255\n  y:Int = x as Int\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Int8ToInt16 (mk-Int8ToInt16 (x (_ BitVec 8))(y (_ BitVec 16))))))\n(declare-datatypes () ((UInt8ToUInt16 (mk-UInt8ToUInt16 (x (_ BitVec 8))(y (_ BitVec 16))))))\n(declare-datatypes () ((Int16ToInt8 (mk-Int16ToInt8 (x (_ BitVec 16))(y (_ BitVec 8))))))\n(declare-datatypes () ((UInt16ToUInt8 (mk-UInt16ToUInt8 (x (_ BitVec 16))(y (_ BitVec 8))))))\n(declare-datatypes () ((Int8ToUInt16 (mk-Int8ToUInt16 (x (_ BitVec 8))(y (_ BitVec 16))))))\n(declare-datatypes () ((UInt8ToInt16 (mk-UInt8ToInt16 (x (_ BitVec 8))(y (_ BitVec 16))))))\n(declare-datatypes () ((Int16ToUInt8 (mk-Int16ToUInt8 (x (_ BitVec 16))(y (_ BitVec 8))))))\n(declare-datatypes () ((UInt16ToInt8 (mk-UInt16ToInt8 (x (_ BitVec 16))(y (_ BitVec 8))))))\n(declare-datatypes () ((Int8ToUInt8 (mk-Int8ToUInt8 (x (_ BitVec 8))(y (_ BitVec 8))))))\n(declare-datatypes () ((UInt8ToInt8 (mk-UInt8ToInt8 (x (_ BitVec 8))(y (_ BitVec 8))))))\n(declare-datatypes () ((Int32ToInt64 (mk-Int32ToInt64 (x (_ BitVec 32))(y (_ BitVec 64))))))\n(declare-datatypes () ((UInt32ToUInt64 (mk-UInt32ToUInt64 (x (_ BitVec 32))(y (_ BitVec 64))))))\n(declare-datatypes () ((SignedBvToInt (mk-SignedBvToInt (x (_ BitVec 8))(y Int)))))\n(declare-datatypes () ((UnsignedBvToInt (mk-UnsignedBvToInt (x (_ BitVec 8))(y Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Int8ToInt16 (sel-Int8ToInt16 Int8ToInt16))\n  (lift-UInt8ToUInt16 (sel-UInt8ToUInt16 UInt8ToUInt16))\n  (lift-Int16ToInt8 (sel-Int16ToInt8 Int16ToInt8))\n  (lift-UInt16ToUInt8 (sel-UInt16ToUInt8 UInt16ToUInt8))\n  (lift-Int8ToUInt16 (sel-Int8ToUInt16 Int8ToUInt16))\n  (lift-UInt8ToInt16 (sel-UInt8ToInt16 UInt8ToInt16))\n  (lift-Int16ToUInt8 (sel-Int16ToUInt8 Int16ToUInt8))\n  (lift-UInt16ToInt8 (sel-UInt16ToInt8 UInt16ToInt8))\n  (lift-Int8ToUInt8 (sel-Int8ToUInt8 Int8ToUInt8))\n  (lift-UInt8ToInt8 (sel-UInt8ToInt8 UInt8ToInt8))\n  (lift-Int32ToInt64 (sel-Int32ToInt64 Int32ToInt64))\n  (lift-UInt32ToUInt64 (sel-UInt32ToUInt64 UInt32ToUInt64))\n  (lift-SignedBvToInt (sel-SignedBvToInt SignedBvToInt))\n  (lift-UnsignedBvToInt (sel-UnsignedBvToInt UnsignedBvToInt))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Int8ToInt16 ((this Ref)) Bool\n  (is-lift-Int8ToInt16 (deref this))\n)\n\n(define-fun deref-Int8ToInt16 ((this Ref)) Int8ToInt16\n  (sel-Int8ToInt16 (deref this))\n)\n\n(define-fun deref-is-UInt8ToUInt16 ((this Ref)) Bool\n  (is-lift-UInt8ToUInt16 (deref this))\n)\n\n(define-fun deref-UInt8ToUInt16 ((this Ref)) UInt8ToUInt16\n  (sel-UInt8ToUInt16 (deref this))\n)\n\n(define-fun deref-is-Int16ToInt8 ((this Ref)) Bool\n  (is-lift-Int16ToInt8 (deref this))\n)\n\n(define-fun deref-Int16ToInt8 ((this Ref)) Int16ToInt8\n  (sel-Int16ToInt8 (deref this))\n)\n\n(define-fun deref-is-UInt16ToUInt8 ((this Ref)) Bool\n  (is-lift-UInt16ToUInt8 (deref this))\n)\n\n(define-fun deref-UInt16ToUInt8 ((this Ref)) UInt16ToUInt8\n  (sel-UInt16ToUInt8 (deref this))\n)\n\n(define-fun deref-is-Int8ToUInt16 ((this Ref)) Bool\n  (is-lift-Int8ToUInt16 (deref this))\n)\n\n(define-fun deref-Int8ToUInt16 ((this Ref)) Int8ToUInt16\n  (sel-Int8ToUInt16 (deref this))\n)\n\n(define-fun deref-is-UInt8ToInt16 ((this Ref)) Bool\n  (is-lift-UInt8ToInt16 (deref this))\n)\n\n(define-fun deref-UInt8ToInt16 ((this Ref)) UInt8ToInt16\n  (sel-UInt8ToInt16 (deref this))\n)\n\n(define-fun deref-is-Int16ToUInt8 ((this Ref)) Bool\n  (is-lift-Int16ToUInt8 (deref this))\n)\n\n(define-fun deref-Int16ToUInt8 ((this Ref)) Int16ToUInt8\n  (sel-Int16ToUInt8 (deref this))\n)\n\n(define-fun deref-is-UInt16ToInt8 ((this Ref)) Bool\n  (is-lift-UInt16ToInt8 (deref this))\n)\n\n(define-fun deref-UInt16ToInt8 ((this Ref)) UInt16ToInt8\n  (sel-UInt16ToInt8 (deref this))\n)\n\n(define-fun deref-is-Int8ToUInt8 ((this Ref)) Bool\n  (is-lift-Int8ToUInt8 (deref this))\n)\n\n(define-fun deref-Int8ToUInt8 ((this Ref)) Int8ToUInt8\n  (sel-Int8ToUInt8 (deref this))\n)\n\n(define-fun deref-is-UInt8ToInt8 ((this Ref)) Bool\n  (is-lift-UInt8ToInt8 (deref this))\n)\n\n(define-fun deref-UInt8ToInt8 ((this Ref)) UInt8ToInt8\n  (sel-UInt8ToInt8 (deref this))\n)\n\n(define-fun deref-is-Int32ToInt64 ((this Ref)) Bool\n  (is-lift-Int32ToInt64 (deref this))\n)\n\n(define-fun deref-Int32ToInt64 ((this Ref)) Int32ToInt64\n  (sel-Int32ToInt64 (deref this))\n)\n\n(define-fun deref-is-UInt32ToUInt64 ((this Ref)) Bool\n  (is-lift-UInt32ToUInt64 (deref this))\n)\n\n(define-fun deref-UInt32ToUInt64 ((this Ref)) UInt32ToUInt64\n  (sel-UInt32ToUInt64 (deref this))\n)\n\n(define-fun deref-is-SignedBvToInt ((this Ref)) Bool\n  (is-lift-SignedBvToInt (deref this))\n)\n\n(define-fun deref-SignedBvToInt ((this Ref)) SignedBvToInt\n  (sel-SignedBvToInt (deref this))\n)\n\n(define-fun deref-is-UnsignedBvToInt ((this Ref)) Bool\n  (is-lift-UnsignedBvToInt (deref this))\n)\n\n(define-fun deref-UnsignedBvToInt ((this Ref)) UnsignedBvToInt\n  (sel-UnsignedBvToInt (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Int8ToInt16 ((this Ref)) Bool\n  (deref-is-Int8ToInt16 this)\n)\n\n(define-fun deref-isa-UInt8ToUInt16 ((this Ref)) Bool\n  (deref-is-UInt8ToUInt16 this)\n)\n\n(define-fun deref-isa-Int16ToInt8 ((this Ref)) Bool\n  (deref-is-Int16ToInt8 this)\n)\n\n(define-fun deref-isa-UInt16ToUInt8 ((this Ref)) Bool\n  (deref-is-UInt16ToUInt8 this)\n)\n\n(define-fun deref-isa-Int8ToUInt16 ((this Ref)) Bool\n  (deref-is-Int8ToUInt16 this)\n)\n\n(define-fun deref-isa-UInt8ToInt16 ((this Ref)) Bool\n  (deref-is-UInt8ToInt16 this)\n)\n\n(define-fun deref-isa-Int16ToUInt8 ((this Ref)) Bool\n  (deref-is-Int16ToUInt8 this)\n)\n\n(define-fun deref-isa-UInt16ToInt8 ((this Ref)) Bool\n  (deref-is-UInt16ToInt8 this)\n)\n\n(define-fun deref-isa-Int8ToUInt8 ((this Ref)) Bool\n  (deref-is-Int8ToUInt8 this)\n)\n\n(define-fun deref-isa-UInt8ToInt8 ((this Ref)) Bool\n  (deref-is-UInt8ToInt8 this)\n)\n\n(define-fun deref-isa-Int32ToInt64 ((this Ref)) Bool\n  (deref-is-Int32ToInt64 this)\n)\n\n(define-fun deref-isa-UInt32ToUInt64 ((this Ref)) Bool\n  (deref-is-UInt32ToUInt64 this)\n)\n\n(define-fun deref-isa-SignedBvToInt ((this Ref)) Bool\n  (deref-is-SignedBvToInt this)\n)\n\n(define-fun deref-isa-UnsignedBvToInt ((this Ref)) Bool\n  (deref-is-UnsignedBvToInt this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ----------------------------------\n;   Getters for class Int8ToInt16:\n; ----------------------------------\n\n; --- getters for Int8ToInt16.x: ---\n\n(define-fun Int8ToInt16!x ((this Ref)) (_ BitVec 8)\n  (x (deref-Int8ToInt16 this))\n)\n\n; --- getters for Int8ToInt16.y: ---\n\n(define-fun Int8ToInt16!y ((this Ref)) (_ BitVec 16)\n  (y (deref-Int8ToInt16 this))\n)\n\n; ------------------------------------\n;   Getters for class UInt8ToUInt16:\n; ------------------------------------\n\n; --- getters for UInt8ToUInt16.x: ---\n\n(define-fun UInt8ToUInt16!x ((this Ref)) (_ BitVec 8)\n  (x (deref-UInt8ToUInt16 this))\n)\n\n; --- getters for UInt8ToUInt16.y: ---\n\n(define-fun UInt8ToUInt16!y ((this Ref)) (_ BitVec 16)\n  (y (deref-UInt8ToUInt16 this))\n)\n\n; ----------------------------------\n;   Getters for class Int16ToInt8:\n; ----------------------------------\n\n; --- getters for Int16ToInt8.x: ---\n\n(define-fun Int16ToInt8!x ((this Ref)) (_ BitVec 16)\n  (x (deref-Int16ToInt8 this))\n)\n\n; --- getters for Int16ToInt8.y: ---\n\n(define-fun Int16ToInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-Int16ToInt8 this))\n)\n\n; ------------------------------------\n;   Getters for class UInt16ToUInt8:\n; ------------------------------------\n\n; --- getters for UInt16ToUInt8.x: ---\n\n(define-fun UInt16ToUInt8!x ((this Ref)) (_ BitVec 16)\n  (x (deref-UInt16ToUInt8 this))\n)\n\n; --- getters for UInt16ToUInt8.y: ---\n\n(define-fun UInt16ToUInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-UInt16ToUInt8 this))\n)\n\n; -----------------------------------\n;   Getters for class Int8ToUInt16:\n; -----------------------------------\n\n; --- getters for Int8ToUInt16.x: ---\n\n(define-fun Int8ToUInt16!x ((this Ref)) (_ BitVec 8)\n  (x (deref-Int8ToUInt16 this))\n)\n\n; --- getters for Int8ToUInt16.y: ---\n\n(define-fun Int8ToUInt16!y ((this Ref)) (_ BitVec 16)\n  (y (deref-Int8ToUInt16 this))\n)\n\n; -----------------------------------\n;   Getters for class UInt8ToInt16:\n; -----------------------------------\n\n; --- getters for UInt8ToInt16.x: ---\n\n(define-fun UInt8ToInt16!x ((this Ref)) (_ BitVec 8)\n  (x (deref-UInt8ToInt16 this))\n)\n\n; --- getters for UInt8ToInt16.y: ---\n\n(define-fun UInt8ToInt16!y ((this Ref)) (_ BitVec 16)\n  (y (deref-UInt8ToInt16 this))\n)\n\n; -----------------------------------\n;   Getters for class Int16ToUInt8:\n; -----------------------------------\n\n; --- getters for Int16ToUInt8.x: ---\n\n(define-fun Int16ToUInt8!x ((this Ref)) (_ BitVec 16)\n  (x (deref-Int16ToUInt8 this))\n)\n\n; --- getters for Int16ToUInt8.y: ---\n\n(define-fun Int16ToUInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-Int16ToUInt8 this))\n)\n\n; -----------------------------------\n;   Getters for class UInt16ToInt8:\n; -----------------------------------\n\n; --- getters for UInt16ToInt8.x: ---\n\n(define-fun UInt16ToInt8!x ((this Ref)) (_ BitVec 16)\n  (x (deref-UInt16ToInt8 this))\n)\n\n; --- getters for UInt16ToInt8.y: ---\n\n(define-fun UInt16ToInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-UInt16ToInt8 this))\n)\n\n; ----------------------------------\n;   Getters for class Int8ToUInt8:\n; ----------------------------------\n\n; --- getters for Int8ToUInt8.x: ---\n\n(define-fun Int8ToUInt8!x ((this Ref)) (_ BitVec 8)\n  (x (deref-Int8ToUInt8 this))\n)\n\n; --- getters for Int8ToUInt8.y: ---\n\n(define-fun Int8ToUInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-Int8ToUInt8 this))\n)\n\n; ----------------------------------\n;   Getters for class UInt8ToInt8:\n; ----------------------------------\n\n; --- getters for UInt8ToInt8.x: ---\n\n(define-fun UInt8ToInt8!x ((this Ref)) (_ BitVec 8)\n  (x (deref-UInt8ToInt8 this))\n)\n\n; --- getters for UInt8ToInt8.y: ---\n\n(define-fun UInt8ToInt8!y ((this Ref)) (_ BitVec 8)\n  (y (deref-UInt8ToInt8 this))\n)\n\n; -----------------------------------\n;   Getters for class Int32ToInt64:\n; -----------------------------------\n\n; --- getters for Int32ToInt64.x: ---\n\n(define-fun Int32ToInt64!x ((this Ref)) (_ BitVec 32)\n  (x (deref-Int32ToInt64 this))\n)\n\n; --- getters for Int32ToInt64.y: ---\n\n(define-fun Int32ToInt64!y ((this Ref)) (_ BitVec 64)\n  (y (deref-Int32ToInt64 this))\n)\n\n; -------------------------------------\n;   Getters for class UInt32ToUInt64:\n; -------------------------------------\n\n; --- getters for UInt32ToUInt64.x: ---\n\n(define-fun UInt32ToUInt64!x ((this Ref)) (_ BitVec 32)\n  (x (deref-UInt32ToUInt64 this))\n)\n\n; --- getters for UInt32ToUInt64.y: ---\n\n(define-fun UInt32ToUInt64!y ((this Ref)) (_ BitVec 64)\n  (y (deref-UInt32ToUInt64 this))\n)\n\n; ------------------------------------\n;   Getters for class SignedBvToInt:\n; ------------------------------------\n\n; --- getters for SignedBvToInt.x: ---\n\n(define-fun SignedBvToInt!x ((this Ref)) (_ BitVec 8)\n  (x (deref-SignedBvToInt this))\n)\n\n; --- getters for SignedBvToInt.y: ---\n\n(define-fun SignedBvToInt!y ((this Ref)) Int\n  (y (deref-SignedBvToInt this))\n)\n\n; --------------------------------------\n;   Getters for class UnsignedBvToInt:\n; --------------------------------------\n\n; --- getters for UnsignedBvToInt.x: ---\n\n(define-fun UnsignedBvToInt!x ((this Ref)) (_ BitVec 8)\n  (x (deref-UnsignedBvToInt this))\n)\n\n; --- getters for UnsignedBvToInt.y: ---\n\n(define-fun UnsignedBvToInt!y ((this Ref)) Int\n  (y (deref-UnsignedBvToInt this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------------\n;   Invariant for class Int8ToInt16:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-9-Int8ToInt16 Int8ToInt16)\n\n; --- Invariant 1: ---\n\n(define-fun Int8ToInt16.inv1 ((this Ref)) Bool\n  (= (Int8ToInt16!x this) (_ bv255 8))\n)\n\n(assert (! (Int8ToInt16.inv1 9) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun Int8ToInt16.inv2 ((this Ref)) Bool\n  (= (Int8ToInt16!y this) ((_ sign_extend 8) (Int8ToInt16!x this)))\n)\n\n(assert (! (Int8ToInt16.inv2 9) :named _xkassert1))\n\n\n\n; --------------------------------------\n;   Invariant for class UInt8ToUInt16:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-13-UInt8ToUInt16 UInt8ToUInt16)\n\n; --- Invariant 1: ---\n\n(define-fun UInt8ToUInt16.inv1 ((this Ref)) Bool\n  (= (UInt8ToUInt16!x this) (_ bv255 8))\n)\n\n(assert (! (UInt8ToUInt16.inv1 13) :named _xkassert2))\n\n; --- Invariant 2: ---\n\n(define-fun UInt8ToUInt16.inv2 ((this Ref)) Bool\n  (= (UInt8ToUInt16!y this) ((_ zero_extend 8) (UInt8ToUInt16!x this)))\n)\n\n(assert (! (UInt8ToUInt16.inv2 13) :named _xkassert3))\n\n\n\n; ------------------------------------\n;   Invariant for class Int16ToInt8:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Int16ToInt8 Int16ToInt8)\n\n; --- Invariant 1: ---\n\n(define-fun Int16ToInt8.inv1 ((this Ref)) Bool\n  (= (Int16ToInt8!x this) (_ bv513 16))\n)\n\n(assert (! (Int16ToInt8.inv1 2) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun Int16ToInt8.inv2 ((this Ref)) Bool\n  (= (Int16ToInt8!y this) ((_ extract 7 0) (Int16ToInt8!x this)))\n)\n\n(assert (! (Int16ToInt8.inv2 2) :named _xkassert5))\n\n\n\n; --------------------------------------\n;   Invariant for class UInt16ToUInt8:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-UInt16ToUInt8 UInt16ToUInt8)\n\n; --- Invariant 1: ---\n\n(define-fun UInt16ToUInt8.inv1 ((this Ref)) Bool\n  (= (UInt16ToUInt8!x this) (_ bv65408 16))\n)\n\n(assert (! (UInt16ToUInt8.inv1 5) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun UInt16ToUInt8.inv2 ((this Ref)) Bool\n  (= (UInt16ToUInt8!y this) ((_ extract 7 0) (UInt16ToUInt8!x this)))\n)\n\n(assert (! (UInt16ToUInt8.inv2 5) :named _xkassert7))\n\n\n\n; -------------------------------------\n;   Invariant for class Int8ToUInt16:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-11-Int8ToUInt16 Int8ToUInt16)\n\n; --- Invariant 1: ---\n\n(define-fun Int8ToUInt16.inv1 ((this Ref)) Bool\n  (= (Int8ToUInt16!x this) (_ bv255 8))\n)\n\n(assert (! (Int8ToUInt16.inv1 11) :named _xkassert8))\n\n; --- Invariant 2: ---\n\n(define-fun Int8ToUInt16.inv2 ((this Ref)) Bool\n  (= (Int8ToUInt16!y this) ((_ sign_extend 8) (Int8ToUInt16!x this)))\n)\n\n(assert (! (Int8ToUInt16.inv2 11) :named _xkassert9))\n\n\n\n; -------------------------------------\n;   Invariant for class UInt8ToInt16:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-14-UInt8ToInt16 UInt8ToInt16)\n\n; --- Invariant 1: ---\n\n(define-fun UInt8ToInt16.inv1 ((this Ref)) Bool\n  (= (UInt8ToInt16!x this) (_ bv255 8))\n)\n\n(assert (! (UInt8ToInt16.inv1 14) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun UInt8ToInt16.inv2 ((this Ref)) Bool\n  (= (UInt8ToInt16!y this) ((_ zero_extend 8) (UInt8ToInt16!x this)))\n)\n\n(assert (! (UInt8ToInt16.inv2 14) :named _xkassert11))\n\n\n\n; -------------------------------------\n;   Invariant for class Int16ToUInt8:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-Int16ToUInt8 Int16ToUInt8)\n\n; --- Invariant 1: ---\n\n(define-fun Int16ToUInt8.inv1 ((this Ref)) Bool\n  (= (Int16ToUInt8!x this) (_ bv65280 16))\n)\n\n(assert (! (Int16ToUInt8.inv1 6) :named _xkassert12))\n\n; --- Invariant 2: ---\n\n(define-fun Int16ToUInt8.inv2 ((this Ref)) Bool\n  (= (Int16ToUInt8!y this) ((_ extract 7 0) (Int16ToUInt8!x this)))\n)\n\n(assert (! (Int16ToUInt8.inv2 6) :named _xkassert13))\n\n\n\n; -------------------------------------\n;   Invariant for class UInt16ToInt8:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-UInt16ToInt8 UInt16ToInt8)\n\n; --- Invariant 1: ---\n\n(define-fun UInt16ToInt8.inv1 ((this Ref)) Bool\n  (= (UInt16ToInt8!x this) (_ bv128 16))\n)\n\n(assert (! (UInt16ToInt8.inv1 1) :named _xkassert14))\n\n; --- Invariant 2: ---\n\n(define-fun UInt16ToInt8.inv2 ((this Ref)) Bool\n  (= (UInt16ToInt8!y this) ((_ extract 7 0) (UInt16ToInt8!x this)))\n)\n\n(assert (! (UInt16ToInt8.inv2 1) :named _xkassert15))\n\n\n\n; ------------------------------------\n;   Invariant for class Int8ToUInt8:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-8-Int8ToUInt8 Int8ToUInt8)\n\n; --- Invariant 1: ---\n\n(define-fun Int8ToUInt8.inv1 ((this Ref)) Bool\n  (= (Int8ToUInt8!x this) (_ bv255 8))\n)\n\n(assert (! (Int8ToUInt8.inv1 8) :named _xkassert16))\n\n; --- Invariant 2: ---\n\n(define-fun Int8ToUInt8.inv2 ((this Ref)) Bool\n  (= (Int8ToUInt8!y this) (Int8ToUInt8!x this))\n)\n\n(assert (! (Int8ToUInt8.inv2 8) :named _xkassert17))\n\n\n\n; ------------------------------------\n;   Invariant for class UInt8ToInt8:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-UInt8ToInt8 UInt8ToInt8)\n\n; --- Invariant 1: ---\n\n(define-fun UInt8ToInt8.inv1 ((this Ref)) Bool\n  (= (UInt8ToInt8!x this) (_ bv128 8))\n)\n\n(assert (! (UInt8ToInt8.inv1 7) :named _xkassert18))\n\n; --- Invariant 2: ---\n\n(define-fun UInt8ToInt8.inv2 ((this Ref)) Bool\n  (= (UInt8ToInt8!y this) (UInt8ToInt8!x this))\n)\n\n(assert (! (UInt8ToInt8.inv2 7) :named _xkassert19))\n\n\n\n; -------------------------------------\n;   Invariant for class Int32ToInt64:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Int32ToInt64 Int32ToInt64)\n\n; --- Invariant 1: ---\n\n(define-fun Int32ToInt64.inv1 ((this Ref)) Bool\n  (= (Int32ToInt64!x this) (_ bv4294967295 32))\n)\n\n(assert (! (Int32ToInt64.inv1 3) :named _xkassert20))\n\n; --- Invariant 2: ---\n\n(define-fun Int32ToInt64.inv2 ((this Ref)) Bool\n  (= (Int32ToInt64!y this) ((_ sign_extend 32) (Int32ToInt64!x this)))\n)\n\n(assert (! (Int32ToInt64.inv2 3) :named _xkassert21))\n\n\n\n; ---------------------------------------\n;   Invariant for class UInt32ToUInt64:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-UInt32ToUInt64 UInt32ToUInt64)\n\n; --- Invariant 1: ---\n\n(define-fun UInt32ToUInt64.inv1 ((this Ref)) Bool\n  (= (UInt32ToUInt64!x this) (_ bv4294967295 32))\n)\n\n(assert (! (UInt32ToUInt64.inv1 4) :named _xkassert22))\n\n; --- Invariant 2: ---\n\n(define-fun UInt32ToUInt64.inv2 ((this Ref)) Bool\n  (= (UInt32ToUInt64!y this) ((_ zero_extend 32) (UInt32ToUInt64!x this)))\n)\n\n(assert (! (UInt32ToUInt64.inv2 4) :named _xkassert23))\n\n\n\n; --------------------------------------\n;   Invariant for class SignedBvToInt:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-12-SignedBvToInt SignedBvToInt)\n\n; --- Invariant 1: ---\n\n(define-fun SignedBvToInt.inv1 ((this Ref)) Bool\n  (= (SignedBvToInt!x this) (_ bv255 8))\n)\n\n(assert (! (SignedBvToInt.inv1 12) :named _xkassert24))\n\n; --- Invariant 2: ---\n\n(define-fun SignedBvToInt.inv2 ((this Ref)) Bool\n  (= (SignedBvToInt!y this) (ite (bvslt (SignedBvToInt!x this) (_ bv0 8)) (- (bv2int (SignedBvToInt!x this)) 256) (bv2int (SignedBvToInt!x this))))\n)\n\n(assert (! (SignedBvToInt.inv2 12) :named _xkassert25))\n\n\n\n; ----------------------------------------\n;   Invariant for class UnsignedBvToInt:\n; ----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-10-UnsignedBvToInt UnsignedBvToInt)\n\n; --- Invariant 1: ---\n\n(define-fun UnsignedBvToInt.inv1 ((this Ref)) Bool\n  (= (UnsignedBvToInt!x this) (_ bv255 8))\n)\n\n(assert (! (UnsignedBvToInt.inv1 10) :named _xkassert26))\n\n; --- Invariant 2: ---\n\n(define-fun UnsignedBvToInt.inv2 ((this Ref)) Bool\n  (= (UnsignedBvToInt!y this) (bv2nat (UnsignedBvToInt!x this)))\n)\n\n(assert (! (UnsignedBvToInt.inv2 10) :named _xkassert27))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        9 (lift-Int8ToInt16 const-9-Int8ToInt16))\n        13 (lift-UInt8ToUInt16 const-13-UInt8ToUInt16))\n        2 (lift-Int16ToInt8 const-2-Int16ToInt8))\n        5 (lift-UInt16ToUInt8 const-5-UInt16ToUInt8))\n        11 (lift-Int8ToUInt16 const-11-Int8ToUInt16))\n        14 (lift-UInt8ToInt16 const-14-UInt8ToInt16))\n        6 (lift-Int16ToUInt8 const-6-Int16ToUInt8))\n        1 (lift-UInt16ToInt8 const-1-UInt16ToInt8))\n        8 (lift-Int8ToUInt8 const-8-Int8ToUInt8))\n        7 (lift-UInt8ToInt8 const-7-UInt8ToInt8))\n        3 (lift-Int32ToInt64 const-3-Int32ToInt64))\n        4 (lift-UInt32ToUInt64 const-4-UInt32ToUInt64))\n        12 (lift-SignedBvToInt const-12-SignedBvToInt))\n        10 (lift-UnsignedBvToInt const-10-UnsignedBvToInt))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-14-UInt8ToInt16 () UInt8ToInt16\n  (mk-UInt8ToInt16 #xff #x00ff))\n(define-fun const-3-Int32ToInt64 () Int32ToInt64\n  (mk-Int32ToInt64 #xffffffff #xffffffffffffffff))\n(define-fun const-5-UInt16ToUInt8 () UInt16ToUInt8\n  (mk-UInt16ToUInt8 #xff80 #x80))\n(define-fun const-12-SignedBvToInt () SignedBvToInt\n  (mk-SignedBvToInt #xff (- 1)))\n(define-fun const-13-UInt8ToUInt16 () UInt8ToUInt16\n  (mk-UInt8ToUInt16 #xff #x00ff))\n(define-fun const-8-Int8ToUInt8 () Int8ToUInt8\n  (mk-Int8ToUInt8 #xff #xff))\n(define-fun const-10-UnsignedBvToInt () UnsignedBvToInt\n  (mk-UnsignedBvToInt #xff 255))\n(define-fun const-2-Int16ToInt8 () Int16ToInt8\n  (mk-Int16ToInt8 #x0201 #x01))\n(define-fun const-1-UInt16ToInt8 () UInt16ToInt8\n  (mk-UInt16ToInt8 #x0080 #x80))\n(define-fun const-6-Int16ToUInt8 () Int16ToUInt8\n  (mk-Int16ToUInt8 #xff00 #x00))\n(define-fun const-11-Int8ToUInt16 () Int8ToUInt16\n  (mk-Int8ToUInt16 #xff #xffff))\n(define-fun const-9-Int8ToInt16 () Int8ToInt16\n  (mk-Int8ToInt16 #xff #xffff))\n(define-fun const-7-UInt8ToInt8 () UInt8ToInt8\n  (mk-UInt8ToInt8 #x80 #x80))\n(define-fun const-4-UInt32ToUInt64 () UInt32ToUInt64\n  (mk-UInt32ToUInt64 #xffffffff #x00000000ffffffff))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 ((_ extract 7 0) (x (sel-Int16ToUInt8 (select heap 6))))))\n  (= (y (sel-Int16ToUInt8 (select heap 6))) a!1)))\n(define-fun _xkassert24 () Bool\n  (= (x (sel-SignedBvToInt (select heap 12))) #xff))\n(define-fun _xkassert14 () Bool\n  (= (x (sel-UInt16ToInt8 (select heap 1))) #x0080))\n(define-fun _xkassert6 () Bool\n  (= (x (sel-UInt16ToUInt8 (select heap 5))) #xff80))\n(define-fun _xkassert25 () Bool\n  (let ((a!1 (bvslt (x (sel-SignedBvToInt (select heap 12))) #x00))\n      (a!2 (bv2int (x (sel-SignedBvToInt (select heap 12))))))\n  (= (y (sel-SignedBvToInt (select heap 12))) (ite a!1 (- a!2 256) a!2))))\n(define-fun _xkassert2 () Bool\n  (= (x (sel-UInt8ToUInt16 (select heap 13))) #xff))\n(define-fun _xkassert19 () Bool\n  (= (y (sel-UInt8ToInt8 (select heap 7))) (x (sel-UInt8ToInt8 (select heap 7)))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 ((_ extract 7 0) (x (sel-Int16ToInt8 (select heap 2))))))\n  (= (y (sel-Int16ToInt8 (select heap 2))) a!1)))\n(define-fun _xkassert8 () Bool\n  (= (x (sel-Int8ToUInt16 (select heap 11))) #xff))\n(define-fun _xkassert17 () Bool\n  (= (y (sel-Int8ToUInt8 (select heap 8))) (x (sel-Int8ToUInt8 (select heap 8)))))\n(define-fun _xkassert12 () Bool\n  (= (x (sel-Int16ToUInt8 (select heap 6))) #xff00))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 ((_ zero_extend 8) (x (sel-UInt8ToUInt16 (select heap 13))))))\n  (= (y (sel-UInt8ToUInt16 (select heap 13))) a!1)))\n(define-fun _xkassert16 () Bool\n  (= (x (sel-Int8ToUInt8 (select heap 8))) #xff))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 ((_ zero_extend 8) (x (sel-UInt8ToInt16 (select heap 14))))))\n  (= (y (sel-UInt8ToInt16 (select heap 14))) a!1)))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 ((_ extract 7 0) (x (sel-UInt16ToInt8 (select heap 1))))))\n  (= (y (sel-UInt16ToInt8 (select heap 1))) a!1)))\n(define-fun _xkassert23 () Bool\n  (let ((a!1 ((_ zero_extend 32) (x (sel-UInt32ToUInt64 (select heap 4))))))\n  (= (y (sel-UInt32ToUInt64 (select heap 4))) a!1)))\n(define-fun _xkassert27 () Bool\n  (let ((a!1 (bv2int (x (sel-UnsignedBvToInt (select heap 10))))))\n  (= (y (sel-UnsignedBvToInt (select heap 10))) a!1)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 ((_ sign_extend 8) (x (sel-Int8ToInt16 (select heap 9))))))\n  (= (y (sel-Int8ToInt16 (select heap 9))) a!1)))\n(define-fun _xkassert4 () Bool\n  (= (x (sel-Int16ToInt8 (select heap 2))) #x0201))\n(define-fun _xkassert18 () Bool\n  (= (x (sel-UInt8ToInt8 (select heap 7))) #x80))\n(define-fun _xkassert22 () Bool\n  (= (x (sel-UInt32ToUInt64 (select heap 4))) #xffffffff))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 ((_ extract 7 0) (x (sel-UInt16ToUInt8 (select heap 5))))))\n  (= (y (sel-UInt16ToUInt8 (select heap 5))) a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 ((_ sign_extend 8) (x (sel-Int8ToUInt16 (select heap 11))))))\n  (= (y (sel-Int8ToUInt16 (select heap 11))) a!1)))\n(define-fun _xkassert21 () Bool\n  (let ((a!1 ((_ sign_extend 32) (x (sel-Int32ToInt64 (select heap 3))))))\n  (= (y (sel-Int32ToInt64 (select heap 3))) a!1)))\n(define-fun _xkassert26 () Bool\n  (= (x (sel-UnsignedBvToInt (select heap 10))) #xff))\n(define-fun _xkassert0 () Bool\n  (= (x (sel-Int8ToInt16 (select heap 9))) #xff))\n(define-fun _xkassert10 () Bool\n  (= (x (sel-UInt8ToInt16 (select heap 14))) #xff))\n(define-fun _xkassert20 () Bool\n  (= (x (sel-Int32ToInt64 (select heap 3))) #xffffffff))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         9\n                         (lift-Int8ToInt16 (mk-Int8ToInt16 #xff #xffff)))\n                  13\n                  (lift-UInt8ToUInt16 (mk-UInt8ToUInt16 #xff #x00ff)))))\n(let ((a!2 (store (store a!1 2 (lift-Int16ToInt8 (mk-Int16ToInt8 #x0201 #x01)))\n                  5\n                  (lift-UInt16ToUInt8 (mk-UInt16ToUInt8 #xff80 #x80)))))\n(let ((a!3 (store (store a!2\n                         11\n                         (lift-Int8ToUInt16 (mk-Int8ToUInt16 #xff #xffff)))\n                  14\n                  (lift-UInt8ToInt16 (mk-UInt8ToInt16 #xff #x00ff)))))\n(let ((a!4 (store (store a!3\n                         6\n                         (lift-Int16ToUInt8 (mk-Int16ToUInt8 #xff00 #x00)))\n                  1\n                  (lift-UInt16ToInt8 (mk-UInt16ToInt8 #x0080 #x80)))))\n(let ((a!5 (store (store a!4 8 (lift-Int8ToUInt8 (mk-Int8ToUInt8 #xff #xff)))\n                  7\n                  (lift-UInt8ToInt8 (mk-UInt8ToInt8 #x80 #x80)))))\n(let ((a!6 (store (store a!5\n                         3\n                         (lift-Int32ToInt64\n                           (mk-Int32ToInt64 #xffffffff #xffffffffffffffff)))\n                  4\n                  (lift-UInt32ToUInt64\n                    (mk-UInt32ToUInt64 #xffffffff #x00000000ffffffff)))))\n  (store (store a!6 12 (lift-SignedBvToInt (mk-SignedBvToInt #xff (- 1))))\n         10\n         (lift-UnsignedBvToInt (mk-UnsignedBvToInt #xff 255))))))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToUInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int16ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 513,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt16ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 65408,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToUInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int16ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 65280,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt16ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 128,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 128,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 8
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int32ToInt64",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 32
+            },
+            "assignment": false,
+            "expr": {
+              "i": 4294967295,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 64
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 64
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt32ToUInt64",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 32
+            },
+            "assignment": false,
+            "expr": {
+              "i": 4294967295,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 64
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "UnsignedIntType",
+                "width": 64
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedBvToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedBvToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int16"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToUInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt16"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int16ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 513
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt16ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 65408
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToUInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt16"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToInt16",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int16"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int16ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 65280
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt16ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 128
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int8ToUInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt8ToInt8",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 128
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int8"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Int32ToInt64",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int32"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 4294967295
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int64"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int64"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UInt32ToUInt64",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt32"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 4294967295
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt64"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "UInt64"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedBvToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedBvToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
+}

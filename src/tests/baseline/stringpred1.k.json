@@ -1,0 +1,665 @@
+{
+  "name": "stringpred1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringPred1 {\n  text:String\n  prefix:String\n  suffix:String\n  middle:String\n\n  req text = \"Hello World\"\n\n  req prefix = \"Hello\"\n\n  req suffix = \"World\"\n\n  req middle = \"lo Wo\"\n  hasPrefix:Bool\n\n  req hasPrefix = text.startsWith(prefix)\n\n  req hasPrefix = true\n  hasSuffix:Bool\n\n  req hasSuffix = text.endsWith(suffix)\n\n  req hasSuffix = true\n  hasMiddle:Bool\n\n  req hasMiddle = text.contains(middle)\n\n  req hasMiddle = true\n}\n\nmain:StringPred1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringPred1 (mk-StringPred1 (text String)(prefix String)(suffix String)(middle String)(hasPrefix Bool)(hasSuffix Bool)(hasMiddle Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringPred1 (sel-StringPred1 StringPred1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringPred1 ((this Ref)) Bool\n  (is-lift-StringPred1 (deref this))\n)\n\n(define-fun deref-StringPred1 ((this Ref)) StringPred1\n  (sel-StringPred1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringPred1 ((this Ref)) Bool\n  (deref-is-StringPred1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------------\n;   Getters for class StringPred1:\n; ----------------------------------\n\n; --- getters for StringPred1.text: ---\n\n(define-fun StringPred1!text ((this Ref)) String\n  (text (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.prefix: ---\n\n(define-fun StringPred1!prefix ((this Ref)) String\n  (prefix (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.suffix: ---\n\n(define-fun StringPred1!suffix ((this Ref)) String\n  (suffix (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.middle: ---\n\n(define-fun StringPred1!middle ((this Ref)) String\n  (middle (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.hasPrefix: ---\n\n(define-fun StringPred1!hasPrefix ((this Ref)) Bool\n  (hasPrefix (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.hasSuffix: ---\n\n(define-fun StringPred1!hasSuffix ((this Ref)) Bool\n  (hasSuffix (deref-StringPred1 this))\n)\n\n; --- getters for StringPred1.hasMiddle: ---\n\n(define-fun StringPred1!hasMiddle ((this Ref)) Bool\n  (hasMiddle (deref-StringPred1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringPred1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------------\n;   Invariant for class StringPred1:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringPred1 StringPred1)\n\n; --- Invariant 1: ---\n\n(define-fun StringPred1.inv1 ((this Ref)) Bool\n  (= (StringPred1!text this) \"Hello World\")\n)\n\n(assert (! (StringPred1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringPred1.inv2 ((this Ref)) Bool\n  (= (StringPred1!prefix this) \"Hello\")\n)\n\n(assert (! (StringPred1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringPred1.inv3 ((this Ref)) Bool\n  (= (StringPred1!suffix this) \"World\")\n)\n\n(assert (! (StringPred1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringPred1.inv4 ((this Ref)) Bool\n  (= (StringPred1!middle this) \"lo Wo\")\n)\n\n(assert (! (StringPred1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringPred1.inv5 ((this Ref)) Bool\n  (= (StringPred1!hasPrefix this) (str.prefixof (StringPred1!prefix this) (StringPred1!text this)))\n)\n\n(assert (! (StringPred1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun StringPred1.inv6 ((this Ref)) Bool\n  (= (StringPred1!hasPrefix this) true)\n)\n\n(assert (! (StringPred1.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun StringPred1.inv7 ((this Ref)) Bool\n  (= (StringPred1!hasSuffix this) (str.suffixof (StringPred1!suffix this) (StringPred1!text this)))\n)\n\n(assert (! (StringPred1.inv7 1) :named _xkassert7))\n\n; --- Invariant 8: ---\n\n(define-fun StringPred1.inv8 ((this Ref)) Bool\n  (= (StringPred1!hasSuffix this) true)\n)\n\n(assert (! (StringPred1.inv8 1) :named _xkassert8))\n\n; --- Invariant 9: ---\n\n(define-fun StringPred1.inv9 ((this Ref)) Bool\n  (= (StringPred1!hasMiddle this) (str.contains (StringPred1!text this) (StringPred1!middle this)))\n)\n\n(assert (! (StringPred1.inv9 1) :named _xkassert9))\n\n; --- Invariant 10: ---\n\n(define-fun StringPred1.inv10 ((this Ref)) Bool\n  (= (StringPred1!hasMiddle this) true)\n)\n\n(assert (! (StringPred1.inv10 1) :named _xkassert10))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringPred1 const-1-StringPred1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringPred1 () StringPred1\n  (mk-StringPred1 \"Hello World\" \"Hello\" \"World\" \"lo Wo\" true true true))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (str.suffixof (suffix (sel-StringPred1 (select heap 1)))\n                         (text (sel-StringPred1 (select heap 1))))))\n  (= (hasSuffix (sel-StringPred1 (select heap 1))) a!1)))\n(define-fun _xkassert2 () Bool\n  (= (prefix (sel-StringPred1 (select heap 1))) \"Hello\"))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (str.prefixof (prefix (sel-StringPred1 (select heap 1)))\n                         (text (sel-StringPred1 (select heap 1))))))\n  (= (hasPrefix (sel-StringPred1 (select heap 1))) a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (str.contains (text (sel-StringPred1 (select heap 1)))\n                         (middle (sel-StringPred1 (select heap 1))))))\n  (= (hasMiddle (sel-StringPred1 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringPred1 a!1)))\n(define-fun _xkassert8 () Bool\n  (= (hasSuffix (sel-StringPred1 (select heap 1))) true))\n(define-fun _xkassert10 () Bool\n  (= (hasMiddle (sel-StringPred1 (select heap 1))) true))\n(define-fun _xkassert3 () Bool\n  (= (suffix (sel-StringPred1 (select heap 1))) \"World\"))\n(define-fun _xkassert6 () Bool\n  (= (hasPrefix (sel-StringPred1 (select heap 1))) true))\n(define-fun _xkassert1 () Bool\n  (= (text (sel-StringPred1 (select heap 1))) \"Hello World\"))\n(define-fun _xkassert4 () Bool\n  (= (middle (sel-StringPred1 (select heap 1))) \"lo Wo\"))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringPred1 (mk-StringPred1 \"Hello World\"\n                                         \"Hello\"\n                                         \"World\"\n                                         \"lo Wo\"\n                                         true\n                                         true\n                                         true))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringPred1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "prefix",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "suffix",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "middle",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "Hello World",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "prefix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "Hello",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "suffix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "World",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "middle",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "lo Wo",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasPrefix",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasPrefix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "startsWith",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "prefix",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasPrefix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasSuffix",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasSuffix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "endsWith",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "suffix",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasSuffix",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasMiddle",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasMiddle",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "contains",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "middle",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hasMiddle",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringPred1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringPred1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "prefix",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "suffix",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "middle",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "Hello World"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "prefix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "Hello"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "suffix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "World"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "middle",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "lo Wo"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasPrefix",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasPrefix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "startsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "prefix",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasPrefix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasSuffix",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasSuffix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "endsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "suffix",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasSuffix",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hasMiddle",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasMiddle",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "contains"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "middle",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hasMiddle",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringPred1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

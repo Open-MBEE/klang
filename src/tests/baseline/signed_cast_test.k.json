@@ -1,0 +1,861 @@
+{
+  "name": "signed_cast_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass SignedInt8ToInt {\n  mid:Int8 = 128\n  mid_int:Int = mid as Int\n\n  req mid_int = -128\n}\n\nclass SignedInt8MaxToInt {\n  max:Int8 = 255\n  max_int:Int = max as Int\n\n  req max_int = -1\n}\n\nclass UnsignedUInt8ToInt {\n  mid:UInt8 = 128\n  mid_int:Int = mid as Int\n\n  req mid_int = 128\n}\n\nclass UnsignedUInt8MaxToInt {\n  max:UInt8 = 255\n  max_int:Int = max as Int\n\n  req max_int = 255\n}\n\nclass SignedInt16ToInt {\n  mid:Int16 = 32768\n  mid_int:Int = mid as Int\n\n  req mid_int = -32768\n}\n\nclass UnsignedUInt16ToInt {\n  mid:UInt16 = 32768\n  mid_int:Int = mid as Int\n\n  req mid_int = 32768\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((SignedInt8ToInt (mk-SignedInt8ToInt (mid (_ BitVec 8))(mid_int Int)))))\n(declare-datatypes () ((SignedInt8MaxToInt (mk-SignedInt8MaxToInt (max (_ BitVec 8))(max_int Int)))))\n(declare-datatypes () ((UnsignedUInt8ToInt (mk-UnsignedUInt8ToInt (mid (_ BitVec 8))(mid_int Int)))))\n(declare-datatypes () ((UnsignedUInt8MaxToInt (mk-UnsignedUInt8MaxToInt (max (_ BitVec 8))(max_int Int)))))\n(declare-datatypes () ((SignedInt16ToInt (mk-SignedInt16ToInt (mid (_ BitVec 16))(mid_int Int)))))\n(declare-datatypes () ((UnsignedUInt16ToInt (mk-UnsignedUInt16ToInt (mid (_ BitVec 16))(mid_int Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-SignedInt8ToInt (sel-SignedInt8ToInt SignedInt8ToInt))\n  (lift-SignedInt8MaxToInt (sel-SignedInt8MaxToInt SignedInt8MaxToInt))\n  (lift-UnsignedUInt8ToInt (sel-UnsignedUInt8ToInt UnsignedUInt8ToInt))\n  (lift-UnsignedUInt8MaxToInt (sel-UnsignedUInt8MaxToInt UnsignedUInt8MaxToInt))\n  (lift-SignedInt16ToInt (sel-SignedInt16ToInt SignedInt16ToInt))\n  (lift-UnsignedUInt16ToInt (sel-UnsignedUInt16ToInt UnsignedUInt16ToInt))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-SignedInt8ToInt ((this Ref)) Bool\n  (is-lift-SignedInt8ToInt (deref this))\n)\n\n(define-fun deref-SignedInt8ToInt ((this Ref)) SignedInt8ToInt\n  (sel-SignedInt8ToInt (deref this))\n)\n\n(define-fun deref-is-SignedInt8MaxToInt ((this Ref)) Bool\n  (is-lift-SignedInt8MaxToInt (deref this))\n)\n\n(define-fun deref-SignedInt8MaxToInt ((this Ref)) SignedInt8MaxToInt\n  (sel-SignedInt8MaxToInt (deref this))\n)\n\n(define-fun deref-is-UnsignedUInt8ToInt ((this Ref)) Bool\n  (is-lift-UnsignedUInt8ToInt (deref this))\n)\n\n(define-fun deref-UnsignedUInt8ToInt ((this Ref)) UnsignedUInt8ToInt\n  (sel-UnsignedUInt8ToInt (deref this))\n)\n\n(define-fun deref-is-UnsignedUInt8MaxToInt ((this Ref)) Bool\n  (is-lift-UnsignedUInt8MaxToInt (deref this))\n)\n\n(define-fun deref-UnsignedUInt8MaxToInt ((this Ref)) UnsignedUInt8MaxToInt\n  (sel-UnsignedUInt8MaxToInt (deref this))\n)\n\n(define-fun deref-is-SignedInt16ToInt ((this Ref)) Bool\n  (is-lift-SignedInt16ToInt (deref this))\n)\n\n(define-fun deref-SignedInt16ToInt ((this Ref)) SignedInt16ToInt\n  (sel-SignedInt16ToInt (deref this))\n)\n\n(define-fun deref-is-UnsignedUInt16ToInt ((this Ref)) Bool\n  (is-lift-UnsignedUInt16ToInt (deref this))\n)\n\n(define-fun deref-UnsignedUInt16ToInt ((this Ref)) UnsignedUInt16ToInt\n  (sel-UnsignedUInt16ToInt (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-SignedInt8ToInt ((this Ref)) Bool\n  (deref-is-SignedInt8ToInt this)\n)\n\n(define-fun deref-isa-SignedInt8MaxToInt ((this Ref)) Bool\n  (deref-is-SignedInt8MaxToInt this)\n)\n\n(define-fun deref-isa-UnsignedUInt8ToInt ((this Ref)) Bool\n  (deref-is-UnsignedUInt8ToInt this)\n)\n\n(define-fun deref-isa-UnsignedUInt8MaxToInt ((this Ref)) Bool\n  (deref-is-UnsignedUInt8MaxToInt this)\n)\n\n(define-fun deref-isa-SignedInt16ToInt ((this Ref)) Bool\n  (deref-is-SignedInt16ToInt this)\n)\n\n(define-fun deref-isa-UnsignedUInt16ToInt ((this Ref)) Bool\n  (deref-is-UnsignedUInt16ToInt this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; --------------------------------------\n;   Getters for class SignedInt8ToInt:\n; --------------------------------------\n\n; --- getters for SignedInt8ToInt.mid: ---\n\n(define-fun SignedInt8ToInt!mid ((this Ref)) (_ BitVec 8)\n  (mid (deref-SignedInt8ToInt this))\n)\n\n; --- getters for SignedInt8ToInt.mid_int: ---\n\n(define-fun SignedInt8ToInt!mid_int ((this Ref)) Int\n  (mid_int (deref-SignedInt8ToInt this))\n)\n\n; -----------------------------------------\n;   Getters for class SignedInt8MaxToInt:\n; -----------------------------------------\n\n; --- getters for SignedInt8MaxToInt.max: ---\n\n(define-fun SignedInt8MaxToInt!max ((this Ref)) (_ BitVec 8)\n  (max (deref-SignedInt8MaxToInt this))\n)\n\n; --- getters for SignedInt8MaxToInt.max_int: ---\n\n(define-fun SignedInt8MaxToInt!max_int ((this Ref)) Int\n  (max_int (deref-SignedInt8MaxToInt this))\n)\n\n; -----------------------------------------\n;   Getters for class UnsignedUInt8ToInt:\n; -----------------------------------------\n\n; --- getters for UnsignedUInt8ToInt.mid: ---\n\n(define-fun UnsignedUInt8ToInt!mid ((this Ref)) (_ BitVec 8)\n  (mid (deref-UnsignedUInt8ToInt this))\n)\n\n; --- getters for UnsignedUInt8ToInt.mid_int: ---\n\n(define-fun UnsignedUInt8ToInt!mid_int ((this Ref)) Int\n  (mid_int (deref-UnsignedUInt8ToInt this))\n)\n\n; --------------------------------------------\n;   Getters for class UnsignedUInt8MaxToInt:\n; --------------------------------------------\n\n; --- getters for UnsignedUInt8MaxToInt.max: ---\n\n(define-fun UnsignedUInt8MaxToInt!max ((this Ref)) (_ BitVec 8)\n  (max (deref-UnsignedUInt8MaxToInt this))\n)\n\n; --- getters for UnsignedUInt8MaxToInt.max_int: ---\n\n(define-fun UnsignedUInt8MaxToInt!max_int ((this Ref)) Int\n  (max_int (deref-UnsignedUInt8MaxToInt this))\n)\n\n; ---------------------------------------\n;   Getters for class SignedInt16ToInt:\n; ---------------------------------------\n\n; --- getters for SignedInt16ToInt.mid: ---\n\n(define-fun SignedInt16ToInt!mid ((this Ref)) (_ BitVec 16)\n  (mid (deref-SignedInt16ToInt this))\n)\n\n; --- getters for SignedInt16ToInt.mid_int: ---\n\n(define-fun SignedInt16ToInt!mid_int ((this Ref)) Int\n  (mid_int (deref-SignedInt16ToInt this))\n)\n\n; ------------------------------------------\n;   Getters for class UnsignedUInt16ToInt:\n; ------------------------------------------\n\n; --- getters for UnsignedUInt16ToInt.mid: ---\n\n(define-fun UnsignedUInt16ToInt!mid ((this Ref)) (_ BitVec 16)\n  (mid (deref-UnsignedUInt16ToInt this))\n)\n\n; --- getters for UnsignedUInt16ToInt.mid_int: ---\n\n(define-fun UnsignedUInt16ToInt!mid_int ((this Ref)) Int\n  (mid_int (deref-UnsignedUInt16ToInt this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ----------------------------------------\n;   Invariant for class SignedInt8ToInt:\n; ----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-SignedInt8ToInt SignedInt8ToInt)\n\n; --- Invariant 1: ---\n\n(define-fun SignedInt8ToInt.inv1 ((this Ref)) Bool\n  (= (SignedInt8ToInt!mid this) (_ bv128 8))\n)\n\n(assert (! (SignedInt8ToInt.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun SignedInt8ToInt.inv2 ((this Ref)) Bool\n  (= (SignedInt8ToInt!mid_int this) (ite (bvslt (SignedInt8ToInt!mid this) (_ bv0 8)) (- (bv2int (SignedInt8ToInt!mid this)) 256) (bv2int (SignedInt8ToInt!mid this))))\n)\n\n(assert (! (SignedInt8ToInt.inv2 1) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun SignedInt8ToInt.inv3 ((this Ref)) Bool\n  (= (SignedInt8ToInt!mid_int this) (- 128))\n)\n\n(assert (! (SignedInt8ToInt.inv3 1) :named _xkassert2))\n\n\n\n; -------------------------------------------\n;   Invariant for class SignedInt8MaxToInt:\n; -------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-SignedInt8MaxToInt SignedInt8MaxToInt)\n\n; --- Invariant 1: ---\n\n(define-fun SignedInt8MaxToInt.inv1 ((this Ref)) Bool\n  (= (SignedInt8MaxToInt!max this) (_ bv255 8))\n)\n\n(assert (! (SignedInt8MaxToInt.inv1 4) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun SignedInt8MaxToInt.inv2 ((this Ref)) Bool\n  (= (SignedInt8MaxToInt!max_int this) (ite (bvslt (SignedInt8MaxToInt!max this) (_ bv0 8)) (- (bv2int (SignedInt8MaxToInt!max this)) 256) (bv2int (SignedInt8MaxToInt!max this))))\n)\n\n(assert (! (SignedInt8MaxToInt.inv2 4) :named _xkassert4))\n\n; --- Invariant 3: ---\n\n(define-fun SignedInt8MaxToInt.inv3 ((this Ref)) Bool\n  (= (SignedInt8MaxToInt!max_int this) (- 1))\n)\n\n(assert (! (SignedInt8MaxToInt.inv3 4) :named _xkassert5))\n\n\n\n; -------------------------------------------\n;   Invariant for class UnsignedUInt8ToInt:\n; -------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-UnsignedUInt8ToInt UnsignedUInt8ToInt)\n\n; --- Invariant 1: ---\n\n(define-fun UnsignedUInt8ToInt.inv1 ((this Ref)) Bool\n  (= (UnsignedUInt8ToInt!mid this) (_ bv128 8))\n)\n\n(assert (! (UnsignedUInt8ToInt.inv1 6) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun UnsignedUInt8ToInt.inv2 ((this Ref)) Bool\n  (= (UnsignedUInt8ToInt!mid_int this) (bv2nat (UnsignedUInt8ToInt!mid this)))\n)\n\n(assert (! (UnsignedUInt8ToInt.inv2 6) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun UnsignedUInt8ToInt.inv3 ((this Ref)) Bool\n  (= (UnsignedUInt8ToInt!mid_int this) 128)\n)\n\n(assert (! (UnsignedUInt8ToInt.inv3 6) :named _xkassert8))\n\n\n\n; ----------------------------------------------\n;   Invariant for class UnsignedUInt8MaxToInt:\n; ----------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-UnsignedUInt8MaxToInt UnsignedUInt8MaxToInt)\n\n; --- Invariant 1: ---\n\n(define-fun UnsignedUInt8MaxToInt.inv1 ((this Ref)) Bool\n  (= (UnsignedUInt8MaxToInt!max this) (_ bv255 8))\n)\n\n(assert (! (UnsignedUInt8MaxToInt.inv1 5) :named _xkassert9))\n\n; --- Invariant 2: ---\n\n(define-fun UnsignedUInt8MaxToInt.inv2 ((this Ref)) Bool\n  (= (UnsignedUInt8MaxToInt!max_int this) (bv2nat (UnsignedUInt8MaxToInt!max this)))\n)\n\n(assert (! (UnsignedUInt8MaxToInt.inv2 5) :named _xkassert10))\n\n; --- Invariant 3: ---\n\n(define-fun UnsignedUInt8MaxToInt.inv3 ((this Ref)) Bool\n  (= (UnsignedUInt8MaxToInt!max_int this) 255)\n)\n\n(assert (! (UnsignedUInt8MaxToInt.inv3 5) :named _xkassert11))\n\n\n\n; -----------------------------------------\n;   Invariant for class SignedInt16ToInt:\n; -----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-SignedInt16ToInt SignedInt16ToInt)\n\n; --- Invariant 1: ---\n\n(define-fun SignedInt16ToInt.inv1 ((this Ref)) Bool\n  (= (SignedInt16ToInt!mid this) (_ bv32768 16))\n)\n\n(assert (! (SignedInt16ToInt.inv1 3) :named _xkassert12))\n\n; --- Invariant 2: ---\n\n(define-fun SignedInt16ToInt.inv2 ((this Ref)) Bool\n  (= (SignedInt16ToInt!mid_int this) (ite (bvslt (SignedInt16ToInt!mid this) (_ bv0 16)) (- (bv2int (SignedInt16ToInt!mid this)) 65536) (bv2int (SignedInt16ToInt!mid this))))\n)\n\n(assert (! (SignedInt16ToInt.inv2 3) :named _xkassert13))\n\n; --- Invariant 3: ---\n\n(define-fun SignedInt16ToInt.inv3 ((this Ref)) Bool\n  (= (SignedInt16ToInt!mid_int this) (- 32768))\n)\n\n(assert (! (SignedInt16ToInt.inv3 3) :named _xkassert14))\n\n\n\n; --------------------------------------------\n;   Invariant for class UnsignedUInt16ToInt:\n; --------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-UnsignedUInt16ToInt UnsignedUInt16ToInt)\n\n; --- Invariant 1: ---\n\n(define-fun UnsignedUInt16ToInt.inv1 ((this Ref)) Bool\n  (= (UnsignedUInt16ToInt!mid this) (_ bv32768 16))\n)\n\n(assert (! (UnsignedUInt16ToInt.inv1 2) :named _xkassert15))\n\n; --- Invariant 2: ---\n\n(define-fun UnsignedUInt16ToInt.inv2 ((this Ref)) Bool\n  (= (UnsignedUInt16ToInt!mid_int this) (bv2nat (UnsignedUInt16ToInt!mid this)))\n)\n\n(assert (! (UnsignedUInt16ToInt.inv2 2) :named _xkassert16))\n\n; --- Invariant 3: ---\n\n(define-fun UnsignedUInt16ToInt.inv3 ((this Ref)) Bool\n  (= (UnsignedUInt16ToInt!mid_int this) 32768)\n)\n\n(assert (! (UnsignedUInt16ToInt.inv3 2) :named _xkassert17))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-SignedInt8ToInt const-1-SignedInt8ToInt))\n        4 (lift-SignedInt8MaxToInt const-4-SignedInt8MaxToInt))\n        6 (lift-UnsignedUInt8ToInt const-6-UnsignedUInt8ToInt))\n        5 (lift-UnsignedUInt8MaxToInt const-5-UnsignedUInt8MaxToInt))\n        3 (lift-SignedInt16ToInt const-3-SignedInt16ToInt))\n        2 (lift-UnsignedUInt16ToInt const-2-UnsignedUInt16ToInt))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-4-SignedInt8MaxToInt () SignedInt8MaxToInt\n  (mk-SignedInt8MaxToInt #xff (- 1)))\n(define-fun const-6-UnsignedUInt8ToInt () UnsignedUInt8ToInt\n  (mk-UnsignedUInt8ToInt #x80 128))\n(define-fun const-5-UnsignedUInt8MaxToInt () UnsignedUInt8MaxToInt\n  (mk-UnsignedUInt8MaxToInt #xff 255))\n(define-fun const-1-SignedInt8ToInt () SignedInt8ToInt\n  (mk-SignedInt8ToInt #x80 (- 128)))\n(define-fun const-2-UnsignedUInt16ToInt () UnsignedUInt16ToInt\n  (mk-UnsignedUInt16ToInt #x8000 32768))\n(define-fun const-3-SignedInt16ToInt () SignedInt16ToInt\n  (mk-SignedInt16ToInt #x8000 (- 32768)))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (bvslt (mid (sel-SignedInt16ToInt (select heap 3))) #x0000))\n      (a!2 (bv2int (mid (sel-SignedInt16ToInt (select heap 3))))))\n  (= (mid_int (sel-SignedInt16ToInt (select heap 3)))\n     (ite a!1 (- a!2 65536) a!2))))\n(define-fun _xkassert14 () Bool\n  (= (mid_int (sel-SignedInt16ToInt (select heap 3))) (- 32768)))\n(define-fun _xkassert6 () Bool\n  (= (mid (sel-UnsignedUInt8ToInt (select heap 6))) #x80))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (bv2int (mid (sel-UnsignedUInt8ToInt (select heap 6))))))\n  (= (mid_int (sel-UnsignedUInt8ToInt (select heap 6))) a!1)))\n(define-fun _xkassert2 () Bool\n  (= (mid_int (sel-SignedInt8ToInt (select heap 1))) (- 128)))\n(define-fun _xkassert5 () Bool\n  (= (max_int (sel-SignedInt8MaxToInt (select heap 4))) (- 1)))\n(define-fun _xkassert9 () Bool\n  (= (max (sel-UnsignedUInt8MaxToInt (select heap 5))) #xff))\n(define-fun _xkassert0 () Bool\n  (= (mid (sel-SignedInt8ToInt (select heap 1))) #x80))\n(define-fun _xkassert8 () Bool\n  (= (mid_int (sel-UnsignedUInt8ToInt (select heap 6))) 128))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (bv2int (max (sel-UnsignedUInt8MaxToInt (select heap 5))))))\n  (= (max_int (sel-UnsignedUInt8MaxToInt (select heap 5))) a!1)))\n(define-fun _xkassert17 () Bool\n  (= (mid_int (sel-UnsignedUInt16ToInt (select heap 2))) 32768))\n(define-fun _xkassert12 () Bool\n  (= (mid (sel-SignedInt16ToInt (select heap 3))) #x8000))\n(define-fun _xkassert3 () Bool\n  (= (max (sel-SignedInt8MaxToInt (select heap 4))) #xff))\n(define-fun _xkassert16 () Bool\n  (let ((a!1 (bv2int (mid (sel-UnsignedUInt16ToInt (select heap 2))))))\n  (= (mid_int (sel-UnsignedUInt16ToInt (select heap 2))) a!1)))\n(define-fun _xkassert11 () Bool\n  (= (max_int (sel-UnsignedUInt8MaxToInt (select heap 5))) 255))\n(define-fun _xkassert15 () Bool\n  (= (mid (sel-UnsignedUInt16ToInt (select heap 2))) #x8000))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (bvslt (mid (sel-SignedInt8ToInt (select heap 1))) #x00))\n      (a!2 (bv2int (mid (sel-SignedInt8ToInt (select heap 1))))))\n  (= (mid_int (sel-SignedInt8ToInt (select heap 1))) (ite a!1 (- a!2 256) a!2))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (bvslt (max (sel-SignedInt8MaxToInt (select heap 4))) #x00))\n      (a!2 (bv2int (max (sel-SignedInt8MaxToInt (select heap 4))))))\n  (= (max_int (sel-SignedInt8MaxToInt (select heap 4)))\n     (ite a!1 (- a!2 256) a!2))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-SignedInt8ToInt\n                           (mk-SignedInt8ToInt #x80 (- 128))))\n                  4\n                  (lift-SignedInt8MaxToInt (mk-SignedInt8MaxToInt #xff (- 1))))))\n(let ((a!2 (store (store a!1\n                         6\n                         (lift-UnsignedUInt8ToInt\n                           (mk-UnsignedUInt8ToInt #x80 128)))\n                  5\n                  (lift-UnsignedUInt8MaxToInt\n                    (mk-UnsignedUInt8MaxToInt #xff 255)))))\n  (store (store a!2\n                3\n                (lift-SignedInt16ToInt (mk-SignedInt16ToInt #x8000 (- 32768))))\n         2\n         (lift-UnsignedUInt16ToInt (mk-UnsignedUInt16ToInt #x8000 32768))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt8ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 128,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "mid",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "mid_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "i": 128,
+                  "type": "LiteralInteger"
+                },
+                "type": "UnaryExp",
+                "op": "Neg"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt8MaxToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "max",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "max_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "i": 1,
+                  "type": "LiteralInteger"
+                },
+                "type": "UnaryExp",
+                "op": "Neg"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt8ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 128,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "mid",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "mid_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 128,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt8MaxToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "max",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "max_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 255,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt16ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 32768,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "mid",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "mid_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "i": 32768,
+                  "type": "LiteralInteger"
+                },
+                "type": "UnaryExp",
+                "op": "Neg"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt16ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "UnsignedIntType",
+              "width": 16
+            },
+            "assignment": false,
+            "expr": {
+              "i": 32768,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "mid",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "mid_int",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 32768,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt8ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 128
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "mid",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "mid_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Neg"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 128
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt8MaxToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "max",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "max_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Neg"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 1
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt8ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 128
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "mid",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "mid_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 128
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt8MaxToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "max_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "max",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "max_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 255
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedInt16ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 32768
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "mid",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "mid_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Neg"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 32768
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "UnsignedUInt16ToInt",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid",
+            "ty": {
+              "type": "ElementValue",
+              "element": "UInt16"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 32768
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "mid_int",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "mid",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "mid_int",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 32768
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
+}

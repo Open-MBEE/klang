@@ -1,0 +1,372 @@
+{
+  "name": "stringsolver1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringSolver1 {\n  name:String\n\n  req name.length >= 3\n\n  req name.length <= 6\n\n  req name.startsWith(\"A\")\n\n  req name.endsWith(\"e\")\n  greeting:String\n\n  req greeting = \"Hi \" + name\n}\n\nmain:StringSolver1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringSolver1 (mk-StringSolver1 (name String)(greeting String)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringSolver1 (sel-StringSolver1 StringSolver1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringSolver1 ((this Ref)) Bool\n  (is-lift-StringSolver1 (deref this))\n)\n\n(define-fun deref-StringSolver1 ((this Ref)) StringSolver1\n  (sel-StringSolver1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringSolver1 ((this Ref)) Bool\n  (deref-is-StringSolver1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------------\n;   Getters for class StringSolver1:\n; ------------------------------------\n\n; --- getters for StringSolver1.name: ---\n\n(define-fun StringSolver1!name ((this Ref)) String\n  (name (deref-StringSolver1 this))\n)\n\n; --- getters for StringSolver1.greeting: ---\n\n(define-fun StringSolver1!greeting ((this Ref)) String\n  (greeting (deref-StringSolver1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringSolver1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; --------------------------------------\n;   Invariant for class StringSolver1:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringSolver1 StringSolver1)\n\n; --- Invariant 1: ---\n\n(define-fun StringSolver1.inv1 ((this Ref)) Bool\n  (>= (str.len (StringSolver1!name this)) 3)\n)\n\n(assert (! (StringSolver1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringSolver1.inv2 ((this Ref)) Bool\n  (<= (str.len (StringSolver1!name this)) 6)\n)\n\n(assert (! (StringSolver1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringSolver1.inv3 ((this Ref)) Bool\n  (str.prefixof \"A\" (StringSolver1!name this))\n)\n\n(assert (! (StringSolver1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringSolver1.inv4 ((this Ref)) Bool\n  (str.suffixof \"e\" (StringSolver1!name this))\n)\n\n(assert (! (StringSolver1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringSolver1.inv5 ((this Ref)) Bool\n  (= (StringSolver1!greeting this) (str.++ \"Hi \" (StringSolver1!name this)))\n)\n\n(assert (! (StringSolver1.inv5 1) :named _xkassert5))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringSolver1 const-1-StringSolver1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringSolver1 () StringSolver1\n  (mk-StringSolver1 \"ACe\" \"Hi ACe\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.len (name (sel-StringSolver1 (select heap 1))))))\n  (<= a!1 6)))\n(define-fun _xkassert3 () Bool\n  (str.prefixof \"A\" (name (sel-StringSolver1 (select heap 1)))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (str.++ \"Hi \" (name (sel-StringSolver1 (select heap 1))))))\n  (= (greeting (sel-StringSolver1 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringSolver1 a!1)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (str.len (name (sel-StringSolver1 (select heap 1))))))\n  (>= a!1 3)))\n(define-fun _xkassert4 () Bool\n  (str.suffixof \"e\" (name (sel-StringSolver1 (select heap 1)))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringSolver1 (mk-StringSolver1 \"ACe\" \"Hi ACe\"))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringSolver1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "name",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "length",
+                "exp": {
+                  "ident": "name",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "length",
+                "exp": {
+                  "ident": "name",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 6,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "startsWith",
+                "exp": {
+                  "ident": "name",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "A",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "endsWith",
+                "exp": {
+                  "ident": "name",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "e",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "greeting",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "greeting",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "string": "Hi ",
+                  "type": "StringLiteral"
+                },
+                "exp2": {
+                  "ident": "name",
+                  "type": "IdentExp"
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringSolver1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringSolver1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "name",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "length"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "length"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 6
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "startsWith"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "A"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "endsWith"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "e"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "greeting",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "greeting",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "Hi "
+                    },
+                    {
+                      "element": "name",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringSolver1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

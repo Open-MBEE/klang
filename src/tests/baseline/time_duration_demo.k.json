@@ -1,0 +1,717 @@
+{
+  "name": "time_duration_demo.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Meeting {\n  startTime:Time\n  endTime:Time\n  minDuration:Duration\n\n  req endTime > startTime\n}\n\nmeeting1:Meeting\n\nreq meeting1.startTime = 2025-12-07T09:00:00\n\nreq meeting1.endTime = 2025-12-07T10:30:00\n\nreq meeting1.minDuration = PT1H\n\nclass Task {\n  estimatedDuration:Duration\n  actualDuration:Duration\n\n  req estimatedDuration >= PT0S\n\n  req actualDuration >= PT0S\n\n  req actualDuration <= estimatedDuration + estimatedDuration\n}\n\ntask1:Task\n\nreq task1.estimatedDuration = PT2H30M\n\nclass VideoClip {\n  length:Duration\n\n  req length >= PT0S\n\n  req length <= PT10M\n}\n\nclip1:VideoClip\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (meeting1 Ref)(task1 Ref)(clip1 Ref)))))\n(declare-datatypes () ((Meeting (mk-Meeting (startTime Int)(endTime Int)(minDuration Int)))))\n(declare-datatypes () ((Task (mk-Task (estimatedDuration Int)(actualDuration Int)))))\n(declare-datatypes () ((VideoClip (mk-VideoClip (length Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Meeting (sel-Meeting Meeting))\n  (lift-Task (sel-Task Task))\n  (lift-VideoClip (sel-VideoClip VideoClip))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Meeting ((this Ref)) Bool\n  (is-lift-Meeting (deref this))\n)\n\n(define-fun deref-Meeting ((this Ref)) Meeting\n  (sel-Meeting (deref this))\n)\n\n(define-fun deref-is-Task ((this Ref)) Bool\n  (is-lift-Task (deref this))\n)\n\n(define-fun deref-Task ((this Ref)) Task\n  (sel-Task (deref this))\n)\n\n(define-fun deref-is-VideoClip ((this Ref)) Bool\n  (is-lift-VideoClip (deref this))\n)\n\n(define-fun deref-VideoClip ((this Ref)) VideoClip\n  (sel-VideoClip (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Meeting ((this Ref)) Bool\n  (deref-is-Meeting this)\n)\n\n(define-fun deref-isa-Task ((this Ref)) Bool\n  (deref-is-Task this)\n)\n\n(define-fun deref-isa-VideoClip ((this Ref)) Bool\n  (deref-is-VideoClip this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.meeting1: ---\n\n(define-fun TopLevelDeclarations!meeting1 ((this Ref)) Ref\n  (meeting1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.task1: ---\n\n(define-fun TopLevelDeclarations!task1 ((this Ref)) Ref\n  (task1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.clip1: ---\n\n(define-fun TopLevelDeclarations!clip1 ((this Ref)) Ref\n  (clip1 (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------\n;   Getters for class Meeting:\n; ------------------------------\n\n; --- getters for Meeting.startTime: ---\n\n(define-fun Meeting.startTime ((this Ref)) Int\n  (startTime (deref-Meeting this))\n)\n\n(define-fun Meeting!startTime ((this Ref)) Int\n  (startTime (deref-Meeting this))\n)\n\n; --- getters for Meeting.endTime: ---\n\n(define-fun Meeting.endTime ((this Ref)) Int\n  (endTime (deref-Meeting this))\n)\n\n(define-fun Meeting!endTime ((this Ref)) Int\n  (endTime (deref-Meeting this))\n)\n\n; --- getters for Meeting.minDuration: ---\n\n(define-fun Meeting.minDuration ((this Ref)) Int\n  (minDuration (deref-Meeting this))\n)\n\n; ---------------------------\n;   Getters for class Task:\n; ---------------------------\n\n; --- getters for Task.estimatedDuration: ---\n\n(define-fun Task.estimatedDuration ((this Ref)) Int\n  (estimatedDuration (deref-Task this))\n)\n\n(define-fun Task!estimatedDuration ((this Ref)) Int\n  (estimatedDuration (deref-Task this))\n)\n\n; --- getters for Task.actualDuration: ---\n\n(define-fun Task!actualDuration ((this Ref)) Int\n  (actualDuration (deref-Task this))\n)\n\n; --------------------------------\n;   Getters for class VideoClip:\n; --------------------------------\n\n; --- getters for VideoClip.length: ---\n\n(define-fun VideoClip!length ((this Ref)) Int\n  (length (deref-VideoClip this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Meeting (TopLevelDeclarations!meeting1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Task (TopLevelDeclarations!task1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-VideoClip (TopLevelDeclarations!clip1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (= (Meeting.startTime (TopLevelDeclarations!meeting1 this)) 1765098000000)\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Meeting.endTime (TopLevelDeclarations!meeting1 this)) 1765103400000)\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (Meeting.minDuration (TopLevelDeclarations!meeting1 this)) 3600000000)\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n; --- Invariant 7: ---\n\n(define-fun TopLevelDeclarations.inv7 ((this Ref)) Bool\n  (= (Task.estimatedDuration (TopLevelDeclarations!task1 this)) 9000000000)\n)\n\n(assert (! (TopLevelDeclarations.inv7 0) :named _xkassert6))\n\n\n\n; --------------------------------\n;   Invariant for class Meeting:\n; --------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Meeting Meeting)\n\n; --- Invariant 1: ---\n\n(define-fun Meeting.inv1 ((this Ref)) Bool\n  (> (Meeting!endTime this) (Meeting!startTime this))\n)\n\n(assert (! (Meeting.inv1 1) :named _xkassert7))\n\n\n\n; -----------------------------\n;   Invariant for class Task:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Task Task)\n\n; --- Invariant 1: ---\n\n(define-fun Task.inv1 ((this Ref)) Bool\n  (>= (Task!estimatedDuration this) 0)\n)\n\n(assert (! (Task.inv1 2) :named _xkassert8))\n\n; --- Invariant 2: ---\n\n(define-fun Task.inv2 ((this Ref)) Bool\n  (>= (Task!actualDuration this) 0)\n)\n\n(assert (! (Task.inv2 2) :named _xkassert9))\n\n; --- Invariant 3: ---\n\n(define-fun Task.inv3 ((this Ref)) Bool\n  (<= (Task!actualDuration this) (+ (Task!estimatedDuration this) (Task!estimatedDuration this)))\n)\n\n(assert (! (Task.inv3 2) :named _xkassert10))\n\n\n\n; ----------------------------------\n;   Invariant for class VideoClip:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-VideoClip VideoClip)\n\n; --- Invariant 1: ---\n\n(define-fun VideoClip.inv1 ((this Ref)) Bool\n  (>= (VideoClip!length this) 0)\n)\n\n(assert (! (VideoClip.inv1 3) :named _xkassert11))\n\n; --- Invariant 2: ---\n\n(define-fun VideoClip.inv2 ((this Ref)) Bool\n  (<= (VideoClip!length this) 600000000)\n)\n\n(assert (! (VideoClip.inv2 3) :named _xkassert12))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Meeting const-1-Meeting))\n        2 (lift-Task const-2-Task))\n        3 (lift-VideoClip const-3-VideoClip))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-Task () Task\n  (mk-Task 9000000000 0))\n(define-fun const-3-VideoClip () VideoClip\n  (mk-VideoClip 11797))\n(define-fun const-1-Meeting () Meeting\n  (mk-Meeting 1765098000000 1765103400000 3600000000))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1 2 3))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select heap (task1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (estimatedDuration (sel-Task a!1)) 9000000000)))\n(define-fun _xkassert7 () Bool\n  (> (endTime (sel-Meeting (select heap 1)))\n   (startTime (sel-Meeting (select heap 1)))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (clip1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-VideoClip a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (meeting1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (minDuration (sel-Meeting a!1)) 3600000000)))\n(define-fun _xkassert9 () Bool\n  (>= (actualDuration (sel-Task (select heap 2))) 0))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (meeting1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Meeting a!1)))\n(define-fun _xkassert8 () Bool\n  (>= (estimatedDuration (sel-Task (select heap 2))) 0))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (+ (estimatedDuration (sel-Task (select heap 2)))\n              (estimatedDuration (sel-Task (select heap 2))))))\n  (<= (actualDuration (sel-Task (select heap 2))) a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (meeting1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (startTime (sel-Meeting a!1)) 1765098000000)))\n(define-fun _xkassert12 () Bool\n  (<= (length (sel-VideoClip (select heap 3))) 600000000))\n(define-fun _xkassert11 () Bool\n  (>= (length (sel-VideoClip (select heap 3))) 0))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (task1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Task a!1)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (meeting1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (endTime (sel-Meeting a!1)) 1765103400000)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 1 2 3)))\n                  1\n                  (lift-Meeting (mk-Meeting 1765098000000\n                                            1765103400000\n                                            3600000000)))))\n  (store (store a!1 2 (lift-Task (mk-Task 9000000000 0)))\n         3\n         (lift-VideoClip (mk-VideoClip 11797)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Meeting",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startTime",
+            "ty": {"type": "TimeType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "endTime",
+            "ty": {"type": "TimeType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "minDuration",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "ident": "endTime",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "startTime",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "meeting1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Meeting"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "startTime",
+            "exp": {
+              "ident": "meeting1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "2025-12-07T09:00:00",
+            "type": "DateLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "endTime",
+            "exp": {
+              "ident": "meeting1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "2025-12-07T10:30:00",
+            "type": "DateLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "minDuration",
+            "exp": {
+              "ident": "meeting1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "PT1H",
+            "type": "DurationLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Task",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "estimatedDuration",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "actualDuration",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "estimatedDuration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "PT0S",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "actualDuration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "PT0S",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "actualDuration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "estimatedDuration",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "estimatedDuration",
+                  "type": "IdentExp"
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "task1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Task"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "estimatedDuration",
+            "exp": {
+              "ident": "task1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "PT2H30M",
+            "type": "DurationLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "VideoClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "length",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "length",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "PT0S",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "length",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "PT10M",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "clip1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["VideoClip"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Meeting",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startTime",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "endTime",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "minDuration",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "element": "endTime",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "startTime",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "meeting1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Meeting"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "meeting1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "startTime"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "2025-12-07T09:00:00"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "meeting1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "endTime"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "2025-12-07T10:30:00"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "meeting1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "minDuration"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "PT1H"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Task",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "estimatedDuration",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "actualDuration",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "estimatedDuration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "PT0S"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "actualDuration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "PT0S"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "actualDuration",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "estimatedDuration",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "estimatedDuration",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "task1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Task"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "task1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "estimatedDuration"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "PT2H30M"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "VideoClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "length",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "length",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "PT0S"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "length",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "PT10M"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "clip1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "VideoClip"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

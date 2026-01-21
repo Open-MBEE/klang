@@ -1,0 +1,438 @@
+{
+  "name": "python_external3.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nimport python math\n\nclass PythagoreanPython {\n  a:Real\n  b:Real\n  c:Real\n\n  req a = 3E0\n\n  req b = 4E0\n\n  req c = math.sqrt(math.pow(a,2E0) + math.pow(b,2E0))\n\n  req c = 5E0\n}\n\nmain:PythagoreanPython\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((PythagoreanPython (mk-PythagoreanPython (a Real)(b Real)(c Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-PythagoreanPython (sel-PythagoreanPython PythagoreanPython))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-PythagoreanPython ((this Ref)) Bool\n  (is-lift-PythagoreanPython (deref this))\n)\n\n(define-fun deref-PythagoreanPython ((this Ref)) PythagoreanPython\n  (sel-PythagoreanPython (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-PythagoreanPython ((this Ref)) Bool\n  (deref-is-PythagoreanPython this)\n)\n\n; =======================================\n; === External Function Declarations: ===\n; =======================================\n\n; Uninterpreted functions for external (Java) calls\n(declare-fun py_math_sqrt (Real) Real)\n(declare-fun py_math_pow (Real Real) Real)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------------------\n;   Getters for class PythagoreanPython:\n; ----------------------------------------\n\n; --- getters for PythagoreanPython.a: ---\n\n(define-fun PythagoreanPython!a ((this Ref)) Real\n  (a (deref-PythagoreanPython this))\n)\n\n; --- getters for PythagoreanPython.b: ---\n\n(define-fun PythagoreanPython!b ((this Ref)) Real\n  (b (deref-PythagoreanPython this))\n)\n\n; --- getters for PythagoreanPython.c: ---\n\n(define-fun PythagoreanPython!c ((this Ref)) Real\n  (c (deref-PythagoreanPython this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-PythagoreanPython (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------------------\n;   Invariant for class PythagoreanPython:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-PythagoreanPython PythagoreanPython)\n\n; --- Invariant 1: ---\n\n(define-fun PythagoreanPython.inv1 ((this Ref)) Bool\n  (= (PythagoreanPython!a this) 3.0000000000000000)\n)\n\n(assert (! (PythagoreanPython.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun PythagoreanPython.inv2 ((this Ref)) Bool\n  (= (PythagoreanPython!b this) 4.0000000000000000)\n)\n\n(assert (! (PythagoreanPython.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun PythagoreanPython.inv3 ((this Ref)) Bool\n  (= (PythagoreanPython!c this) (py_math_sqrt (+ (py_math_pow (PythagoreanPython!a this) 2.0000000000000000) (py_math_pow (PythagoreanPython!b this) 2.0000000000000000))))\n)\n\n(assert (! (PythagoreanPython.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun PythagoreanPython.inv4 ((this Ref)) Bool\n  (= (PythagoreanPython!c this) 5.0000000000000000)\n)\n\n(assert (! (PythagoreanPython.inv4 1) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-PythagoreanPython const-1-PythagoreanPython))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-PythagoreanPython () PythagoreanPython\n  (mk-PythagoreanPython 3.0 4.0 5.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (= (b (sel-PythagoreanPython (select heap 1))) 4.0))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (py_math_pow (a (sel-PythagoreanPython (select heap 1))) 2.0))\n      (a!2 (py_math_pow (b (sel-PythagoreanPython (select heap 1))) 2.0)))\n  (= (c (sel-PythagoreanPython (select heap 1))) (py_math_sqrt (+ a!1 a!2)))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-PythagoreanPython a!1)))\n(define-fun _xkassert1 () Bool\n  (= (a (sel-PythagoreanPython (select heap 1))) 3.0))\n(define-fun _xkassert4 () Bool\n  (= (c (sel-PythagoreanPython (select heap 1))) 5.0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-PythagoreanPython (mk-PythagoreanPython 3.0 4.0 5.0))))\n(define-fun py_math_pow ((x!0 Real) (x!1 Real)) Real\n  0.0)\n(define-fun py_math_sqrt ((x!0 Real)) Real\n  5.0)",
+  "json1": {
+    "type": "Model",
+    "imports": [{
+      "type": "ImportDecl",
+      "name": {
+        "names": ["math"],
+        "type": "QualifiedName"
+      },
+      "star": "false",
+      "language": "PythonImport"
+    }],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PythagoreanPython",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "c",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "a",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "3.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "b",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "4.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "c",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "sqrt",
+                  "exp": {
+                    "ident": "math",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "type": "FunApplExp",
+                      "exp1": {
+                        "ident": "pow",
+                        "exp": {
+                          "ident": "math",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      },
+                      "args": [
+                        {
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "ident": "a",
+                            "type": "IdentExp"
+                          }
+                        },
+                        {
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "f": "2.0000000000000000",
+                            "type": "LiteralFloatingPoint"
+                          }
+                        }
+                      ]
+                    },
+                    "exp2": {
+                      "type": "FunApplExp",
+                      "exp1": {
+                        "ident": "pow",
+                        "exp": {
+                          "ident": "math",
+                          "type": "IdentExp"
+                        },
+                        "type": "DotExp"
+                      },
+                      "args": [
+                        {
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "ident": "b",
+                            "type": "IdentExp"
+                          }
+                        },
+                        {
+                          "type": "PositionalArgument",
+                          "exp": {
+                            "f": "2.0000000000000000",
+                            "type": "LiteralFloatingPoint"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "c",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "5.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["PythagoreanPython"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [{
+      "type": "ImportDecl",
+      "name": {
+        "names": ["math"],
+        "type": "QualifiedName"
+      },
+      "star": "false",
+      "language": "PythonImport"
+    }],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PythagoreanPython",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "c",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "a",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "b",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 4
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "math",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "sqrt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "type": "Expression",
+                          "operand": [
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "math",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "pow"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "a",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralReal",
+                              "double": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Expression",
+                          "operand": [
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "math",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "pow"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "element": "b",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralReal",
+                              "double": 2
+                            }
+                          ]
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 5
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "PythagoreanPython"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

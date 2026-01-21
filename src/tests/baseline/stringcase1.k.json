@@ -1,0 +1,460 @@
+{
+  "name": "stringcase1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringCase1 {\n  text1:String\n  text2:String\n\n  req text1 = \"Hello\"\n\n  req text2 = \"Hello\"\n  areEqual:Bool\n\n  req areEqual = (text1 = text2)\n\n  req areEqual = true\n  text3:String\n\n  req text3 = \"World\"\n  areDifferent:Bool\n\n  req areDifferent = (text1 != text3)\n\n  req areDifferent = true\n}\n\nmain:StringCase1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringCase1 (mk-StringCase1 (text1 String)(text2 String)(areEqual Bool)(text3 String)(areDifferent Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringCase1 (sel-StringCase1 StringCase1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringCase1 ((this Ref)) Bool\n  (is-lift-StringCase1 (deref this))\n)\n\n(define-fun deref-StringCase1 ((this Ref)) StringCase1\n  (sel-StringCase1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringCase1 ((this Ref)) Bool\n  (deref-is-StringCase1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------------\n;   Getters for class StringCase1:\n; ----------------------------------\n\n; --- getters for StringCase1.text1: ---\n\n(define-fun StringCase1!text1 ((this Ref)) String\n  (text1 (deref-StringCase1 this))\n)\n\n; --- getters for StringCase1.text2: ---\n\n(define-fun StringCase1!text2 ((this Ref)) String\n  (text2 (deref-StringCase1 this))\n)\n\n; --- getters for StringCase1.areEqual: ---\n\n(define-fun StringCase1!areEqual ((this Ref)) Bool\n  (areEqual (deref-StringCase1 this))\n)\n\n; --- getters for StringCase1.text3: ---\n\n(define-fun StringCase1!text3 ((this Ref)) String\n  (text3 (deref-StringCase1 this))\n)\n\n; --- getters for StringCase1.areDifferent: ---\n\n(define-fun StringCase1!areDifferent ((this Ref)) Bool\n  (areDifferent (deref-StringCase1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringCase1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------------\n;   Invariant for class StringCase1:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringCase1 StringCase1)\n\n; --- Invariant 1: ---\n\n(define-fun StringCase1.inv1 ((this Ref)) Bool\n  (= (StringCase1!text1 this) \"Hello\")\n)\n\n(assert (! (StringCase1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringCase1.inv2 ((this Ref)) Bool\n  (= (StringCase1!text2 this) \"Hello\")\n)\n\n(assert (! (StringCase1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringCase1.inv3 ((this Ref)) Bool\n  (= (StringCase1!areEqual this) (= (StringCase1!text1 this) (StringCase1!text2 this)))\n)\n\n(assert (! (StringCase1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringCase1.inv4 ((this Ref)) Bool\n  (= (StringCase1!areEqual this) true)\n)\n\n(assert (! (StringCase1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringCase1.inv5 ((this Ref)) Bool\n  (= (StringCase1!text3 this) \"World\")\n)\n\n(assert (! (StringCase1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun StringCase1.inv6 ((this Ref)) Bool\n  (= (StringCase1!areDifferent this) (not (= (StringCase1!text1 this) (StringCase1!text3 this))))\n)\n\n(assert (! (StringCase1.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun StringCase1.inv7 ((this Ref)) Bool\n  (= (StringCase1!areDifferent this) true)\n)\n\n(assert (! (StringCase1.inv7 1) :named _xkassert7))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringCase1 const-1-StringCase1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringCase1 () StringCase1\n  (mk-StringCase1 \"Hello\" \"Hello\" true \"World\" true))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert7 () Bool\n  (= (areDifferent (sel-StringCase1 (select heap 1))) true))\n(define-fun _xkassert2 () Bool\n  (= (text2 (sel-StringCase1 (select heap 1))) \"Hello\"))\n(define-fun _xkassert5 () Bool\n  (= (text3 (sel-StringCase1 (select heap 1))) \"World\"))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringCase1 a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (= (text1 (sel-StringCase1 (select heap 1)))\n              (text2 (sel-StringCase1 (select heap 1))))))\n  (= (areEqual (sel-StringCase1 (select heap 1))) a!1)))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (= (text1 (sel-StringCase1 (select heap 1)))\n              (text3 (sel-StringCase1 (select heap 1))))))\n  (= (areDifferent (sel-StringCase1 (select heap 1))) (not a!1))))\n(define-fun _xkassert1 () Bool\n  (= (text1 (sel-StringCase1 (select heap 1))) \"Hello\"))\n(define-fun _xkassert4 () Bool\n  (= (areEqual (sel-StringCase1 (select heap 1))) true))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringCase1 (mk-StringCase1 \"Hello\" \"Hello\" true \"World\" true))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringCase1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text1",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text2",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "Hello",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "Hello",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "areEqual",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "areEqual",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "text1",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "text2",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "ParenExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "areEqual",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text3",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text3",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "World",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "areDifferent",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "areDifferent",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "type": "BinExp",
+                  "op": "NotEQ",
+                  "exp1": {
+                    "ident": "text1",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "text3",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "ParenExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "areDifferent",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringCase1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringCase1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text1",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text2",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "Hello"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text2",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "Hello"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "areEqual",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "areEqual",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "text1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "text2",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "areEqual",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text3",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text3",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "World"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "areDifferent",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "areDifferent",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "NotEQ"
+                    },
+                    {
+                      "element": "text1",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "text3",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "areDifferent",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringCase1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

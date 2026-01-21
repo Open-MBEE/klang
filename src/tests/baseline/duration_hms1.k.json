@@ -1,0 +1,591 @@
+{
+  "name": "duration_hms1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass VideoClip {\n  length:Duration\n\n  req length >= 0:00:00\n\n  req length <= 0:10:00\n}\n\nclass Movie {\n  runtime:Duration\n\n  req runtime >= 1:00:00\n\n  req runtime <= 3:00:00\n}\n\nclass AudioClip {\n  duration:Duration\n\n  req duration >= 0:00:00.000\n\n  req duration <= 0:00:30.500\n}\n\nclip1:VideoClip\n\nmovie1:Movie\n\naudio1:AudioClip\n\nreq clip1.length = 0:05:30\n\nreq movie1.runtime = 2:15:00\n\nreq audio1.duration = 0:00:15.250\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (clip1 Ref)(movie1 Ref)(audio1 Ref)))))\n(declare-datatypes () ((VideoClip (mk-VideoClip (length Int)))))\n(declare-datatypes () ((Movie (mk-Movie (runtime Int)))))\n(declare-datatypes () ((AudioClip (mk-AudioClip (duration Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-VideoClip (sel-VideoClip VideoClip))\n  (lift-Movie (sel-Movie Movie))\n  (lift-AudioClip (sel-AudioClip AudioClip))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-VideoClip ((this Ref)) Bool\n  (is-lift-VideoClip (deref this))\n)\n\n(define-fun deref-VideoClip ((this Ref)) VideoClip\n  (sel-VideoClip (deref this))\n)\n\n(define-fun deref-is-Movie ((this Ref)) Bool\n  (is-lift-Movie (deref this))\n)\n\n(define-fun deref-Movie ((this Ref)) Movie\n  (sel-Movie (deref this))\n)\n\n(define-fun deref-is-AudioClip ((this Ref)) Bool\n  (is-lift-AudioClip (deref this))\n)\n\n(define-fun deref-AudioClip ((this Ref)) AudioClip\n  (sel-AudioClip (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-VideoClip ((this Ref)) Bool\n  (deref-is-VideoClip this)\n)\n\n(define-fun deref-isa-Movie ((this Ref)) Bool\n  (deref-is-Movie this)\n)\n\n(define-fun deref-isa-AudioClip ((this Ref)) Bool\n  (deref-is-AudioClip this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.clip1: ---\n\n(define-fun TopLevelDeclarations!clip1 ((this Ref)) Ref\n  (clip1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.movie1: ---\n\n(define-fun TopLevelDeclarations!movie1 ((this Ref)) Ref\n  (movie1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.audio1: ---\n\n(define-fun TopLevelDeclarations!audio1 ((this Ref)) Ref\n  (audio1 (deref-TopLevelDeclarations this))\n)\n\n; --------------------------------\n;   Getters for class VideoClip:\n; --------------------------------\n\n; --- getters for VideoClip.length: ---\n\n(define-fun VideoClip.length ((this Ref)) Int\n  (length (deref-VideoClip this))\n)\n\n(define-fun VideoClip!length ((this Ref)) Int\n  (length (deref-VideoClip this))\n)\n\n; ----------------------------\n;   Getters for class Movie:\n; ----------------------------\n\n; --- getters for Movie.runtime: ---\n\n(define-fun Movie.runtime ((this Ref)) Int\n  (runtime (deref-Movie this))\n)\n\n(define-fun Movie!runtime ((this Ref)) Int\n  (runtime (deref-Movie this))\n)\n\n; --------------------------------\n;   Getters for class AudioClip:\n; --------------------------------\n\n; --- getters for AudioClip.duration: ---\n\n(define-fun AudioClip.duration ((this Ref)) Int\n  (duration (deref-AudioClip this))\n)\n\n(define-fun AudioClip!duration ((this Ref)) Int\n  (duration (deref-AudioClip this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-VideoClip (TopLevelDeclarations!clip1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-Movie (TopLevelDeclarations!movie1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-AudioClip (TopLevelDeclarations!audio1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (= (VideoClip.length (TopLevelDeclarations!clip1 this)) 330000000)\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Movie.runtime (TopLevelDeclarations!movie1 this)) 8100000000)\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (AudioClip.duration (TopLevelDeclarations!audio1 this)) 15250000)\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n\n\n; ----------------------------------\n;   Invariant for class VideoClip:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-VideoClip VideoClip)\n\n; --- Invariant 1: ---\n\n(define-fun VideoClip.inv1 ((this Ref)) Bool\n  (>= (VideoClip!length this) 0)\n)\n\n(assert (! (VideoClip.inv1 1) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun VideoClip.inv2 ((this Ref)) Bool\n  (<= (VideoClip!length this) 600000000)\n)\n\n(assert (! (VideoClip.inv2 1) :named _xkassert7))\n\n\n\n; ------------------------------\n;   Invariant for class Movie:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Movie Movie)\n\n; --- Invariant 1: ---\n\n(define-fun Movie.inv1 ((this Ref)) Bool\n  (>= (Movie!runtime this) 3600000000)\n)\n\n(assert (! (Movie.inv1 2) :named _xkassert8))\n\n; --- Invariant 2: ---\n\n(define-fun Movie.inv2 ((this Ref)) Bool\n  (<= (Movie!runtime this) 10800000000)\n)\n\n(assert (! (Movie.inv2 2) :named _xkassert9))\n\n\n\n; ----------------------------------\n;   Invariant for class AudioClip:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-AudioClip AudioClip)\n\n; --- Invariant 1: ---\n\n(define-fun AudioClip.inv1 ((this Ref)) Bool\n  (>= (AudioClip!duration this) 0)\n)\n\n(assert (! (AudioClip.inv1 3) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun AudioClip.inv2 ((this Ref)) Bool\n  (<= (AudioClip!duration this) 30500000)\n)\n\n(assert (! (AudioClip.inv2 3) :named _xkassert11))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-VideoClip const-1-VideoClip))\n        2 (lift-Movie const-2-Movie))\n        3 (lift-AudioClip const-3-AudioClip))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-AudioClip () AudioClip\n  (mk-AudioClip 15250000))\n(define-fun const-1-VideoClip () VideoClip\n  (mk-VideoClip 330000000))\n(define-fun const-2-Movie () Movie\n  (mk-Movie 8100000000))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1 2 3))\n(define-fun _xkassert7 () Bool\n  (<= (length (sel-VideoClip (select heap 1))) 600000000))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (audio1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-AudioClip a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (audio1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (duration (sel-AudioClip a!1)) 15250000)))\n(define-fun _xkassert9 () Bool\n  (<= (runtime (sel-Movie (select heap 2))) 10800000000))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (clip1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-VideoClip a!1)))\n(define-fun _xkassert8 () Bool\n  (>= (runtime (sel-Movie (select heap 2))) 3600000000))\n(define-fun _xkassert10 () Bool\n  (>= (duration (sel-AudioClip (select heap 3))) 0))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (clip1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (length (sel-VideoClip a!1)) 330000000)))\n(define-fun _xkassert11 () Bool\n  (<= (duration (sel-AudioClip (select heap 3))) 30500000))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (movie1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Movie a!1)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (movie1 (sel-TopLevelDeclarations (select heap 0))))))\n  (= (runtime (sel-Movie a!1)) 8100000000)))\n(define-fun _xkassert6 () Bool\n  (>= (length (sel-VideoClip (select heap 1))) 0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 1 2 3)))\n                  1\n                  (lift-VideoClip (mk-VideoClip 330000000)))))\n  (store (store a!1 2 (lift-Movie (mk-Movie 8100000000)))\n         3\n         (lift-AudioClip (mk-AudioClip 15250000)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "VideoClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "length",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "length",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "length",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:10:00",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Movie",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "runtime",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "runtime",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "1:00:00",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "runtime",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "3:00:00",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "AudioClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "duration",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "duration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.000",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "duration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:30.500",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "clip1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["VideoClip"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "movie1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Movie"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "audio1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["AudioClip"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "length",
+            "exp": {
+              "ident": "clip1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "0:05:30",
+            "type": "DurationLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "runtime",
+            "exp": {
+              "ident": "movie1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "2:15:00",
+            "type": "DurationLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "duration",
+            "exp": {
+              "ident": "audio1",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "0:00:15.250",
+            "type": "DurationLiteral"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "VideoClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "length",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "length",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "length",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:10:00"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Movie",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "runtime",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "runtime",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "1:00:00"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "runtime",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "3:00:00"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "AudioClip",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "duration",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "duration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.000"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "duration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:30.500"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "clip1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "VideoClip"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "movie1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Movie"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "audio1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "AudioClip"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "clip1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "length"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "0:05:30"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "movie1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "runtime"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "2:15:00"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "audio1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "duration"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "0:00:15.250"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}

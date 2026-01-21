@@ -1,0 +1,356 @@
+{
+  "name": "rename_field.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Parent {\n  value:Int\n}\n\nclass Child extending Parent {\n  rename Parent::value as parentValue;\n  value:Int\n}\n\nc:Child\n\nreq c.value > 0\n\nreq c.parentValue > 0\n\nreq c.value = 42\n\nreq c.parentValue = 100\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (c Ref)))))\n(declare-datatypes () ((Parent (mk-Parent (value Int)))))\n(declare-datatypes () ((Child (mk-Child (parentValue Int)(value Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Parent (sel-Parent Parent))\n  (lift-Child (sel-Child Child))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Parent ((this Ref)) Bool\n  (is-lift-Parent (deref this))\n)\n\n(define-fun deref-Parent ((this Ref)) Parent\n  (sel-Parent (deref this))\n)\n\n(define-fun deref-is-Child ((this Ref)) Bool\n  (is-lift-Child (deref this))\n)\n\n(define-fun deref-Child ((this Ref)) Child\n  (sel-Child (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Parent ((this Ref)) Bool\n  (or\n    (deref-is-Parent this)\n    (deref-is-Child this)\n  )\n)\n\n(define-fun deref-isa-Child ((this Ref)) Bool\n  (deref-is-Child this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.c: ---\n\n(define-fun TopLevelDeclarations!c ((this Ref)) Ref\n  (c (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------\n;   Getters for class Child:\n; ----------------------------\n\n; --- getters for Child.parentValue: ---\n\n(define-fun Child.parentValue ((this Ref)) Int\n  (parentValue (deref-Child this))\n)\n\n; --- getters for Child.value: ---\n\n(define-fun Child.value ((this Ref)) Int\n  (value (deref-Child this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Child (TopLevelDeclarations!c this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (> (Child.value (TopLevelDeclarations!c this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (> (Child.parentValue (TopLevelDeclarations!c this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (= (Child.value (TopLevelDeclarations!c this)) 42)\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Child.parentValue (TopLevelDeclarations!c this)) 100)\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n\n\n; -------------------------------\n;   Invariant for class Parent:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Parent Parent)\n\n\n\n; ------------------------------\n;   Invariant for class Child:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Child Child)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Parent const-1-Parent))\n        2 (lift-Child const-2-Child))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-Child () Child\n  (mk-Child 100 42))\n(define-fun const-1-Parent () Parent\n  (mk-Parent 3))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (> (parentValue (sel-Child a!1)) 0)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (= (value (sel-Child a!1)) 42)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Child a!1)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (> (value (sel-Child a!1)) 0)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (= (parentValue (sel-Child a!1)) 100)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2)))\n                  1\n                  (lift-Parent (mk-Parent 3)))))\n  (store a!1 2 (lift-Child (mk-Child 100 42)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Parent",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "value",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Child",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Parent"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "RenameDecl",
+            "fromClass": "Parent",
+            "fromField": "value",
+            "toField": "parentValue"
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "value",
+            "ty": {"type": "IntType"}
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Child"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "value",
+            "exp": {
+              "ident": "c",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "parentValue",
+            "exp": {
+              "ident": "c",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "value",
+            "exp": {
+              "ident": "c",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 42,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "parentValue",
+            "exp": {
+              "ident": "c",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 100,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Parent",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "value",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Child",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Parent"
+        }],
+        "members": [
+          {
+            "type": "RenameDecl",
+            "fromClass": "Parent",
+            "fromField": "value",
+            "toField": "parentValue"
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "value",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Child"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "value"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "parentValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "value"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 42
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "c",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "parentValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 100
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}

@@ -1,0 +1,1038 @@
+{
+  "name": "ctor_syntax_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Point {\n  x:Int\n  y:Int\n}\n\nclass TestUserDefinedCtor {\n  p:Point = Point(10,20)\n\n  req p.x = 10\n\n  req p.y = 20\n}\n\nclass TestSeqCtor {\n  s:Seq[Int] = Seq[Int](1,2,3)\n\n  req s.size = 3\n\n  req s.at(0) = 1\n\n  req s.at(1) = 2\n\n  req s.at(2) = 3\n}\n\nclass Rectangle {\n  topLeft:Point\n  bottomRight:Point\n}\n\nclass TestNestedCtor {\n  r:Rectangle\n\n  req r.topLeft.x = 0\n\n  req r.topLeft.y = 0\n\n  req r.bottomRight.x = 100\n\n  req r.bottomRight.y = 50\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((Point (mk-Point (x Int)(y Int)))))\n(declare-datatypes () ((TestUserDefinedCtor (mk-TestUserDefinedCtor (p Ref)))))\n(declare-datatypes () ((TestSeqCtor (mk-TestSeqCtor (s (Seq Int))))))\n(declare-datatypes () ((Rectangle (mk-Rectangle (topLeft Ref)(bottomRight Ref)))))\n(declare-datatypes () ((TestNestedCtor (mk-TestNestedCtor (r Ref)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-Point (sel-Point Point))\n  (lift-TestUserDefinedCtor (sel-TestUserDefinedCtor TestUserDefinedCtor))\n  (lift-TestSeqCtor (sel-TestSeqCtor TestSeqCtor))\n  (lift-Rectangle (sel-Rectangle Rectangle))\n  (lift-TestNestedCtor (sel-TestNestedCtor TestNestedCtor))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-Point ((this Ref)) Bool\n  (is-lift-Point (deref this))\n)\n\n(define-fun deref-Point ((this Ref)) Point\n  (sel-Point (deref this))\n)\n\n(define-fun deref-is-TestUserDefinedCtor ((this Ref)) Bool\n  (is-lift-TestUserDefinedCtor (deref this))\n)\n\n(define-fun deref-TestUserDefinedCtor ((this Ref)) TestUserDefinedCtor\n  (sel-TestUserDefinedCtor (deref this))\n)\n\n(define-fun deref-is-TestSeqCtor ((this Ref)) Bool\n  (is-lift-TestSeqCtor (deref this))\n)\n\n(define-fun deref-TestSeqCtor ((this Ref)) TestSeqCtor\n  (sel-TestSeqCtor (deref this))\n)\n\n(define-fun deref-is-Rectangle ((this Ref)) Bool\n  (is-lift-Rectangle (deref this))\n)\n\n(define-fun deref-Rectangle ((this Ref)) Rectangle\n  (sel-Rectangle (deref this))\n)\n\n(define-fun deref-is-TestNestedCtor ((this Ref)) Bool\n  (is-lift-TestNestedCtor (deref this))\n)\n\n(define-fun deref-TestNestedCtor ((this Ref)) TestNestedCtor\n  (sel-TestNestedCtor (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-Point ((this Ref)) Bool\n  (deref-is-Point this)\n)\n\n(define-fun deref-isa-TestUserDefinedCtor ((this Ref)) Bool\n  (deref-is-TestUserDefinedCtor this)\n)\n\n(define-fun deref-isa-TestSeqCtor ((this Ref)) Bool\n  (deref-is-TestSeqCtor this)\n)\n\n(define-fun deref-isa-Rectangle ((this Ref)) Bool\n  (deref-is-Rectangle this)\n)\n\n(define-fun deref-isa-TestNestedCtor ((this Ref)) Bool\n  (deref-is-TestNestedCtor this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ----------------------------\n;   Getters for class Point:\n; ----------------------------\n\n; --- getters for Point.x: ---\n\n(define-fun Point.x ((this Ref)) Int\n  (x (deref-Point this))\n)\n\n; --- getters for Point.y: ---\n\n(define-fun Point.y ((this Ref)) Int\n  (y (deref-Point this))\n)\n\n; ------------------------------------------\n;   Getters for class TestUserDefinedCtor:\n; ------------------------------------------\n\n; --- getters for TestUserDefinedCtor.p: ---\n\n(define-fun TestUserDefinedCtor!p ((this Ref)) Ref\n  (p (deref-TestUserDefinedCtor this))\n)\n\n; ----------------------------------\n;   Getters for class TestSeqCtor:\n; ----------------------------------\n\n; --- getters for TestSeqCtor.s: ---\n\n(define-fun TestSeqCtor!s ((this Ref)) (Seq Int)\n  (s (deref-TestSeqCtor this))\n)\n\n; --------------------------------\n;   Getters for class Rectangle:\n; --------------------------------\n\n; --- getters for Rectangle.topLeft: ---\n\n(define-fun Rectangle.topLeft ((this Ref)) Ref\n  (topLeft (deref-Rectangle this))\n)\n\n(define-fun Rectangle!topLeft ((this Ref)) Ref\n  (topLeft (deref-Rectangle this))\n)\n\n; --- getters for Rectangle.bottomRight: ---\n\n(define-fun Rectangle.bottomRight ((this Ref)) Ref\n  (bottomRight (deref-Rectangle this))\n)\n\n(define-fun Rectangle!bottomRight ((this Ref)) Ref\n  (bottomRight (deref-Rectangle this))\n)\n\n; -------------------------------------\n;   Getters for class TestNestedCtor:\n; -------------------------------------\n\n; --- getters for TestNestedCtor.r: ---\n\n(define-fun TestNestedCtor!r ((this Ref)) Ref\n  (r (deref-TestNestedCtor this))\n)\n\n; ========================================\n; === Constructor parameter constants: ===\n; ========================================\n\n(declare-const const__1 Int)\n(declare-const const__2 Int)\n\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------\n;   Invariant for class Point:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Point Point)\n(declare-const const-4-Point Point)\n(declare-const const-5-Point Point)\n\n\n\n; --------------------------------------------\n;   Invariant for class TestUserDefinedCtor:\n; --------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-6-TestUserDefinedCtor TestUserDefinedCtor)\n\n; --- Invariant 1: ---\n\n(define-fun TestUserDefinedCtor.inv1 ((this Ref)) Bool\n  (= (deref (TestUserDefinedCtor!p this)) (lift-Point (mk-Point const__1 const__2)))\n)\n\n(assert (! (TestUserDefinedCtor.inv1 6) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TestUserDefinedCtor.inv2 ((this Ref)) Bool\n  (deref-isa-Point (TestUserDefinedCtor!p this))\n)\n\n(assert (! (TestUserDefinedCtor.inv2 6) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TestUserDefinedCtor.inv3 ((this Ref)) Bool\n  (= (Point.x (TestUserDefinedCtor!p this)) 10)\n)\n\n(assert (! (TestUserDefinedCtor.inv3 6) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TestUserDefinedCtor.inv4 ((this Ref)) Bool\n  (= (Point.y (TestUserDefinedCtor!p this)) 20)\n)\n\n(assert (! (TestUserDefinedCtor.inv4 6) :named _xkassert3))\n\n\n\n; ------------------------------------\n;   Invariant for class TestSeqCtor:\n; ------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-7-TestSeqCtor TestSeqCtor)\n\n; --- Invariant 1: ---\n\n(define-fun TestSeqCtor.inv1 ((this Ref)) Bool\n  (= (TestSeqCtor!s this) (seq.++ (seq.++ (seq.unit 1) (seq.unit 2)) (seq.unit 3)))\n)\n\n(assert (! (TestSeqCtor.inv1 7) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun TestSeqCtor.inv2 ((this Ref)) Bool\n  (= (seq.len (TestSeqCtor!s this)) 3)\n)\n\n(assert (! (TestSeqCtor.inv2 7) :named _xkassert5))\n\n; --- Invariant 3: ---\n\n(define-fun TestSeqCtor.inv3 ((this Ref)) Bool\n  (= (seq.nth (TestSeqCtor!s this) 0) 1)\n)\n\n(assert (! (TestSeqCtor.inv3 7) :named _xkassert6))\n\n; --- Invariant 4: ---\n\n(define-fun TestSeqCtor.inv4 ((this Ref)) Bool\n  (= (seq.nth (TestSeqCtor!s this) 1) 2)\n)\n\n(assert (! (TestSeqCtor.inv4 7) :named _xkassert7))\n\n; --- Invariant 5: ---\n\n(define-fun TestSeqCtor.inv5 ((this Ref)) Bool\n  (= (seq.nth (TestSeqCtor!s this) 2) 3)\n)\n\n(assert (! (TestSeqCtor.inv5 7) :named _xkassert8))\n\n\n\n; ----------------------------------\n;   Invariant for class Rectangle:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Rectangle Rectangle)\n\n; --- Invariant 1: ---\n\n(define-fun Rectangle.inv1 ((this Ref)) Bool\n  (deref-isa-Point (Rectangle!topLeft this))\n)\n\n(assert (! (Rectangle.inv1 2) :named _xkassert9))\n\n; --- Invariant 2: ---\n\n(define-fun Rectangle.inv2 ((this Ref)) Bool\n  (deref-isa-Point (Rectangle!bottomRight this))\n)\n\n(assert (! (Rectangle.inv2 2) :named _xkassert10))\n\n\n\n; ---------------------------------------\n;   Invariant for class TestNestedCtor:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-TestNestedCtor TestNestedCtor)\n\n; --- Invariant 1: ---\n\n(define-fun TestNestedCtor.inv1 ((this Ref)) Bool\n  (deref-isa-Rectangle (TestNestedCtor!r this))\n)\n\n(assert (! (TestNestedCtor.inv1 1) :named _xkassert11))\n\n; --- Invariant 2: ---\n\n(define-fun TestNestedCtor.inv2 ((this Ref)) Bool\n  (= (Point.x (Rectangle.topLeft (TestNestedCtor!r this))) 0)\n)\n\n(assert (! (TestNestedCtor.inv2 1) :named _xkassert12))\n\n; --- Invariant 3: ---\n\n(define-fun TestNestedCtor.inv3 ((this Ref)) Bool\n  (= (Point.y (Rectangle.topLeft (TestNestedCtor!r this))) 0)\n)\n\n(assert (! (TestNestedCtor.inv3 1) :named _xkassert13))\n\n; --- Invariant 4: ---\n\n(define-fun TestNestedCtor.inv4 ((this Ref)) Bool\n  (= (Point.x (Rectangle.bottomRight (TestNestedCtor!r this))) 100)\n)\n\n(assert (! (TestNestedCtor.inv4 1) :named _xkassert14))\n\n; --- Invariant 5: ---\n\n(define-fun TestNestedCtor.inv5 ((this Ref)) Bool\n  (= (Point.y (Rectangle.bottomRight (TestNestedCtor!r this))) 50)\n)\n\n(assert (! (TestNestedCtor.inv5 1) :named _xkassert15))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        3 (lift-Point const-3-Point))\n        4 (lift-Point const-4-Point))\n        5 (lift-Point const-5-Point))\n        6 (lift-TestUserDefinedCtor const-6-TestUserDefinedCtor))\n        7 (lift-TestSeqCtor const-7-TestSeqCtor))\n        2 (lift-Rectangle const-2-Rectangle))\n        1 (lift-TestNestedCtor const-1-TestNestedCtor))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-6-TestUserDefinedCtor () TestUserDefinedCtor\n  (mk-TestUserDefinedCtor 5))\n(define-fun const-3-Point () Point\n  (mk-Point 100 50))\n(define-fun const-4-Point () Point\n  (mk-Point 0 0))\n(define-fun const__2 () Int\n  20)\n(define-fun const-7-TestSeqCtor () TestSeqCtor\n  (mk-TestSeqCtor (seq.++ (seq.unit 1) (seq.unit 2) (seq.unit 3))))\n(define-fun const-5-Point () Point\n  (mk-Point 10 20))\n(define-fun const__1 () Int\n  10)\n(define-fun const-1-TestNestedCtor () TestNestedCtor\n  (mk-TestNestedCtor 2))\n(define-fun const-2-Rectangle () Rectangle\n  (mk-Rectangle 4 3))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select heap (r (sel-TestNestedCtor (select heap 1))))))\n(let ((a!2 (sel-Point (select heap (topLeft (sel-Rectangle a!1))))))\n  (= (y a!2) 0))))\n(define-fun _xkassert14 () Bool\n  (let ((a!1 (select heap (r (sel-TestNestedCtor (select heap 1))))))\n(let ((a!2 (sel-Point (select heap (bottomRight (sel-Rectangle a!1))))))\n  (= (x a!2) 100))))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (seq.nth (s (sel-TestSeqCtor (select heap 7))) 0)))\n  (= a!1 1)))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (seq.nth (s (sel-TestSeqCtor (select heap 7))) 1)))\n  (= a!1 2)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (p (sel-TestUserDefinedCtor (select heap 6))))))\n  (= (x (sel-Point a!1)) 10)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (seq.len (s (sel-TestSeqCtor (select heap 7))))))\n  (= a!1 3)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select heap (topLeft (sel-Rectangle (select heap 2))))))\n  (is-lift-Point a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (p (sel-TestUserDefinedCtor (select heap 6))))))\n  (= a!1 (lift-Point (mk-Point const__1 const__2)))))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (seq.nth (s (sel-TestSeqCtor (select heap 7))) 2)))\n  (= a!1 3)))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select heap (bottomRight (sel-Rectangle (select heap 2))))))\n  (is-lift-Point a!1)))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select heap (r (sel-TestNestedCtor (select heap 1))))))\n(let ((a!2 (sel-Point (select heap (topLeft (sel-Rectangle a!1))))))\n  (= (x a!2) 0))))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (p (sel-TestUserDefinedCtor (select heap 6))))))\n  (= (y (sel-Point a!1)) 20)))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select heap (r (sel-TestNestedCtor (select heap 1))))))\n  (is-lift-Rectangle a!1)))\n(define-fun _xkassert15 () Bool\n  (let ((a!1 (select heap (r (sel-TestNestedCtor (select heap 1))))))\n(let ((a!2 (sel-Point (select heap (bottomRight (sel-Rectangle a!1))))))\n  (= (y a!2) 50))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (p (sel-TestUserDefinedCtor (select heap 6))))))\n  (is-lift-Point a!1)))\n(define-fun _xkassert4 () Bool\n  (= (s (sel-TestSeqCtor (select heap 7)))\n   (seq.++ (seq.unit 1) (seq.unit 2) (seq.unit 3))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         3\n                         (lift-Point (mk-Point 100 50)))\n                  4\n                  (lift-Point (mk-Point 0 0))))\n      (a!3 (lift-TestSeqCtor (mk-TestSeqCtor (seq.++ (seq.unit 1)\n                                                     (seq.unit 2)\n                                                     (seq.unit 3))))))\n(let ((a!2 (store (store a!1 5 (lift-Point (mk-Point 10 20)))\n                  6\n                  (lift-TestUserDefinedCtor (mk-TestUserDefinedCtor 5)))))\n  (store (store (store a!2 7 a!3) 2 (lift-Rectangle (mk-Rectangle 4 3)))\n         1\n         (lift-TestNestedCtor (mk-TestNestedCtor 2))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Point",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"}
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestUserDefinedCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "p",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Point"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "Point",
+                "type": "IdentExp"
+              },
+              "args": [
+                {
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 10,
+                    "type": "LiteralInteger"
+                  }
+                },
+                {
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 20,
+                    "type": "LiteralInteger"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "x",
+                "exp": {
+                  "ident": "p",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "y",
+                "exp": {
+                  "ident": "p",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 20,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestSeqCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "s",
+            "ty": {
+              "args": [{"type": "IntType"}],
+              "ident": {
+                "names": ["Seq"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "Seq[Int]",
+                "type": "IdentExp"
+              },
+              "args": [
+                {
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  }
+                },
+                {
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  }
+                },
+                {
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "size",
+                "exp": {
+                  "ident": "s",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "at",
+                  "exp": {
+                    "ident": "s",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "at",
+                  "exp": {
+                    "ident": "s",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 2,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "at",
+                  "exp": {
+                    "ident": "s",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Rectangle",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "topLeft",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Point"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bottomRight",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Point"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestNestedCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "r",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["Rectangle"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "x",
+                "exp": {
+                  "ident": "topLeft",
+                  "exp": {
+                    "ident": "r",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "y",
+                "exp": {
+                  "ident": "topLeft",
+                  "exp": {
+                    "ident": "r",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "x",
+                "exp": {
+                  "ident": "bottomRight",
+                  "exp": {
+                    "ident": "r",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "y",
+                "exp": {
+                  "ident": "bottomRight",
+                  "exp": {
+                    "ident": "r",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 50,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Point",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestUserDefinedCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "p",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Point"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "element": "Point",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 20
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "p",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "x"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "p",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "y"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 20
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestSeqCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "s",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Seq[Int]"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "element": "Seq[Int]",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 2
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "s",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "size"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "s",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "at"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "s",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "at"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 2
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "s",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "at"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Rectangle",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "topLeft",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Point"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bottomRight",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Point"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "TestNestedCtor",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "r",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Rectangle"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "r",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "topLeft"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "x"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "r",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "topLeft"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "y"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "r",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "bottomRight"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "x"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "r",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "bottomRight"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "y"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 50
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
+}

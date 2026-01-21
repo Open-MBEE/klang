@@ -1,0 +1,243 @@
+{
+  "name": "overflow_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass SignedOverflow {\n  overflow:Int = 128\n  i8over:Int8 = overflow as Int8\n  backOver:Int = i8over as Int\n\n  req backOver = -128\n}\n\nmain:SignedOverflow\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((SignedOverflow (mk-SignedOverflow (overflow Int)(i8over (_ BitVec 8))(backOver Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-SignedOverflow (sel-SignedOverflow SignedOverflow))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-SignedOverflow ((this Ref)) Bool\n  (is-lift-SignedOverflow (deref this))\n)\n\n(define-fun deref-SignedOverflow ((this Ref)) SignedOverflow\n  (sel-SignedOverflow (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-SignedOverflow ((this Ref)) Bool\n  (deref-is-SignedOverflow this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------------\n;   Getters for class SignedOverflow:\n; -------------------------------------\n\n; --- getters for SignedOverflow.overflow: ---\n\n(define-fun SignedOverflow!overflow ((this Ref)) Int\n  (overflow (deref-SignedOverflow this))\n)\n\n; --- getters for SignedOverflow.i8over: ---\n\n(define-fun SignedOverflow!i8over ((this Ref)) (_ BitVec 8)\n  (i8over (deref-SignedOverflow this))\n)\n\n; --- getters for SignedOverflow.backOver: ---\n\n(define-fun SignedOverflow!backOver ((this Ref)) Int\n  (backOver (deref-SignedOverflow this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-SignedOverflow (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ---------------------------------------\n;   Invariant for class SignedOverflow:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-SignedOverflow SignedOverflow)\n\n; --- Invariant 1: ---\n\n(define-fun SignedOverflow.inv1 ((this Ref)) Bool\n  (= (SignedOverflow!overflow this) 128)\n)\n\n(assert (! (SignedOverflow.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun SignedOverflow.inv2 ((this Ref)) Bool\n  (= (SignedOverflow!i8over this) ((_ int2bv 8) (SignedOverflow!overflow this)))\n)\n\n(assert (! (SignedOverflow.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun SignedOverflow.inv3 ((this Ref)) Bool\n  (= (SignedOverflow!backOver this) (ite (bvslt (SignedOverflow!i8over this) (_ bv0 8)) (- (bv2int (SignedOverflow!i8over this)) 256) (bv2int (SignedOverflow!i8over this))))\n)\n\n(assert (! (SignedOverflow.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun SignedOverflow.inv4 ((this Ref)) Bool\n  (= (SignedOverflow!backOver this) (- 128))\n)\n\n(assert (! (SignedOverflow.inv4 1) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-SignedOverflow const-1-SignedOverflow))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-SignedOverflow () SignedOverflow\n  (mk-SignedOverflow 128 #x80 (- 128)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 ((_ int2bv 8) (overflow (sel-SignedOverflow (select heap 1))))))\n  (= (i8over (sel-SignedOverflow (select heap 1))) a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (bvslt (i8over (sel-SignedOverflow (select heap 1))) #x00))\n      (a!2 (bv2int (i8over (sel-SignedOverflow (select heap 1))))))\n  (= (backOver (sel-SignedOverflow (select heap 1))) (ite a!1 (- a!2 256) a!2))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-SignedOverflow a!1)))\n(define-fun _xkassert1 () Bool\n  (= (overflow (sel-SignedOverflow (select heap 1))) 128))\n(define-fun _xkassert4 () Bool\n  (= (backOver (sel-SignedOverflow (select heap 1))) (- 128)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-SignedOverflow (mk-SignedOverflow 128 #x80 (- 128)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedOverflow",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "overflow",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 128,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "i8over",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "overflow",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 8
+              }
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "backOver",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "i8over",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "backOver",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "i": 128,
+                  "type": "LiteralInteger"
+                },
+                "type": "UnaryExp",
+                "op": "Neg"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["SignedOverflow"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedOverflow",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "overflow",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 128
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "i8over",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "overflow",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int8"
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "backOver",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "i8over",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "backOver",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Neg"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 128
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "SignedOverflow"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

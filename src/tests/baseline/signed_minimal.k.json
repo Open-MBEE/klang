@@ -1,0 +1,230 @@
+{
+  "name": "signed_minimal.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass SignedIntMinimal {\n  val1:Int = 42\n  i8:Int8 = val1 as Int8\n  back8:Int = i8 as Int\n\n  req back8 = 42\n}\n\nmain:SignedIntMinimal\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((SignedIntMinimal (mk-SignedIntMinimal (val1 Int)(i8 (_ BitVec 8))(back8 Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-SignedIntMinimal (sel-SignedIntMinimal SignedIntMinimal))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-SignedIntMinimal ((this Ref)) Bool\n  (is-lift-SignedIntMinimal (deref this))\n)\n\n(define-fun deref-SignedIntMinimal ((this Ref)) SignedIntMinimal\n  (sel-SignedIntMinimal (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-SignedIntMinimal ((this Ref)) Bool\n  (deref-is-SignedIntMinimal this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------------\n;   Getters for class SignedIntMinimal:\n; ---------------------------------------\n\n; --- getters for SignedIntMinimal.val1: ---\n\n(define-fun SignedIntMinimal!val1 ((this Ref)) Int\n  (val1 (deref-SignedIntMinimal this))\n)\n\n; --- getters for SignedIntMinimal.i8: ---\n\n(define-fun SignedIntMinimal!i8 ((this Ref)) (_ BitVec 8)\n  (i8 (deref-SignedIntMinimal this))\n)\n\n; --- getters for SignedIntMinimal.back8: ---\n\n(define-fun SignedIntMinimal!back8 ((this Ref)) Int\n  (back8 (deref-SignedIntMinimal this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-SignedIntMinimal (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------------\n;   Invariant for class SignedIntMinimal:\n; -----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-SignedIntMinimal SignedIntMinimal)\n\n; --- Invariant 1: ---\n\n(define-fun SignedIntMinimal.inv1 ((this Ref)) Bool\n  (= (SignedIntMinimal!val1 this) 42)\n)\n\n(assert (! (SignedIntMinimal.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun SignedIntMinimal.inv2 ((this Ref)) Bool\n  (= (SignedIntMinimal!i8 this) ((_ int2bv 8) (SignedIntMinimal!val1 this)))\n)\n\n(assert (! (SignedIntMinimal.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun SignedIntMinimal.inv3 ((this Ref)) Bool\n  (= (SignedIntMinimal!back8 this) (ite (bvslt (SignedIntMinimal!i8 this) (_ bv0 8)) (- (bv2int (SignedIntMinimal!i8 this)) 256) (bv2int (SignedIntMinimal!i8 this))))\n)\n\n(assert (! (SignedIntMinimal.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun SignedIntMinimal.inv4 ((this Ref)) Bool\n  (= (SignedIntMinimal!back8 this) 42)\n)\n\n(assert (! (SignedIntMinimal.inv4 1) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-SignedIntMinimal const-1-SignedIntMinimal))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-SignedIntMinimal () SignedIntMinimal\n  (mk-SignedIntMinimal 42 #x2a 42))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 ((_ int2bv 8) (val1 (sel-SignedIntMinimal (select heap 1))))))\n  (= (i8 (sel-SignedIntMinimal (select heap 1))) a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (bvslt (i8 (sel-SignedIntMinimal (select heap 1))) #x00))\n      (a!2 (bv2int (i8 (sel-SignedIntMinimal (select heap 1))))))\n  (= (back8 (sel-SignedIntMinimal (select heap 1))) (ite a!1 (- a!2 256) a!2))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-SignedIntMinimal a!1)))\n(define-fun _xkassert1 () Bool\n  (= (val1 (sel-SignedIntMinimal (select heap 1))) 42))\n(define-fun _xkassert4 () Bool\n  (= (back8 (sel-SignedIntMinimal (select heap 1))) 42))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-SignedIntMinimal (mk-SignedIntMinimal 42 #x2a 42))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedIntMinimal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "val1",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 42,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "i8",
+            "ty": {
+              "type": "SignedIntType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "val1",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "SignedIntType",
+                "width": 8
+              }
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "back8",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "i8",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "back8",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 42,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["SignedIntMinimal"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SignedIntMinimal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "val1",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 42
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "i8",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Int8"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "val1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Int8"
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "back8",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "i8",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "back8",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 42
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "SignedIntMinimal"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

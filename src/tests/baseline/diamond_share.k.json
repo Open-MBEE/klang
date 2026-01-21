@@ -1,0 +1,508 @@
+{
+  "name": "diamond_share.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Base {\n  baseVal:Int\n}\n\nclass Left extending Base {\n  leftVal:Int\n}\n\nclass Right extending Base {\n  rightVal:Int\n}\n\nclass Diamond extending Left,Right {\n  share Base;\n  diamondVal:Int\n}\n\nd:Diamond\n\nreq d.baseVal > 0\n\nreq d.leftVal > 0\n\nreq d.rightVal > 0\n\nreq d.diamondVal > 0\n\nreq d.baseVal = 10\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (d Ref)))))\n(declare-datatypes () ((Base (mk-Base (baseVal Int)))))\n(declare-datatypes () ((Left (mk-Left (baseVal Int)(leftVal Int)))))\n(declare-datatypes () ((Right (mk-Right (baseVal Int)(rightVal Int)))))\n(declare-datatypes () ((Diamond (mk-Diamond (baseVal Int)(leftVal Int)(rightVal Int)(diamondVal Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Base (sel-Base Base))\n  (lift-Left (sel-Left Left))\n  (lift-Right (sel-Right Right))\n  (lift-Diamond (sel-Diamond Diamond))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Base ((this Ref)) Bool\n  (is-lift-Base (deref this))\n)\n\n(define-fun deref-Base ((this Ref)) Base\n  (sel-Base (deref this))\n)\n\n(define-fun deref-is-Left ((this Ref)) Bool\n  (is-lift-Left (deref this))\n)\n\n(define-fun deref-Left ((this Ref)) Left\n  (sel-Left (deref this))\n)\n\n(define-fun deref-is-Right ((this Ref)) Bool\n  (is-lift-Right (deref this))\n)\n\n(define-fun deref-Right ((this Ref)) Right\n  (sel-Right (deref this))\n)\n\n(define-fun deref-is-Diamond ((this Ref)) Bool\n  (is-lift-Diamond (deref this))\n)\n\n(define-fun deref-Diamond ((this Ref)) Diamond\n  (sel-Diamond (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Base ((this Ref)) Bool\n  (or\n    (deref-is-Base this)\n    (deref-is-Left this)\n    (deref-is-Right this)\n    (deref-is-Diamond this)\n  )\n)\n\n(define-fun deref-isa-Left ((this Ref)) Bool\n  (or\n    (deref-is-Left this)\n    (deref-is-Diamond this)\n  )\n)\n\n(define-fun deref-isa-Right ((this Ref)) Bool\n  (or\n    (deref-is-Right this)\n    (deref-is-Diamond this)\n  )\n)\n\n(define-fun deref-isa-Diamond ((this Ref)) Bool\n  (deref-is-Diamond this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.d: ---\n\n(define-fun TopLevelDeclarations!d ((this Ref)) Ref\n  (d (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------\n;   Getters for class Diamond:\n; ------------------------------\n\n; --- getters for Diamond.baseVal: ---\n\n(define-fun Diamond.baseVal ((this Ref)) Int\n  (baseVal (deref-Diamond this))\n)\n\n; --- getters for Diamond.leftVal: ---\n\n(define-fun Diamond.leftVal ((this Ref)) Int\n  (leftVal (deref-Diamond this))\n)\n\n; --- getters for Diamond.rightVal: ---\n\n(define-fun Diamond.rightVal ((this Ref)) Int\n  (rightVal (deref-Diamond this))\n)\n\n; --- getters for Diamond.diamondVal: ---\n\n(define-fun Diamond.diamondVal ((this Ref)) Int\n  (diamondVal (deref-Diamond this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Diamond (TopLevelDeclarations!d this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (> (Diamond.baseVal (TopLevelDeclarations!d this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (> (Diamond.leftVal (TopLevelDeclarations!d this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (> (Diamond.rightVal (TopLevelDeclarations!d this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (> (Diamond.diamondVal (TopLevelDeclarations!d this)) 0)\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (Diamond.baseVal (TopLevelDeclarations!d this)) 10)\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n\n\n; -----------------------------\n;   Invariant for class Base:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Base Base)\n\n\n\n; -----------------------------\n;   Invariant for class Left:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Left Left)\n\n\n\n; ------------------------------\n;   Invariant for class Right:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-Right Right)\n\n\n\n; --------------------------------\n;   Invariant for class Diamond:\n; --------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Diamond Diamond)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        2 (lift-Base const-2-Base))\n        1 (lift-Left const-1-Left))\n        4 (lift-Right const-4-Right))\n        3 (lift-Diamond const-3-Diamond))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-Left () Left\n  (mk-Left 7 8))\n(define-fun const-2-Base () Base\n  (mk-Base 9))\n(define-fun const-4-Right () Right\n  (mk-Right 5 6))\n(define-fun const-3-Diamond () Diamond\n  (mk-Diamond 10 1 7720 21239))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 3))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (> (leftVal (sel-Diamond a!1)) 0)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (= (baseVal (sel-Diamond a!1)) 10)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Diamond a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (> (rightVal (sel-Diamond a!1)) 0)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (> (baseVal (sel-Diamond a!1)) 0)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (> (diamondVal (sel-Diamond a!1)) 0)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3)))\n                  2\n                  (lift-Base (mk-Base 9)))))\n(let ((a!2 (store (store a!1 1 (lift-Left (mk-Left 7 8)))\n                  4\n                  (lift-Right (mk-Right 5 6)))))\n  (store a!2 3 (lift-Diamond (mk-Diamond 10 1 7720 21239))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Base",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "baseVal",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Left",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Base"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "leftVal",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Right",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Base"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "rightVal",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Diamond",
+        "typeparams": [],
+        "extending": [
+          {
+            "args": [],
+            "ident": {
+              "names": ["Left"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          },
+          {
+            "args": [],
+            "ident": {
+              "names": ["Right"],
+              "type": "QualifiedName"
+            },
+            "type": "IdentType"
+          }
+        ],
+        "members": [
+          {
+            "type": "ShareDecl",
+            "types": "List(Base)"
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "diamondVal",
+            "ty": {"type": "IntType"}
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "d",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Diamond"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "baseVal",
+            "exp": {
+              "ident": "d",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "leftVal",
+            "exp": {
+              "ident": "d",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "rightVal",
+            "exp": {
+              "ident": "d",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "GT",
+          "exp1": {
+            "ident": "diamondVal",
+            "exp": {
+              "ident": "d",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 0,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "baseVal",
+            "exp": {
+              "ident": "d",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "i": 10,
+            "type": "LiteralInteger"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Base",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "baseVal",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Left",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Base"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "leftVal",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Right",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Base"
+        }],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "rightVal",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Diamond",
+        "typeparams": [],
+        "extending": [
+          {
+            "type": "ElementValue",
+            "element": "Left"
+          },
+          {
+            "type": "ElementValue",
+            "element": "Right"
+          }
+        ],
+        "members": [
+          {
+            "type": "ShareDecl",
+            "types": "List(Base)"
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "diamondVal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "d",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Diamond"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "d",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "baseVal"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "d",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "leftVal"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "d",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "rightVal"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "GT"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "d",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "diamondVal"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "d",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "baseVal"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralInteger",
+              "integer": 10
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}

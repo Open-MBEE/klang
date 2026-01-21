@@ -1,0 +1,510 @@
+{
+  "name": "type_inference_inheritance.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Animal {\n  age:Int = 0\n  name:String = \"unknown\"\n}\n\nclass Dog extending Animal {\n  breed:String = \"mixed\"\n  dogBreed:String = breed\n}\n\nclass Cat extending Animal {\n  indoor:Bool = true\n  isIndoor:Bool = indoor\n}\n\ndog:Dog\n\ncat:Cat\n\ninferredBreed:String = dog.breed\n\ninferredIndoor:Bool = cat.indoor\n\nreq dog.breed = \"mixed\"\n\nreq cat.indoor = true\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (dog Ref)(cat Ref)(inferredBreed String)(inferredIndoor Bool)))))\n(declare-datatypes () ((Animal (mk-Animal (age Int)(name String)))))\n(declare-datatypes () ((Dog (mk-Dog (age Int)(name String)(breed String)(dogBreed String)))))\n(declare-datatypes () ((Cat (mk-Cat (age Int)(name String)(indoor Bool)(isIndoor Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Animal (sel-Animal Animal))\n  (lift-Dog (sel-Dog Dog))\n  (lift-Cat (sel-Cat Cat))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Animal ((this Ref)) Bool\n  (is-lift-Animal (deref this))\n)\n\n(define-fun deref-Animal ((this Ref)) Animal\n  (sel-Animal (deref this))\n)\n\n(define-fun deref-is-Dog ((this Ref)) Bool\n  (is-lift-Dog (deref this))\n)\n\n(define-fun deref-Dog ((this Ref)) Dog\n  (sel-Dog (deref this))\n)\n\n(define-fun deref-is-Cat ((this Ref)) Bool\n  (is-lift-Cat (deref this))\n)\n\n(define-fun deref-Cat ((this Ref)) Cat\n  (sel-Cat (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Animal ((this Ref)) Bool\n  (or\n    (deref-is-Animal this)\n    (deref-is-Dog this)\n    (deref-is-Cat this)\n  )\n)\n\n(define-fun deref-isa-Dog ((this Ref)) Bool\n  (deref-is-Dog this)\n)\n\n(define-fun deref-isa-Cat ((this Ref)) Bool\n  (deref-is-Cat this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.dog: ---\n\n(define-fun TopLevelDeclarations!dog ((this Ref)) Ref\n  (dog (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.cat: ---\n\n(define-fun TopLevelDeclarations!cat ((this Ref)) Ref\n  (cat (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.inferredBreed: ---\n\n(define-fun TopLevelDeclarations!inferredBreed ((this Ref)) String\n  (inferredBreed (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.inferredIndoor: ---\n\n(define-fun TopLevelDeclarations!inferredIndoor ((this Ref)) Bool\n  (inferredIndoor (deref-TopLevelDeclarations this))\n)\n\n; -----------------------------\n;   Getters for class Animal:\n; -----------------------------\n\n; --- getters for Animal.age: ---\n\n(define-fun Animal!age ((this Ref)) Int\n  (age (deref-Animal this))\n)\n\n; --- getters for Animal.name: ---\n\n(define-fun Animal!name ((this Ref)) String\n  (name (deref-Animal this))\n)\n\n; --------------------------\n;   Getters for class Dog:\n; --------------------------\n\n; --- getters for Dog.age: ---\n\n(define-fun Dog!age ((this Ref)) Int\n  (age (deref-Dog this))\n)\n\n; --- getters for Dog.name: ---\n\n(define-fun Dog!name ((this Ref)) String\n  (name (deref-Dog this))\n)\n\n; --- getters for Dog.breed: ---\n\n(define-fun Dog.breed ((this Ref)) String\n  (breed (deref-Dog this))\n)\n\n(define-fun Dog!breed ((this Ref)) String\n  (breed (deref-Dog this))\n)\n\n; --- getters for Dog.dogBreed: ---\n\n(define-fun Dog!dogBreed ((this Ref)) String\n  (dogBreed (deref-Dog this))\n)\n\n; --------------------------\n;   Getters for class Cat:\n; --------------------------\n\n; --- getters for Cat.age: ---\n\n(define-fun Cat!age ((this Ref)) Int\n  (age (deref-Cat this))\n)\n\n; --- getters for Cat.name: ---\n\n(define-fun Cat!name ((this Ref)) String\n  (name (deref-Cat this))\n)\n\n; --- getters for Cat.indoor: ---\n\n(define-fun Cat.indoor ((this Ref)) Bool\n  (indoor (deref-Cat this))\n)\n\n(define-fun Cat!indoor ((this Ref)) Bool\n  (indoor (deref-Cat this))\n)\n\n; --- getters for Cat.isIndoor: ---\n\n(define-fun Cat!isIndoor ((this Ref)) Bool\n  (isIndoor (deref-Cat this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (= (TopLevelDeclarations!inferredBreed this) (Dog.breed (TopLevelDeclarations!dog this)))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (= (TopLevelDeclarations!inferredIndoor this) (Cat.indoor (TopLevelDeclarations!cat this)))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-Dog (TopLevelDeclarations!dog this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun TopLevelDeclarations.inv4 ((this Ref)) Bool\n  (deref-isa-Cat (TopLevelDeclarations!cat this))\n)\n\n(assert (! (TopLevelDeclarations.inv4 0) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun TopLevelDeclarations.inv5 ((this Ref)) Bool\n  (= (Dog.breed (TopLevelDeclarations!dog this)) \"mixed\")\n)\n\n(assert (! (TopLevelDeclarations.inv5 0) :named _xkassert4))\n\n; --- Invariant 6: ---\n\n(define-fun TopLevelDeclarations.inv6 ((this Ref)) Bool\n  (= (Cat.indoor (TopLevelDeclarations!cat this)) true)\n)\n\n(assert (! (TopLevelDeclarations.inv6 0) :named _xkassert5))\n\n\n\n; -------------------------------\n;   Invariant for class Animal:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Animal Animal)\n\n; --- Invariant 1: ---\n\n(define-fun Animal.inv1 ((this Ref)) Bool\n  (= (Animal!age this) 0)\n)\n\n(assert (! (Animal.inv1 1) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun Animal.inv2 ((this Ref)) Bool\n  (= (Animal!name this) \"unknown\")\n)\n\n(assert (! (Animal.inv2 1) :named _xkassert7))\n\n\n\n; ----------------------------\n;   Invariant for class Dog:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-Dog Dog)\n\n; --- Invariant 1: ---\n\n(define-fun Dog.inv1 ((this Ref)) Bool\n  (= (Dog!age this) 0)\n)\n\n(assert (! (Dog.inv1 2) :named _xkassert8))\n\n; --- Invariant 2: ---\n\n(define-fun Dog.inv2 ((this Ref)) Bool\n  (= (Dog!name this) \"unknown\")\n)\n\n(assert (! (Dog.inv2 2) :named _xkassert9))\n\n; --- Invariant 3: ---\n\n(define-fun Dog.inv3 ((this Ref)) Bool\n  (= (Dog!breed this) \"mixed\")\n)\n\n(assert (! (Dog.inv3 2) :named _xkassert10))\n\n; --- Invariant 4: ---\n\n(define-fun Dog.inv4 ((this Ref)) Bool\n  (= (Dog!dogBreed this) (Dog!breed this))\n)\n\n(assert (! (Dog.inv4 2) :named _xkassert11))\n\n\n\n; ----------------------------\n;   Invariant for class Cat:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-Cat Cat)\n\n; --- Invariant 1: ---\n\n(define-fun Cat.inv1 ((this Ref)) Bool\n  (= (Cat!age this) 0)\n)\n\n(assert (! (Cat.inv1 3) :named _xkassert12))\n\n; --- Invariant 2: ---\n\n(define-fun Cat.inv2 ((this Ref)) Bool\n  (= (Cat!name this) \"unknown\")\n)\n\n(assert (! (Cat.inv2 3) :named _xkassert13))\n\n; --- Invariant 3: ---\n\n(define-fun Cat.inv3 ((this Ref)) Bool\n  (= (Cat!indoor this) true)\n)\n\n(assert (! (Cat.inv3 3) :named _xkassert14))\n\n; --- Invariant 4: ---\n\n(define-fun Cat.inv4 ((this Ref)) Bool\n  (= (Cat!isIndoor this) (Cat!indoor this))\n)\n\n(assert (! (Cat.inv4 3) :named _xkassert15))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Animal const-1-Animal))\n        2 (lift-Dog const-2-Dog))\n        3 (lift-Cat const-3-Cat))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-Cat () Cat\n  (mk-Cat 0 \"unknown\" true true))\n(define-fun const-2-Dog () Dog\n  (mk-Dog 0 \"unknown\" \"mixed\" \"mixed\"))\n(define-fun const-1-Animal () Animal\n  (mk-Animal 0 \"unknown\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2 3 \"mixed\" true))\n(define-fun _xkassert13 () Bool\n  (= (name (sel-Cat (select heap 3))) \"unknown\"))\n(define-fun _xkassert14 () Bool\n  (= (indoor (sel-Cat (select heap 3))) true))\n(define-fun _xkassert6 () Bool\n  (= (age (sel-Animal (select heap 1))) 0))\n(define-fun _xkassert7 () Bool\n  (= (name (sel-Animal (select heap 1))) \"unknown\"))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (dog (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Dog a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select heap (cat (sel-TopLevelDeclarations (select heap 0))))))\n  (= (indoor (sel-Cat a!1)) true)))\n(define-fun _xkassert9 () Bool\n  (= (name (sel-Dog (select heap 2))) \"unknown\"))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (dog (sel-TopLevelDeclarations (select heap 0))))))\n  (= (inferredBreed (sel-TopLevelDeclarations (select heap 0)))\n     (breed (sel-Dog a!1)))))\n(define-fun _xkassert8 () Bool\n  (= (age (sel-Dog (select heap 2))) 0))\n(define-fun _xkassert10 () Bool\n  (= (breed (sel-Dog (select heap 2))) \"mixed\"))\n(define-fun _xkassert12 () Bool\n  (= (age (sel-Cat (select heap 3))) 0))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select heap (cat (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Cat a!1)))\n(define-fun _xkassert11 () Bool\n  (= (dogBreed (sel-Dog (select heap 2))) (breed (sel-Dog (select heap 2)))))\n(define-fun _xkassert15 () Bool\n  (= (isIndoor (sel-Cat (select heap 3))) (indoor (sel-Cat (select heap 3)))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (cat (sel-TopLevelDeclarations (select heap 0))))))\n  (= (inferredIndoor (sel-TopLevelDeclarations (select heap 0)))\n     (indoor (sel-Cat a!1)))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select heap (dog (sel-TopLevelDeclarations (select heap 0))))))\n  (= (breed (sel-Dog a!1)) \"mixed\")))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 2 3 \"mixed\" true)))\n                  1\n                  (lift-Animal (mk-Animal 0 \"unknown\")))))\n  (store (store a!1 2 (lift-Dog (mk-Dog 0 \"unknown\" \"mixed\" \"mixed\")))\n         3\n         (lift-Cat (mk-Cat 0 \"unknown\" true true)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Animal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "age",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 0,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "name",
+            "ty": {"type": "StringType"},
+            "assignment": false,
+            "expr": {
+              "string": "unknown",
+              "type": "StringLiteral"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Dog",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Animal"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "breed",
+            "ty": {"type": "StringType"},
+            "assignment": false,
+            "expr": {
+              "string": "mixed",
+              "type": "StringLiteral"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "dogBreed",
+            "ty": {"type": "StringType"},
+            "assignment": false,
+            "expr": {
+              "ident": "breed",
+              "type": "IdentExp"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Cat",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["Animal"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "indoor",
+            "ty": {"type": "BoolType"},
+            "assignment": false,
+            "expr": {
+              "b": true,
+              "type": "LiteralBoolean"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "isIndoor",
+            "ty": {"type": "BoolType"},
+            "assignment": false,
+            "expr": {
+              "ident": "indoor",
+              "type": "IdentExp"
+            }
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "dog",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Dog"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "cat",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Cat"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "inferredBreed",
+        "ty": {"type": "StringType"},
+        "assignment": false,
+        "expr": {
+          "ident": "breed",
+          "exp": {
+            "ident": "dog",
+            "type": "IdentExp"
+          },
+          "type": "DotExp"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "inferredIndoor",
+        "ty": {"type": "BoolType"},
+        "assignment": false,
+        "expr": {
+          "ident": "indoor",
+          "exp": {
+            "ident": "cat",
+            "type": "IdentExp"
+          },
+          "type": "DotExp"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "breed",
+            "exp": {
+              "ident": "dog",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "string": "mixed",
+            "type": "StringLiteral"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "indoor",
+            "exp": {
+              "ident": "cat",
+              "type": "IdentExp"
+            },
+            "type": "DotExp"
+          },
+          "exp2": {
+            "b": true,
+            "type": "LiteralBoolean"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Animal",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "age",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 0
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "name",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralString",
+              "string": "unknown"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Dog",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Animal"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "breed",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralString",
+              "string": "mixed"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "dogBreed",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            },
+            "assignment": false,
+            "expr": {
+              "element": "breed",
+              "type": "ElementValue"
+            }
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Cat",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "Animal"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "indoor",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralBoolean",
+              "boolean": "true"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "isIndoor",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            },
+            "assignment": false,
+            "expr": {
+              "element": "indoor",
+              "type": "ElementValue"
+            }
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "dog",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Dog"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "cat",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Cat"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "inferredBreed",
+        "ty": {
+          "type": "ElementValue",
+          "element": "String"
+        },
+        "assignment": false,
+        "expr": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "getProperty"
+            },
+            {
+              "element": "dog",
+              "type": "ElementValue"
+            },
+            {
+              "type": "LiteralString",
+              "string": "breed"
+            }
+          ],
+          "type": "Expression"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "inferredIndoor",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Boolean"
+        },
+        "assignment": false,
+        "expr": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "getProperty"
+            },
+            {
+              "element": "cat",
+              "type": "ElementValue"
+            },
+            {
+              "type": "LiteralString",
+              "string": "indoor"
+            }
+          ],
+          "type": "Expression"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "dog",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "breed"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralString",
+              "string": "mixed"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "getProperty"
+                },
+                {
+                  "element": "cat",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "indoor"
+                }
+              ],
+              "type": "Expression"
+            },
+            {
+              "type": "LiteralBoolean",
+              "boolean": "true"
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}

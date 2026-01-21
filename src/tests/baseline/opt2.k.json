@@ -1,0 +1,438 @@
+{
+  "name": "opt2.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptTest2 {\n  revenue:Int\n  expenses:Int\n  profit:Int\n\n  req revenue >= 0\n\n  req revenue <= 1000\n\n  req expenses >= 0\n\n  req expenses <= 500\n\n  req profit = revenue - expenses\n\n  req expenses >= revenue / 5\n\n  req revenue >= 100\n  maximize profit\n}\n\nmain:OptTest2\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((OptTest2 (mk-OptTest2 (revenue Int)(expenses Int)(profit Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptTest2 (sel-OptTest2 OptTest2))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptTest2 ((this Ref)) Bool\n  (is-lift-OptTest2 (deref this))\n)\n\n(define-fun deref-OptTest2 ((this Ref)) OptTest2\n  (sel-OptTest2 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptTest2 ((this Ref)) Bool\n  (deref-is-OptTest2 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------\n;   Getters for class OptTest2:\n; -------------------------------\n\n; --- getters for OptTest2.revenue: ---\n\n(define-fun OptTest2!revenue ((this Ref)) Int\n  (revenue (deref-OptTest2 this))\n)\n\n; --- getters for OptTest2.expenses: ---\n\n(define-fun OptTest2!expenses ((this Ref)) Int\n  (expenses (deref-OptTest2 this))\n)\n\n; --- getters for OptTest2.profit: ---\n\n(define-fun OptTest2!profit ((this Ref)) Int\n  (profit (deref-OptTest2 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptTest2 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ---------------------------------\n;   Invariant for class OptTest2:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptTest2 OptTest2)\n\n; --- Invariant 1: ---\n\n(define-fun OptTest2.inv1 ((this Ref)) Bool\n  (>= (OptTest2!revenue this) 0)\n)\n\n(assert (! (OptTest2.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun OptTest2.inv2 ((this Ref)) Bool\n  (<= (OptTest2!revenue this) 1000)\n)\n\n(assert (! (OptTest2.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun OptTest2.inv3 ((this Ref)) Bool\n  (>= (OptTest2!expenses this) 0)\n)\n\n(assert (! (OptTest2.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun OptTest2.inv4 ((this Ref)) Bool\n  (<= (OptTest2!expenses this) 500)\n)\n\n(assert (! (OptTest2.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun OptTest2.inv5 ((this Ref)) Bool\n  (= (OptTest2!profit this) (- (OptTest2!revenue this) (OptTest2!expenses this)))\n)\n\n(assert (! (OptTest2.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun OptTest2.inv6 ((this Ref)) Bool\n  (>= (OptTest2!expenses this) (/ (OptTest2!revenue this) 5))\n)\n\n(assert (! (OptTest2.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun OptTest2.inv7 ((this Ref)) Bool\n  (>= (OptTest2!revenue this) 100)\n)\n\n(assert (! (OptTest2.inv7 1) :named _xkassert7))\n\n; --- Optimization Objectives (informational): ---\n\n; (maximize (OptTest2!profit this))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptTest2 const-1-OptTest2))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-OptTest2 () OptTest2\n  (mk-OptTest2 100 20 80))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert7 () Bool\n  (>= (revenue (sel-OptTest2 (select heap 1))) 100))\n(define-fun _xkassert2 () Bool\n  (<= (revenue (sel-OptTest2 (select heap 1))) 1000))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (- (revenue (sel-OptTest2 (select heap 1)))\n              (expenses (sel-OptTest2 (select heap 1))))))\n  (= (profit (sel-OptTest2 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptTest2 a!1)))\n(define-fun _xkassert3 () Bool\n  (>= (expenses (sel-OptTest2 (select heap 1))) 0))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (to_real (expenses (sel-OptTest2 (select heap 1)))))\n      (a!2 (to_real (revenue (sel-OptTest2 (select heap 1))))))\n  (>= a!1 (/ a!2 (to_real 5)))))\n(define-fun _xkassert1 () Bool\n  (>= (revenue (sel-OptTest2 (select heap 1))) 0))\n(define-fun _xkassert4 () Bool\n  (<= (expenses (sel-OptTest2 (select heap 1))) 500))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-OptTest2 (mk-OptTest2 100 20 80))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest2",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "revenue",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "expenses",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "profit",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "revenue",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "revenue",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1000,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "expenses",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "expenses",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 500,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "profit",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Minus",
+                "exp1": {
+                  "ident": "revenue",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "expenses",
+                  "type": "IdentExp"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "expenses",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Divide",
+                "exp1": {
+                  "ident": "revenue",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 5,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "revenue",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "profit",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptTest2"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest2",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "revenue",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "expenses",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "profit",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "revenue",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "revenue",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1000
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "expenses",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "expenses",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 500
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "profit",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Minus"
+                    },
+                    {
+                      "element": "revenue",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "expenses",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "expenses",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Divide"
+                    },
+                    {
+                      "element": "revenue",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 5
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "revenue",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "profit",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptTest2"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

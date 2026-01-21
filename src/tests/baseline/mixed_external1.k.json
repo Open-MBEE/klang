@@ -1,0 +1,457 @@
+{
+  "name": "mixed_external1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nimport java lang.Math\nimport python math\n\nclass MixedExternalTest {\n  javaResult:Real\n  pythonResult:Real\n  input:Real\n\n  req input = 1.6E1\n\n  req javaResult = Math.sqrt(input)\n\n  req pythonResult = math.sqrt(input)\n\n  req javaResult = 4E0\n\n  req pythonResult = 4E0\n\n  req javaResult = pythonResult\n}\n\nmain:MixedExternalTest\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((MixedExternalTest (mk-MixedExternalTest (javaResult Real)(pythonResult Real)(input Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-MixedExternalTest (sel-MixedExternalTest MixedExternalTest))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-MixedExternalTest ((this Ref)) Bool\n  (is-lift-MixedExternalTest (deref this))\n)\n\n(define-fun deref-MixedExternalTest ((this Ref)) MixedExternalTest\n  (sel-MixedExternalTest (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-MixedExternalTest ((this Ref)) Bool\n  (deref-is-MixedExternalTest this)\n)\n\n; =======================================\n; === External Function Declarations: ===\n; =======================================\n\n; Uninterpreted functions for external (Java) calls\n(declare-fun lang_Math_sqrt (Real) Real)\n(declare-fun py_math_sqrt (Real) Real)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------------------\n;   Getters for class MixedExternalTest:\n; ----------------------------------------\n\n; --- getters for MixedExternalTest.javaResult: ---\n\n(define-fun MixedExternalTest!javaResult ((this Ref)) Real\n  (javaResult (deref-MixedExternalTest this))\n)\n\n; --- getters for MixedExternalTest.pythonResult: ---\n\n(define-fun MixedExternalTest!pythonResult ((this Ref)) Real\n  (pythonResult (deref-MixedExternalTest this))\n)\n\n; --- getters for MixedExternalTest.input: ---\n\n(define-fun MixedExternalTest!input ((this Ref)) Real\n  (input (deref-MixedExternalTest this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-MixedExternalTest (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ------------------------------------------\n;   Invariant for class MixedExternalTest:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-MixedExternalTest MixedExternalTest)\n\n; --- Invariant 1: ---\n\n(define-fun MixedExternalTest.inv1 ((this Ref)) Bool\n  (= (MixedExternalTest!input this) 16.0000000000000000)\n)\n\n(assert (! (MixedExternalTest.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun MixedExternalTest.inv2 ((this Ref)) Bool\n  (= (MixedExternalTest!javaResult this) (lang_Math_sqrt (MixedExternalTest!input this)))\n)\n\n(assert (! (MixedExternalTest.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun MixedExternalTest.inv3 ((this Ref)) Bool\n  (= (MixedExternalTest!pythonResult this) (py_math_sqrt (MixedExternalTest!input this)))\n)\n\n(assert (! (MixedExternalTest.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun MixedExternalTest.inv4 ((this Ref)) Bool\n  (= (MixedExternalTest!javaResult this) 4.0000000000000000)\n)\n\n(assert (! (MixedExternalTest.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun MixedExternalTest.inv5 ((this Ref)) Bool\n  (= (MixedExternalTest!pythonResult this) 4.0000000000000000)\n)\n\n(assert (! (MixedExternalTest.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun MixedExternalTest.inv6 ((this Ref)) Bool\n  (= (MixedExternalTest!javaResult this) (MixedExternalTest!pythonResult this))\n)\n\n(assert (! (MixedExternalTest.inv6 1) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-MixedExternalTest const-1-MixedExternalTest))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-MixedExternalTest () MixedExternalTest\n  (mk-MixedExternalTest 4.0 4.0 16.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (lang_Math_sqrt (input (sel-MixedExternalTest (select heap 1))))))\n  (= (javaResult (sel-MixedExternalTest (select heap 1))) a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (py_math_sqrt (input (sel-MixedExternalTest (select heap 1))))))\n  (= (pythonResult (sel-MixedExternalTest (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (= (pythonResult (sel-MixedExternalTest (select heap 1))) 4.0))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-MixedExternalTest a!1)))\n(define-fun _xkassert1 () Bool\n  (= (input (sel-MixedExternalTest (select heap 1))) 16.0))\n(define-fun _xkassert6 () Bool\n  (= (javaResult (sel-MixedExternalTest (select heap 1)))\n   (pythonResult (sel-MixedExternalTest (select heap 1)))))\n(define-fun _xkassert4 () Bool\n  (= (javaResult (sel-MixedExternalTest (select heap 1))) 4.0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-MixedExternalTest (mk-MixedExternalTest 4.0 4.0 16.0))))\n(define-fun py_math_sqrt ((x!0 Real)) Real\n  4.0)\n(define-fun lang_Math_sqrt ((x!0 Real)) Real\n  4.0)",
+  "json1": {
+    "type": "Model",
+    "imports": [
+      {
+        "type": "ImportDecl",
+        "name": {
+          "names": [
+            "lang",
+            "Math"
+          ],
+          "type": "QualifiedName"
+        },
+        "star": "false",
+        "language": "JavaImport"
+      },
+      {
+        "type": "ImportDecl",
+        "name": {
+          "names": ["math"],
+          "type": "QualifiedName"
+        },
+        "star": "false",
+        "language": "PythonImport"
+      }
+    ],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "MixedExternalTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "javaResult",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pythonResult",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "input",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "input",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "16.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "javaResult",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "sqrt",
+                  "exp": {
+                    "ident": "Math",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "input",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "pythonResult",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "sqrt",
+                  "exp": {
+                    "ident": "math",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "input",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "javaResult",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "4.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "pythonResult",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "4.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "javaResult",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "pythonResult",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["MixedExternalTest"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [
+      {
+        "type": "ImportDecl",
+        "name": {
+          "names": [
+            "lang",
+            "Math"
+          ],
+          "type": "QualifiedName"
+        },
+        "star": "false",
+        "language": "JavaImport"
+      },
+      {
+        "type": "ImportDecl",
+        "name": {
+          "names": ["math"],
+          "type": "QualifiedName"
+        },
+        "star": "false",
+        "language": "PythonImport"
+      }
+    ],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "MixedExternalTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "javaResult",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pythonResult",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "input",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "input",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 16
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "javaResult",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "Math",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "sqrt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "input",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "pythonResult",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "math",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "sqrt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "input",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "javaResult",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 4
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "pythonResult",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 4
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "javaResult",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "pythonResult",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "MixedExternalTest"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

@@ -1,0 +1,406 @@
+{
+  "name": "stringint1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringInt1 {\n  numStr:String\n\n  req numStr = \"42\"\n  numVal:Int\n\n  req numVal = numStr.toInt()\n\n  req numVal = 42\n  bigNumStr:String\n\n  req bigNumStr = \"12345\"\n  bigNumVal:Int\n\n  req bigNumVal = bigNumStr.toInt()\n\n  req bigNumVal = 12345\n}\n\nmain:StringInt1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringInt1 (mk-StringInt1 (numStr String)(numVal Int)(bigNumStr String)(bigNumVal Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringInt1 (sel-StringInt1 StringInt1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringInt1 ((this Ref)) Bool\n  (is-lift-StringInt1 (deref this))\n)\n\n(define-fun deref-StringInt1 ((this Ref)) StringInt1\n  (sel-StringInt1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringInt1 ((this Ref)) Bool\n  (deref-is-StringInt1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------\n;   Getters for class StringInt1:\n; ---------------------------------\n\n; --- getters for StringInt1.numStr: ---\n\n(define-fun StringInt1!numStr ((this Ref)) String\n  (numStr (deref-StringInt1 this))\n)\n\n; --- getters for StringInt1.numVal: ---\n\n(define-fun StringInt1!numVal ((this Ref)) Int\n  (numVal (deref-StringInt1 this))\n)\n\n; --- getters for StringInt1.bigNumStr: ---\n\n(define-fun StringInt1!bigNumStr ((this Ref)) String\n  (bigNumStr (deref-StringInt1 this))\n)\n\n; --- getters for StringInt1.bigNumVal: ---\n\n(define-fun StringInt1!bigNumVal ((this Ref)) Int\n  (bigNumVal (deref-StringInt1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringInt1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class StringInt1:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringInt1 StringInt1)\n\n; --- Invariant 1: ---\n\n(define-fun StringInt1.inv1 ((this Ref)) Bool\n  (= (StringInt1!numStr this) \"42\")\n)\n\n(assert (! (StringInt1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringInt1.inv2 ((this Ref)) Bool\n  (= (StringInt1!numVal this) (str.to_int (StringInt1!numStr this)))\n)\n\n(assert (! (StringInt1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringInt1.inv3 ((this Ref)) Bool\n  (= (StringInt1!numVal this) 42)\n)\n\n(assert (! (StringInt1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringInt1.inv4 ((this Ref)) Bool\n  (= (StringInt1!bigNumStr this) \"12345\")\n)\n\n(assert (! (StringInt1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringInt1.inv5 ((this Ref)) Bool\n  (= (StringInt1!bigNumVal this) (str.to_int (StringInt1!bigNumStr this)))\n)\n\n(assert (! (StringInt1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun StringInt1.inv6 ((this Ref)) Bool\n  (= (StringInt1!bigNumVal this) 12345)\n)\n\n(assert (! (StringInt1.inv6 1) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringInt1 const-1-StringInt1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringInt1 () StringInt1\n  (mk-StringInt1 \"42\" 42 \"12345\" 12345))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.to_int (numStr (sel-StringInt1 (select heap 1))))))\n  (= (numVal (sel-StringInt1 (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (str.to_int (bigNumStr (sel-StringInt1 (select heap 1))))))\n  (= (bigNumVal (sel-StringInt1 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringInt1 a!1)))\n(define-fun _xkassert3 () Bool\n  (= (numVal (sel-StringInt1 (select heap 1))) 42))\n(define-fun _xkassert6 () Bool\n  (= (bigNumVal (sel-StringInt1 (select heap 1))) 12345))\n(define-fun _xkassert1 () Bool\n  (= (numStr (sel-StringInt1 (select heap 1))) \"42\"))\n(define-fun _xkassert4 () Bool\n  (= (bigNumStr (sel-StringInt1 (select heap 1))) \"12345\"))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringInt1 (mk-StringInt1 \"42\" 42 \"12345\" 12345))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringInt1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numStr",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "numStr",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "42",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numVal",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "numVal",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "toInt",
+                  "exp": {
+                    "ident": "numStr",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": []
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "numVal",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 42,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bigNumStr",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "bigNumStr",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "12345",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bigNumVal",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "bigNumVal",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "toInt",
+                  "exp": {
+                    "ident": "bigNumStr",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": []
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "bigNumVal",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 12345,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringInt1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringInt1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numStr",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "numStr",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "42"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numVal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "numVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [{
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "getProperty"
+                      },
+                      {
+                        "element": "numStr",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "toInt"
+                      }
+                    ],
+                    "type": "Expression"
+                  }]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "numVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 42
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bigNumStr",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "bigNumStr",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "12345"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bigNumVal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "bigNumVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [{
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "getProperty"
+                      },
+                      {
+                        "element": "bigNumStr",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralString",
+                        "string": "toInt"
+                      }
+                    ],
+                    "type": "Expression"
+                  }]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "bigNumVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 12345
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringInt1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

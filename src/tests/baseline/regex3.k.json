@@ -1,0 +1,430 @@
+{
+  "name": "regex3.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass RegexNoMatch1 {\n  text:String\n\n  req text = \"hello\"\n  matchesDigits:Bool\n\n  req matchesDigits = text.matches(\"[0-9]+\")\n\n  req matchesDigits = false\n  number:String\n\n  req number = \"12345\"\n  matchesLetters:Bool\n\n  req matchesLetters = number.matches(\"[a-z]+\")\n\n  req matchesLetters = false\n}\n\nmain:RegexNoMatch1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((RegexNoMatch1 (mk-RegexNoMatch1 (text String)(matchesDigits Bool)(number String)(matchesLetters Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-RegexNoMatch1 (sel-RegexNoMatch1 RegexNoMatch1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-RegexNoMatch1 ((this Ref)) Bool\n  (is-lift-RegexNoMatch1 (deref this))\n)\n\n(define-fun deref-RegexNoMatch1 ((this Ref)) RegexNoMatch1\n  (sel-RegexNoMatch1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-RegexNoMatch1 ((this Ref)) Bool\n  (deref-is-RegexNoMatch1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------------\n;   Getters for class RegexNoMatch1:\n; ------------------------------------\n\n; --- getters for RegexNoMatch1.text: ---\n\n(define-fun RegexNoMatch1!text ((this Ref)) String\n  (text (deref-RegexNoMatch1 this))\n)\n\n; --- getters for RegexNoMatch1.matchesDigits: ---\n\n(define-fun RegexNoMatch1!matchesDigits ((this Ref)) Bool\n  (matchesDigits (deref-RegexNoMatch1 this))\n)\n\n; --- getters for RegexNoMatch1.number: ---\n\n(define-fun RegexNoMatch1!number ((this Ref)) String\n  (number (deref-RegexNoMatch1 this))\n)\n\n; --- getters for RegexNoMatch1.matchesLetters: ---\n\n(define-fun RegexNoMatch1!matchesLetters ((this Ref)) Bool\n  (matchesLetters (deref-RegexNoMatch1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-RegexNoMatch1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; --------------------------------------\n;   Invariant for class RegexNoMatch1:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-RegexNoMatch1 RegexNoMatch1)\n\n; --- Invariant 1: ---\n\n(define-fun RegexNoMatch1.inv1 ((this Ref)) Bool\n  (= (RegexNoMatch1!text this) \"hello\")\n)\n\n(assert (! (RegexNoMatch1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun RegexNoMatch1.inv2 ((this Ref)) Bool\n  (= (RegexNoMatch1!matchesDigits this) (str.in_re (RegexNoMatch1!text this) (str.to_re \"[0-9]+\")))\n)\n\n(assert (! (RegexNoMatch1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun RegexNoMatch1.inv3 ((this Ref)) Bool\n  (= (RegexNoMatch1!matchesDigits this) false)\n)\n\n(assert (! (RegexNoMatch1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun RegexNoMatch1.inv4 ((this Ref)) Bool\n  (= (RegexNoMatch1!number this) \"12345\")\n)\n\n(assert (! (RegexNoMatch1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun RegexNoMatch1.inv5 ((this Ref)) Bool\n  (= (RegexNoMatch1!matchesLetters this) (str.in_re (RegexNoMatch1!number this) (str.to_re \"[a-z]+\")))\n)\n\n(assert (! (RegexNoMatch1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun RegexNoMatch1.inv6 ((this Ref)) Bool\n  (= (RegexNoMatch1!matchesLetters this) false)\n)\n\n(assert (! (RegexNoMatch1.inv6 1) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-RegexNoMatch1 const-1-RegexNoMatch1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-RegexNoMatch1 () RegexNoMatch1\n  (mk-RegexNoMatch1 \"hello\" false \"12345\" false))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.in_re (text (sel-RegexNoMatch1 (select heap 1)))\n                      (str.to_re \"[0-9]+\"))))\n  (= (matchesDigits (sel-RegexNoMatch1 (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (str.in_re (number (sel-RegexNoMatch1 (select heap 1)))\n                      (str.to_re \"[a-z]+\"))))\n  (= (matchesLetters (sel-RegexNoMatch1 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-RegexNoMatch1 a!1)))\n(define-fun _xkassert3 () Bool\n  (= (matchesDigits (sel-RegexNoMatch1 (select heap 1))) false))\n(define-fun _xkassert1 () Bool\n  (= (text (sel-RegexNoMatch1 (select heap 1))) \"hello\"))\n(define-fun _xkassert6 () Bool\n  (= (matchesLetters (sel-RegexNoMatch1 (select heap 1))) false))\n(define-fun _xkassert4 () Bool\n  (= (number (sel-RegexNoMatch1 (select heap 1))) \"12345\"))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-RegexNoMatch1 (mk-RegexNoMatch1 \"hello\" false \"12345\" false))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexNoMatch1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "hello",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "matchesDigits",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "matchesDigits",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "matches",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "[0-9]+",
+                    "type": "StringLiteral"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "matchesDigits",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": false,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "number",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "number",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "12345",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "matchesLetters",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "matchesLetters",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "matches",
+                  "exp": {
+                    "ident": "number",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "[a-z]+",
+                    "type": "StringLiteral"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "matchesLetters",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": false,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["RegexNoMatch1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexNoMatch1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "hello"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "matchesDigits",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "matchesDigits",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "matches"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "[0-9]+"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "matchesDigits",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "false"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "number",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "number",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "12345"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "matchesLetters",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "matchesLetters",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "number",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "matches"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "[a-z]+"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "matchesLetters",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "false"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "RegexNoMatch1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

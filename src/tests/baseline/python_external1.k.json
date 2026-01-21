@@ -1,0 +1,282 @@
+{
+  "name": "python_external1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nimport python math\n\nclass PythonMathTest {\n  x:Real\n  y:Real\n  result:Real\n\n  req x = 2.5E1\n\n  req result = math.sqrt(x)\n\n  req result = 5E0\n}\n\nmain:PythonMathTest\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((PythonMathTest (mk-PythonMathTest (x Real)(y Real)(result Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-PythonMathTest (sel-PythonMathTest PythonMathTest))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-PythonMathTest ((this Ref)) Bool\n  (is-lift-PythonMathTest (deref this))\n)\n\n(define-fun deref-PythonMathTest ((this Ref)) PythonMathTest\n  (sel-PythonMathTest (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-PythonMathTest ((this Ref)) Bool\n  (deref-is-PythonMathTest this)\n)\n\n; =======================================\n; === External Function Declarations: ===\n; =======================================\n\n; Uninterpreted functions for external (Java) calls\n(declare-fun py_math_sqrt (Real) Real)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------------\n;   Getters for class PythonMathTest:\n; -------------------------------------\n\n; --- getters for PythonMathTest.x: ---\n\n(define-fun PythonMathTest!x ((this Ref)) Real\n  (x (deref-PythonMathTest this))\n)\n\n; --- getters for PythonMathTest.result: ---\n\n(define-fun PythonMathTest!result ((this Ref)) Real\n  (result (deref-PythonMathTest this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-PythonMathTest (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ---------------------------------------\n;   Invariant for class PythonMathTest:\n; ---------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-PythonMathTest PythonMathTest)\n\n; --- Invariant 1: ---\n\n(define-fun PythonMathTest.inv1 ((this Ref)) Bool\n  (= (PythonMathTest!x this) 25.0000000000000000)\n)\n\n(assert (! (PythonMathTest.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun PythonMathTest.inv2 ((this Ref)) Bool\n  (= (PythonMathTest!result this) (py_math_sqrt (PythonMathTest!x this)))\n)\n\n(assert (! (PythonMathTest.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun PythonMathTest.inv3 ((this Ref)) Bool\n  (= (PythonMathTest!result this) 5.0000000000000000)\n)\n\n(assert (! (PythonMathTest.inv3 1) :named _xkassert3))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-PythonMathTest const-1-PythonMathTest))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-PythonMathTest () PythonMathTest\n  (mk-PythonMathTest 25.0 2.0 5.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (py_math_sqrt (x (sel-PythonMathTest (select heap 1))))))\n  (= (result (sel-PythonMathTest (select heap 1))) a!1)))\n(define-fun _xkassert3 () Bool\n  (= (result (sel-PythonMathTest (select heap 1))) 5.0))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-PythonMathTest a!1)))\n(define-fun _xkassert1 () Bool\n  (= (x (sel-PythonMathTest (select heap 1))) 25.0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-PythonMathTest (mk-PythonMathTest 25.0 2.0 5.0))))\n(define-fun py_math_sqrt ((x!0 Real)) Real\n  5.0)",
+  "json1": {
+    "type": "Model",
+    "imports": [{
+      "type": "ImportDecl",
+      "name": {
+        "names": ["math"],
+        "type": "QualifiedName"
+      },
+      "star": "false",
+      "language": "PythonImport"
+    }],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PythonMathTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "result",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "25.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "result",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "sqrt",
+                  "exp": {
+                    "ident": "math",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "result",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "5.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["PythonMathTest"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [{
+      "type": "ImportDecl",
+      "name": {
+        "names": ["math"],
+        "type": "QualifiedName"
+      },
+      "star": "false",
+      "language": "PythonImport"
+    }],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PythonMathTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "result",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 25
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "result",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "math",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "sqrt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "result",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 5
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "PythonMathTest"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

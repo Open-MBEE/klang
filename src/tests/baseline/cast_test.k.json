@@ -1,0 +1,678 @@
+{
+  "name": "cast_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass IntToRealWidening {\n  x:Int = 42\n  y:Real = 3.5E0\n\n  req x >= 0\n\n  req y > 0E0\n\n  req x < y * 2E1\n}\n\nclass RealToIntCast {\n  pi:Real = 3.14159E0\n  truncated:Int = pi as Int\n\n  req truncated = 3\n  negReal:Real = -2.7E0\n  negTrunc:Int = negReal as Int\n\n  req negTrunc = -3\n}\n\nclass BitVecConversions {\n  intVal:Int = 255\n  bv:BitVec[8] = intVal as BitVec[8]\n  backToInt:Int = bv as Int\n\n  req backToInt = 255\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((IntToRealWidening (mk-IntToRealWidening (x Int)(y Real)))))\n(declare-datatypes () ((RealToIntCast (mk-RealToIntCast (pi Real)(truncated Int)(negReal Real)(negTrunc Int)))))\n(declare-datatypes () ((BitVecConversions (mk-BitVecConversions (intVal Int)(bv (_ BitVec 8))(backToInt Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-IntToRealWidening (sel-IntToRealWidening IntToRealWidening))\n  (lift-RealToIntCast (sel-RealToIntCast RealToIntCast))\n  (lift-BitVecConversions (sel-BitVecConversions BitVecConversions))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-IntToRealWidening ((this Ref)) Bool\n  (is-lift-IntToRealWidening (deref this))\n)\n\n(define-fun deref-IntToRealWidening ((this Ref)) IntToRealWidening\n  (sel-IntToRealWidening (deref this))\n)\n\n(define-fun deref-is-RealToIntCast ((this Ref)) Bool\n  (is-lift-RealToIntCast (deref this))\n)\n\n(define-fun deref-RealToIntCast ((this Ref)) RealToIntCast\n  (sel-RealToIntCast (deref this))\n)\n\n(define-fun deref-is-BitVecConversions ((this Ref)) Bool\n  (is-lift-BitVecConversions (deref this))\n)\n\n(define-fun deref-BitVecConversions ((this Ref)) BitVecConversions\n  (sel-BitVecConversions (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-IntToRealWidening ((this Ref)) Bool\n  (deref-is-IntToRealWidening this)\n)\n\n(define-fun deref-isa-RealToIntCast ((this Ref)) Bool\n  (deref-is-RealToIntCast this)\n)\n\n(define-fun deref-isa-BitVecConversions ((this Ref)) Bool\n  (deref-is-BitVecConversions this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ----------------------------------------\n;   Getters for class IntToRealWidening:\n; ----------------------------------------\n\n; --- getters for IntToRealWidening.x: ---\n\n(define-fun IntToRealWidening!x ((this Ref)) Int\n  (x (deref-IntToRealWidening this))\n)\n\n; --- getters for IntToRealWidening.y: ---\n\n(define-fun IntToRealWidening!y ((this Ref)) Real\n  (y (deref-IntToRealWidening this))\n)\n\n; ------------------------------------\n;   Getters for class RealToIntCast:\n; ------------------------------------\n\n; --- getters for RealToIntCast.pi: ---\n\n(define-fun RealToIntCast!pi ((this Ref)) Real\n  (pi (deref-RealToIntCast this))\n)\n\n; --- getters for RealToIntCast.truncated: ---\n\n(define-fun RealToIntCast!truncated ((this Ref)) Int\n  (truncated (deref-RealToIntCast this))\n)\n\n; --- getters for RealToIntCast.negReal: ---\n\n(define-fun RealToIntCast!negReal ((this Ref)) Real\n  (negReal (deref-RealToIntCast this))\n)\n\n; --- getters for RealToIntCast.negTrunc: ---\n\n(define-fun RealToIntCast!negTrunc ((this Ref)) Int\n  (negTrunc (deref-RealToIntCast this))\n)\n\n; ----------------------------------------\n;   Getters for class BitVecConversions:\n; ----------------------------------------\n\n; --- getters for BitVecConversions.intVal: ---\n\n(define-fun BitVecConversions!intVal ((this Ref)) Int\n  (intVal (deref-BitVecConversions this))\n)\n\n; --- getters for BitVecConversions.bv: ---\n\n(define-fun BitVecConversions!bv ((this Ref)) (_ BitVec 8)\n  (bv (deref-BitVecConversions this))\n)\n\n; --- getters for BitVecConversions.backToInt: ---\n\n(define-fun BitVecConversions!backToInt ((this Ref)) Int\n  (backToInt (deref-BitVecConversions this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ------------------------------------------\n;   Invariant for class IntToRealWidening:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-IntToRealWidening IntToRealWidening)\n\n; --- Invariant 1: ---\n\n(define-fun IntToRealWidening.inv1 ((this Ref)) Bool\n  (= (IntToRealWidening!x this) 42)\n)\n\n(assert (! (IntToRealWidening.inv1 1) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun IntToRealWidening.inv2 ((this Ref)) Bool\n  (= (IntToRealWidening!y this) 3.5000000000000000)\n)\n\n(assert (! (IntToRealWidening.inv2 1) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun IntToRealWidening.inv3 ((this Ref)) Bool\n  (>= (IntToRealWidening!x this) 0)\n)\n\n(assert (! (IntToRealWidening.inv3 1) :named _xkassert2))\n\n; --- Invariant 4: ---\n\n(define-fun IntToRealWidening.inv4 ((this Ref)) Bool\n  (> (IntToRealWidening!y this) 0.0000000000000000)\n)\n\n(assert (! (IntToRealWidening.inv4 1) :named _xkassert3))\n\n; --- Invariant 5: ---\n\n(define-fun IntToRealWidening.inv5 ((this Ref)) Bool\n  (< (IntToRealWidening!x this) (* (IntToRealWidening!y this) 20.0000000000000000))\n)\n\n(assert (! (IntToRealWidening.inv5 1) :named _xkassert4))\n\n\n\n; --------------------------------------\n;   Invariant for class RealToIntCast:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-RealToIntCast RealToIntCast)\n\n; --- Invariant 1: ---\n\n(define-fun RealToIntCast.inv1 ((this Ref)) Bool\n  (= (RealToIntCast!pi this) 3.1415900000000000)\n)\n\n(assert (! (RealToIntCast.inv1 2) :named _xkassert5))\n\n; --- Invariant 2: ---\n\n(define-fun RealToIntCast.inv2 ((this Ref)) Bool\n  (= (RealToIntCast!truncated this) (to_int (RealToIntCast!pi this)))\n)\n\n(assert (! (RealToIntCast.inv2 2) :named _xkassert6))\n\n; --- Invariant 3: ---\n\n(define-fun RealToIntCast.inv3 ((this Ref)) Bool\n  (= (RealToIntCast!negReal this) (- 2.7000000000000000))\n)\n\n(assert (! (RealToIntCast.inv3 2) :named _xkassert7))\n\n; --- Invariant 4: ---\n\n(define-fun RealToIntCast.inv4 ((this Ref)) Bool\n  (= (RealToIntCast!negTrunc this) (to_int (RealToIntCast!negReal this)))\n)\n\n(assert (! (RealToIntCast.inv4 2) :named _xkassert8))\n\n; --- Invariant 5: ---\n\n(define-fun RealToIntCast.inv5 ((this Ref)) Bool\n  (= (RealToIntCast!truncated this) 3)\n)\n\n(assert (! (RealToIntCast.inv5 2) :named _xkassert9))\n\n; --- Invariant 6: ---\n\n(define-fun RealToIntCast.inv6 ((this Ref)) Bool\n  (= (RealToIntCast!negTrunc this) (- 3))\n)\n\n(assert (! (RealToIntCast.inv6 2) :named _xkassert10))\n\n\n\n; ------------------------------------------\n;   Invariant for class BitVecConversions:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-BitVecConversions BitVecConversions)\n\n; --- Invariant 1: ---\n\n(define-fun BitVecConversions.inv1 ((this Ref)) Bool\n  (= (BitVecConversions!intVal this) 255)\n)\n\n(assert (! (BitVecConversions.inv1 3) :named _xkassert11))\n\n; --- Invariant 2: ---\n\n(define-fun BitVecConversions.inv2 ((this Ref)) Bool\n  (= (BitVecConversions!bv this) ((_ int2bv 8) (BitVecConversions!intVal this)))\n)\n\n(assert (! (BitVecConversions.inv2 3) :named _xkassert12))\n\n; --- Invariant 3: ---\n\n(define-fun BitVecConversions.inv3 ((this Ref)) Bool\n  (= (BitVecConversions!backToInt this) (bv2int (BitVecConversions!bv this)))\n)\n\n(assert (! (BitVecConversions.inv3 3) :named _xkassert13))\n\n; --- Invariant 4: ---\n\n(define-fun BitVecConversions.inv4 ((this Ref)) Bool\n  (= (BitVecConversions!backToInt this) 255)\n)\n\n(assert (! (BitVecConversions.inv4 3) :named _xkassert14))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        1 (lift-IntToRealWidening const-1-IntToRealWidening))\n        2 (lift-RealToIntCast const-2-RealToIntCast))\n        3 (lift-BitVecConversions const-3-BitVecConversions))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-IntToRealWidening () IntToRealWidening\n  (mk-IntToRealWidening 42 (/ 7.0 2.0)))\n(define-fun const-2-RealToIntCast () RealToIntCast\n  (mk-RealToIntCast (/ 314159.0 100000.0) 3 (- (/ 27.0 10.0)) (- 3)))\n(define-fun const-3-BitVecConversions () BitVecConversions\n  (mk-BitVecConversions 255 #xff 255))\n(define-fun _xkassert7 () Bool\n  (= (negReal (sel-RealToIntCast (select heap 2))) (- (/ 27.0 10.0))))\n(define-fun _xkassert2 () Bool\n  (>= (x (sel-IntToRealWidening (select heap 1))) 0))\n(define-fun _xkassert5 () Bool\n  (= (pi (sel-RealToIntCast (select heap 2))) (/ 314159.0 100000.0)))\n(define-fun _xkassert9 () Bool\n  (= (truncated (sel-RealToIntCast (select heap 2))) 3))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (bv2int (bv (sel-BitVecConversions (select heap 3))))))\n  (= (backToInt (sel-BitVecConversions (select heap 3))) a!1)))\n(define-fun _xkassert0 () Bool\n  (= (x (sel-IntToRealWidening (select heap 1))) 42))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (to_int (negReal (sel-RealToIntCast (select heap 2))))))\n  (= (negTrunc (sel-RealToIntCast (select heap 2))) a!1)))\n(define-fun _xkassert10 () Bool\n  (= (negTrunc (sel-RealToIntCast (select heap 2))) (- 3)))\n(define-fun _xkassert14 () Bool\n  (= (backToInt (sel-BitVecConversions (select heap 3))) 255))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 ((_ int2bv 8) (intVal (sel-BitVecConversions (select heap 3))))))\n  (= (bv (sel-BitVecConversions (select heap 3))) a!1)))\n(define-fun _xkassert3 () Bool\n  (> (y (sel-IntToRealWidening (select heap 1))) 0.0))\n(define-fun _xkassert11 () Bool\n  (= (intVal (sel-BitVecConversions (select heap 3))) 255))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (to_int (pi (sel-RealToIntCast (select heap 2))))))\n  (= (truncated (sel-RealToIntCast (select heap 2))) a!1)))\n(define-fun _xkassert1 () Bool\n  (= (y (sel-IntToRealWidening (select heap 1))) (/ 7.0 2.0)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (to_real (x (sel-IntToRealWidening (select heap 1)))))\n      (a!2 (* (y (sel-IntToRealWidening (select heap 1))) 20.0)))\n  (< a!1 a!2)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         1\n                         (lift-IntToRealWidening\n                           (mk-IntToRealWidening 42 (/ 7.0 2.0))))\n                  2\n                  (lift-RealToIntCast\n                    (mk-RealToIntCast (/ 314159.0 100000.0)\n                                      3\n                                      (- (/ 27.0 10.0))\n                                      (- 3))))))\n  (store a!1 3 (lift-BitVecConversions (mk-BitVecConversions 255 #xff 255)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "IntToRealWidening",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 42,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "RealType"},
+            "assignment": false,
+            "expr": {
+              "f": "3.5000000000000000",
+              "type": "LiteralFloatingPoint"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "ident": "y",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "0.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Times",
+                "exp1": {
+                  "ident": "y",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "f": "20.0000000000000000",
+                  "type": "LiteralFloatingPoint"
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RealToIntCast",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pi",
+            "ty": {"type": "RealType"},
+            "assignment": false,
+            "expr": {
+              "f": "3.1415900000000000",
+              "type": "LiteralFloatingPoint"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "truncated",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "pi",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "truncated",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "negReal",
+            "ty": {"type": "RealType"},
+            "assignment": false,
+            "expr": {
+              "exp": {
+                "f": "2.7000000000000000",
+                "type": "LiteralFloatingPoint"
+              },
+              "type": "UnaryExp",
+              "op": "Neg"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "negTrunc",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "negReal",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "negTrunc",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "i": 3,
+                  "type": "LiteralInteger"
+                },
+                "type": "UnaryExp",
+                "op": "Neg"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "BitVecConversions",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "intVal",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "i": 255,
+              "type": "LiteralInteger"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bv",
+            "ty": {
+              "type": "BitVecType",
+              "width": 8
+            },
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "intVal",
+                "type": "IdentExp"
+              },
+              "ty": {
+                "type": "BitVecType",
+                "width": 8
+              }
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "backToInt",
+            "ty": {"type": "IntType"},
+            "assignment": false,
+            "expr": {
+              "type": "TypeCastCheckExp",
+              "cast": "true",
+              "exp": {
+                "ident": "bv",
+                "type": "IdentExp"
+              },
+              "ty": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "backToInt",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 255,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "IntToRealWidening",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 42
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralReal",
+              "double": 3.5
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "element": "y",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Times"
+                    },
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralReal",
+                      "double": 20
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RealToIntCast",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "pi",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralReal",
+              "double": 3.14159
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "truncated",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "pi",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "truncated",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "negReal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Neg"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 2.7
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "negTrunc",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "negReal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "negTrunc",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Neg"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 3
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "BitVecConversions",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "intVal",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "LiteralInteger",
+              "integer": 255
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "bv",
+            "ty": {
+              "type": "ElementValue",
+              "element": "BitVec[8]"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "intVal",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "BitVec[8]"
+                }
+              ]
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "backToInt",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            },
+            "assignment": false,
+            "expr": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "typeCastCheck"
+                },
+                "true",
+                {
+                  "element": "bv",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "backToInt",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 255
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
+}

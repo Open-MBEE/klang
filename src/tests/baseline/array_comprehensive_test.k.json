@@ -1,0 +1,1291 @@
+{
+  "name": "array_comprehensive_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass ArrayStringKeyTest {\n  dict:Array[String, Int]\n\n  req dict[\"one\"] = 1\n\n  req dict[\"two\"] = 2\n\n  req dict[\"sum\"] = dict[\"one\"] + dict[\"two\"]\n}\n\nclass ArrayBoolValueTest {\n  flags:Array[Int, Bool]\n\n  req flags[0] = true\n\n  req flags[1] = false\n\n  req flags[2] = flags[0]\n}\n\nclass ArrayComputedIndexTest {\n  data:Array[Int, Int]\n\n  req data[10] = 100\n\n  req data[10 + 1] = 200\n\n  req data[10 + 2] = data[10] + data[11]\n}\n\nclass ArrayDefaultTest {\n  arr:Array[Int, Int]\n\n  req arr[0] = 42\n}\n\nclass ArrayArithmeticTest {\n  scores:Array[Int, Int]\n\n  req scores[0] = 85\n\n  req scores[1] = 90\n\n  req scores[2] = 78\n\n  req scores[3] = scores[0] + scores[1] + scores[2]\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((ArrayStringKeyTest (mk-ArrayStringKeyTest (dict (Array String Int))))))\n(declare-datatypes () ((ArrayBoolValueTest (mk-ArrayBoolValueTest (flags (Array Int Bool))))))\n(declare-datatypes () ((ArrayComputedIndexTest (mk-ArrayComputedIndexTest (data (Array Int Int))))))\n(declare-datatypes () ((ArrayDefaultTest (mk-ArrayDefaultTest (arr (Array Int Int))))))\n(declare-datatypes () ((ArrayArithmeticTest (mk-ArrayArithmeticTest (scores (Array Int Int))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-ArrayStringKeyTest (sel-ArrayStringKeyTest ArrayStringKeyTest))\n  (lift-ArrayBoolValueTest (sel-ArrayBoolValueTest ArrayBoolValueTest))\n  (lift-ArrayComputedIndexTest (sel-ArrayComputedIndexTest ArrayComputedIndexTest))\n  (lift-ArrayDefaultTest (sel-ArrayDefaultTest ArrayDefaultTest))\n  (lift-ArrayArithmeticTest (sel-ArrayArithmeticTest ArrayArithmeticTest))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-ArrayStringKeyTest ((this Ref)) Bool\n  (is-lift-ArrayStringKeyTest (deref this))\n)\n\n(define-fun deref-ArrayStringKeyTest ((this Ref)) ArrayStringKeyTest\n  (sel-ArrayStringKeyTest (deref this))\n)\n\n(define-fun deref-is-ArrayBoolValueTest ((this Ref)) Bool\n  (is-lift-ArrayBoolValueTest (deref this))\n)\n\n(define-fun deref-ArrayBoolValueTest ((this Ref)) ArrayBoolValueTest\n  (sel-ArrayBoolValueTest (deref this))\n)\n\n(define-fun deref-is-ArrayComputedIndexTest ((this Ref)) Bool\n  (is-lift-ArrayComputedIndexTest (deref this))\n)\n\n(define-fun deref-ArrayComputedIndexTest ((this Ref)) ArrayComputedIndexTest\n  (sel-ArrayComputedIndexTest (deref this))\n)\n\n(define-fun deref-is-ArrayDefaultTest ((this Ref)) Bool\n  (is-lift-ArrayDefaultTest (deref this))\n)\n\n(define-fun deref-ArrayDefaultTest ((this Ref)) ArrayDefaultTest\n  (sel-ArrayDefaultTest (deref this))\n)\n\n(define-fun deref-is-ArrayArithmeticTest ((this Ref)) Bool\n  (is-lift-ArrayArithmeticTest (deref this))\n)\n\n(define-fun deref-ArrayArithmeticTest ((this Ref)) ArrayArithmeticTest\n  (sel-ArrayArithmeticTest (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-ArrayStringKeyTest ((this Ref)) Bool\n  (deref-is-ArrayStringKeyTest this)\n)\n\n(define-fun deref-isa-ArrayBoolValueTest ((this Ref)) Bool\n  (deref-is-ArrayBoolValueTest this)\n)\n\n(define-fun deref-isa-ArrayComputedIndexTest ((this Ref)) Bool\n  (deref-is-ArrayComputedIndexTest this)\n)\n\n(define-fun deref-isa-ArrayDefaultTest ((this Ref)) Bool\n  (deref-is-ArrayDefaultTest this)\n)\n\n(define-fun deref-isa-ArrayArithmeticTest ((this Ref)) Bool\n  (deref-is-ArrayArithmeticTest this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -----------------------------------------\n;   Getters for class ArrayStringKeyTest:\n; -----------------------------------------\n\n; --- getters for ArrayStringKeyTest.dict: ---\n\n(define-fun ArrayStringKeyTest!dict ((this Ref)) (Array String Int)\n  (dict (deref-ArrayStringKeyTest this))\n)\n\n; -----------------------------------------\n;   Getters for class ArrayBoolValueTest:\n; -----------------------------------------\n\n; --- getters for ArrayBoolValueTest.flags: ---\n\n(define-fun ArrayBoolValueTest!flags ((this Ref)) (Array Int Bool)\n  (flags (deref-ArrayBoolValueTest this))\n)\n\n; ---------------------------------------------\n;   Getters for class ArrayComputedIndexTest:\n; ---------------------------------------------\n\n; --- getters for ArrayComputedIndexTest.data: ---\n\n(define-fun ArrayComputedIndexTest!data ((this Ref)) (Array Int Int)\n  (data (deref-ArrayComputedIndexTest this))\n)\n\n; ---------------------------------------\n;   Getters for class ArrayDefaultTest:\n; ---------------------------------------\n\n; --- getters for ArrayDefaultTest.arr: ---\n\n(define-fun ArrayDefaultTest!arr ((this Ref)) (Array Int Int)\n  (arr (deref-ArrayDefaultTest this))\n)\n\n; ------------------------------------------\n;   Getters for class ArrayArithmeticTest:\n; ------------------------------------------\n\n; --- getters for ArrayArithmeticTest.scores: ---\n\n(define-fun ArrayArithmeticTest!scores ((this Ref)) (Array Int Int)\n  (scores (deref-ArrayArithmeticTest this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; -------------------------------------------\n;   Invariant for class ArrayStringKeyTest:\n; -------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-ArrayStringKeyTest ArrayStringKeyTest)\n\n; --- Invariant 1: ---\n\n(define-fun ArrayStringKeyTest.inv1 ((this Ref)) Bool\n  (= (select (ArrayStringKeyTest!dict this) \"one\") 1)\n)\n\n(assert (! (ArrayStringKeyTest.inv1 2) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun ArrayStringKeyTest.inv2 ((this Ref)) Bool\n  (= (select (ArrayStringKeyTest!dict this) \"two\") 2)\n)\n\n(assert (! (ArrayStringKeyTest.inv2 2) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun ArrayStringKeyTest.inv3 ((this Ref)) Bool\n  (= (select (ArrayStringKeyTest!dict this) \"sum\") (+ (select (ArrayStringKeyTest!dict this) \"one\") (select (ArrayStringKeyTest!dict this) \"two\")))\n)\n\n(assert (! (ArrayStringKeyTest.inv3 2) :named _xkassert2))\n\n\n\n; -------------------------------------------\n;   Invariant for class ArrayBoolValueTest:\n; -------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-ArrayBoolValueTest ArrayBoolValueTest)\n\n; --- Invariant 1: ---\n\n(define-fun ArrayBoolValueTest.inv1 ((this Ref)) Bool\n  (= (select (ArrayBoolValueTest!flags this) 0) true)\n)\n\n(assert (! (ArrayBoolValueTest.inv1 1) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun ArrayBoolValueTest.inv2 ((this Ref)) Bool\n  (= (select (ArrayBoolValueTest!flags this) 1) false)\n)\n\n(assert (! (ArrayBoolValueTest.inv2 1) :named _xkassert4))\n\n; --- Invariant 3: ---\n\n(define-fun ArrayBoolValueTest.inv3 ((this Ref)) Bool\n  (= (select (ArrayBoolValueTest!flags this) 2) (select (ArrayBoolValueTest!flags this) 0))\n)\n\n(assert (! (ArrayBoolValueTest.inv3 1) :named _xkassert5))\n\n\n\n; -----------------------------------------------\n;   Invariant for class ArrayComputedIndexTest:\n; -----------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-ArrayComputedIndexTest ArrayComputedIndexTest)\n\n; --- Invariant 1: ---\n\n(define-fun ArrayComputedIndexTest.inv1 ((this Ref)) Bool\n  (= (select (ArrayComputedIndexTest!data this) 10) 100)\n)\n\n(assert (! (ArrayComputedIndexTest.inv1 3) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun ArrayComputedIndexTest.inv2 ((this Ref)) Bool\n  (= (select (ArrayComputedIndexTest!data this) (+ 10 1)) 200)\n)\n\n(assert (! (ArrayComputedIndexTest.inv2 3) :named _xkassert7))\n\n; --- Invariant 3: ---\n\n(define-fun ArrayComputedIndexTest.inv3 ((this Ref)) Bool\n  (= (select (ArrayComputedIndexTest!data this) (+ 10 2)) (+ (select (ArrayComputedIndexTest!data this) 10) (select (ArrayComputedIndexTest!data this) 11)))\n)\n\n(assert (! (ArrayComputedIndexTest.inv3 3) :named _xkassert8))\n\n\n\n; -----------------------------------------\n;   Invariant for class ArrayDefaultTest:\n; -----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-5-ArrayDefaultTest ArrayDefaultTest)\n\n; --- Invariant 1: ---\n\n(define-fun ArrayDefaultTest.inv1 ((this Ref)) Bool\n  (= (select (ArrayDefaultTest!arr this) 0) 42)\n)\n\n(assert (! (ArrayDefaultTest.inv1 5) :named _xkassert9))\n\n\n\n; --------------------------------------------\n;   Invariant for class ArrayArithmeticTest:\n; --------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-4-ArrayArithmeticTest ArrayArithmeticTest)\n\n; --- Invariant 1: ---\n\n(define-fun ArrayArithmeticTest.inv1 ((this Ref)) Bool\n  (= (select (ArrayArithmeticTest!scores this) 0) 85)\n)\n\n(assert (! (ArrayArithmeticTest.inv1 4) :named _xkassert10))\n\n; --- Invariant 2: ---\n\n(define-fun ArrayArithmeticTest.inv2 ((this Ref)) Bool\n  (= (select (ArrayArithmeticTest!scores this) 1) 90)\n)\n\n(assert (! (ArrayArithmeticTest.inv2 4) :named _xkassert11))\n\n; --- Invariant 3: ---\n\n(define-fun ArrayArithmeticTest.inv3 ((this Ref)) Bool\n  (= (select (ArrayArithmeticTest!scores this) 2) 78)\n)\n\n(assert (! (ArrayArithmeticTest.inv3 4) :named _xkassert12))\n\n; --- Invariant 4: ---\n\n(define-fun ArrayArithmeticTest.inv4 ((this Ref)) Bool\n  (= (select (ArrayArithmeticTest!scores this) 3) (+ (+ (select (ArrayArithmeticTest!scores this) 0) (select (ArrayArithmeticTest!scores this) 1)) (select (ArrayArithmeticTest!scores this) 2)))\n)\n\n(assert (! (ArrayArithmeticTest.inv4 4) :named _xkassert13))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        2 (lift-ArrayStringKeyTest const-2-ArrayStringKeyTest))\n        1 (lift-ArrayBoolValueTest const-1-ArrayBoolValueTest))\n        3 (lift-ArrayComputedIndexTest const-3-ArrayComputedIndexTest))\n        5 (lift-ArrayDefaultTest const-5-ArrayDefaultTest))\n        4 (lift-ArrayArithmeticTest const-4-ArrayArithmeticTest))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-ArrayBoolValueTest () ArrayBoolValueTest\n  (mk-ArrayBoolValueTest (store ((as const (Array Int Bool)) true) 1 false)))\n(define-fun const-3-ArrayComputedIndexTest () ArrayComputedIndexTest\n  (let ((a!1 (store (store (store ((as const (Array Int Int)) 5) 13 14) 11 200)\n                  12\n                  300)))\n  (mk-ArrayComputedIndexTest (store a!1 10 100))))\n(define-fun const-5-ArrayDefaultTest () ArrayDefaultTest\n  (mk-ArrayDefaultTest (store (store ((as const (Array Int Int)) 8) 0 42) 13 15)))\n(define-fun const-4-ArrayArithmeticTest () ArrayArithmeticTest\n  (let ((a!1 (store (store (store ((as const (Array Int Int)) 9) 1 90) 3 253)\n                  0\n                  85)))\n  (mk-ArrayArithmeticTest (store (store a!1 2 78) 4 6))))\n(define-fun const-2-ArrayStringKeyTest () ArrayStringKeyTest\n  (mk-ArrayStringKeyTest\n  (store (store ((as const (Array String Int)) 2) \"sum\" 3) \"one\" 1)))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select (dict (sel-ArrayStringKeyTest (select heap 2))) \"sum\"))\n      (a!2 (select (dict (sel-ArrayStringKeyTest (select heap 2))) \"one\"))\n      (a!3 (select (dict (sel-ArrayStringKeyTest (select heap 2))) \"two\")))\n  (= a!1 (+ a!2 a!3))))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (select (data (sel-ArrayComputedIndexTest (select heap 3))) (+ 10 1))))\n  (= a!1 200)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (select (flags (sel-ArrayBoolValueTest (select heap 1))) 2))\n      (a!2 (select (flags (sel-ArrayBoolValueTest (select heap 1))) 0)))\n  (= a!1 a!2)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (select (arr (sel-ArrayDefaultTest (select heap 5))) 0)))\n  (= a!1 42)))\n(define-fun _xkassert13 () Bool\n  (let ((a!1 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 3))\n      (a!2 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 0))\n      (a!3 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 1))\n      (a!4 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 2)))\n  (= a!1 (+ a!2 a!3 a!4))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select (dict (sel-ArrayStringKeyTest (select heap 2))) \"one\")))\n  (= a!1 1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (select (data (sel-ArrayComputedIndexTest (select heap 3))) (+ 10 2)))\n      (a!2 (select (data (sel-ArrayComputedIndexTest (select heap 3))) 10))\n      (a!3 (select (data (sel-ArrayComputedIndexTest (select heap 3))) 11)))\n  (= a!1 (+ a!2 a!3))))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 0)))\n  (= a!1 85)))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 2)))\n  (= a!1 78)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (select (flags (sel-ArrayBoolValueTest (select heap 1))) 0)))\n  (= a!1 true)))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (select (scores (sel-ArrayArithmeticTest (select heap 4))) 1)))\n  (= a!1 90)))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (select (data (sel-ArrayComputedIndexTest (select heap 3))) 10)))\n  (= a!1 100)))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select (dict (sel-ArrayStringKeyTest (select heap 2))) \"two\")))\n  (= a!1 2)))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (select (flags (sel-ArrayBoolValueTest (select heap 1))) 1)))\n  (= a!1 false)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (mk-ArrayStringKeyTest\n             (store (store ((as const (Array String Int)) 2) \"sum\" 3) \"one\" 1)))\n      (a!2 (lift-ArrayBoolValueTest\n             (mk-ArrayBoolValueTest\n               (store ((as const (Array Int Bool)) true) 1 false))))\n      (a!3 (store (store (store ((as const (Array Int Int)) 5) 13 14) 11 200)\n                  12\n                  300))\n      (a!5 (mk-ArrayDefaultTest\n             (store (store ((as const (Array Int Int)) 8) 0 42) 13 15)))\n      (a!6 (store (store (store ((as const (Array Int Int)) 9) 1 90) 3 253)\n                  0\n                  85)))\n(let ((a!4 (store (store (store ((as const (Array Int Any)) null)\n                                2\n                                (lift-ArrayStringKeyTest a!1))\n                         1\n                         a!2)\n                  3\n                  (lift-ArrayComputedIndexTest\n                    (mk-ArrayComputedIndexTest (store a!3 10 100)))))\n      (a!7 (lift-ArrayArithmeticTest\n             (mk-ArrayArithmeticTest (store (store a!6 2 78) 4 6)))))\n  (store (store a!4 5 (lift-ArrayDefaultTest a!5)) 4 a!7))))\n(define-fun k!15 ((x!0 Int)) Int\n  (ite (= x!0 0) 42\n  (ite (= x!0 13) 15\n    8)))\n(define-fun k!13 ((x!0 Int)) Int\n  (ite (= x!0 13) 14\n  (ite (= x!0 11) 200\n  (ite (= x!0 12) 300\n  (ite (= x!0 10) 100\n    5)))))\n(define-fun k!14 ((x!0 Int)) Int\n  (ite (= x!0 1) 90\n  (ite (= x!0 3) 253\n  (ite (= x!0 0) 85\n  (ite (= x!0 2) 78\n  (ite (= x!0 4) 6\n    9))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayStringKeyTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "dict",
+            "ty": {
+              "type": "ArrayType",
+              "keyType": {"type": "StringType"},
+              "valueType": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "dict",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "one",
+                    "type": "StringLiteral"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "dict",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "two",
+                    "type": "StringLiteral"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 2,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "dict",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "sum",
+                    "type": "StringLiteral"
+                  }
+                }]
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "dict",
+                    "type": "IdentExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": "one",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                },
+                "exp2": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "dict",
+                    "type": "IdentExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "string": "two",
+                      "type": "StringLiteral"
+                    }
+                  }]
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayBoolValueTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "flags",
+            "ty": {
+              "type": "ArrayType",
+              "keyType": {"type": "IntType"},
+              "valueType": {"type": "BoolType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "flags",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "flags",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "b": false,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "flags",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "flags",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayComputedIndexTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "data",
+            "ty": {
+              "type": "ArrayType",
+              "keyType": {"type": "IntType"},
+              "valueType": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "data",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 10,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "data",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "i": 10,
+                      "type": "LiteralInteger"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 200,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "data",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "i": 10,
+                      "type": "LiteralInteger"
+                    },
+                    "exp2": {
+                      "i": 2,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                }]
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "data",
+                    "type": "IdentExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 10,
+                      "type": "LiteralInteger"
+                    }
+                  }]
+                },
+                "exp2": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "data",
+                    "type": "IdentExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 11,
+                      "type": "LiteralInteger"
+                    }
+                  }]
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayDefaultTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "arr",
+            "ty": {
+              "type": "ArrayType",
+              "keyType": {"type": "IntType"},
+              "valueType": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "arr",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 42,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayArithmeticTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "scores",
+            "ty": {
+              "type": "ArrayType",
+              "keyType": {"type": "IntType"},
+              "valueType": {"type": "IntType"}
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "scores",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 85,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "scores",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 1,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 90,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "scores",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 2,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 78,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "scores",
+                  "type": "IdentExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "Plus",
+                  "exp1": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "scores",
+                      "type": "IdentExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "i": 0,
+                        "type": "LiteralInteger"
+                      }
+                    }]
+                  },
+                  "exp2": {
+                    "type": "FunApplExp",
+                    "exp1": {
+                      "ident": "scores",
+                      "type": "IdentExp"
+                    },
+                    "args": [{
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "i": 1,
+                        "type": "LiteralInteger"
+                      }
+                    }]
+                  }
+                },
+                "exp2": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "scores",
+                    "type": "IdentExp"
+                  },
+                  "args": [{
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 2,
+                      "type": "LiteralInteger"
+                    }
+                  }]
+                }
+              }
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayStringKeyTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "dict",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Array[String, Int]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "dict",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "one"
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "dict",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "two"
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 2
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "dict",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "sum"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "element": "dict",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "one"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "element": "dict",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "two"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayBoolValueTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "flags",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Array[Int, Bool]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "flags",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "flags",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "false"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "flags",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    }
+                  ]
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "flags",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayComputedIndexTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "data",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Array[Int, Int]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "data",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 10
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "data",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 10
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 1
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 200
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "data",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 10
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 2
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "element": "data",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 10
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "element": "data",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 11
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayDefaultTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "arr",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Array[Int, Int]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "arr",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 42
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "ArrayArithmeticTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "scores",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Array[Int, Int]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "scores",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 85
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "scores",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 90
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "scores",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 78
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "element": "scores",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 3
+                    }
+                  ]
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "type": "Expression",
+                          "operand": [
+                            {
+                              "element": "scores",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralInteger",
+                              "integer": 0
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Expression",
+                          "operand": [
+                            {
+                              "element": "scores",
+                              "type": "ElementValue"
+                            },
+                            {
+                              "type": "LiteralInteger",
+                              "integer": 1
+                            }
+                          ]
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "Expression",
+                      "operand": [
+                        {
+                          "element": "scores",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 2
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "packages": []
+  }
+}

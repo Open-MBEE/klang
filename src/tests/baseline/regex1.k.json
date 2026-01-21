@@ -1,0 +1,386 @@
+{
+  "name": "regex1.k",
+  "outcome": "UNSAT",
+  "typeChecks": true,
+  "model": "\nclass RegexTest1 {\n  digit:String\n\n  req digit = \"5\"\n\n  req digit.matches(\"[0-9]\")\n  number:String\n\n  req number = \"123\"\n\n  req number.matches(\"[0-9]+\")\n  word:String\n\n  req word = \"hello\"\n\n  req word.matches(\"[a-z]+\")\n}\n\nmain:RegexTest1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((RegexTest1 (mk-RegexTest1 (digit String)(number String)(word String)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-RegexTest1 (sel-RegexTest1 RegexTest1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-RegexTest1 ((this Ref)) Bool\n  (is-lift-RegexTest1 (deref this))\n)\n\n(define-fun deref-RegexTest1 ((this Ref)) RegexTest1\n  (sel-RegexTest1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-RegexTest1 ((this Ref)) Bool\n  (deref-is-RegexTest1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------\n;   Getters for class RegexTest1:\n; ---------------------------------\n\n; --- getters for RegexTest1.digit: ---\n\n(define-fun RegexTest1!digit ((this Ref)) String\n  (digit (deref-RegexTest1 this))\n)\n\n; --- getters for RegexTest1.number: ---\n\n(define-fun RegexTest1!number ((this Ref)) String\n  (number (deref-RegexTest1 this))\n)\n\n; --- getters for RegexTest1.word: ---\n\n(define-fun RegexTest1!word ((this Ref)) String\n  (word (deref-RegexTest1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-RegexTest1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class RegexTest1:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-RegexTest1 RegexTest1)\n\n; --- Invariant 1: ---\n\n(define-fun RegexTest1.inv1 ((this Ref)) Bool\n  (= (RegexTest1!digit this) \"5\")\n)\n\n(assert (! (RegexTest1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun RegexTest1.inv2 ((this Ref)) Bool\n  (str.in_re (RegexTest1!digit this) (str.to_re \"[0-9]\"))\n)\n\n(assert (! (RegexTest1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun RegexTest1.inv3 ((this Ref)) Bool\n  (= (RegexTest1!number this) \"123\")\n)\n\n(assert (! (RegexTest1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun RegexTest1.inv4 ((this Ref)) Bool\n  (str.in_re (RegexTest1!number this) (str.to_re \"[0-9]+\"))\n)\n\n(assert (! (RegexTest1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun RegexTest1.inv5 ((this Ref)) Bool\n  (= (RegexTest1!word this) \"hello\")\n)\n\n(assert (! (RegexTest1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun RegexTest1.inv6 ((this Ref)) Bool\n  (str.in_re (RegexTest1!word this) (str.to_re \"[a-z]+\"))\n)\n\n(assert (! (RegexTest1.inv6 1) :named _xkassert6))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-RegexTest1 const-1-RegexTest1))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert2 () Bool\n  (str.in_re (digit (sel-RegexTest1 (select heap 1))) (str.to_re \"[0-9]\")))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-RegexTest1 a!1)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert5 () Bool\n  (= (word (sel-RegexTest1 (select heap 1))) \"hello\"))\n(define-fun _xkassert3 () Bool\n  (= (number (sel-RegexTest1 (select heap 1))) \"123\"))\n(define-fun _xkassert4 () Bool\n  (str.in_re (number (sel-RegexTest1 (select heap 1))) (str.to_re \"[0-9]+\")))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              1\n              (lift-RegexTest1 (mk-RegexTest1 \"5\" \"123\" \"hello\")))\n       0\n       (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1))))\n(define-fun _xkassert1 () Bool\n  (= (digit (sel-RegexTest1 (select heap 1))) \"5\"))\n(define-fun _xkassert6 () Bool\n  (str.in_re (word (sel-RegexTest1 (select heap 1))) (str.to_re \"[a-z]+\")))\n(define-fun const-1-RegexTest1 () RegexTest1\n  (mk-RegexTest1 \"5\" \"123\" \"hello\"))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexTest1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "digit",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "digit",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "5",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "digit",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "[0-9]",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "number",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "number",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "123",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "number",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "[0-9]+",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "word",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "word",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "hello",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "FunApplExp",
+              "exp1": {
+                "ident": "matches",
+                "exp": {
+                  "ident": "word",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "args": [{
+                "type": "PositionalArgument",
+                "exp": {
+                  "string": "[a-z]+",
+                  "type": "StringLiteral"
+                }
+              }]
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["RegexTest1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "RegexTest1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "digit",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "digit",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "5"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "digit",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "[0-9]"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "number",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "number",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "123"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "number",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "[0-9]+"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "word",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "word",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "hello"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "word",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "matches"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "[a-z]+"
+                }
+              ]
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "RegexTest1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

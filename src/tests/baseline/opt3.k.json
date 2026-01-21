@@ -1,0 +1,348 @@
+{
+  "name": "opt3.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptTest3 {\n  energy:Int\n  speed:Int\n\n  req energy >= 0\n\n  req energy <= 100\n\n  req speed >= 0\n\n  req speed <= 100\n\n  req energy + speed <= 120\n  minimize energy weight 1\n  maximize speed weight 2\n}\n\nmain:OptTest3\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((OptTest3 (mk-OptTest3 (energy Int)(speed Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptTest3 (sel-OptTest3 OptTest3))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptTest3 ((this Ref)) Bool\n  (is-lift-OptTest3 (deref this))\n)\n\n(define-fun deref-OptTest3 ((this Ref)) OptTest3\n  (sel-OptTest3 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptTest3 ((this Ref)) Bool\n  (deref-is-OptTest3 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------\n;   Getters for class OptTest3:\n; -------------------------------\n\n; --- getters for OptTest3.energy: ---\n\n(define-fun OptTest3!energy ((this Ref)) Int\n  (energy (deref-OptTest3 this))\n)\n\n; --- getters for OptTest3.speed: ---\n\n(define-fun OptTest3!speed ((this Ref)) Int\n  (speed (deref-OptTest3 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptTest3 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ---------------------------------\n;   Invariant for class OptTest3:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptTest3 OptTest3)\n\n; --- Invariant 1: ---\n\n(define-fun OptTest3.inv1 ((this Ref)) Bool\n  (>= (OptTest3!energy this) 0)\n)\n\n(assert (! (OptTest3.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun OptTest3.inv2 ((this Ref)) Bool\n  (<= (OptTest3!energy this) 100)\n)\n\n(assert (! (OptTest3.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun OptTest3.inv3 ((this Ref)) Bool\n  (>= (OptTest3!speed this) 0)\n)\n\n(assert (! (OptTest3.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun OptTest3.inv4 ((this Ref)) Bool\n  (<= (OptTest3!speed this) 100)\n)\n\n(assert (! (OptTest3.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun OptTest3.inv5 ((this Ref)) Bool\n  (<= (+ (OptTest3!energy this) (OptTest3!speed this)) 120)\n)\n\n(assert (! (OptTest3.inv5 1) :named _xkassert5))\n\n; --- Optimization Objectives (informational): ---\n\n; (minimize (OptTest3!energy this) :weight 1)\n; (maximize (OptTest3!speed this) :weight 2)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptTest3 const-1-OptTest3))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-OptTest3 () OptTest3\n  (mk-OptTest3 0 43))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (<= (energy (sel-OptTest3 (select heap 1))) 100))\n(define-fun _xkassert3 () Bool\n  (>= (speed (sel-OptTest3 (select heap 1))) 0))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (+ (energy (sel-OptTest3 (select heap 1)))\n              (speed (sel-OptTest3 (select heap 1))))))\n  (<= a!1 120)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptTest3 a!1)))\n(define-fun _xkassert1 () Bool\n  (>= (energy (sel-OptTest3 (select heap 1))) 0))\n(define-fun _xkassert4 () Bool\n  (<= (speed (sel-OptTest3 (select heap 1))) 100))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-OptTest3 (mk-OptTest3 0 43))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest3",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "energy",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "speed",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "energy",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "energy",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "speed",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "speed",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "energy",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "speed",
+                  "type": "IdentExp"
+                }
+              },
+              "exp2": {
+                "i": 120,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "ident": "energy",
+              "type": "IdentExp"
+            },
+            "weight": 1,
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "speed",
+              "type": "IdentExp"
+            },
+            "weight": 2,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptTest3"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest3",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "energy",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "speed",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "energy",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "energy",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "speed",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "speed",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "energy",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "speed",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 120
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "element": "energy",
+              "type": "ElementValue"
+            },
+            "weight": 1,
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "speed",
+              "type": "ElementValue"
+            },
+            "weight": 2,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptTest3"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

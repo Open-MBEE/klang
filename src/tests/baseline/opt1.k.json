@@ -1,0 +1,363 @@
+{
+  "name": "opt1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptTest1 {\n  cost:Int\n  performance:Int\n\n  req cost >= 0\n\n  req cost <= 1000\n\n  req performance >= 0\n\n  req performance <= 100\n\n  req performance <= cost / 10\n\n  req performance >= 50\n  minimize cost\n}\n\nmain:OptTest1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((OptTest1 (mk-OptTest1 (cost Int)(performance Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptTest1 (sel-OptTest1 OptTest1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptTest1 ((this Ref)) Bool\n  (is-lift-OptTest1 (deref this))\n)\n\n(define-fun deref-OptTest1 ((this Ref)) OptTest1\n  (sel-OptTest1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptTest1 ((this Ref)) Bool\n  (deref-is-OptTest1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -------------------------------\n;   Getters for class OptTest1:\n; -------------------------------\n\n; --- getters for OptTest1.cost: ---\n\n(define-fun OptTest1!cost ((this Ref)) Int\n  (cost (deref-OptTest1 this))\n)\n\n; --- getters for OptTest1.performance: ---\n\n(define-fun OptTest1!performance ((this Ref)) Int\n  (performance (deref-OptTest1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptTest1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ---------------------------------\n;   Invariant for class OptTest1:\n; ---------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptTest1 OptTest1)\n\n; --- Invariant 1: ---\n\n(define-fun OptTest1.inv1 ((this Ref)) Bool\n  (>= (OptTest1!cost this) 0)\n)\n\n(assert (! (OptTest1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun OptTest1.inv2 ((this Ref)) Bool\n  (<= (OptTest1!cost this) 1000)\n)\n\n(assert (! (OptTest1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun OptTest1.inv3 ((this Ref)) Bool\n  (>= (OptTest1!performance this) 0)\n)\n\n(assert (! (OptTest1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun OptTest1.inv4 ((this Ref)) Bool\n  (<= (OptTest1!performance this) 100)\n)\n\n(assert (! (OptTest1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun OptTest1.inv5 ((this Ref)) Bool\n  (<= (OptTest1!performance this) (/ (OptTest1!cost this) 10))\n)\n\n(assert (! (OptTest1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun OptTest1.inv6 ((this Ref)) Bool\n  (>= (OptTest1!performance this) 50)\n)\n\n(assert (! (OptTest1.inv6 1) :named _xkassert6))\n\n; --- Optimization Objectives (informational): ---\n\n; (minimize (OptTest1!cost this))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptTest1 const-1-OptTest1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-OptTest1 () OptTest1\n  (mk-OptTest1 500 50))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (<= (cost (sel-OptTest1 (select heap 1))) 1000))\n(define-fun _xkassert3 () Bool\n  (>= (performance (sel-OptTest1 (select heap 1))) 0))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (to_real (performance (sel-OptTest1 (select heap 1)))))\n      (a!2 (to_real (cost (sel-OptTest1 (select heap 1))))))\n  (<= a!1 (/ a!2 (to_real 10)))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptTest1 a!1)))\n(define-fun _xkassert1 () Bool\n  (>= (cost (sel-OptTest1 (select heap 1))) 0))\n(define-fun _xkassert4 () Bool\n  (<= (performance (sel-OptTest1 (select heap 1))) 100))\n(define-fun _xkassert6 () Bool\n  (>= (performance (sel-OptTest1 (select heap 1))) 50))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-OptTest1 (mk-OptTest1 500 50))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "cost",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "performance",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "cost",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "cost",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1000,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "performance",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "performance",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 100,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "performance",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Divide",
+                "exp1": {
+                  "ident": "cost",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 10,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "performance",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 50,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "ident": "cost",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptTest1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptTest1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "cost",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "performance",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "cost",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "cost",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1000
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "performance",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "performance",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "performance",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Divide"
+                    },
+                    {
+                      "element": "cost",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 10
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "performance",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 50
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "element": "cost",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptTest1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

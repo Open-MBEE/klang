@@ -1,0 +1,773 @@
+{
+  "name": "stringedge1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringEdgeCases1 {\n  empty:String\n\n  req empty = \"\"\n  emptyLen:Int\n\n  req emptyLen = empty.length\n\n  req emptyLen = 0\n  single:String\n\n  req single = \"X\"\n  singleLen:Int\n\n  req singleLen = single.length\n\n  req singleLen = 1\n  singleChar:String\n\n  req singleChar = single.charAt(0)\n\n  req singleChar = \"X\"\n  containsEmpty:Bool\n\n  req containsEmpty = single.contains(\"\")\n\n  req containsEmpty = true\n  startsWithEmpty:Bool\n\n  req startsWithEmpty = single.startsWith(\"\")\n\n  req startsWithEmpty = true\n}\n\nmain:StringEdgeCases1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringEdgeCases1 (mk-StringEdgeCases1 (empty String)(emptyLen Int)(single String)(singleLen Int)(singleChar String)(containsEmpty Bool)(startsWithEmpty Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringEdgeCases1 (sel-StringEdgeCases1 StringEdgeCases1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringEdgeCases1 ((this Ref)) Bool\n  (is-lift-StringEdgeCases1 (deref this))\n)\n\n(define-fun deref-StringEdgeCases1 ((this Ref)) StringEdgeCases1\n  (sel-StringEdgeCases1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringEdgeCases1 ((this Ref)) Bool\n  (deref-is-StringEdgeCases1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------------\n;   Getters for class StringEdgeCases1:\n; ---------------------------------------\n\n; --- getters for StringEdgeCases1.empty: ---\n\n(define-fun StringEdgeCases1!empty ((this Ref)) String\n  (empty (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.emptyLen: ---\n\n(define-fun StringEdgeCases1!emptyLen ((this Ref)) Int\n  (emptyLen (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.single: ---\n\n(define-fun StringEdgeCases1!single ((this Ref)) String\n  (single (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.singleLen: ---\n\n(define-fun StringEdgeCases1!singleLen ((this Ref)) Int\n  (singleLen (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.singleChar: ---\n\n(define-fun StringEdgeCases1!singleChar ((this Ref)) String\n  (singleChar (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.containsEmpty: ---\n\n(define-fun StringEdgeCases1!containsEmpty ((this Ref)) Bool\n  (containsEmpty (deref-StringEdgeCases1 this))\n)\n\n; --- getters for StringEdgeCases1.startsWithEmpty: ---\n\n(define-fun StringEdgeCases1!startsWithEmpty ((this Ref)) Bool\n  (startsWithEmpty (deref-StringEdgeCases1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringEdgeCases1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------------\n;   Invariant for class StringEdgeCases1:\n; -----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringEdgeCases1 StringEdgeCases1)\n\n; --- Invariant 1: ---\n\n(define-fun StringEdgeCases1.inv1 ((this Ref)) Bool\n  (= (StringEdgeCases1!empty this) \"\")\n)\n\n(assert (! (StringEdgeCases1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringEdgeCases1.inv2 ((this Ref)) Bool\n  (= (StringEdgeCases1!emptyLen this) (str.len (StringEdgeCases1!empty this)))\n)\n\n(assert (! (StringEdgeCases1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringEdgeCases1.inv3 ((this Ref)) Bool\n  (= (StringEdgeCases1!emptyLen this) 0)\n)\n\n(assert (! (StringEdgeCases1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringEdgeCases1.inv4 ((this Ref)) Bool\n  (= (StringEdgeCases1!single this) \"X\")\n)\n\n(assert (! (StringEdgeCases1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringEdgeCases1.inv5 ((this Ref)) Bool\n  (= (StringEdgeCases1!singleLen this) (str.len (StringEdgeCases1!single this)))\n)\n\n(assert (! (StringEdgeCases1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun StringEdgeCases1.inv6 ((this Ref)) Bool\n  (= (StringEdgeCases1!singleLen this) 1)\n)\n\n(assert (! (StringEdgeCases1.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun StringEdgeCases1.inv7 ((this Ref)) Bool\n  (= (StringEdgeCases1!singleChar this) (str.at (StringEdgeCases1!single this) 0))\n)\n\n(assert (! (StringEdgeCases1.inv7 1) :named _xkassert7))\n\n; --- Invariant 8: ---\n\n(define-fun StringEdgeCases1.inv8 ((this Ref)) Bool\n  (= (StringEdgeCases1!singleChar this) \"X\")\n)\n\n(assert (! (StringEdgeCases1.inv8 1) :named _xkassert8))\n\n; --- Invariant 9: ---\n\n(define-fun StringEdgeCases1.inv9 ((this Ref)) Bool\n  (= (StringEdgeCases1!containsEmpty this) (str.contains (StringEdgeCases1!single this) \"\"))\n)\n\n(assert (! (StringEdgeCases1.inv9 1) :named _xkassert9))\n\n; --- Invariant 10: ---\n\n(define-fun StringEdgeCases1.inv10 ((this Ref)) Bool\n  (= (StringEdgeCases1!containsEmpty this) true)\n)\n\n(assert (! (StringEdgeCases1.inv10 1) :named _xkassert10))\n\n; --- Invariant 11: ---\n\n(define-fun StringEdgeCases1.inv11 ((this Ref)) Bool\n  (= (StringEdgeCases1!startsWithEmpty this) (str.prefixof \"\" (StringEdgeCases1!single this)))\n)\n\n(assert (! (StringEdgeCases1.inv11 1) :named _xkassert11))\n\n; --- Invariant 12: ---\n\n(define-fun StringEdgeCases1.inv12 ((this Ref)) Bool\n  (= (StringEdgeCases1!startsWithEmpty this) true)\n)\n\n(assert (! (StringEdgeCases1.inv12 1) :named _xkassert12))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringEdgeCases1 const-1-StringEdgeCases1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringEdgeCases1 () StringEdgeCases1\n  (mk-StringEdgeCases1 \"\" 0 \"X\" 1 \"X\" true true))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.len (empty (sel-StringEdgeCases1 (select heap 1))))))\n  (= (emptyLen (sel-StringEdgeCases1 (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (str.len (single (sel-StringEdgeCases1 (select heap 1))))))\n  (= (singleLen (sel-StringEdgeCases1 (select heap 1))) a!1)))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (str.at (single (sel-StringEdgeCases1 (select heap 1))) 0)))\n  (= (singleChar (sel-StringEdgeCases1 (select heap 1))) a!1)))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (str.contains (single (sel-StringEdgeCases1 (select heap 1))) \"\")))\n  (= (containsEmpty (sel-StringEdgeCases1 (select heap 1))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringEdgeCases1 a!1)))\n(define-fun _xkassert8 () Bool\n  (= (singleChar (sel-StringEdgeCases1 (select heap 1))) \"X\"))\n(define-fun _xkassert10 () Bool\n  (= (containsEmpty (sel-StringEdgeCases1 (select heap 1))) true))\n(define-fun _xkassert3 () Bool\n  (= (emptyLen (sel-StringEdgeCases1 (select heap 1))) 0))\n(define-fun _xkassert12 () Bool\n  (= (startsWithEmpty (sel-StringEdgeCases1 (select heap 1))) true))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (str.prefixof \"\" (single (sel-StringEdgeCases1 (select heap 1))))))\n  (= (startsWithEmpty (sel-StringEdgeCases1 (select heap 1))) a!1)))\n(define-fun _xkassert6 () Bool\n  (= (singleLen (sel-StringEdgeCases1 (select heap 1))) 1))\n(define-fun _xkassert1 () Bool\n  (= (empty (sel-StringEdgeCases1 (select heap 1))) \"\"))\n(define-fun _xkassert4 () Bool\n  (= (single (sel-StringEdgeCases1 (select heap 1))) \"X\"))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringEdgeCases1 (mk-StringEdgeCases1 \"\" 0 \"X\" 1 \"X\" true true))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringEdgeCases1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "empty",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "empty",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "emptyLen",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "emptyLen",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "length",
+                "exp": {
+                  "ident": "empty",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "emptyLen",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "single",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "single",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "X",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "singleLen",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "singleLen",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "length",
+                "exp": {
+                  "ident": "single",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "singleLen",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "singleChar",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "singleChar",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "charAt",
+                  "exp": {
+                    "ident": "single",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "singleChar",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "X",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "containsEmpty",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "containsEmpty",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "contains",
+                  "exp": {
+                    "ident": "single",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "",
+                    "type": "StringLiteral"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "containsEmpty",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startsWithEmpty",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "startsWithEmpty",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "startsWith",
+                  "exp": {
+                    "ident": "single",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "string": "",
+                    "type": "StringLiteral"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "startsWithEmpty",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "b": true,
+                "type": "LiteralBoolean"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringEdgeCases1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringEdgeCases1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "empty",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "empty",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": ""
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "emptyLen",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "emptyLen",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "empty",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "length"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "emptyLen",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "single",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "single",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "X"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "singleLen",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "singleLen",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "single",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "length"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "singleLen",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "singleChar",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "singleChar",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "single",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "charAt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "singleChar",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "X"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "containsEmpty",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "containsEmpty",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "single",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "contains"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": ""
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "containsEmpty",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startsWithEmpty",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "startsWithEmpty",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "single",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "startsWith"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": ""
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "startsWithEmpty",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralBoolean",
+                  "boolean": "true"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringEdgeCases1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

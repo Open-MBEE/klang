@@ -1,0 +1,283 @@
+{
+  "name": "array_types.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Item {\n  value:Int\n}\n\nclass Container {\n  items:Seq[Item]\n  numbers:Seq[Int]\n\n  req numbers.size >= 1\n\n  req numbers.at(0) = 42\n}\n\nc:Container\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (c Ref)))))\n(declare-datatypes () ((Item (mk-Item (value Int)))))\n(declare-datatypes () ((Container (mk-Container (items (Seq Ref))(numbers (Seq Int))))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Item (sel-Item Item))\n  (lift-Container (sel-Container Container))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Item ((this Ref)) Bool\n  (is-lift-Item (deref this))\n)\n\n(define-fun deref-Item ((this Ref)) Item\n  (sel-Item (deref this))\n)\n\n(define-fun deref-is-Container ((this Ref)) Bool\n  (is-lift-Container (deref this))\n)\n\n(define-fun deref-Container ((this Ref)) Container\n  (sel-Container (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Item ((this Ref)) Bool\n  (deref-is-Item this)\n)\n\n(define-fun deref-isa-Container ((this Ref)) Bool\n  (deref-is-Container this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.c: ---\n\n(define-fun TopLevelDeclarations!c ((this Ref)) Ref\n  (c (deref-TopLevelDeclarations this))\n)\n\n; --------------------------------\n;   Getters for class Container:\n; --------------------------------\n\n; --- getters for Container.items: ---\n\n(define-fun Container!items ((this Ref)) (Seq Ref)\n  (items (deref-Container this))\n)\n\n; --- getters for Container.numbers: ---\n\n(define-fun Container!numbers ((this Ref)) (Seq Int)\n  (numbers (deref-Container this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Container (TopLevelDeclarations!c this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------\n;   Invariant for class Item:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Item Item)\n(declare-const const-2-Item Item)\n(declare-const const-3-Item Item)\n(declare-const const-4-Item Item)\n(declare-const const-5-Item Item)\n(declare-const const-6-Item Item)\n(declare-const const-7-Item Item)\n(declare-const const-8-Item Item)\n(declare-const const-9-Item Item)\n(declare-const const-10-Item Item)\n\n\n\n; ----------------------------------\n;   Invariant for class Container:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-11-Container Container)\n\n; --- Invariant 1: ---\n\n(define-fun Container.inv1 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 0) (or (= (seq.nth (Container!items this) 0) 1) (= (seq.nth (Container!items this) 0) 2) (= (seq.nth (Container!items this) 0) 3) (= (seq.nth (Container!items this) 0) 4) (= (seq.nth (Container!items this) 0) 5) (= (seq.nth (Container!items this) 0) 6) (= (seq.nth (Container!items this) 0) 7) (= (seq.nth (Container!items this) 0) 8) (= (seq.nth (Container!items this) 0) 9) (= (seq.nth (Container!items this) 0) 10)))\n)\n\n(assert (! (Container.inv1 11) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun Container.inv2 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 1) (or (= (seq.nth (Container!items this) 1) 1) (= (seq.nth (Container!items this) 1) 2) (= (seq.nth (Container!items this) 1) 3) (= (seq.nth (Container!items this) 1) 4) (= (seq.nth (Container!items this) 1) 5) (= (seq.nth (Container!items this) 1) 6) (= (seq.nth (Container!items this) 1) 7) (= (seq.nth (Container!items this) 1) 8) (= (seq.nth (Container!items this) 1) 9) (= (seq.nth (Container!items this) 1) 10)))\n)\n\n(assert (! (Container.inv2 11) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun Container.inv3 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 2) (or (= (seq.nth (Container!items this) 2) 1) (= (seq.nth (Container!items this) 2) 2) (= (seq.nth (Container!items this) 2) 3) (= (seq.nth (Container!items this) 2) 4) (= (seq.nth (Container!items this) 2) 5) (= (seq.nth (Container!items this) 2) 6) (= (seq.nth (Container!items this) 2) 7) (= (seq.nth (Container!items this) 2) 8) (= (seq.nth (Container!items this) 2) 9) (= (seq.nth (Container!items this) 2) 10)))\n)\n\n(assert (! (Container.inv3 11) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun Container.inv4 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 3) (or (= (seq.nth (Container!items this) 3) 1) (= (seq.nth (Container!items this) 3) 2) (= (seq.nth (Container!items this) 3) 3) (= (seq.nth (Container!items this) 3) 4) (= (seq.nth (Container!items this) 3) 5) (= (seq.nth (Container!items this) 3) 6) (= (seq.nth (Container!items this) 3) 7) (= (seq.nth (Container!items this) 3) 8) (= (seq.nth (Container!items this) 3) 9) (= (seq.nth (Container!items this) 3) 10)))\n)\n\n(assert (! (Container.inv4 11) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun Container.inv5 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 4) (or (= (seq.nth (Container!items this) 4) 1) (= (seq.nth (Container!items this) 4) 2) (= (seq.nth (Container!items this) 4) 3) (= (seq.nth (Container!items this) 4) 4) (= (seq.nth (Container!items this) 4) 5) (= (seq.nth (Container!items this) 4) 6) (= (seq.nth (Container!items this) 4) 7) (= (seq.nth (Container!items this) 4) 8) (= (seq.nth (Container!items this) 4) 9) (= (seq.nth (Container!items this) 4) 10)))\n)\n\n(assert (! (Container.inv5 11) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun Container.inv6 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 5) (or (= (seq.nth (Container!items this) 5) 1) (= (seq.nth (Container!items this) 5) 2) (= (seq.nth (Container!items this) 5) 3) (= (seq.nth (Container!items this) 5) 4) (= (seq.nth (Container!items this) 5) 5) (= (seq.nth (Container!items this) 5) 6) (= (seq.nth (Container!items this) 5) 7) (= (seq.nth (Container!items this) 5) 8) (= (seq.nth (Container!items this) 5) 9) (= (seq.nth (Container!items this) 5) 10)))\n)\n\n(assert (! (Container.inv6 11) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun Container.inv7 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 6) (or (= (seq.nth (Container!items this) 6) 1) (= (seq.nth (Container!items this) 6) 2) (= (seq.nth (Container!items this) 6) 3) (= (seq.nth (Container!items this) 6) 4) (= (seq.nth (Container!items this) 6) 5) (= (seq.nth (Container!items this) 6) 6) (= (seq.nth (Container!items this) 6) 7) (= (seq.nth (Container!items this) 6) 8) (= (seq.nth (Container!items this) 6) 9) (= (seq.nth (Container!items this) 6) 10)))\n)\n\n(assert (! (Container.inv7 11) :named _xkassert7))\n\n; --- Invariant 8: ---\n\n(define-fun Container.inv8 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 7) (or (= (seq.nth (Container!items this) 7) 1) (= (seq.nth (Container!items this) 7) 2) (= (seq.nth (Container!items this) 7) 3) (= (seq.nth (Container!items this) 7) 4) (= (seq.nth (Container!items this) 7) 5) (= (seq.nth (Container!items this) 7) 6) (= (seq.nth (Container!items this) 7) 7) (= (seq.nth (Container!items this) 7) 8) (= (seq.nth (Container!items this) 7) 9) (= (seq.nth (Container!items this) 7) 10)))\n)\n\n(assert (! (Container.inv8 11) :named _xkassert8))\n\n; --- Invariant 9: ---\n\n(define-fun Container.inv9 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 8) (or (= (seq.nth (Container!items this) 8) 1) (= (seq.nth (Container!items this) 8) 2) (= (seq.nth (Container!items this) 8) 3) (= (seq.nth (Container!items this) 8) 4) (= (seq.nth (Container!items this) 8) 5) (= (seq.nth (Container!items this) 8) 6) (= (seq.nth (Container!items this) 8) 7) (= (seq.nth (Container!items this) 8) 8) (= (seq.nth (Container!items this) 8) 9) (= (seq.nth (Container!items this) 8) 10)))\n)\n\n(assert (! (Container.inv9 11) :named _xkassert9))\n\n; --- Invariant 10: ---\n\n(define-fun Container.inv10 ((this Ref)) Bool\n  (=> (> (seq.len (Container!items this)) 9) (or (= (seq.nth (Container!items this) 9) 1) (= (seq.nth (Container!items this) 9) 2) (= (seq.nth (Container!items this) 9) 3) (= (seq.nth (Container!items this) 9) 4) (= (seq.nth (Container!items this) 9) 5) (= (seq.nth (Container!items this) 9) 6) (= (seq.nth (Container!items this) 9) 7) (= (seq.nth (Container!items this) 9) 8) (= (seq.nth (Container!items this) 9) 9) (= (seq.nth (Container!items this) 9) 10)))\n)\n\n(assert (! (Container.inv10 11) :named _xkassert10))\n\n; --- Invariant 11: ---\n\n(define-fun Container.inv11 ((this Ref)) Bool\n  (>= (seq.len (Container!numbers this)) 1)\n)\n\n(assert (! (Container.inv11 11) :named _xkassert11))\n\n; --- Invariant 12: ---\n\n(define-fun Container.inv12 ((this Ref)) Bool\n  (= (seq.nth (Container!numbers this) 0) 42)\n)\n\n(assert (! (Container.inv12 11) :named _xkassert12))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store(store(store(store(store(store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Item const-1-Item))\n        2 (lift-Item const-2-Item))\n        3 (lift-Item const-3-Item))\n        4 (lift-Item const-4-Item))\n        5 (lift-Item const-5-Item))\n        6 (lift-Item const-6-Item))\n        7 (lift-Item const-7-Item))\n        8 (lift-Item const-8-Item))\n        9 (lift-Item const-9-Item))\n        10 (lift-Item const-10-Item))\n        11 (lift-Container const-11-Container))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-5-Item () Item\n  (mk-Item 17))\n(define-fun const-1-Item () Item\n  (mk-Item 21))\n(define-fun const-7-Item () Item\n  (mk-Item 15))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 11))\n(define-fun const-3-Item () Item\n  (mk-Item 19))\n(define-fun const-10-Item () Item\n  (mk-Item 12))\n(define-fun const-6-Item () Item\n  (mk-Item 16))\n(define-fun const-11-Container () Container\n  (mk-Container (as seq.empty (Seq Int)) (seq.unit 42)))\n(define-fun const-4-Item () Item\n  (mk-Item 18))\n(define-fun const-9-Item () Item\n  (mk-Item 13))\n(define-fun const-8-Item () Item\n  (mk-Item 14))\n(define-fun const-2-Item () Item\n  (mk-Item 20))\n(define-fun _xkassert7 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 6)))\n  (=> (> a!1 6)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 1)))\n  (=> (> a!1 1)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert5 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 4)))\n  (=> (> a!1 4)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert9 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 8)))\n  (=> (> a!1 8)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-Container a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 7)))\n  (=> (> a!1 7)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 9)))\n  (=> (> a!1 9)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert12 () Bool\n  (let ((a!1 (seq.nth (numbers (sel-Container (select heap 11))) 0)))\n  (= a!1 42)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 2)))\n  (=> (> a!1 2)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert11 () Bool\n  (let ((a!1 (seq.len (numbers (sel-Container (select heap 11))))))\n  (>= a!1 1)))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 5)))\n  (=> (> a!1 5)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 0)))\n  (=> (> a!1 0)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (seq.len (items (sel-Container (select heap 11)))))\n      (a!2 (seq.nth (items (sel-Container (select heap 11))) 3)))\n  (=> (> a!1 3)\n      (or (= a!2 1)\n          (= a!2 2)\n          (= a!2 3)\n          (= a!2 4)\n          (= a!2 5)\n          (= a!2 6)\n          (= a!2 7)\n          (= a!2 8)\n          (= a!2 9)\n          (= a!2 10)))))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 11)))\n                  1\n                  (lift-Item (mk-Item 21)))))\n(let ((a!2 (store (store a!1 2 (lift-Item (mk-Item 20)))\n                  3\n                  (lift-Item (mk-Item 19)))))\n(let ((a!3 (store (store a!2 4 (lift-Item (mk-Item 18)))\n                  5\n                  (lift-Item (mk-Item 17)))))\n(let ((a!4 (store (store a!3 6 (lift-Item (mk-Item 16)))\n                  7\n                  (lift-Item (mk-Item 15)))))\n(let ((a!5 (store (store a!4 8 (lift-Item (mk-Item 14)))\n                  9\n                  (lift-Item (mk-Item 13)))))\n  (store (store a!5 10 (lift-Item (mk-Item 12)))\n         11\n         (lift-Container (mk-Container (as seq.empty (Seq Int)) (seq.unit 42))))))))))\n(define-fun k!heap_full!Container () Bool\n  true)\n(define-fun k!heap_full!Item () Bool\n  true)\n(define-fun seq.nth_u ((x!0 (Seq Int)) (x!1 Int)) Int\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 1)) 24\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 2)) 26\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 3)) 27\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 4)) 28\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 5)) 30\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 6)) 31\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 7)) 32\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 9)) 33\n  (ite (and (= x!0 (as seq.empty (Seq Int))) (= x!1 8)) 34\n  (ite (and (= x!0 (seq.unit 42)) (= x!1 0)) 36\n    22)))))))))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Item",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "value",
+          "ty": {"type": "IntType"}
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Container",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "items",
+            "ty": {
+              "args": [{
+                "args": [],
+                "ident": {
+                  "names": ["Item"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }],
+              "ident": {
+                "names": ["Seq"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numbers",
+            "ty": {
+              "args": [{"type": "IntType"}],
+              "ident": {
+                "names": ["Seq"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "size",
+                "exp": {
+                  "ident": "numbers",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "at",
+                  "exp": {
+                    "ident": "numbers",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              },
+              "exp2": {
+                "i": 42,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Container"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Item",
+        "typeparams": [],
+        "extending": [],
+        "members": [{
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "value",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Container",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "items",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Seq[Item]"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "numbers",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Seq[Int]"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "numbers",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "size"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "numbers",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "at"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 42
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Container"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

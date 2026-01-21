@@ -1,0 +1,764 @@
+{
+  "name": "stringops1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass StringOps1 {\n  text:String\n\n  req text = \"ABCDEF\"\n  len:Int\n\n  req len = text.length\n\n  req len = 6\n  sub1:String\n\n  req sub1 = text.substring(0,3)\n\n  req sub1 = \"ABC\"\n  sub2:String\n\n  req sub2 = text.substring(2,5)\n\n  req sub2 = \"CDE\"\n  ch0:String\n\n  req ch0 = text.charAt(0)\n\n  req ch0 = \"A\"\n  ch3:String\n\n  req ch3 = text.charAt(3)\n\n  req ch3 = \"D\"\n}\n\nmain:StringOps1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((StringOps1 (mk-StringOps1 (text String)(len Int)(sub1 String)(sub2 String)(ch0 String)(ch3 String)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-StringOps1 (sel-StringOps1 StringOps1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-StringOps1 ((this Ref)) Bool\n  (is-lift-StringOps1 (deref this))\n)\n\n(define-fun deref-StringOps1 ((this Ref)) StringOps1\n  (sel-StringOps1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-StringOps1 ((this Ref)) Bool\n  (deref-is-StringOps1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------\n;   Getters for class StringOps1:\n; ---------------------------------\n\n; --- getters for StringOps1.text: ---\n\n(define-fun StringOps1!text ((this Ref)) String\n  (text (deref-StringOps1 this))\n)\n\n; --- getters for StringOps1.len: ---\n\n(define-fun StringOps1!len ((this Ref)) Int\n  (len (deref-StringOps1 this))\n)\n\n; --- getters for StringOps1.sub1: ---\n\n(define-fun StringOps1!sub1 ((this Ref)) String\n  (sub1 (deref-StringOps1 this))\n)\n\n; --- getters for StringOps1.sub2: ---\n\n(define-fun StringOps1!sub2 ((this Ref)) String\n  (sub2 (deref-StringOps1 this))\n)\n\n; --- getters for StringOps1.ch0: ---\n\n(define-fun StringOps1!ch0 ((this Ref)) String\n  (ch0 (deref-StringOps1 this))\n)\n\n; --- getters for StringOps1.ch3: ---\n\n(define-fun StringOps1!ch3 ((this Ref)) String\n  (ch3 (deref-StringOps1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-StringOps1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class StringOps1:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-StringOps1 StringOps1)\n\n; --- Invariant 1: ---\n\n(define-fun StringOps1.inv1 ((this Ref)) Bool\n  (= (StringOps1!text this) \"ABCDEF\")\n)\n\n(assert (! (StringOps1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun StringOps1.inv2 ((this Ref)) Bool\n  (= (StringOps1!len this) (str.len (StringOps1!text this)))\n)\n\n(assert (! (StringOps1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun StringOps1.inv3 ((this Ref)) Bool\n  (= (StringOps1!len this) 6)\n)\n\n(assert (! (StringOps1.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun StringOps1.inv4 ((this Ref)) Bool\n  (= (StringOps1!sub1 this) (str.substr (StringOps1!text this) 0 (- 3 0)))\n)\n\n(assert (! (StringOps1.inv4 1) :named _xkassert4))\n\n; --- Invariant 5: ---\n\n(define-fun StringOps1.inv5 ((this Ref)) Bool\n  (= (StringOps1!sub1 this) \"ABC\")\n)\n\n(assert (! (StringOps1.inv5 1) :named _xkassert5))\n\n; --- Invariant 6: ---\n\n(define-fun StringOps1.inv6 ((this Ref)) Bool\n  (= (StringOps1!sub2 this) (str.substr (StringOps1!text this) 2 (- 5 2)))\n)\n\n(assert (! (StringOps1.inv6 1) :named _xkassert6))\n\n; --- Invariant 7: ---\n\n(define-fun StringOps1.inv7 ((this Ref)) Bool\n  (= (StringOps1!sub2 this) \"CDE\")\n)\n\n(assert (! (StringOps1.inv7 1) :named _xkassert7))\n\n; --- Invariant 8: ---\n\n(define-fun StringOps1.inv8 ((this Ref)) Bool\n  (= (StringOps1!ch0 this) (str.at (StringOps1!text this) 0))\n)\n\n(assert (! (StringOps1.inv8 1) :named _xkassert8))\n\n; --- Invariant 9: ---\n\n(define-fun StringOps1.inv9 ((this Ref)) Bool\n  (= (StringOps1!ch0 this) \"A\")\n)\n\n(assert (! (StringOps1.inv9 1) :named _xkassert9))\n\n; --- Invariant 10: ---\n\n(define-fun StringOps1.inv10 ((this Ref)) Bool\n  (= (StringOps1!ch3 this) (str.at (StringOps1!text this) 3))\n)\n\n(assert (! (StringOps1.inv10 1) :named _xkassert10))\n\n; --- Invariant 11: ---\n\n(define-fun StringOps1.inv11 ((this Ref)) Bool\n  (= (StringOps1!ch3 this) \"D\")\n)\n\n(assert (! (StringOps1.inv11 1) :named _xkassert11))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-StringOps1 const-1-StringOps1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-StringOps1 () StringOps1\n  (mk-StringOps1 \"ABCDEF\" 6 \"ABC\" \"CDE\" \"A\" \"D\"))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert7 () Bool\n  (= (sub2 (sel-StringOps1 (select heap 1))) \"CDE\"))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (str.len (text (sel-StringOps1 (select heap 1))))))\n  (= (len (sel-StringOps1 (select heap 1))) a!1)))\n(define-fun _xkassert5 () Bool\n  (= (sub1 (sel-StringOps1 (select heap 1))) \"ABC\"))\n(define-fun _xkassert9 () Bool\n  (= (ch0 (sel-StringOps1 (select heap 1))) \"A\"))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-StringOps1 a!1)))\n(define-fun _xkassert8 () Bool\n  (let ((a!1 (str.at (text (sel-StringOps1 (select heap 1))) 0)))\n  (= (ch0 (sel-StringOps1 (select heap 1))) a!1)))\n(define-fun _xkassert10 () Bool\n  (let ((a!1 (str.at (text (sel-StringOps1 (select heap 1))) 3)))\n  (= (ch3 (sel-StringOps1 (select heap 1))) a!1)))\n(define-fun _xkassert3 () Bool\n  (= (len (sel-StringOps1 (select heap 1))) 6))\n(define-fun _xkassert11 () Bool\n  (= (ch3 (sel-StringOps1 (select heap 1))) \"D\"))\n(define-fun _xkassert6 () Bool\n  (let ((a!1 (str.substr (text (sel-StringOps1 (select heap 1))) 2 (- 5 2))))\n  (= (sub2 (sel-StringOps1 (select heap 1))) a!1)))\n(define-fun _xkassert1 () Bool\n  (= (text (sel-StringOps1 (select heap 1))) \"ABCDEF\"))\n(define-fun _xkassert4 () Bool\n  (let ((a!1 (str.substr (text (sel-StringOps1 (select heap 1))) 0 (- 3 0))))\n  (= (sub1 (sel-StringOps1 (select heap 1))) a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-StringOps1 (mk-StringOps1 \"ABCDEF\" 6 \"ABC\" \"CDE\" \"A\" \"D\"))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringOps1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "text",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "ABCDEF",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "len",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "len",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "length",
+                "exp": {
+                  "ident": "text",
+                  "type": "IdentExp"
+                },
+                "type": "DotExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "len",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 6,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sub1",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sub1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "substring",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [
+                  {
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 0,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  {
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 3,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                ]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sub1",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "ABC",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sub2",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sub2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "substring",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [
+                  {
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 2,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  {
+                    "type": "PositionalArgument",
+                    "exp": {
+                      "i": 5,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                ]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sub2",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "CDE",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "ch0",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "ch0",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "charAt",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 0,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "ch0",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "A",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "ch3",
+            "ty": {"type": "StringType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "ch3",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "charAt",
+                  "exp": {
+                    "ident": "text",
+                    "type": "IdentExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 3,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "ch3",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "D",
+                "type": "StringLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["StringOps1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "StringOps1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "text",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "text",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "ABCDEF"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "len",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "len",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "getProperty"
+                    },
+                    {
+                      "element": "text",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "length"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "len",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 6
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sub1",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sub1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "substring"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 3
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sub1",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "ABC"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sub2",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sub2",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "substring"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 5
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sub2",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "CDE"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "ch0",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "ch0",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "charAt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "ch0",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "A"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "ch3",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "ch3",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "element": "text",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "charAt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 3
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "ch3",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "D"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "StringOps1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

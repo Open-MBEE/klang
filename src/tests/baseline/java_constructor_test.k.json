@@ -1,0 +1,390 @@
+{
+  "name": "java_constructor_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass JavaFactoryTest {\n  value:Int\n  sqrtValue:Real\n\n  req value = java.lang.Integer.valueOf(42)\n\n  req sqrtValue = java.lang.Math.sqrt(1E2)\n\n  req value = 42\n\n  req sqrtValue = 1E1\n}\n\nmain:JavaFactoryTest\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((JavaFactoryTest (mk-JavaFactoryTest (value Int)(sqrtValue Real)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-JavaFactoryTest (sel-JavaFactoryTest JavaFactoryTest))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-JavaFactoryTest ((this Ref)) Bool\n  (is-lift-JavaFactoryTest (deref this))\n)\n\n(define-fun deref-JavaFactoryTest ((this Ref)) JavaFactoryTest\n  (sel-JavaFactoryTest (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-JavaFactoryTest ((this Ref)) Bool\n  (deref-is-JavaFactoryTest this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; --------------------------------------\n;   Getters for class JavaFactoryTest:\n; --------------------------------------\n\n; --- getters for JavaFactoryTest.value: ---\n\n(define-fun JavaFactoryTest!value ((this Ref)) Int\n  (value (deref-JavaFactoryTest this))\n)\n\n; --- getters for JavaFactoryTest.sqrtValue: ---\n\n(define-fun JavaFactoryTest!sqrtValue ((this Ref)) Real\n  (sqrtValue (deref-JavaFactoryTest this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-JavaFactoryTest (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ----------------------------------------\n;   Invariant for class JavaFactoryTest:\n; ----------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-JavaFactoryTest JavaFactoryTest)\n\n; --- Invariant 1: ---\n\n(define-fun JavaFactoryTest.inv1 ((this Ref)) Bool\n  (= (JavaFactoryTest!value this) 42)\n)\n\n(assert (! (JavaFactoryTest.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun JavaFactoryTest.inv2 ((this Ref)) Bool\n  (= (JavaFactoryTest!sqrtValue this) 10.0)\n)\n\n(assert (! (JavaFactoryTest.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun JavaFactoryTest.inv3 ((this Ref)) Bool\n  (= (JavaFactoryTest!value this) 42)\n)\n\n(assert (! (JavaFactoryTest.inv3 1) :named _xkassert3))\n\n; --- Invariant 4: ---\n\n(define-fun JavaFactoryTest.inv4 ((this Ref)) Bool\n  (= (JavaFactoryTest!sqrtValue this) 10.0000000000000000)\n)\n\n(assert (! (JavaFactoryTest.inv4 1) :named _xkassert4))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-JavaFactoryTest const-1-JavaFactoryTest))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-JavaFactoryTest () JavaFactoryTest\n  (mk-JavaFactoryTest 42 10.0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (= (sqrtValue (sel-JavaFactoryTest (select heap 1))) 10.0))\n(define-fun _xkassert3 () Bool\n  (= (value (sel-JavaFactoryTest (select heap 1))) 42))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-JavaFactoryTest a!1)))\n(define-fun _xkassert1 () Bool\n  (= (value (sel-JavaFactoryTest (select heap 1))) 42))\n(define-fun _xkassert4 () Bool\n  (= (sqrtValue (sel-JavaFactoryTest (select heap 1))) 10.0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-JavaFactoryTest (mk-JavaFactoryTest 42 10.0))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "JavaFactoryTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "value",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sqrtValue",
+            "ty": {"type": "RealType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "value",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "valueOf",
+                  "exp": {
+                    "ident": "Integer",
+                    "exp": {
+                      "ident": "lang",
+                      "exp": {
+                        "ident": "java",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "i": 42,
+                    "type": "LiteralInteger"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sqrtValue",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "FunApplExp",
+                "exp1": {
+                  "ident": "sqrt",
+                  "exp": {
+                    "ident": "Math",
+                    "exp": {
+                      "ident": "lang",
+                      "exp": {
+                        "ident": "java",
+                        "type": "IdentExp"
+                      },
+                      "type": "DotExp"
+                    },
+                    "type": "DotExp"
+                  },
+                  "type": "DotExp"
+                },
+                "args": [{
+                  "type": "PositionalArgument",
+                  "exp": {
+                    "f": "100.0000000000000000",
+                    "type": "LiteralFloatingPoint"
+                  }
+                }]
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "value",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 42,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "sqrtValue",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "f": "10.0000000000000000",
+                "type": "LiteralFloatingPoint"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["JavaFactoryTest"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "JavaFactoryTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "value",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "sqrtValue",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Double"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "value",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "java",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "lang"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "Integer"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "valueOf"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 42
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sqrtValue",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "getProperty"
+                        },
+                        {
+                          "operand": [
+                            {
+                              "type": "ElementValue",
+                              "element": "getProperty"
+                            },
+                            {
+                              "operand": [
+                                {
+                                  "type": "ElementValue",
+                                  "element": "getProperty"
+                                },
+                                {
+                                  "element": "java",
+                                  "type": "ElementValue"
+                                },
+                                {
+                                  "type": "LiteralString",
+                                  "string": "lang"
+                                }
+                              ],
+                              "type": "Expression"
+                            },
+                            {
+                              "type": "LiteralString",
+                              "string": "Math"
+                            }
+                          ],
+                          "type": "Expression"
+                        },
+                        {
+                          "type": "LiteralString",
+                          "string": "sqrt"
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "type": "LiteralReal",
+                      "double": 100
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "value",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 42
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "sqrtValue",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralReal",
+                  "double": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "JavaFactoryTest"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

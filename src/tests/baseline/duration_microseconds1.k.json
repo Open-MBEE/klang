@@ -1,0 +1,628 @@
+{
+  "name": "duration_microseconds1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass PrecisionTest {\n  microDuration:Duration\n\n  req microDuration >= 0:00:00.000001\n\n  req microDuration <= 0:00:00.001000\n}\n\nclass HighPrecisionEvent {\n  startOffset:Duration\n  endOffset:Duration\n\n  req startOffset = 0:00:00.000500\n\n  req endOffset = 0:00:00.001500\n\n  req endOffset > startOffset\n}\n\nclass MicrosecondValues {\n  oneMicro:Duration\n  hundredMicros:Duration\n  oneMillis:Duration\n\n  req oneMicro = 0:00:00.000001\n\n  req hundredMicros = 0:00:00.000100\n\n  req oneMillis = 0:00:00.001000\n\n  req oneMicro < hundredMicros\n\n  req hundredMicros < oneMillis\n}\n\ntest1:PrecisionTest\n\ntest2:HighPrecisionEvent\n\ntest3:MicrosecondValues\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (test1 Ref)(test2 Ref)(test3 Ref)))))\n(declare-datatypes () ((PrecisionTest (mk-PrecisionTest (microDuration Int)))))\n(declare-datatypes () ((HighPrecisionEvent (mk-HighPrecisionEvent (startOffset Int)(endOffset Int)))))\n(declare-datatypes () ((MicrosecondValues (mk-MicrosecondValues (oneMicro Int)(hundredMicros Int)(oneMillis Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-PrecisionTest (sel-PrecisionTest PrecisionTest))\n  (lift-HighPrecisionEvent (sel-HighPrecisionEvent HighPrecisionEvent))\n  (lift-MicrosecondValues (sel-MicrosecondValues MicrosecondValues))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-PrecisionTest ((this Ref)) Bool\n  (is-lift-PrecisionTest (deref this))\n)\n\n(define-fun deref-PrecisionTest ((this Ref)) PrecisionTest\n  (sel-PrecisionTest (deref this))\n)\n\n(define-fun deref-is-HighPrecisionEvent ((this Ref)) Bool\n  (is-lift-HighPrecisionEvent (deref this))\n)\n\n(define-fun deref-HighPrecisionEvent ((this Ref)) HighPrecisionEvent\n  (sel-HighPrecisionEvent (deref this))\n)\n\n(define-fun deref-is-MicrosecondValues ((this Ref)) Bool\n  (is-lift-MicrosecondValues (deref this))\n)\n\n(define-fun deref-MicrosecondValues ((this Ref)) MicrosecondValues\n  (sel-MicrosecondValues (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-PrecisionTest ((this Ref)) Bool\n  (deref-is-PrecisionTest this)\n)\n\n(define-fun deref-isa-HighPrecisionEvent ((this Ref)) Bool\n  (deref-is-HighPrecisionEvent this)\n)\n\n(define-fun deref-isa-MicrosecondValues ((this Ref)) Bool\n  (deref-is-MicrosecondValues this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.test1: ---\n\n(define-fun TopLevelDeclarations!test1 ((this Ref)) Ref\n  (test1 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.test2: ---\n\n(define-fun TopLevelDeclarations!test2 ((this Ref)) Ref\n  (test2 (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.test3: ---\n\n(define-fun TopLevelDeclarations!test3 ((this Ref)) Ref\n  (test3 (deref-TopLevelDeclarations this))\n)\n\n; ------------------------------------\n;   Getters for class PrecisionTest:\n; ------------------------------------\n\n; --- getters for PrecisionTest.microDuration: ---\n\n(define-fun PrecisionTest!microDuration ((this Ref)) Int\n  (microDuration (deref-PrecisionTest this))\n)\n\n; -----------------------------------------\n;   Getters for class HighPrecisionEvent:\n; -----------------------------------------\n\n; --- getters for HighPrecisionEvent.startOffset: ---\n\n(define-fun HighPrecisionEvent!startOffset ((this Ref)) Int\n  (startOffset (deref-HighPrecisionEvent this))\n)\n\n; --- getters for HighPrecisionEvent.endOffset: ---\n\n(define-fun HighPrecisionEvent!endOffset ((this Ref)) Int\n  (endOffset (deref-HighPrecisionEvent this))\n)\n\n; ----------------------------------------\n;   Getters for class MicrosecondValues:\n; ----------------------------------------\n\n; --- getters for MicrosecondValues.oneMicro: ---\n\n(define-fun MicrosecondValues!oneMicro ((this Ref)) Int\n  (oneMicro (deref-MicrosecondValues this))\n)\n\n; --- getters for MicrosecondValues.hundredMicros: ---\n\n(define-fun MicrosecondValues!hundredMicros ((this Ref)) Int\n  (hundredMicros (deref-MicrosecondValues this))\n)\n\n; --- getters for MicrosecondValues.oneMillis: ---\n\n(define-fun MicrosecondValues!oneMillis ((this Ref)) Int\n  (oneMillis (deref-MicrosecondValues this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-PrecisionTest (TopLevelDeclarations!test1 this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-HighPrecisionEvent (TopLevelDeclarations!test2 this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n; --- Invariant 3: ---\n\n(define-fun TopLevelDeclarations.inv3 ((this Ref)) Bool\n  (deref-isa-MicrosecondValues (TopLevelDeclarations!test3 this))\n)\n\n(assert (! (TopLevelDeclarations.inv3 0) :named _xkassert2))\n\n\n\n; --------------------------------------\n;   Invariant for class PrecisionTest:\n; --------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-PrecisionTest PrecisionTest)\n\n; --- Invariant 1: ---\n\n(define-fun PrecisionTest.inv1 ((this Ref)) Bool\n  (>= (PrecisionTest!microDuration this) 1)\n)\n\n(assert (! (PrecisionTest.inv1 1) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun PrecisionTest.inv2 ((this Ref)) Bool\n  (<= (PrecisionTest!microDuration this) 1000)\n)\n\n(assert (! (PrecisionTest.inv2 1) :named _xkassert4))\n\n\n\n; -------------------------------------------\n;   Invariant for class HighPrecisionEvent:\n; -------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-HighPrecisionEvent HighPrecisionEvent)\n\n; --- Invariant 1: ---\n\n(define-fun HighPrecisionEvent.inv1 ((this Ref)) Bool\n  (= (HighPrecisionEvent!startOffset this) 500)\n)\n\n(assert (! (HighPrecisionEvent.inv1 2) :named _xkassert5))\n\n; --- Invariant 2: ---\n\n(define-fun HighPrecisionEvent.inv2 ((this Ref)) Bool\n  (= (HighPrecisionEvent!endOffset this) 1500)\n)\n\n(assert (! (HighPrecisionEvent.inv2 2) :named _xkassert6))\n\n; --- Invariant 3: ---\n\n(define-fun HighPrecisionEvent.inv3 ((this Ref)) Bool\n  (> (HighPrecisionEvent!endOffset this) (HighPrecisionEvent!startOffset this))\n)\n\n(assert (! (HighPrecisionEvent.inv3 2) :named _xkassert7))\n\n\n\n; ------------------------------------------\n;   Invariant for class MicrosecondValues:\n; ------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-MicrosecondValues MicrosecondValues)\n\n; --- Invariant 1: ---\n\n(define-fun MicrosecondValues.inv1 ((this Ref)) Bool\n  (= (MicrosecondValues!oneMicro this) 1)\n)\n\n(assert (! (MicrosecondValues.inv1 3) :named _xkassert8))\n\n; --- Invariant 2: ---\n\n(define-fun MicrosecondValues.inv2 ((this Ref)) Bool\n  (= (MicrosecondValues!hundredMicros this) 100)\n)\n\n(assert (! (MicrosecondValues.inv2 3) :named _xkassert9))\n\n; --- Invariant 3: ---\n\n(define-fun MicrosecondValues.inv3 ((this Ref)) Bool\n  (= (MicrosecondValues!oneMillis this) 1000)\n)\n\n(assert (! (MicrosecondValues.inv3 3) :named _xkassert10))\n\n; --- Invariant 4: ---\n\n(define-fun MicrosecondValues.inv4 ((this Ref)) Bool\n  (< (MicrosecondValues!oneMicro this) (MicrosecondValues!hundredMicros this))\n)\n\n(assert (! (MicrosecondValues.inv4 3) :named _xkassert11))\n\n; --- Invariant 5: ---\n\n(define-fun MicrosecondValues.inv5 ((this Ref)) Bool\n  (< (MicrosecondValues!hundredMicros this) (MicrosecondValues!oneMillis this))\n)\n\n(assert (! (MicrosecondValues.inv5 3) :named _xkassert12))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-PrecisionTest const-1-PrecisionTest))\n        2 (lift-HighPrecisionEvent const-2-HighPrecisionEvent))\n        3 (lift-MicrosecondValues const-3-MicrosecondValues))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-MicrosecondValues () MicrosecondValues\n  (mk-MicrosecondValues 1 100 1000))\n(define-fun const-1-PrecisionTest () PrecisionTest\n  (mk-PrecisionTest 720))\n(define-fun const-2-HighPrecisionEvent () HighPrecisionEvent\n  (mk-HighPrecisionEvent 500 1500))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1 2 3))\n(define-fun _xkassert7 () Bool\n  (> (endOffset (sel-HighPrecisionEvent (select heap 2)))\n   (startOffset (sel-HighPrecisionEvent (select heap 2)))))\n(define-fun _xkassert2 () Bool\n  (let ((a!1 (select heap (test3 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-MicrosecondValues a!1)))\n(define-fun _xkassert5 () Bool\n  (= (startOffset (sel-HighPrecisionEvent (select heap 2))) 500))\n(define-fun _xkassert9 () Bool\n  (= (hundredMicros (sel-MicrosecondValues (select heap 3))) 100))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (test1 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-PrecisionTest a!1)))\n(define-fun _xkassert8 () Bool\n  (= (oneMicro (sel-MicrosecondValues (select heap 3))) 1))\n(define-fun _xkassert10 () Bool\n  (= (oneMillis (sel-MicrosecondValues (select heap 3))) 1000))\n(define-fun _xkassert3 () Bool\n  (>= (microDuration (sel-PrecisionTest (select heap 1))) 1))\n(define-fun _xkassert12 () Bool\n  (< (hundredMicros (sel-MicrosecondValues (select heap 3)))\n   (oneMillis (sel-MicrosecondValues (select heap 3)))))\n(define-fun _xkassert11 () Bool\n  (< (oneMicro (sel-MicrosecondValues (select heap 3)))\n   (hundredMicros (sel-MicrosecondValues (select heap 3)))))\n(define-fun _xkassert6 () Bool\n  (= (endOffset (sel-HighPrecisionEvent (select heap 2))) 1500))\n(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (test2 (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-HighPrecisionEvent a!1)))\n(define-fun _xkassert4 () Bool\n  (<= (microDuration (sel-PrecisionTest (select heap 1))) 1000))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 1 2 3)))\n                  1\n                  (lift-PrecisionTest (mk-PrecisionTest 720)))))\n  (store (store a!1\n                2\n                (lift-HighPrecisionEvent (mk-HighPrecisionEvent 500 1500)))\n         3\n         (lift-MicrosecondValues (mk-MicrosecondValues 1 100 1000)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PrecisionTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "microDuration",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "microDuration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.000001",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "microDuration",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.001000",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "HighPrecisionEvent",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startOffset",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "endOffset",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "startOffset",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.000500",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "endOffset",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.001500",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GT",
+              "exp1": {
+                "ident": "endOffset",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "startOffset",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "MicrosecondValues",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "oneMicro",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hundredMicros",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "oneMillis",
+            "ty": {"type": "DurationType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "oneMicro",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.000001",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "hundredMicros",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.000100",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "oneMillis",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "string": "0:00:00.001000",
+                "type": "DurationLiteral"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "oneMicro",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "hundredMicros",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LT",
+              "exp1": {
+                "ident": "hundredMicros",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "oneMillis",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test1",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["PrecisionTest"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test2",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["HighPrecisionEvent"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test3",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["MicrosecondValues"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "PrecisionTest",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "microDuration",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "microDuration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.000001"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "microDuration",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.001000"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "HighPrecisionEvent",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "startOffset",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "endOffset",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "startOffset",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.000500"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "endOffset",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.001500"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GT"
+                },
+                {
+                  "element": "endOffset",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "startOffset",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "MicrosecondValues",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "oneMicro",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "hundredMicros",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "oneMillis",
+            "ty": {
+              "type": "ElementValue",
+              "element": "String"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "oneMicro",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.000001"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "hundredMicros",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.000100"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "oneMillis",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "0:00:00.001000"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "oneMicro",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "hundredMicros",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LT"
+                },
+                {
+                  "element": "hundredMicros",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "oneMillis",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test1",
+        "ty": {
+          "type": "ElementValue",
+          "element": "PrecisionTest"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test2",
+        "ty": {
+          "type": "ElementValue",
+          "element": "HighPrecisionEvent"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "test3",
+        "ty": {
+          "type": "ElementValue",
+          "element": "MicrosecondValues"
+        }
+      }
+    ],
+    "packages": []
+  }
+}
