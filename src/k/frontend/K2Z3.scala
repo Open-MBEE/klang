@@ -886,6 +886,96 @@ object K2Z3 {
     }
   }
 
+  /**
+   * Check if a type is an Array type (SMT-LIB2 Array theory).
+   * Can be either ArrayType case class or IdentType with "Array" name.
+   */
+  def isArrayType(ty: Type): Boolean = ty match {
+    case ArrayType(_, _) => true
+    case IdentType(QualifiedName(List("Array")), _) => true
+    case _ => false
+  }
+
+  /**
+   * Format an Array value from Z3 model for display.
+   * Handles patterns like:
+   * - ((as const (Array Int Int)) 0) -> {_: 0} (constant array)
+   * - (store ((as const (Array Int Int)) 0) key value) -> {key: value, _: 0}
+   * - (store (store base k1 v1) k2 v2) -> {k1: v1, k2: v2, _: base}
+   */
+  def formatArrayValue(expr: String, keyType: Type, valueType: Type): String = {
+    val normalized = expr.replaceAll("\\s+", " ").trim
+    
+    // Extract let bindings if present
+    if (normalized.startsWith("(let ")) {
+      extractLetBindings(normalized)
+    }
+    
+    // Expand any a!N references
+    var expandedExpr = normalized
+    val refPattern = """([a-zA-Z]!\d+)""".r
+    var changed = true
+    var iterations = 0
+    while (changed && iterations < 10) {
+      changed = false
+      iterations += 1
+      for (m <- refPattern.findAllMatchIn(expandedExpr)) {
+        val ref = m.group(1)
+        letBindings.get(ref) match {
+          case Some(definition) =>
+            expandedExpr = expandedExpr.replace(ref, s"($definition)")
+            changed = true
+          case None =>
+        }
+      }
+    }
+    
+    val entries = scala.collection.mutable.LinkedHashMap[String, String]()
+    var defaultValue: Option[String] = None
+    
+    // Find all store operations: (store base key value)
+    // Pattern: look for key-value pairs in stores
+    if (expandedExpr.contains("store")) {
+      // Extract key-value pairs from nested stores
+      // Pattern: find "KEY VALUE)" at end of store operations
+      // Handle both integer keys and string keys (quoted)
+      // The pattern looks for: key value) where key can be number or "string", value can be number or "string"
+      val storeEndPattern = """\s+(-?\d+|"[^"]*")\s+(-?\d+|"[^"]*")\s*\)""".r
+      for (m <- storeEndPattern.findAllMatchIn(expandedExpr)) {
+        val key = m.group(1)
+        val value = m.group(2)
+        // Filter out cases where this might be the const default value
+        if (!m.before.toString.endsWith("Bool)")) {
+          entries(key) = value
+        }
+      }
+    }
+    
+    // Find the default/constant value: ((as const (Array K V)) DEFAULT)
+    val constPattern = """\(as const \(Array [^\)]+\)\)\s+(-?\d+|"[^"]*")""".r
+    constPattern.findFirstMatchIn(expandedExpr) match {
+      case Some(m) => defaultValue = Some(m.group(1))
+      case None =>
+    }
+    
+    // Build display string
+    if (entries.isEmpty && defaultValue.isEmpty) {
+      // Fallback: raw expression (truncated)
+      if (normalized.length > 50) {
+        s"Array(${normalized.take(45)}...)"
+      } else {
+        s"Array($normalized)"
+      }
+    } else {
+      val entryStr = entries.map { case (k, v) => s"$k: $v" }.mkString(", ")
+      val defaultStr = defaultValue.map(d => s"_: $d").getOrElse("")
+      val parts = if (entryStr.nonEmpty && defaultStr.nonEmpty) s"$entryStr, $defaultStr"
+                  else if (entryStr.nonEmpty) entryStr
+                  else defaultStr
+      s"{$parts}"
+    }
+  }
+
   def printObjectValue(name: String, heap: Map[String, String],
                        v: String, visited: Set[String],
                        refNum: String, force: Boolean): (Set[String], List[List[String]]) = {
@@ -997,6 +1087,15 @@ object K2Z3 {
                 x._1.name + ":: " + getStringForSets(setValue.get, propType)
               }
             }
+          } else if (isArrayType(propType)) {
+            // Array types are value types, not reference types
+            // Format the array value for display
+            val (keyType, valueType) = propType match {
+              case ArrayType(k, v) => (k, v)
+              case IdentType(_, List(k, v)) => (k, v)
+              case _ => (IntType, IntType)  // Fallback
+            }
+            x._1.name + ":: " + formatArrayValue(x._2, keyType, valueType)
           } else if (!TypeChecker.isPrimitiveType(propType)) {
             toPrint = x._2 :: toPrint
             (x._1.name + ":: Ref " + x._2)
