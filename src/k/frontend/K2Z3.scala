@@ -153,6 +153,9 @@ object K2Z3 {
   private var savedSmtModel: Option[String] = None
   private var savedModel: Option[Model] = None
 
+  /** Cache of let-binding definitions from Z3 model output (e.g., "a!1" -> "(store ...)") */
+  private var letBindings: Map[String, String] = Map()
+
   /**
    * Request interruption of the current solving process.
    * Safe to call from any thread (e.g., signal handler, web API, UI thread).
@@ -714,6 +717,55 @@ object K2Z3 {
   }
 
   /**
+   * Extract let-binding definitions from a Z3 model string.
+   * Parses patterns like: (let ((a!1 (store ...)) (a!2 ...)) ...)
+   * Populates the letBindings cache for use by parseInlineSetExpression.
+   */
+  def extractLetBindings(modelStr: String): Unit = {
+    letBindings = Map()
+    val normalized = modelStr.replaceAll("\\s+", " ")
+    
+    // Pattern to find let bindings: ((name definition) ...)
+    // Look for patterns like "(a!1 (store ..." or "(a!2 ((as const..."
+    val letPattern = """\(([a-zA-Z]!\d+)\s+(\([^)]+)""".r
+    
+    // More robust: find all "a!N" definitions by looking for "(a!N " followed by balanced parens
+    val bindingNamePattern = """\(([a-zA-Z]!\d+)\s+""".r
+    
+    for (m <- bindingNamePattern.findAllMatchIn(normalized)) {
+      val bindingName = m.group(1)
+      val startIdx = m.end  // Position right after "(a!N "
+      
+      // Extract the balanced expression that follows
+      var depth = 1  // We're inside the opening paren of (a!N ...)
+      var endIdx = startIdx
+      var i = startIdx
+      while (i < normalized.length && depth > 0) {
+        normalized(i) match {
+          case '(' => depth += 1
+          case ')' => 
+            depth -= 1
+            if (depth == 0) endIdx = i
+          case _ =>
+        }
+        i += 1
+      }
+      
+      if (endIdx > startIdx) {
+        val definition = normalized.substring(startIdx, endIdx).trim
+        letBindings += (bindingName -> definition)
+        if (debug) {
+          logDebug(s"[extractLetBindings] $bindingName -> ${definition.take(80)}...")
+        }
+      }
+    }
+    
+    if (debug && letBindings.nonEmpty) {
+      logDebug(s"[extractLetBindings] Found ${letBindings.size} let bindings: ${letBindings.keys.mkString(", ")}")
+    }
+  }
+
+  /**
    * Parse an inline Set expression from Z3 model when no FuncDecl is available.
    * Handles patterns like:
    * - ((as const (Array Int Bool)) true)  -> Set(*) (universal set)
@@ -780,11 +832,50 @@ object K2Z3 {
       return "Set()"
     }
     
-    // Handle a!N references - look up the definition
+    // Handle a!N references - look up the definition in letBindings cache
     if (normalized.matches("[a-zA-Z]![0-9]+")) {
-      // This is a reference to a defined array - we don't have context to resolve it
-      // Return as unknown set
-      return "Set(?)"
+      // Try to resolve from letBindings cache
+      letBindings.get(normalized) match {
+        case Some(definition) =>
+          // Recursively parse the resolved definition
+          return parseInlineSetExpression(definition, isRefType)
+        case None =>
+          // No definition found - show the reference itself
+          // If it looks like a reference type, display as Ref N
+          val refPattern = """[a-zA-Z]!(\d+)""".r
+          normalized match {
+            case refPattern(num) if isRefType =>
+              return s"Set(Ref $num)"
+            case _ =>
+              return s"Set($normalized)"
+          }
+      }
+    }
+    
+    // Also check if the expression contains unresolved a!N references that we can expand
+    val refInExprPattern = """([a-zA-Z]!\d+)""".r
+    var expandedExpr = normalized
+    var changed = true
+    var iterations = 0
+    val maxIterations = 10  // Prevent infinite loops
+    
+    while (changed && iterations < maxIterations) {
+      changed = false
+      iterations += 1
+      for (m <- refInExprPattern.findAllMatchIn(expandedExpr)) {
+        val ref = m.group(1)
+        letBindings.get(ref) match {
+          case Some(definition) =>
+            expandedExpr = expandedExpr.replace(ref, s"($definition)")
+            changed = true
+          case None =>
+        }
+      }
+    }
+    
+    // If we expanded something, try parsing again
+    if (expandedExpr != normalized) {
+      return parseInlineSetExpression(expandedExpr, isRefType)
     }
     
     // Fallback: show raw expression (truncated if too long)
@@ -803,6 +894,12 @@ object K2Z3 {
 
     val value = v.trim.replace("- ", "-")
     if (value.indexOf("mk-") < 0) return (visited + name, Nil)
+    
+    // Extract let bindings from THIS value expression (local scope)
+    // This is needed because a!1, a!2, etc. are scoped to the let block in this value
+    if (value.startsWith("(let ")) {
+      extractLetBindings(value)
+    }
     
     // Handle Z3 let expressions by extracting the actual lift- expression
     // e.g., (let ((a!1 (mk-Bank ...))) (lift-Bank a!1)) -> extract (lift-Bank ...)
