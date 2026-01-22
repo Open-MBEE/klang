@@ -876,6 +876,18 @@ object KTypeChecker {
       ctx.addExpTypeConstraint(exp, ty, s"$ty(...)")
       s"$ty(...)"
 
+    case LambdaExp(pat, body) =>
+      // Bind pattern variable before analyzing body
+      pat match {
+        case IdentPattern(name) =>
+          ctx.createTypeVarInScope(name, isReference = false)
+        case _ =>
+          // Handle other patterns as needed
+      }
+      val bodyDesc = analyzeExpression(body, ctx)
+      // Result is a function type - for now just describe it
+      s"$pat -> $bodyDesc"
+
     case _ =>
       exp.toString
   }

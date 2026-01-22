@@ -1825,8 +1825,10 @@ class TypeChecker(model: Model) {
           case MUL | DIV | ADD | SUB | REM =>
             // Use compatibility=true to allow implicit conversions (Int/Real, External/Real, etc.)
             if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
-            // Return the more specific type (prefer Real over PythonExternalType, etc.)
+            // Return the more specific type (prefer concrete types over AnyType, PythonExternalType, etc.)
             (ty1, ty2) match {
+              case (AnyType, _) => ty2  // AnyType yields to concrete type
+              case (_, AnyType) => ty1  // AnyType yields to concrete type
               case (PythonExternalType(_), _) => ty2
               case (_, PythonExternalType(_)) => ty1
               case (ExternalType(_), _) => ty2
@@ -2192,7 +2194,18 @@ class TypeChecker(model: Model) {
         lastType
       case UnaryExp(op, exp)   => getExpType(te, exp, owner)
       case TupleExp(exps)      => CartesianType(exps.map { e => getExpType(te, e, owner) })
-      case LambdaExp(pat, exp) => getExpType(te, exp, owner)
+      case LambdaExp(pat, exp) =>
+        // Extend type environment with lambda pattern variable binding
+        val lambdaTe = pat match {
+          case IdentPattern(ident) =>
+            // Use AnyType for untyped lambda parameter - will be unified with context
+            te.overwrite(ident -> PatternTypeInfo(pat, AnyType))
+          case _ => te  // Other patterns (wildcards, etc.) don't introduce bindings
+        }
+        // Get the type of the lambda body with the extended environment
+        val bodyType = getExpType(lambdaTe, exp, owner)
+        // Return function type: parameter type -> body type
+        FunctionType(AnyType, bodyType)
       case MatchExp(matchedExp, cases) =>
         // Get the type of the expression being matched
         val matchedType = getExpType(te, matchedExp, owner)

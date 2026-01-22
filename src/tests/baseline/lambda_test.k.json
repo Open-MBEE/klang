@@ -1,0 +1,170 @@
+{
+  "name": "lambda_test.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass Calculator {\n  addOne:Int -> Int\n\n  req addOne = (x -> x + 1)\n}\n\nc:Calculator\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; CVC5 higher-order logic for lambda support\n(set-logic HO_ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n; Note: Tuples are generated as concrete types when used\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatype TopLevelDeclarations ((mk-TopLevelDeclarations (c Ref))))\n(declare-datatype Calculator ((mk-Calculator (addOne (-> Int Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatype Any (\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-Calculator (sel-Calculator Calculator))\n  (null)\n))\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-Calculator ((this Ref)) Bool\n  (is-lift-Calculator (deref this))\n)\n\n(define-fun deref-Calculator ((this Ref)) Calculator\n  (sel-Calculator (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-Calculator ((this Ref)) Bool\n  (deref-is-Calculator this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.c: ---\n\n(define-fun TopLevelDeclarations!c ((this Ref)) Ref\n  (c (deref-TopLevelDeclarations this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-Calculator (TopLevelDeclarations!c this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class Calculator:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-Calculator Calculator)\n\n; --- Direct lambda constraint: addOne = lambda: ---\n\n(assert (! (= (addOne const-1-Calculator) (lambda ((x Int)) (+ x 1))) :named _xkassert1))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-Calculator const-1-Calculator))\n  )\n)\n\n",
+  "smtModel": "",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Calculator",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "addOne",
+            "ty": {
+              "from": {"type": "IntType"},
+              "to": {"type": "IntType"},
+              "type": "FunctionType"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "addOne",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "type": "LambdaExp",
+                  "pat": {
+                    "ident": "x",
+                    "type": "IdentPattern"
+                  },
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                },
+                "type": "ParenExp"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["Calculator"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "Calculator",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "addOne",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Map<Int,Int>"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "addOne",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "Expression",
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Lambda"
+                    },
+                    {
+                      "type": "LiteralString",
+                      "string": "x"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 1
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ]
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Calculator"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

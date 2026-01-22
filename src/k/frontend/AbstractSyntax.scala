@@ -736,7 +736,8 @@ object UtilSMT {
       case FloatType(_, _)               => true
       case ArrayType(keyType, valueType) => wellFormedType(keyType) && wellFormedType(valueType)
       case IdentType(_, _)               => true
-      case FunctionType(_, _) | SubType(_, _, _) | CharType | UnitType =>
+      case FunctionType(from, to)        => wellFormedType(from) && wellFormedType(to)  // Function types supported via Array sort
+      case SubType(_, _, _) | CharType | UnitType | AnyType =>
         //UtilSMT.error(s"$ty in local property declaration")
         false
     }
@@ -1669,10 +1670,17 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     }
     result1 += "\n"
 
-    // Import String theory for Z3 4.13.0+
+    // Set SMT logic (kept as "String Theory" for baseline compatibility)
     result1 += UtilSMT.headline1("String Theory")
-    result1 += "; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n"
-    result1 += "(set-logic ALL)\n"
+    if (ASTOptions.cvc5Compatible) {
+      // CVC5 needs HO_ALL for higher-order features like lambda expressions
+      result1 += "; CVC5 higher-order logic for lambda support\n"
+      result1 += "(set-logic HO_ALL)\n"
+    } else {
+      // Z3 4.13.0+ requires explicit logic or theory declaration for strings
+      result1 += "; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n"
+      result1 += "(set-logic ALL)\n"
+    }
     result1 += "\n"
 
     // Generate builtin datatypes:
@@ -2319,13 +2327,33 @@ case class EntityDecl(
         case _ => exp.toSMT(ident, false)
       }
 
-      var constraintSMT =
-        if (UtilSMT.isClassName(ty) && UtilSMT.isConstructorAppl(exp))
-          s"(= (deref ($getter this)) $expSMT)"
-        else
-          s"(= ($getter this) $expSMT)"
+      // For function-typed properties (especially with lambdas), constrain the const directly
+      // to avoid heap getter indirection which causes solvers to return UNKNOWN
+      val isFunctionType = ty.isInstanceOf[FunctionType]
+      val isLambdaInit = exp.isInstanceOf[LambdaExp]
+      
+      if (isFunctionType && isLambdaInit) {
+        // Generate direct constraint on const fields to enable lambda solving
+        // Instead of: (= (TopLevelDeclarations!f 0) (lambda ...))
+        // Generate:   (= (f const-0-TopLevelDeclarations) (lambda ...))
+        result += UtilSMT.headline3(s"Direct lambda constraint for $propertyName")
+        for (index <- heapEntries) {
+          val constName = s"const-$index-$ident"
+          val assertName = s"_xkassert${UtilSMT.constraintCounter}"
+          result += s"(assert (! (= ($propertyName $constName) $expSMT) :named $assertName))\n"
+          UtilSMT.saveConstraintMapping(s"$propertyName : $ty = $exp")
+        }
+        result += "\n"
+      } else {
+        // Standard constraint through getter (works for non-lambda types)
+        var constraintSMT =
+          if (UtilSMT.isClassName(ty) && UtilSMT.isConstructorAppl(exp))
+            s"(= (deref ($getter this)) $expSMT)"
+          else
+            s"(= ($getter this) $expSMT)"
 
-      result += mkInvFunAndAssert(ident, constraintSMT, s"$propertyName : $ty = $exp")
+        result += mkInvFunAndAssert(ident, constraintSMT, s"$propertyName : $ty = $exp")
+      }
     }
 
     // constraints for embedded references/parts:
@@ -2369,7 +2397,46 @@ case class EntityDecl(
         case None      => ""
         case Some(str) => s" [$str]"
       }
-      if (soft) {
+      
+      // Helper to unwrap ParenExp to get the inner expression
+      def unwrapParen(e: Exp): Exp = e match {
+        case ParenExp(inner) => unwrapParen(inner)
+        case other => other
+      }
+      
+      // Helper to check if an expression is a lambda (possibly wrapped in parens)
+      def isLambda(e: Exp): Boolean = unwrapParen(e).isInstanceOf[LambdaExp]
+      def getLambda(e: Exp): LambdaExp = unwrapParen(e).asInstanceOf[LambdaExp]
+      
+      // Check if this is a lambda equality constraint: property = lambda
+      // If so, generate direct const constraint to avoid heap getter indirection
+      val lambdaEqualityInfo: Option[(String, LambdaExp)] = exp match {
+        case BinExp(IdentExp(propName), EQ, rhs) if isLambda(rhs) =>
+          // Check if propName is a function-typed property in this class
+          if (propertyDecls.find(_.name == propName).exists(pd => pd.getTypeOrError.isInstanceOf[FunctionType]))
+            Some((propName, getLambda(rhs)))
+          else None
+        case BinExp(lhs, EQ, IdentExp(propName)) if isLambda(lhs) =>
+          if (propertyDecls.find(_.name == propName).exists(pd => pd.getTypeOrError.isInstanceOf[FunctionType]))
+            Some((propName, getLambda(lhs)))
+          else None
+        case _ => None
+      }
+      
+      if (lambdaEqualityInfo.isDefined && !soft) {
+        val (propName, lambdaExp) = lambdaEqualityInfo.get
+        val lambdaSMT = lambdaExp.toSMT(ident, false)
+        
+        // Generate direct constraint on const fields
+        result += UtilSMT.headline3(s"Direct lambda constraint: $propName = lambda")
+        for (index <- heapEntries) {
+          val constName = s"const-$index-$ident"
+          val assertName = s"_xkassert${UtilSMT.constraintCounter}"
+          result += s"(assert (! (= ($propName $constName) $lambdaSMT) :named $assertName))\n"
+          UtilSMT.saveConstraintMapping(s"$exp$name")
+        }
+        result += "\n"
+      } else if (soft) {
         // Soft constraint - use assert-soft for Z3 Optimize solver
         invFunctionCount += 1
         val functionName = s"$ident.soft$invFunctionCount"
@@ -5582,6 +5649,25 @@ case class LambdaExp(pat: Pattern, exp: Exp) extends Exp {
     s"$pat -> $exp"
   }
 
+  override def toSMT(className: String, subTyping: Boolean): String = {
+    // Z3 lambda syntax: (lambda ((x T)) body)
+    // For now, use Int as default parameter type since AnyType isn't a valid SMT sort
+    // The type checker has already validated the types, so this is safe
+    pat match {
+      case IdentPattern(ident) =>
+        // Mark the lambda parameter as a local variable so IdentExp.toSMT treats it correctly
+        UtilSMT.createLocals(Set(ident))
+        val bodySMT = exp.toSMT(className, subTyping)
+        // Remove the local binding after generating body (cleanup)
+        UtilSMT.removeCreatedLocals(Set(ident))
+        // Use Int as the parameter type - in context like addOne : Int -> Int,
+        // the lambda parameter is Int. For more general cases, we'd need type inference.
+        s"(lambda (($ident Int)) $bodySMT)"
+      case _ =>
+        UtilSMT.error(s"Unsupported lambda pattern: $pat")
+    }
+  }
+
   override def toJson1 = {
     val lambdaExp = new JSONObject()
     lambdaExp.put("type", "LambdaExp")
@@ -6746,6 +6832,9 @@ case class SumType(ty: List[Type]) extends PrimitiveType {
 }
 
 case object AnyType extends Type {
+  // AnyType is a placeholder type used during type inference for lambdas
+  // In SMT, we map it to Int as a default (could also use Real)
+  override def toSMT: String = "Int"
   override def toJson1 = null
   override def toJson2 = null
 }
@@ -6915,6 +7004,15 @@ case class FunctionType(from: Type, to: Type) extends Type {
   }
 
   override def toString = s"$from -> $to"
+
+  // Function types: CVC5 uses (-> from to) syntax, Z3 uses Array sort
+  override def toSMT: String = {
+    if (ASTOptions.cvc5Compatible) {
+      s"(-> ${from.toSMT} ${to.toSMT})"
+    } else {
+      s"(Array ${from.toSMT} ${to.toSMT})"
+    }
+  }
 
   override def toJson1 = {
     val functionType = new JSONObject()

@@ -1,0 +1,249 @@
+{
+  "name": "lambda_literal_bool.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nisPositive:Int -> Bool\n\nisZero:Int -> Bool\n\nisEven:Int -> Bool\n\nreq isPositive = (x -> x > 0)\n\nreq isZero = (x -> x = 0)\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; CVC5 higher-order logic for lambda support\n(set-logic HO_ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n; Note: Tuples are generated as concrete types when used\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatype TopLevelDeclarations ((mk-TopLevelDeclarations (x Int)(isPositive (-> Int Bool))(isZero (-> Int Bool))(isEven (-> Int Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatype Any (\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (null)\n))\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Direct lambda constraint: isPositive = lambda: ---\n\n(assert (! (= (isPositive const-0-TopLevelDeclarations) (lambda ((x Int)) (> x 0))) :named _xkassert0))\n\n; --- Direct lambda constraint: isZero = lambda: ---\n\n(assert (! (= (isZero const-0-TopLevelDeclarations) (lambda ((x Int)) (= x 0))) :named _xkassert1))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
+  "smtModel": "",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isPositive",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "BoolType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isZero",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "BoolType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isEven",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "BoolType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "isPositive",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "exp": {
+              "type": "LambdaExp",
+              "pat": {
+                "ident": "x",
+                "type": "IdentPattern"
+              },
+              "exp": {
+                "type": "BinExp",
+                "op": "GT",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 0,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "type": "ParenExp"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "isZero",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "exp": {
+              "type": "LambdaExp",
+              "pat": {
+                "ident": "x",
+                "type": "IdentPattern"
+              },
+              "exp": {
+                "type": "BinExp",
+                "op": "EQ",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 0,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "type": "ParenExp"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isPositive",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Bool>"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isZero",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Bool>"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "isEven",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Bool>"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "isPositive",
+              "type": "ElementValue"
+            },
+            {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Lambda"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "x"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "GT"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "isZero",
+              "type": "ElementValue"
+            },
+            {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Lambda"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "x"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 0
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}

@@ -1,18 +1,27 @@
 -- @expected SAT
+-- @preferred_options -cvc5
 -- Test: lambda_test.k
--- Tests lambda expressions (pattern -> expression)
+-- Primary test for lambda literal syntax (pattern -> expression)
 --
--- BUG: This test currently PASSES but SHOULD FAIL as ERROR.
--- The type checker doesn't handle lambda variable binding - the `x` in `x -> x + 1`
--- is not being added to the type environment, so `x` should be an undeclared variable.
--- When lambda type checking is fixed, change this back to expect ERROR.
+-- Lambda type checking works correctly - pattern variables are bound
+-- before type-checking the lambda body.
 --
--- TODO: Fix type checker to properly bind lambda pattern variables before checking body
--- See TypeChecker.scala - need to add pattern variable to environment in lambda case
+-- CURRENT STATUS: Returns UNKNOWN because constraints go through heap
+-- getter functions. CVC5 CAN solve lambda literals when constraints
+-- are applied directly to const objects (verified with raw SMT).
+--
+-- RELATED TESTS:
+-- - lambda_basic_array.k     - SAT: Array-based function (no lambda literal)
+-- - lambda_in_class.k        - SAT: Functions as arrays in class
+-- - lambda_composition.k     - SAT: Function composition with arrays
+-- - lambda_literal_simple.k  - UNKNOWN: Simple lambda literal
+-- - lambda_literal_arithmetic.k - UNKNOWN: Various arithmetic lambdas
+-- - lambda_literal_bool.k    - UNKNOWN: Predicate lambdas
+--
+-- FIX: Generate constraints using const directly instead of getters
+-- for function-typed properties. See .tmp/lambda_direct_const.smt2
 
 class Calculator {
-  -- Lambda as function value
-  -- BUG: `x` is not bound - should fail type check but currently passes incorrectly
   addOne : Int -> Int
   req addOne = (x -> x + 1)
 }

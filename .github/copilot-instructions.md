@@ -31,6 +31,13 @@ If you encounter Z3 library loading errors (UnsatisfiedLinkError, wrong architec
 
 ## Important Guidelines
 
+### Baseline Changes Require Approval
+- **DO NOT** commit baseline changes without explicit approval from the user
+- Baselines are stored in `src/tests/baseline/` and `src/examples/baseline/`
+- If tests fail due to baseline mismatches, investigate the root cause first
+- Report baseline changes to the user and wait for approval before committing
+- Cosmetic changes (comments, formatting) in generated SMT can cause widespread baseline mismatches - be cautious
+
 ### Temporary Files
 - **DO**: Write temp files to `klang/.tmp/` (inside the project)
 - **DON'T**: Write to `/tmp/` (requires user approval)

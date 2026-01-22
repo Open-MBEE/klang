@@ -684,6 +684,45 @@ object Frontend {
                   if (solveResult.isEmpty) {
                     outcome = "TIMEOUT"
                   }
+                } else if (useCvc5) {
+                  // Use CVC5 external solver
+                  if (!CVC5Solver.isAvailable) {
+                    if (batchVerbose) println("[CVC5] WARNING: CVC5 not found. Falling back to auto-detection...")
+                    val solveResult = runWithTimeout(testTimeout) {
+                      val (resultOutcome, z3ModelOpt) = solveWithAutoDetection(
+                        combinedModel, smtStr, options, testTimeout, printModel = batchVerbose, verbose = batchVerbose
+                      )
+                      outcome = resultOutcome
+                      z3ModelOpt.foreach(m => K2Z3.z3Model = m)
+                    }
+                    if (solveResult.isEmpty) {
+                      outcome = "TIMEOUT"
+                    }
+                  } else {
+                    CVC5Solver.debug = batchVerbose
+                    val solveResult = runWithTimeout(testTimeout) {
+                      CVC5Solver.solve(smtStr, Some(testTimeout / 1000))
+                    }
+                    solveResult match {
+                      case Some(CVC5Solver.CVC5Result.Sat(modelMap)) =>
+                        if (batchVerbose) {
+                          println("[CVC5] SAT")
+                          modelMap.foreach { case (name, value) => println(s"  $name = $value") }
+                        }
+                        outcome = "SAT"
+                      case Some(CVC5Solver.CVC5Result.Unsat) =>
+                        if (batchVerbose) println("[CVC5] UNSAT")
+                        outcome = "UNSAT"
+                      case Some(CVC5Solver.CVC5Result.Unknown(reason)) =>
+                        if (batchVerbose) println(s"[CVC5] UNKNOWN: $reason")
+                        outcome = "UNKNOWN"
+                      case Some(CVC5Solver.CVC5Result.Error(msg)) =>
+                        if (batchVerbose) println(s"[CVC5] ERROR: $msg")
+                        outcome = "ERROR"
+                      case None =>
+                        outcome = "TIMEOUT"
+                    }
+                  }
                 } else {
                   // Use unified auto-detection logic for both verbose and non-verbose batch mode
                   // This ensures consistent behavior between batch and single-file execution

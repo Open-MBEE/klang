@@ -207,6 +207,9 @@ object Misc {
         }
       case (CollectType(ct1), CollectType(ct2)) =>
         return (ct1 zip ct2).forall { t => areTypesEqual(t._1, t._2, compatibility) }
+      case (FunctionType(from1, to1), FunctionType(from2, to2)) =>
+        // Recursively check function parameter and return types
+        return areTypesEqual(from1, from2, compatibility) && areTypesEqual(to1, to2, compatibility)
       case (AnyType, _)                         => return true
       case (_, AnyType)                         => return true
       case (UnitType, _) if compatibility       => return true  // UnitType as wildcard in compatibility mode

@@ -1,0 +1,330 @@
+{
+  "name": "lambda_literal_arithmetic.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\ndouble:Int -> Int\n\nsquare:Int -> Int\n\naddTen:Int -> Int\n\nreq double = (x -> x * 2)\n\nreq square = (x -> x * x)\n\nreq addTen = (n -> n + 10)\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; CVC5 higher-order logic for lambda support\n(set-logic HO_ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n; Note: Tuples are generated as concrete types when used\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatype TopLevelDeclarations ((mk-TopLevelDeclarations (n Int)(x Int)(double (-> Int Int))(square (-> Int Int))(addTen (-> Int Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatype Any (\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (null)\n))\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Direct lambda constraint: double = lambda: ---\n\n(assert (! (= (double const-0-TopLevelDeclarations) (lambda ((x Int)) (* x 2))) :named _xkassert0))\n\n; --- Direct lambda constraint: square = lambda: ---\n\n(assert (! (= (square const-0-TopLevelDeclarations) (lambda ((x Int)) (* x x))) :named _xkassert1))\n\n; --- Direct lambda constraint: addTen = lambda: ---\n\n(assert (! (= (addTen const-0-TopLevelDeclarations) (lambda ((n Int)) (+ n 10))) :named _xkassert2))\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n  )\n)\n\n",
+  "smtModel": "",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "double",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "IntType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "square",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "IntType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "addTen",
+        "ty": {
+          "from": {"type": "IntType"},
+          "to": {"type": "IntType"},
+          "type": "FunctionType"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "double",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "exp": {
+              "type": "LambdaExp",
+              "pat": {
+                "ident": "x",
+                "type": "IdentPattern"
+              },
+              "exp": {
+                "type": "BinExp",
+                "op": "Times",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 2,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "type": "ParenExp"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "square",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "exp": {
+              "type": "LambdaExp",
+              "pat": {
+                "ident": "x",
+                "type": "IdentPattern"
+              },
+              "exp": {
+                "type": "BinExp",
+                "op": "Times",
+                "exp1": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "x",
+                  "type": "IdentExp"
+                }
+              }
+            },
+            "type": "ParenExp"
+          }
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "type": "BinExp",
+          "op": "EQ",
+          "exp1": {
+            "ident": "addTen",
+            "type": "IdentExp"
+          },
+          "exp2": {
+            "exp": {
+              "type": "LambdaExp",
+              "pat": {
+                "ident": "n",
+                "type": "IdentPattern"
+              },
+              "exp": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "n",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 10,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "type": "ParenExp"
+          }
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "double",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Int>"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "square",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Int>"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "addTen",
+        "ty": {
+          "type": "ElementValue",
+          "element": "Map<Int,Int>"
+        }
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "double",
+              "type": "ElementValue"
+            },
+            {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Lambda"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "x"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Times"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "square",
+              "type": "ElementValue"
+            },
+            {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Lambda"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "x"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Times"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "x",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      },
+      {
+        "type": "ConstraintDecl",
+        "exp": {
+          "operand": [
+            {
+              "type": "ElementValue",
+              "element": "EQ"
+            },
+            {
+              "element": "addTen",
+              "type": "ElementValue"
+            },
+            {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Lambda"
+                },
+                {
+                  "type": "LiteralString",
+                  "string": "n"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "n",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 10
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            }
+          ],
+          "type": "Expression"
+        },
+        "annotations": []
+      }
+    ],
+    "packages": []
+  }
+}
