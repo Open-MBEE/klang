@@ -26,8 +26,14 @@ object ASTOptions {
   /** Generate CVC5-compatible SMT output (also works with Z3) */
   var cvc5Compatible: Boolean = false
   
-  /** Use 'used' flags for heap instances to allow over-allocation without performance penalty */
-  var useHeapUsedFlags: Boolean = false
+  /** Use 'used' flags for heap instances to allow over-allocation without performance penalty.
+   *  When enabled, invariants are wrapped with (=> used_X invariant_X), and:
+   *  - First instance of each class is forced used: (assert used_<class>_first)
+   *  - Monotonicity within class: (=> used_i+1 used_i)
+   *  - Global limit: sum(used) <= max(computedInstances, numClasses)
+   *  See docs/HEAP_INSTANCE_STRATEGY.md for details.
+   */
+  var useHeapUsedFlags: Boolean = true
   
   /** Defer subclass instance creation to later CEGAR iterations.
    *  When true, propagateInstancesToSubclasses() is skipped on iteration 1.
@@ -1810,11 +1816,16 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // This limits the TOTAL used instances across all classes, allowing flexibility
     // in which child classes are instantiated for parent class slots
     if (ASTOptions.useHeapUsedFlags && UtilSMT.usedFlagNames.nonEmpty) {
-      val totalMaxInstances = UtilSMT.objectGraph.getTotalComputedInstanceCount
+      val computedInstances = UtilSMT.objectGraph.getTotalComputedInstanceCount
+      // Ensure limit is at least the number of classes (since first instance of each class is forced)
+      val numClassesWithUsedFlags = UtilSMT.usedFlagNames.map(_.split("_").dropRight(1).mkString("_")).distinct.size
+      val totalMaxInstances = Math.max(computedInstances, numClassesWithUsedFlags)
       val totalHeapSlots = UtilSMT.usedFlagNames.size
       if (totalMaxInstances < totalHeapSlots) {
         result2 += UtilSMT.headline2("Global used flag limit")
-        result2 += s"; Total computed instances (strategy 1): $totalMaxInstances\n"
+        result2 += s"; Total computed instances (strategy 1): $computedInstances\n"
+        result2 += s"; Number of classes with used flags: $numClassesWithUsedFlags\n"
+        result2 += s"; Effective limit: $totalMaxInstances\n"
         result2 += s"; Total heap slots: $totalHeapSlots\n"
         // Express: sum of all used flags <= totalMaxInstances
         // Using pseudo-boolean constraint: (+ (ite used_1 1 0) (ite used_2 1 0) ...) <= limit
@@ -2288,6 +2299,12 @@ case class EntityDecl(
         }
         result += "\n"
       }
+      
+      // First instance required: the first slot of each class MUST be used
+      // This prevents the solver from setting all used=false and making constraints vacuously true
+      result += UtilSMT.headline3("First instance required")
+      result += s"(assert ${usedFlagName(sortedEntries.head)})\n"
+      result += "\n"
       
       // Note: Per-class limit removed - global limit is applied after all invariants (task 6)
     }

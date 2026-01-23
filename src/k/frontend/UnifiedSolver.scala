@@ -923,6 +923,19 @@ object UnifiedSolver {
       log(s"Initial object bounds: $objectBounds")
       log(s"Dynamic classes: $dynamicClasses")
     }
+    
+    // Use instancesByComputation from HeapLayout for initial bounds
+    // This provides better initial estimates based on static DFS analysis
+    for (className <- allClasses) {
+      val computed = UtilSMT.objectGraph.getComputedInstanceCount(className)
+      if (computed > 0) {
+        val current = objectBounds.getOrElse(className, 0)
+        if (computed > current) {
+          objectBounds(className) = computed
+          log(s"Set $className bound from instancesByComputation: $current -> $computed")
+        }
+      }
+    }
   }
 
   /**
@@ -993,6 +1006,21 @@ object UnifiedSolver {
         increased = true
         boundsWereIncreased = true
         log(s"Increased bound for $className: $current -> $newBound")
+        
+        // Propagate to subclasses that aren't in dynamicClasses
+        // This ensures subclasses like Atom get instances when parent S_Exp increases
+        try {
+          val subClasses = TypeChecker.getSubClasses(className)
+          for (subClass <- subClasses if !dynamicClasses.contains(subClass)) {
+            val subCurrent = objectBounds.getOrElse(subClass, 0)
+            if (subCurrent < newBound) {
+              objectBounds(subClass) = newBound
+              log(s"  Propagated to subclass $subClass: $subCurrent -> $newBound")
+            }
+          }
+        } catch {
+          case _: Exception => // TypeChecker may not have this class
+        }
       }
     }
 
@@ -1000,13 +1028,11 @@ object UnifiedSolver {
   }
 
   private def canIncreaseObjectBounds(): Boolean = {
-    // Use dynamicClasses if populated, otherwise check all classes from objectBounds
-    val classesToCheck = if (dynamicClasses.nonEmpty) dynamicClasses else objectBounds.keys.toSet
-    val result = classesToCheck.exists { className =>
-      objectBounds.getOrElse(className, 0) < maxObjectBound
-    }
-    log(s"canIncreaseObjectBounds: classes=${classesToCheck.size}, result=$result")
-    result
+    // DISABLED: Inner loop bound-increasing doesn't actually change heap size.
+    // The SMT length stays constant despite objectBounds increasing.
+    // Heap size changes only happen via HeapCEGAR's instanceMultiplier.
+    // TODO: Re-enable when total instance bound constraint via `used` flags is implemented.
+    false
   }
 
   // ============================================================================
@@ -1088,7 +1114,7 @@ object UnifiedSolver {
         smtModel
       }
       val currentSMT = generateSMT(model, baseSMT)
-      log(s"Generated SMT with ${objectBounds.values.sum} potential objects")
+      log(s"Generated SMT with ${objectBounds.values.sum} potential objects, SMT length: ${currentSMT.length} chars")
 
       // Phase 2: SOLVE
       // If scenario tracking is enabled, add scenario assumption to guide solving
