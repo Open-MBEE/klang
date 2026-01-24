@@ -255,6 +255,12 @@ object UnifiedSolver {
         // Iteration 1: skip subclass propagation (simpler models)
         // Iteration 2+: include subclass instances if needed
         ASTOptions.cegarIteration = heapIteration
+        
+        // Disable used flags on iteration 1 - we don't over-allocate on first iteration
+        // so there's no need for the complexity of used flags. This keeps SMT simpler
+        // and matches baseline behavior.
+        ASTOptions.useHeapUsedFlags = (heapIteration > 1)
+        
         if (ASTOptions.deferSubclassInstances) {
           if (heapIteration == 1) {
             logHeap(s"Deferred subclass strategy: skipping subclass propagation on iteration 1")
@@ -926,8 +932,9 @@ object UnifiedSolver {
     
     // Use instancesByComputation from HeapLayout for initial bounds
     // This provides better initial estimates based on static DFS analysis
+    // Note: getEffectiveInstanceCount respects @instances annotations
     for (className <- allClasses) {
-      val computed = UtilSMT.objectGraph.getComputedInstanceCount(className)
+      val computed = UtilSMT.objectGraph.getEffectiveInstanceCount(className)
       if (computed > 0) {
         val current = objectBounds.getOrElse(className, 0)
         if (computed > current) {
@@ -1115,6 +1122,14 @@ object UnifiedSolver {
       }
       val currentSMT = generateSMT(model, baseSMT)
       log(s"Generated SMT with ${objectBounds.values.sum} potential objects, SMT length: ${currentSMT.length} chars")
+      
+      // Debug: write SMT to file for analysis
+      try {
+        val debugFile = new java.io.PrintWriter(".tmp/unified_solver_smt.txt")
+        debugFile.println(s"; === SMT Generated at iteration $iteration ===")
+        debugFile.println(currentSMT)
+        debugFile.close()
+      } catch { case _: Throwable => }
 
       // Phase 2: SOLVE
       // If scenario tracking is enabled, add scenario assumption to guide solving

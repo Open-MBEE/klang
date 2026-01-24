@@ -81,6 +81,38 @@ object UtilSMT {
   // Track all used flag names for global instance limit constraint (heap used flags feature)
   var usedFlagNames: List[String] = Nil
   
+  // Connectivity constraints: (srcClass, srcEntries, propName, tgtClass, tgtEntries)
+  // These are collected during toSMTInvariant and emitted after all invariants
+  case class ConnectivityInfo(srcClass: String, srcEntries: List[Int], propName: String, tgtClass: String, tgtEntries: List[Int])
+  var connectivityConstraints: List[ConnectivityInfo] = Nil
+  
+  def registerConnectivityConstraint(srcClass: String, srcEntries: List[Int], propName: String, tgtClass: String, tgtEntries: List[Int]): Unit = {
+    connectivityConstraints = ConnectivityInfo(srcClass, srcEntries, propName, tgtClass, tgtEntries) :: connectivityConstraints
+  }
+  
+  def generateConnectivityConstraints(): String = {
+    if (connectivityConstraints.isEmpty) return ""
+    var result = headline2("Connectivity constraints")
+    result += "; Propagate 'used' through object references: if X is used and points to Y, then Y is used\n\n"
+    for (info <- connectivityConstraints) {
+      result += headline3(s"${info.srcClass}.${info.propName} -> ${info.tgtClass}")
+      val getter = s"${info.srcClass}!${info.propName}"
+      for (srcIndex <- info.srcEntries) {
+        for (tgtIndex <- info.tgtEntries) {
+          val srcUsed = s"used_${info.srcClass}_$srcIndex"
+          val tgtUsed = s"used_${info.tgtClass}_$tgtIndex"
+          result += s"(assert (=> (and $srcUsed (= ($getter $srcIndex) $tgtIndex)) $tgtUsed))\n"
+        }
+      }
+      result += "\n"
+    }
+    result
+  }
+  
+  def clearConnectivityConstraints(): Unit = {
+    connectivityConstraints = Nil
+  }
+  
   // Track function declarations and calls for synthetic call generation
   // Functions that are declared but never called need synthetic calls to check their body constraints
   var functionDeclarations: List[(String, FunDecl)] = Nil  // (className, funDecl) pairs
@@ -187,6 +219,7 @@ object UtilSMT {
     functionDeclarations = Nil
     functionCalls = Set()
     usedFlagNames = Nil
+    connectivityConstraints = Nil
     ExternalFunctions.reset()
     PythonExternalFunctions.reset()
     // Reset heap CEGAR multiplier - must be reset between batch tests
@@ -1415,6 +1448,12 @@ class HeapLayout(model: Model) {
     instancesByComputation.getOrElse(className, 0)
   }
   
+  /** Get the effective instance count for a class (annotation takes precedence over computation) */
+  def getEffectiveInstanceCount(className: String): Int = {
+    instancesByAnnotation.getOrElse(className,
+      instancesByComputation.getOrElse(className, 0))
+  }
+  
   /** Get the total computed instance count across all classes (strategy 1 total) */
   def getTotalComputedInstanceCount: Int = {
     instancesByComputation.values.sum
@@ -1811,6 +1850,17 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       result2 += "\n"
     }
     result2 += "\n"
+    
+    // Generate connectivity constraints (must be after all invariants so all used flags are declared)
+    // This propagates 'used' through object references to ensure reachable objects have enforced invariants
+    if (ASTOptions.useHeapUsedFlags) {
+      val connectivitySMT = UtilSMT.generateConnectivityConstraints()
+      if (connectivitySMT.nonEmpty) {
+        result2 += UtilSMT.headline1("Connectivity constraints")
+        result2 += connectivitySMT
+        result2 += "\n"
+      }
+    }
     
     // Add global used flag count limit (task 6)
     // This limits the TOTAL used instances across all classes, allowing flexibility
@@ -2381,6 +2431,14 @@ case class EntityDecl(
           UtilSMT.addGetter(getter)
           val constraintSMT = s"(deref-isa-$typeName ($getter this))"
           result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
+          
+          // Register connectivity constraint info for later emission (after all used flags are declared)
+          if (ASTOptions.useHeapUsedFlags && heapEntries.nonEmpty) {
+            val targetEntries = UtilSMT.objectGraph.getHeapEntries(typeName)
+            if (targetEntries.nonEmpty) {
+              UtilSMT.registerConnectivityConstraint(ident, heapEntries, propertyName, typeName, targetEntries)
+            }
+          }
         case _ => // Ignore non-matching types
       }
     }

@@ -630,6 +630,11 @@ object Frontend {
                 ASTOptions.useJson1 = false
                 json2Obj = combinedModel.toJson
 
+                // Disable used flags for initial SMT generation - we don't over-allocate
+                // on the first pass, so the complexity of used flags isn't needed.
+                // They'll be enabled on later CEGAR iterations if needed.
+                ASTOptions.useHeapUsedFlags = false
+                
                 t0 = System.nanoTime()
                 val smtStr = combinedModel.toSMT
                 t1 = System.nanoTime()
@@ -789,6 +794,15 @@ object Frontend {
                         .collect { case (v, f) if v == "false" || v == "???" => f }
                         .mkString(", ")
                       baselineInfo = s"baseline mismatch: $mismatchFields"
+                      
+                      // Write current SMT to file for comparison when smt mismatches
+                      if (mismatchFields.contains("smt")) {
+                        try {
+                          val currentSmtFile = new java.io.PrintWriter(s".tmp/current-smt-${testName}.smt")
+                          currentSmtFile.println(smtStr)
+                          currentSmtFile.close()
+                        } catch { case _: Throwable => }
+                      }
                     }
                   case None =>
                     // No baseline to check
@@ -928,6 +942,16 @@ object Frontend {
               }
             case e: Throwable =>
               outcome = "ERROR"
+              // If this was a timeout, interrupt Z3 and mark for fresh context
+              // This prevents Z3 corruption from propagating to the next test
+              if (e.getClass.getSimpleName.contains("Timeout")) {
+                try {
+                  K2Z3.interrupt()  // Stop any ongoing Z3 solve
+                } catch {
+                  case _: Throwable => // Ignore interrupt errors
+                }
+                K2Z3.lastSolveTimedOut = true
+              }
               // Check if ERROR was expected
               if (expectedOpt.contains("ERROR")) {
                 status = "PASSED"

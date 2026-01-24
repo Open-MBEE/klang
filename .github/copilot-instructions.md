@@ -1,8 +1,14 @@
 # Copilot Instructions for K Language Project
 
 ## Regularly check .copilot-inbox
-Oftentimes, your chat companion wants to tell you something without interrupting you,
-Check this file very often, maybe with `wc`.  If it is not empty, get the message, acknowledge that you got the message, and empty the file.
+Oftentimes, your chat companion wants to tell you something without interrupting you.
+Check this file **every 30 seconds** during active work, maybe with `wc`. If it is not empty, get the message, acknowledge that you got the message, and empty the file.
+
+## Persist Todo List
+Keep the todo list in `.tmp/todo-list.md` so it survives across sessions. Update this file whenever todos change.
+
+## Test Before Reporting
+**Test your changes before returning to the user.** Before saying that you have done something, be sure that you actually did it successfully. Run the code, check the output, verify the fix works.
 
 ## Project Overview
 K is a constraint-based specification language with a Scala frontend that compiles to Z3 SMT solver.

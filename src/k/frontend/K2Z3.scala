@@ -556,10 +556,13 @@ object K2Z3 {
     // corruption in the Z3 native library. Otherwise, reuse the existing context.
     if (ctx == null || lastSolveTimedOut) {
       if (lastSolveTimedOut) {
-        logDebug("Creating fresh Z3 context after timeout")
-      }
-      // Close the old context to free native memory before creating a new one
-      if (ctx != null) {
+        logDebug("Creating fresh Z3 context after timeout (abandoning old context)")
+        // DON'T close the old context - it may still be in use by a timed-out thread
+        // and closing it can cause a native crash (SIGSEGV in ast_manager::delete_node).
+        // This leaks native memory, but prevents crashes.
+        // The old context will eventually be garbage collected.
+      } else if (ctx != null) {
+        // Only close when it's safe (no timeout occurred)
         try {
           ctx.close()
         } catch {
