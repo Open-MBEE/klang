@@ -23,7 +23,7 @@
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
-				<scalaVersion>2.13.12</scalaVersion>
+				<scalaVersion>2.13.18</scalaVersion>
 				<scalaBinaryVersion>2.13</scalaBinaryVersion>
 			</properties>
 			<dependencies>
