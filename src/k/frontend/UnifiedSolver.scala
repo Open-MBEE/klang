@@ -932,9 +932,8 @@ object UnifiedSolver {
     
     // Use instancesByComputation from HeapLayout for initial bounds
     // This provides better initial estimates based on static DFS analysis
-    // Note: getEffectiveInstanceCount respects @instances annotations
     for (className <- allClasses) {
-      val computed = UtilSMT.objectGraph.getEffectiveInstanceCount(className)
+      val computed = UtilSMT.objectGraph.getComputedInstanceCount(className)
       if (computed > 0) {
         val current = objectBounds.getOrElse(className, 0)
         if (computed > current) {
@@ -1122,14 +1121,6 @@ object UnifiedSolver {
       }
       val currentSMT = generateSMT(model, baseSMT)
       log(s"Generated SMT with ${objectBounds.values.sum} potential objects, SMT length: ${currentSMT.length} chars")
-      
-      // Debug: write SMT to file for analysis
-      try {
-        val debugFile = new java.io.PrintWriter(".tmp/unified_solver_smt.txt")
-        debugFile.println(s"; === SMT Generated at iteration $iteration ===")
-        debugFile.println(currentSMT)
-        debugFile.close()
-      } catch { case _: Throwable => }
 
       // Phase 2: SOLVE
       // If scenario tracking is enabled, add scenario assumption to guide solving

@@ -1448,12 +1448,6 @@ class HeapLayout(model: Model) {
     instancesByComputation.getOrElse(className, 0)
   }
   
-  /** Get the effective instance count for a class (annotation takes precedence over computation) */
-  def getEffectiveInstanceCount(className: String): Int = {
-    instancesByAnnotation.getOrElse(className,
-      instancesByComputation.getOrElse(className, 0))
-  }
-  
   /** Get the total computed instance count across all classes (strategy 1 total) */
   def getTotalComputedInstanceCount: Int = {
     instancesByComputation.values.sum
