@@ -41,12 +41,14 @@ show_help() {
     echo "  src/tests/    : Core regression tests (default)"
     echo "  src/test/     : String and advanced solver tests"
     echo "  src/examples/ : Example K files for web application"
+    echo "  src/failing/  : Tests for known bugs (expected to fail)"
     echo ""
     echo "Options:"
-    echo "  -all          Run all tests from all directories"
+    echo "  -all          Run all tests from all directories (incl. failing)"
     echo "  -tests        Run core tests only (src/tests/)"
     echo "  -new          Run new feature tests only (src/test/)"
     echo "  -examples     Run example files (src/examples/)"
+    echo "  -failing      Run known-failing tests (src/failing/)"
     echo "  -test <file>  Run a single test file"
     echo "  -filter <pat> Run only tests matching pattern"
     echo "  -timing       Show detailed timing breakdown"
@@ -100,7 +102,7 @@ show_help() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         -all)
-            TEST_DIRS="src/tests src/test src/examples"
+            TEST_DIRS="src/tests src/test src/examples src/failing"
             shift
             ;;
         -tests)
@@ -113,6 +115,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -examples)
             TEST_DIRS="src/examples"
+            shift
+            ;;
+        -failing)
+            TEST_DIRS="src/failing"
             shift
             ;;
         -test)
