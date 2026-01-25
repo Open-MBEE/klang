@@ -1,18 +1,16 @@
 # K Test Suite Review Summary
-**Last Updated**: 2026-01-25 15:30
+**Last Updated**: 2026-01-25 16:00
 
 ## Quick Stats
 
-### src/tests/ (213 files)
+### src/tests/ (205 files) - Core Tests
 | Category | Count | Notes |
 |----------|-------|-------|
-| ✅ Passing tests | 205 | Working as expected |
-| ❌ Failing tests (known bugs) | 8 | See list below |
-| 📋 Pass rate | 96% | 205/213 pass |
+| ✅ Passing tests | 205 | All working |
+| 📋 Pass rate | 100% | 205/205 pass |
 
-### Known Failing Tests
-These tests fail because features are broken. They are marked with
-`@expected` set to what SHOULD happen (not what currently happens):
+### src/failing/ (8 files) - Known Bugs
+These tests are expected to fail until bugs are fixed:
 
 | Test | Expected | Actual | Bug |
 |------|----------|--------|-----|
@@ -34,7 +32,7 @@ These tests fail because features are broken. They are marked with
 
 ## Known Broken Features
 
-### Tests That FAIL (good - shows bug is visible)
+### Tests in src/failing/ (visible bugs)
 1. **heap_linked_list.k** - CEGAR returns false UNSAT with null constraints
 2. **regex*.k (7 tests)** - .matches() always returns false
 
