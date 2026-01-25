@@ -63,6 +63,8 @@ object UtilAST {
       case _               => 0
     }
   }
+
+  // extractNullCheckExpressions is defined in UtilSMT after all Exp classes are declared
 }
 import UtilAST._
 import ClassHierarchy._
@@ -2420,12 +2422,15 @@ case class EntityDecl(
     }
 
     // constraints for embedded references/parts:
+    // Reference types are nullable by default, so we allow null OR a valid reference
+    // This enables linked structures that terminate with null (e.g., linked lists)
     for (pd @ PropertyDecl(_, propertyName, _, _, _, _) <- propertyDecls) {
       pd.getType match {
         case Some(IdentType(QualifiedName(typeName :: Nil), _)) if !Misc.isCollection(typeName) =>
           val getter = s"$ident!$propertyName"
           UtilSMT.addGetter(getter)
-          val constraintSMT = s"(deref-isa-$typeName ($getter this))"
+          // Allow null (NULL$Ref = -1) OR a valid reference of the expected type
+          val constraintSMT = s"(or (= ($getter this) NULL$$Ref) (deref-isa-$typeName ($getter this)))"
           result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
           
           // Register connectivity constraint info for later emission (after all used flags are declared)
@@ -2536,6 +2541,12 @@ case class EntityDecl(
         result += "\n"
       } else {
         // Hard constraint - use regular assert
+        // First, add implicit null checks for any field access expressions
+        val nullCheckExprs = exp.extractNullCheckExpressions.distinct
+        for (nullCheckExp <- nullCheckExprs) {
+          val nullCheckSMT = s"(not (= ${nullCheckExp.toSMT(ident, false)} NULL$$Ref))"
+          result += mkInvFunAndAssert(ident, nullCheckSMT, s"_k_implicit_nullcheck_${nullCheckExp}")
+        }
         result += mkInvFunAndAssert(ident, exp.toSMT(ident, false), exp.toString + name)
       }
     }
@@ -3534,6 +3545,46 @@ trait Exp extends HasChildren {
 
   def toSMTSetContains(className: String, subTyping: Boolean)(element: Exp): String =
     UtilSMT.error(this.toString)
+
+  /**
+   * Extract expressions that need null checks from field access (DotExp) chains.
+   * For an expression like `a.b.c`, we need to ensure `a != null` and `a.b != null`
+   * before accessing `c`. This returns all such intermediate expressions.
+   *
+   * @return List of expressions that must be non-null for field access to be valid
+   */
+  def extractNullCheckExpressions: List[Exp] = {
+    this match {
+      case DotExp(innerExp, _) =>
+        // The inner expression must be non-null to access a field
+        // Also recursively check the inner expression's null requirements
+        val innerType = TypeChecker.exp2Type.get(innerExp)
+        innerType match {
+          case IdentType(_, _) =>
+            // It's a reference type - needs null check
+            innerExp :: innerExp.extractNullCheckExpressions
+          case _ =>
+            // Not a reference type (e.g., Int, String) - no null check needed
+            innerExp.extractNullCheckExpressions
+        }
+      case BinExp(e1, _, e2) =>
+        e1.extractNullCheckExpressions ++ e2.extractNullCheckExpressions
+      case UnaryExp(_, e) =>
+        e.extractNullCheckExpressions
+      case IfExp(cond, trueBranch, falseBranch) =>
+        cond.extractNullCheckExpressions ++
+          trueBranch.extractNullCheckExpressions ++
+          falseBranch.toList.flatMap(_.extractNullCheckExpressions)
+      case FunApplExp(_, args) =>
+        args.flatMap(_.extractNullCheckExpressions)
+      case TupleExp(exps) =>
+        exps.flatMap(_.extractNullCheckExpressions)
+      case ParenExp(e) =>
+        e.extractNullCheckExpressions
+      case _ =>
+        Nil
+    }
+  }
 
   def toScala: String = ???
   def toJson: JSONObject = {
