@@ -1,4 +1,5 @@
-// @expected UNSAT
+// @expected SAT
+// BUG: Regex .matches() always returns false - see notes/tests/regex_summary.txt
 // Test: Solver finds string values matching regex constraints
 // This is the REAL power of regex + SMT: finding unknown values
 // Expected: SAT - solver finds strings satisfying regex + other constraints

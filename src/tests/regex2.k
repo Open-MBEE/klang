@@ -1,4 +1,5 @@
-// @expected UNSAT
+// @expected SAT
+// BUG: Regex .matches() always returns false - see notes/tests/regex_summary.txt
 // Test: More regex patterns - character classes, quantifiers
 // Expected: SAT - strings match various regex patterns
 

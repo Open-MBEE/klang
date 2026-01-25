@@ -1,4 +1,5 @@
-// @expected UNSAT
+// @expected SAT
+// BUG: Regex .matches() always returns false - see notes/tests/regex_summary.txt
 // Test: Regex grouping with () and optional with ?
 // These patterns REQUIRE proper regex parsing
 // Expected: SAT - strings match grouped/optional patterns
