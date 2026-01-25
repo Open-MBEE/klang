@@ -1,0 +1,318 @@
+{
+  "type": "Model",
+  "imports": [],
+  "annotations": [],
+  "decls": [],
+  "packages": [{
+    "type": "PackageDecl",
+    "name": {
+      "names": [
+        "examples",
+        "sm"
+      ],
+      "type": "QualifiedName"
+    },
+    "model": {
+      "type": "Model",
+      "packageName": "examples.sm",
+      "imports": [],
+      "annotations": [],
+      "decls": [
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Event",
+          "typeparams": [],
+          "extending": [],
+          "members": []
+        },
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "State",
+          "typeparams": [],
+          "extending": [],
+          "members": []
+        },
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "RocketMachine",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "off",
+              "ty": {
+                "type": "ElementValue",
+                "element": "State"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "ready",
+              "ty": {
+                "type": "ElementValue",
+                "element": "State"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "firing",
+              "ty": {
+                "type": "ElementValue",
+                "element": "State"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "turn_on",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Event"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "fire",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Event"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "turn_off",
+              "ty": {
+                "type": "ElementValue",
+                "element": "Event"
+              }
+            },
+            {
+              "type": "FunDecl",
+              "ident": "move",
+              "typeParams": [],
+              "params": [
+                {
+                  "type": "Param",
+                  "name": "s",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "State"
+                  }
+                },
+                {
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Event"
+                  }
+                }
+              ],
+              "ty": {
+                "type": "ElementValue",
+                "element": "State"
+              },
+              "spec": [],
+              "body": [],
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "And"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "And"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "NotEQ"
+                          },
+                          {
+                            "element": "off",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "element": "ready",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      },
+                      {
+                        "operand": [
+                          {
+                            "type": "ElementValue",
+                            "element": "NotEQ"
+                          },
+                          {
+                            "element": "off",
+                            "type": "ElementValue"
+                          },
+                          {
+                            "element": "firing",
+                            "type": "ElementValue"
+                          }
+                        ],
+                        "type": "Expression"
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "NotEQ"
+                      },
+                      {
+                        "element": "firing",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "ready",
+                        "type": "ElementValue"
+                      }
+                    ],
+                    "type": "Expression"
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "EQ"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "move",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "off",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "turn_on",
+                        "type": "ElementValue"
+                      }
+                    ]
+                  },
+                  {
+                    "element": "ready",
+                    "type": "ElementValue"
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "EQ"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "move",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "ready",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "fire",
+                        "type": "ElementValue"
+                      }
+                    ]
+                  },
+                  {
+                    "element": "firing",
+                    "type": "ElementValue"
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "operand": [
+                  {
+                    "type": "ElementValue",
+                    "element": "EQ"
+                  },
+                  {
+                    "type": "Expression",
+                    "operand": [
+                      {
+                        "element": "move",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "firing",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "element": "turn_off",
+                        "type": "ElementValue"
+                      }
+                    ]
+                  },
+                  {
+                    "element": "ready",
+                    "type": "ElementValue"
+                  }
+                ],
+                "type": "Expression"
+              },
+              "annotations": []
+            }
+          ]
+        }
+      ],
+      "packages": []
+    }
+  }]
+}

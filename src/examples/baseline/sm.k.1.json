@@ -1,0 +1,332 @@
+{
+  "type": "Model",
+  "imports": [],
+  "annotations": [],
+  "decls": [],
+  "packages": [{
+    "type": "PackageDecl",
+    "name": {
+      "names": [
+        "examples",
+        "sm"
+      ],
+      "type": "QualifiedName"
+    },
+    "model": {
+      "type": "Model",
+      "packageName": "examples.sm",
+      "imports": [],
+      "annotations": [],
+      "decls": [
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "Event",
+          "typeparams": [],
+          "extending": [],
+          "members": []
+        },
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "State",
+          "typeparams": [],
+          "extending": [],
+          "members": []
+        },
+        {
+          "type": "EntityDecl",
+          "annotations": [],
+          "entityToken": "class",
+          "ident": "RocketMachine",
+          "typeparams": [],
+          "extending": [],
+          "members": [
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "off",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["State"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "ready",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["State"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "firing",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["State"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "turn_on",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["Event"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "fire",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["Event"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "PropertyDecl",
+              "modifiers": [],
+              "annotations": [],
+              "name": "turn_off",
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["Event"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              }
+            },
+            {
+              "type": "FunDecl",
+              "ident": "move",
+              "typeParams": [],
+              "params": [
+                {
+                  "type": "Param",
+                  "name": "s",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["State"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                },
+                {
+                  "type": "Param",
+                  "name": "e",
+                  "ty": {
+                    "args": [],
+                    "ident": {
+                      "names": ["Event"],
+                      "type": "QualifiedName"
+                    },
+                    "type": "IdentType"
+                  }
+                }
+              ],
+              "ty": {
+                "args": [],
+                "ident": {
+                  "names": ["State"],
+                  "type": "QualifiedName"
+                },
+                "type": "IdentType"
+              },
+              "spec": [],
+              "body": [],
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "And",
+                "exp1": {
+                  "type": "BinExp",
+                  "op": "And",
+                  "exp1": {
+                    "type": "BinExp",
+                    "op": "NotEQ",
+                    "exp1": {
+                      "ident": "off",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "ready",
+                      "type": "IdentExp"
+                    }
+                  },
+                  "exp2": {
+                    "type": "BinExp",
+                    "op": "NotEQ",
+                    "exp1": {
+                      "ident": "off",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "ident": "firing",
+                      "type": "IdentExp"
+                    }
+                  }
+                },
+                "exp2": {
+                  "type": "BinExp",
+                  "op": "NotEQ",
+                  "exp1": {
+                    "ident": "firing",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "ready",
+                    "type": "IdentExp"
+                  }
+                }
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "EQ",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "move",
+                    "type": "IdentExp"
+                  },
+                  "args": [
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "off",
+                        "type": "IdentExp"
+                      }
+                    },
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "turn_on",
+                        "type": "IdentExp"
+                      }
+                    }
+                  ]
+                },
+                "exp2": {
+                  "ident": "ready",
+                  "type": "IdentExp"
+                }
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "EQ",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "move",
+                    "type": "IdentExp"
+                  },
+                  "args": [
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "ready",
+                        "type": "IdentExp"
+                      }
+                    },
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "fire",
+                        "type": "IdentExp"
+                      }
+                    }
+                  ]
+                },
+                "exp2": {
+                  "ident": "firing",
+                  "type": "IdentExp"
+                }
+              },
+              "annotations": []
+            },
+            {
+              "type": "ConstraintDecl",
+              "exp": {
+                "type": "BinExp",
+                "op": "EQ",
+                "exp1": {
+                  "type": "FunApplExp",
+                  "exp1": {
+                    "ident": "move",
+                    "type": "IdentExp"
+                  },
+                  "args": [
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "firing",
+                        "type": "IdentExp"
+                      }
+                    },
+                    {
+                      "type": "PositionalArgument",
+                      "exp": {
+                        "ident": "turn_off",
+                        "type": "IdentExp"
+                      }
+                    }
+                  ]
+                },
+                "exp2": {
+                  "ident": "ready",
+                  "type": "IdentExp"
+                }
+              },
+              "annotations": []
+            }
+          ]
+        }
+      ],
+      "packages": []
+    }
+  }]
+}
