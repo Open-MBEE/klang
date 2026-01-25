@@ -1756,6 +1756,7 @@ object Frontend {
   
   /**
    * Save a per-file baseline to the baseline/ subdirectory.
+   * Also writes expanded files (.smt, .model.smt, .baseline.k, etc.)
    */
   def savePerFileBaseline(kFile: File, baseline: JSONObject): Unit = {
     val baselineDir = new File(kFile.getParentFile, "baseline")
@@ -1765,6 +1766,15 @@ object Frontend {
     fw.write(baseline.toString(2))
     fw.close()
     log(s"Baseline saved: ${baselineFile.getPath}")
+    
+    // Also write expanded baseline files for better legibility
+    try {
+      BaselineFileWriter.writeExpandedFiles(baselineDir, kFile.getName, baseline)
+      log(s"Expanded baseline files saved in: ${baselineDir.getPath}")
+    } catch {
+      case e: Exception =>
+        log(s"Warning: Failed to write expanded baseline files: ${e.getMessage}")
+    }
   }
   
   /**
