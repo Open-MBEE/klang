@@ -1,0 +1,21 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 16 items extracted
+
+-- Event instance: 19835, 19836
+-- Event instance: 19830, 19831
+-- Event instance: 19830, 19832
+-- Event instance: 18004, 18005
+-- Event instance: 19834, 19835
+-- Event instance: 19833, 19836
+-- Event instance: 19835, 19836
+-- Event instance: 18004, 18005
+-- Event instance: 19830, 19832
+-- Event instance: 19833, 19836
+-- Event instance: 19834, 19835
+-- Event instance: 19830, 19831
+-- TopLevelDeclarations instance: 7
+-- TopLevelDeclarations instance: 7
+-- Schedule instance: 3, 6, 1, 4, 5, 1, true
+-- Schedule instance: 3, 6, 1, 4, 5, 1, true

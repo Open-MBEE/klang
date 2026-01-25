@@ -1,0 +1,59 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 54 items extracted
+
+-- RadioGravSci_Reqs instance: (/, 56189.0, 2.0
+-- RadioGravSci_Reqs instance: (/, 56189.0, 2.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Jupiter instance: 1898000000000000000000000000.0, 69911.0, 778500000.0, (/, 2479.0, 100.0
+-- Telecom_Reqs instance: true
+-- Telecom_Reqs instance: true
+-- Body instance: 13.0, 14.0, 15.0, 16.0, 17.0
+-- Body instance: 3.0, 4.0, 5.0, 6.0, 7.0
+-- Body instance: 18.0, 19.0, 21.0, 22.0, 23.0
+-- Body instance: 8.0, 9.0, 10.0, 11.0, 12.0
+-- Body instance: 18.0, 19.0, 21.0, 22.0, 23.0
+-- Body instance: 13.0, 14.0, 15.0, 16.0, 17.0
+-- Body instance: 8.0, 9.0, 10.0, 11.0, 12.0
+-- Body instance: 3.0, 4.0, 5.0, 6.0, 7.0
+-- Earth instance: 5972000000000000000000000.0, 6371.0, 149660000.0, (/, 9807.0, 1000.0
+-- Earth instance: 5972000000000000000000000.0, 6371.0, 149660000.0, (/, 9807.0, 1000.0
+-- Radio_Reqs_A instance: 25.0, 0.0, 34, 0.0, 0.0, 0.0
+-- Radio_Reqs_A instance: 25.0, 0.0, 34, 0.0, 0.0, 0.0
+-- Radio_Reqs_B instance: 34, 0.0, (/, 101.0, 10.0
+-- Radio_Reqs_B instance: 34, 0.0, (/, 101.0, 10.0
+-- JupiterTwoBody instance: 13, 4
+-- JupiterTwoBody instance: 13, 23
+-- JupiterTwoBody instance: 13, 25
+-- JupiterTwoBody instance: 13, 20
+-- JupiterTwoBody instance: (JupiterMain, (sel-TopLevelDeclarations, (select, heap, 0
+-- JupiterTwoBody instance: (JupiterMain, (sel-TopLevelDeclarations, (select, heap, 0
+-- JupiterTwoBody instance: (JupiterMain, (sel-TopLevelDeclarations, (select, heap, 0
+-- JupiterTwoBody instance: (JupiterMain, (sel-TopLevelDeclarations, (select, heap, 0
+-- JupiterTwoBody instance: 13, 20
+-- JupiterTwoBody instance: 13, 4
+-- JupiterTwoBody instance: 13, 23
+-- JupiterTwoBody instance: 13, 25
+-- Spacecraft instance: 3100.0, 24.0, (/, 7778905141.0, 10.0
+-- Spacecraft instance: 3100.0, 24.0, (/, 7778905141.0, 10.0
+-- Europa instance: 47998000000000000000000.0, (/, 7804.0, 5.0
+-- Europa instance: 47998000000000000000000.0, (/, 7804.0, 5.0
+-- Europa instance: 47998000000000000000000.0, (/, 7804.0, 5.0
+-- Europa instance: 47998000000000000000000.0, (/, 7804.0, 5.0
+-- Sun instance: 1989000000000000000000000000000.0, 695800.0, 0.0, (/, 1401.0, 50.0
+-- Sun instance: 1989000000000000000000000000000.0, 695800.0, 0.0, (/, 1401.0, 50.0
+-- GravSci_Reqs instance: 20.0, 0.0, 43.0
+-- GravSci_Reqs instance: 20.0, 0.0, 43.0
+-- TopLevelDeclarations instance: 13, 20, 25, 4, 23, 5, 8, 6, 7, 3, 2, 14, 1, 22, 24, true, 2.0, (/, 614015374960000000000000000000000000.0, 36954241.0
+-- TopLevelDeclarations instance: 13, 20, 25, 4, 23, 5, 8, 6, 7, 3, 2, 14, 1, 22, 24, true, 2.0, (/, 614015374960000000000000000000000000.0, 36954241.0
+-- Instrument_Reqs instance: 0.0, 270.0, 20.0, (/, 1.0, 10.0
+-- Instrument_Reqs instance: 0.0, 270.0, 20.0, (/, 1.0, 10.0

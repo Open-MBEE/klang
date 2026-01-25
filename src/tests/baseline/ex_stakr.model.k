@@ -1,0 +1,63 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 58 items extracted
+
+-- DurativeEvent instance: 0, 16146, 16146
+-- DurativeEvent instance: 0, (-, 5
+-- DurativeEvent instance: 9703, 38639, 28936
+-- DurativeEvent instance: 25340, 68718, 43378
+-- DurativeEvent instance: 3640, (-, 5
+-- DurativeEvent instance: 19535, 35375, 15840
+-- DurativeEvent instance: 25995, 38139, 12144
+-- DurativeEvent instance: 0, (-, 5
+-- DurativeEvent instance: 25481, 31055, 5574
+-- DurativeEvent instance: 17770, 44631, 26861
+-- DurativeEvent instance: 22282, 61521, 39239
+-- DurativeEvent instance: 16118, 68357, 52239
+-- DurativeEvent instance: 22462, 55297, 32835
+-- DurativeEvent instance: 0, 7132, 7132
+-- DurativeEvent instance: (-, 30110
+-- DurativeEvent instance: 2012, 45527, 43515
+-- DurativeEvent instance: 0, 31158, 31158
+-- DurativeEvent instance: 0, 3635, 3635
+-- DurativeEvent instance: 14181, 31832, 17651
+-- DurativeEvent instance: 0, 54172, 54172
+-- DurativeEvent instance: 30433, 43480, 13047
+-- DurativeEvent instance: 0, 9010, 9010
+-- DurativeEvent instance: 419, 26871, 26452
+-- DurativeEvent instance: 0, 6667, 6667
+-- DurativeEvent instance: 20133, 79629, 59496
+-- DurativeEvent instance: 0, 38480, 38480
+-- DurativeEvent instance: 54177, 56605, 2428
+-- DurativeEvent instance: 0, 3634, 3634
+-- DurativeEvent instance: 25340, 68718, 43378
+-- DurativeEvent instance: 25481, 31055, 5574
+-- DurativeEvent instance: 0, 6667, 6667
+-- DurativeEvent instance: 25995, 38139, 12144
+-- DurativeEvent instance: 9703, 38639, 28936
+-- DurativeEvent instance: 0, 7132, 7132
+-- DurativeEvent instance: (-, 30110
+-- DurativeEvent instance: 3640, (-, 5
+-- DurativeEvent instance: 0, 3635, 3635
+-- DurativeEvent instance: 419, 26871, 26452
+-- DurativeEvent instance: 22282, 61521, 39239
+-- DurativeEvent instance: 20133, 79629, 59496
+-- DurativeEvent instance: 54177, 56605, 2428
+-- DurativeEvent instance: 19535, 35375, 15840
+-- DurativeEvent instance: 0, 3634, 3634
+-- DurativeEvent instance: 22462, 55297, 32835
+-- DurativeEvent instance: 17770, 44631, 26861
+-- DurativeEvent instance: 0, 9010, 9010
+-- DurativeEvent instance: 0, (-, 5
+-- DurativeEvent instance: 30433, 43480, 13047
+-- DurativeEvent instance: 16118, 68357, 52239
+-- DurativeEvent instance: 0, 31158, 31158
+-- DurativeEvent instance: 2012, 45527, 43515
+-- DurativeEvent instance: 0, 16146, 16146
+-- DurativeEvent instance: 0, 54172, 54172
+-- DurativeEvent instance: 14181, 31832, 17651
+-- DurativeEvent instance: 0, 38480, 38480
+-- DurativeEvent instance: 0, (-, 5
+-- TopLevelDeclarations instance: 5, 28, 9, 8, 24, 19, 15, 25, 13, 9, 28, 22, 27, 3, 18, 19, 22, 28, 6, 12, 28, 13, 18, 25, 3, 18, 19, 12, 22
+-- TopLevelDeclarations instance: 5, 28, 9, 8, 24, 19, 15, 25, 13, 9, 28, 22, 27, 3, 18, 19, 22, 28, 6, 12, 28, 13, 18, 25, 3, 18, 19, 12, 22

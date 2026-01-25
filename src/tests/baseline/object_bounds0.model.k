@@ -1,0 +1,27 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 22 items extracted
+
+-- A instance: 2
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- A instance: 2
+-- A instance: 2
+-- A instance: 2
+-- A instance: 1
+-- TopLevelDeclarations instance: 12, (seq.++, (seq.unit, 3
+-- TopLevelDeclarations instance: 12, (seq.++, (seq.unit, 3

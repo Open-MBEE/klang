@@ -1,0 +1,21 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 16 items extracted
+
+-- A instance: 2.0, 8, false, 9
+-- A instance: 2.0, 8, false, 9
+-- BB instance: 8.0, 13, false, 14, 9.0, 15
+-- BB instance: 10.0, 16, false, 17, 11.0, 18
+-- BB instance: 8.0, 13, false, 14, 9.0, 15
+-- BB instance: 10.0, 16, false, 17, 11.0, 18
+-- D instance: 6.0, 11, false
+-- D instance: 6.0, 11, false
+-- C instance: 3.0, 10, false, 4.0
+-- C instance: 3.0, 10, false, 4.0
+-- F instance: 5.0
+-- F instance: 5.0
+-- TopLevelDeclarations instance: 6, 7
+-- TopLevelDeclarations instance: 6, 7
+-- E instance: 7.0, 12
+-- E instance: 7.0, 12

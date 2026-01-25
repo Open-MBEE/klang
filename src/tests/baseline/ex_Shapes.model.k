@@ -1,0 +1,21 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 16 items extracted
+
+-- Equilateral instance: 3, 5, 5, 5, 11, 12
+-- Equilateral instance: 3, 5, 5, 5, 11, 12
+-- TAngle instance: 91
+-- TAngle instance: 60
+-- TAngle instance: 29
+-- TAngle instance: 29
+-- TAngle instance: 91
+-- TAngle instance: 60
+-- Angle instance: 0
+-- Angle instance: 0
+-- Triangle instance: 3, 5, 4, 3, 13, 14
+-- Triangle instance: 3, 5, 4, 3, 13, 14
+-- Obtuse instance: 3, 4, 3, 5, 9, 10
+-- Obtuse instance: 3, 4, 3, 5, 9, 10
+-- Shape instance: 15
+-- Shape instance: 15

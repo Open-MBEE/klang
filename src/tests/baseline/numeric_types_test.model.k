@@ -1,0 +1,29 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 24 items extracted
+
+-- BitVecIntCompat instance: 255, #xff, 255, 65535, #xffff, 65535
+-- BitVecIntCompat instance: 255, #xff, 255, 65535, #xffff, 65535
+-- HexLiterals instance: 255, #xff, 255, 4660, #x1234, 4660
+-- HexLiterals instance: 255, #xff, 255, 4660, #x1234, 4660
+-- NegativeToUnsigned instance: (-, 1
+-- NegativeToUnsigned instance: (-, 1
+-- UnsignedOverflow instance: 255, #xff, 255, 256, #x00, 0, 257, #x01, 1
+-- UnsignedOverflow instance: 255, #xff, 255, 256, #x00, 0, 257, #x01, 1
+-- UnsignedIntBasics instance: 200, #xc8, #x00c8, #x000000c8, #x00000000000000c8, 200, 200, 200, 200
+-- UnsignedIntBasics instance: 200, #xc8, #x00c8, #x000000c8, #x00000000000000c8, 200, 200, 200, 200
+-- SignedIntBasics instance: 42, #x2a, #x002a, #x0000002a, #x000000000000002a, 42, 42, 42, 42
+-- SignedIntBasics instance: 42, #x2a, #x002a, #x0000002a, #x000000000000002a, 42, 42, 42, 42
+-- UInt16Boundaries instance: 65535, #xffff, 65535, 0, #x0000, 0, 65536, #x0000, 0
+-- UInt16Boundaries instance: 65535, #xffff, 65535, 0, #x0000, 0, 65536, #x0000, 0
+-- TopLevelDeclarations instance: 2
+-- TopLevelDeclarations instance: 2
+-- SignedOverflow instance: 127, #x7f, 127, 128, #x80, (-, 128
+-- SignedOverflow instance: 127, #x7f, 127, 128, #x80, (-, 128
+-- FloatBasics instance: 42, (fp, #b0, #x84, #b01010000000000000000000
+-- FloatBasics instance: 42, (fp, #b0, #x84, #b01010000000000000000000
+-- FloatToIntTruncation instance: (/, 37.0, 10.0
+-- FloatToIntTruncation instance: (/, 37.0, 10.0
+-- Int16Boundaries instance: 32767, #x7fff, 32767, (-, 32768
+-- Int16Boundaries instance: 32767, #x7fff, 32767, (-, 32768

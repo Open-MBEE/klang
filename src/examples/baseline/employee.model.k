@@ -1,0 +1,25 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 20 items extracted
+
+-- Person instance: 52656
+-- Person instance: 19
+-- Person instance: 30
+-- Person instance: 32
+-- Person instance: 31
+-- Person instance: 30
+-- Person instance: 31
+-- Person instance: 52656
+-- Person instance: 19
+-- Person instance: 32
+-- Employee instance: 31, 10, 10, 15
+-- Employee instance: 20841, 2, 9, 15
+-- Employee instance: 28273, 10, 7, 15
+-- Employee instance: 8840, 10, 8, 15
+-- Employee instance: 28489, 3, 6, 15
+-- Employee instance: 28273, 10, 7, 15
+-- Employee instance: 28489, 3, 6, 15
+-- Employee instance: 8840, 10, 8, 15
+-- Employee instance: 20841, 2, 9, 15
+-- Employee instance: 31, 10, 10, 15

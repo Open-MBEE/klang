@@ -1,0 +1,29 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 24 items extracted
+
+-- Item instance: 17
+-- Item instance: 21
+-- Item instance: 15
+-- Item instance: 19
+-- Item instance: 12
+-- Item instance: 16
+-- Item instance: 18
+-- Item instance: 13
+-- Item instance: 14
+-- Item instance: 20
+-- Item instance: 21
+-- Item instance: 20
+-- Item instance: 19
+-- Item instance: 18
+-- Item instance: 17
+-- Item instance: 16
+-- Item instance: 15
+-- Item instance: 14
+-- Item instance: 13
+-- Item instance: 12
+-- TopLevelDeclarations instance: 11
+-- TopLevelDeclarations instance: 11
+-- Container instance: (as, seq.empty, (Seq, Int
+-- Container instance: (as, seq.empty, (Seq, Int

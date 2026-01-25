@@ -1,0 +1,33 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 28 items extracted
+
+-- UInt8ToInt16 instance: #xff, #x00ff
+-- UInt8ToInt16 instance: #xff, #x00ff
+-- Int32ToInt64 instance: #xffffffff, #xffffffffffffffff
+-- Int32ToInt64 instance: #xffffffff, #xffffffffffffffff
+-- UInt16ToUInt8 instance: #xff80, #x80
+-- UInt16ToUInt8 instance: #xff80, #x80
+-- SignedBvToInt instance: #xff, (-, 1
+-- SignedBvToInt instance: #xff, (-, 1
+-- UInt8ToUInt16 instance: #xff, #x00ff
+-- UInt8ToUInt16 instance: #xff, #x00ff
+-- Int8ToUInt8 instance: #xff, #xff
+-- Int8ToUInt8 instance: #xff, #xff
+-- UnsignedBvToInt instance: #xff, 255
+-- UnsignedBvToInt instance: #xff, 255
+-- Int16ToInt8 instance: #x0201, #x01
+-- Int16ToInt8 instance: #x0201, #x01
+-- UInt16ToInt8 instance: #x0080, #x80
+-- UInt16ToInt8 instance: #x0080, #x80
+-- Int16ToUInt8 instance: #xff00, #x00
+-- Int16ToUInt8 instance: #xff00, #x00
+-- Int8ToUInt16 instance: #xff, #xffff
+-- Int8ToUInt16 instance: #xff, #xffff
+-- Int8ToInt16 instance: #xff, #xffff
+-- Int8ToInt16 instance: #xff, #xffff
+-- UInt8ToInt8 instance: #x80, #x80
+-- UInt8ToInt8 instance: #x80, #x80
+-- UInt32ToUInt64 instance: #xffffffff, #x00000000ffffffff
+-- UInt32ToUInt64 instance: #xffffffff, #x00000000ffffffff

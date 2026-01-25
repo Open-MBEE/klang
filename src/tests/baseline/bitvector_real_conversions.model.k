@@ -1,0 +1,31 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 26 items extracted
+
+-- UnsignedInt8ToRealMax instance: #xff, 255.0
+-- UnsignedInt8ToRealMax instance: #xff, 255.0
+-- RealToSignedInt16 instance: 1000.0, #x03e8
+-- RealToSignedInt16 instance: 1000.0, #x03e8
+-- UnsignedInt16ToReal instance: #x8000, 32768.0
+-- UnsignedInt16ToReal instance: #x8000, 32768.0
+-- SignedInt8ToRealPositive instance: #x7f, 127.0
+-- SignedInt8ToRealPositive instance: #x7f, 127.0
+-- SignedInt32ToReal instance: #x80000000, (-, 2147483648.0
+-- SignedInt32ToReal instance: #x80000000, (-, 2147483648.0
+-- SignedInt8ToReal instance: #x80, (-, 128.0
+-- SignedInt8ToReal instance: #x80, (-, 128.0
+-- SignedInt16ToReal instance: #x8000, (-, 32768.0
+-- SignedInt16ToReal instance: #x8000, (-, 32768.0
+-- UnsignedInt32ToReal instance: #x80000000, 2147483648.0
+-- UnsignedInt32ToReal instance: #x80000000, 2147483648.0
+-- SignedInt8ToRealZero instance: #x00, 0.0
+-- SignedInt8ToRealZero instance: #x00, 0.0
+-- RealToUnsignedInt8 instance: (/, 2009.0, 10.0
+-- RealToUnsignedInt8 instance: (/, 2009.0, 10.0
+-- RealToUnsignedInt16 instance: 60000.0, #xea60
+-- RealToUnsignedInt16 instance: 60000.0, #xea60
+-- UnsignedInt8ToReal instance: #x80, 128.0
+-- UnsignedInt8ToReal instance: #x80, 128.0
+-- RealToSignedInt8 instance: (/, 427.0, 10.0
+-- RealToSignedInt8 instance: (/, 427.0, 10.0

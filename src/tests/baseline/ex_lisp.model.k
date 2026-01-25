@@ -1,0 +1,31 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 26 items extracted
+
+-- Atom instance: ""
+-- Atom instance: "A"
+-- Atom instance: ""
+-- Atom instance: "B"
+-- Atom instance: "A"
+-- Atom instance: ""
+-- Atom instance: ""
+-- Atom instance: "B"
+-- ListExp instance: "(B.B
+-- ListExp instance: "(.A
+-- ListExp instance: "((B.B
+-- ListExp instance: "(A.B
+-- ListExp instance: "((B.B
+-- ListExp instance: "(.A
+-- ListExp instance: "(A.B
+-- ListExp instance: "(B.B
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- S_Exp instance: ""
+-- TopLevelDeclarations instance: 11
+-- TopLevelDeclarations instance: 11

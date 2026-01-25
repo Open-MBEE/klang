@@ -1,0 +1,69 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 64 items extracted
+
+-- Event instance: (/, 129.0, 32.0
+-- Event instance: (/, 9.0, 4.0
+-- Event instance: (/, 73.0, 32.0
+-- Event instance: (/, 135.0, 32.0
+-- Event instance: 19799.0, (/, 2082913.0, 32.0
+-- Event instance: (/, 967375.0, 32.0
+-- Event instance: 88.0, (/, 916737.0, 32.0
+-- Event instance: 12606.0, (/, 716225.0, 32.0
+-- Event instance: (/, 37.0, 16.0
+-- Event instance: (/, 73.0, 32.0
+-- Event instance: (/, 234063.0, 32.0
+-- Event instance: (/, 79.0, 32.0
+-- Event instance: 32568.0, (/, 1390017.0, 32.0
+-- Event instance: (/, 105.0, 32.0
+-- Event instance: 31192.0, (/, 1792225.0, 32.0
+-- Event instance: 3604.0, (/, 4495777.0, 32.0
+-- Event instance: (/, 1.0, 4.0
+-- Event instance: (/, 1.0, 32.0
+-- Event instance: 0.0, (/, 13005857.0, 32.0
+-- Event instance: 979.0, (/, 1486689.0, 32.0
+-- Event instance: 88.0, (/, 916737.0, 32.0
+-- Event instance: (/, 135.0, 32.0
+-- Event instance: (/, 73.0, 32.0
+-- Event instance: 19799.0, (/, 2082913.0, 32.0
+-- Event instance: (/, 79.0, 32.0
+-- Event instance: (/, 105.0, 32.0
+-- Event instance: (/, 129.0, 32.0
+-- Event instance: (/, 1.0, 32.0
+-- Event instance: 0.0, (/, 13005857.0, 32.0
+-- Event instance: 12606.0, (/, 716225.0, 32.0
+-- Event instance: (/, 1.0, 4.0
+-- Event instance: 31192.0, (/, 1792225.0, 32.0
+-- Event instance: (/, 967375.0, 32.0
+-- Event instance: 32568.0, (/, 1390017.0, 32.0
+-- Event instance: 3604.0, (/, 4495777.0, 32.0
+-- Event instance: 979.0, (/, 1486689.0, 32.0
+-- Event instance: (/, 73.0, 32.0
+-- Event instance: (/, 37.0, 16.0
+-- Event instance: (/, 234063.0, 32.0
+-- Event instance: (/, 9.0, 4.0
+-- Schedule instance: 31, 29, 25, 28, 22, 21, 28, 29, 22, 22, 29, 21, 5, 20, 26, 25, 27, 22, 3, 27, 29, 26, 25, 29, 24, 21, 28, 4, 1, 25, (-, (/, 3.0, 32.0
+-- Schedule instance: 31, 29, 25, 28, 22, 21, 28, 29, 22, 22, 29, 21, 5, 20, 26, 25, 27, 22, 3, 27, 29, 26, 25, 29, 24, 21, 28, 4, 1, 25, (-, (/, 3.0, 32.0
+-- DSN_Pass instance: (/, 77.0, 32.0
+-- DSN_Pass instance: (/, 39.0, 16.0
+-- DSN_Pass instance: (/, 35.0, 16.0
+-- DSN_Pass instance: (/, 73.0, 32.0
+-- DSN_Pass instance: (/, 39.0, 16.0
+-- DSN_Pass instance: (/, 37.0, 16.0
+-- DSN_Pass instance: (/, 77.0, 32.0
+-- DSN_Pass instance: (/, 19.0, 8.0
+-- DSN_Pass instance: (/, 75.0, 32.0
+-- DSN_Pass instance: (/, 35.0, 16.0
+-- DSN_Pass instance: (/, 77.0, 32.0
+-- DSN_Pass instance: (/, 77.0, 32.0
+-- DSN_Pass instance: (/, 39.0, 16.0
+-- DSN_Pass instance: (/, 19.0, 8.0
+-- DSN_Pass instance: (/, 73.0, 32.0
+-- DSN_Pass instance: (/, 39.0, 16.0
+-- DSN_Pass instance: (/, 75.0, 32.0
+-- DSN_Pass instance: (/, 37.0, 16.0
+-- Requirements instance: true, true
+-- Requirements instance: true, true
+-- TopLevelDeclarations instance: 30, false, true
+-- TopLevelDeclarations instance: 30, false, true

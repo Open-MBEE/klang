@@ -1,0 +1,27 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 22 items extracted
+
+-- Event instance: (/, 105139.0, 4.0
+-- Event instance: 2.0
+-- Event instance: (/, 210279.0, 8.0
+-- Event instance: (/, 210285.0, 8.0
+-- Event instance: 26285.0
+-- Event instance: (/, 210281.0, 8.0
+-- Event instance: (/, 210283.0, 8.0
+-- Event instance: (/, 210281.0, 8.0
+-- Event instance: (/, 105141.0, 4.0
+-- Event instance: (/, 52571.0, 2.0
+-- Event instance: (/, 210279.0, 8.0
+-- Event instance: (/, 210281.0, 8.0
+-- Event instance: (/, 105139.0, 4.0
+-- Event instance: (/, 105141.0, 4.0
+-- Event instance: 26285.0
+-- Event instance: (/, 210283.0, 8.0
+-- Event instance: 2.0
+-- Event instance: (/, 52571.0, 2.0
+-- Event instance: (/, 210281.0, 8.0
+-- Event instance: (/, 210285.0, 8.0
+-- Scheduler instance: 3, 5, 4, 9, 10, 8, 2, 6, 8, 1
+-- Scheduler instance: 3, 5, 4, 9, 10, 8, 2, 6, 8, 1

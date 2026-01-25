@@ -1,0 +1,21 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 16 items extracted
+
+-- Event instance: 12
+-- Event instance: 13
+-- Event instance: 8
+-- Event instance: 12
+-- Event instance: 8
+-- Event instance: 13
+-- State instance: 11
+-- State instance: 10
+-- State instance: 9
+-- State instance: 9
+-- State instance: 10
+-- State instance: 11
+-- TopLevelDeclarations instance: (-, 1
+-- TopLevelDeclarations instance: (-, 1
+-- RocketMachine instance: 4, 5, 6, 1, 3, 3, 42
+-- RocketMachine instance: 4, 5, 6, 1, 3, 3, 42

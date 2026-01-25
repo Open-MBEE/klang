@@ -1,0 +1,23 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 18 items extracted
+
+-- Chain instance: 1, 4
+-- Chain instance: 5, 8
+-- Chain instance: 10, 5
+-- Chain instance: 11, 3
+-- Chain instance: 3, 3
+-- Chain instance: 4, 7
+-- Chain instance: 2, 2
+-- Chain instance: 9, 6
+-- Chain instance: 9, 6
+-- Chain instance: 3, 3
+-- Chain instance: 4, 7
+-- Chain instance: 2, 2
+-- Chain instance: 11, 3
+-- Chain instance: 10, 5
+-- Chain instance: 5, 8
+-- Chain instance: 1, 4
+-- TopLevelDeclarations instance: 8
+-- TopLevelDeclarations instance: 8

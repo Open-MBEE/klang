@@ -1,0 +1,23 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 18 items extracted
+
+-- A instance: 21652, 14136, 8404, 24337, 26928, (-, 96469
+-- A instance: 21652, 14136, 8404, 24337, 26928, (-, 96469
+-- D instance: 16673, 18004, (-, 73301
+-- D instance: 16673, 18004, (-, 73301
+-- B instance: 13213, 14097, 24772, 5598, (-, 90129
+-- B instance: 13213, 14097, 24772, 5598, (-, 90129
+-- TopLevelDeclarations instance: 7
+-- TopLevelDeclarations instance: 7
+-- F instance: 7065, (-, 96530
+-- F instance: 7065, (-, 96530
+-- G instance: 24388, 0, 12279, 13505, 29404, (-, 87115
+-- G instance: 24388, 0, 12279, 13505, 29404, (-, 87115
+-- H instance: 7176, 2331, 22114, (-, 74773
+-- H instance: 7176, 2331, 22114, (-, 74773
+-- C instance: (-, 106808
+-- C instance: (-, 106808
+-- E instance: 2804, 28937, 3023, 10335, 20533, (-, 69728
+-- E instance: 2804, 28937, 3023, 10335, 20533, (-, 69728

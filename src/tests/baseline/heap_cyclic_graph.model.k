@@ -1,0 +1,25 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 20 items extracted
+
+-- GraphNode instance: 3, 6, 9
+-- GraphNode instance: 2, 4, 6
+-- GraphNode instance: 11, 4, 9
+-- GraphNode instance: 1, 9, 4
+-- GraphNode instance: 13, 2, 7
+-- GraphNode instance: 15, 2, 4
+-- GraphNode instance: 10, 4, 2
+-- GraphNode instance: 14, 3, 6
+-- GraphNode instance: 12, 9, 5
+-- GraphNode instance: 13, 2, 7
+-- GraphNode instance: 14, 3, 6
+-- GraphNode instance: 12, 9, 5
+-- GraphNode instance: 3, 6, 9
+-- GraphNode instance: 15, 2, 4
+-- GraphNode instance: 1, 9, 4
+-- GraphNode instance: 11, 4, 9
+-- GraphNode instance: 10, 4, 2
+-- GraphNode instance: 2, 4, 6
+-- TopLevelDeclarations instance: 6, 9, 4
+-- TopLevelDeclarations instance: 6, 9, 4

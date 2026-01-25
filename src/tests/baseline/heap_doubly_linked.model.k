@@ -1,0 +1,25 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 20 items extracted
+
+-- DLLNode instance: 10, 3, 6
+-- DLLNode instance: 12, 2, 4
+-- DLLNode instance: 2, 6, 2
+-- DLLNode instance: 13, 9, 7
+-- DLLNode instance: 1, 9, 9
+-- DLLNode instance: 14, 6, 5
+-- DLLNode instance: 15, 9, 6
+-- DLLNode instance: 11, 2, 3
+-- DLLNode instance: 3, 9, 4
+-- DLLNode instance: 12, 2, 4
+-- DLLNode instance: 3, 9, 4
+-- DLLNode instance: 13, 9, 7
+-- DLLNode instance: 15, 9, 6
+-- DLLNode instance: 14, 6, 5
+-- DLLNode instance: 1, 9, 9
+-- DLLNode instance: 11, 2, 3
+-- DLLNode instance: 10, 3, 6
+-- DLLNode instance: 2, 6, 2
+-- TopLevelDeclarations instance: 6, 9, 2
+-- TopLevelDeclarations instance: 6, 9, 2

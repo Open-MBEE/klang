@@ -1,0 +1,23 @@
+-- K constraints derived from solver model
+-- Generated from smtModel field in baseline JSON
+
+-- 18 items extracted
+
+-- Body instance: 10
+-- Body instance: 12
+-- Body instance: 11
+-- Body instance: 12
+-- Body instance: 11
+-- Body instance: 10
+-- Trip instance: 1, 1, 5
+-- Trip instance: 1, 1, 5
+-- Moon instance: 1, 5
+-- Moon instance: 1, (jupiter, (sel-TopLevelDeclarations, (select, heap, 0
+-- Moon instance: 1, 5
+-- TopLevelDeclarations instance: 5, 1, 7
+-- TopLevelDeclarations instance: 5, 1, 7
+-- Planet instance: 50000, 588000000
+-- Planet instance: 8, 9
+-- Planet instance: 50000, 588000000
+-- Planet instance: 50000, 588000000
+-- Planet instance: 8, 9
