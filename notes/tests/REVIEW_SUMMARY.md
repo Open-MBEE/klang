@@ -1,14 +1,29 @@
 # K Test Suite Review Summary
-**Last Updated**: 2026-01-25 14:45
+**Last Updated**: 2026-01-25 15:30
 
 ## Quick Stats
 
 ### src/tests/ (213 files)
 | Category | Count | Notes |
 |----------|-------|-------|
-| ✅ Tests with @expected | 141 | All now have correct annotations |
-| 🔧 Broken features | 15 | Optimization, regex, soft constraints |
-| 📋 Pass rate | 100% | 213/213 pass |
+| ✅ Passing tests | 205 | Working as expected |
+| ❌ Failing tests (known bugs) | 8 | See list below |
+| 📋 Pass rate | 96% | 205/213 pass |
+
+### Known Failing Tests
+These tests fail because features are broken. They are marked with
+`@expected` set to what SHOULD happen (not what currently happens):
+
+| Test | Expected | Actual | Bug |
+|------|----------|--------|-----|
+| heap_linked_list.k | SAT | UNSAT | CEGAR false UNSAT with null |
+| regex1.k | SAT | UNSAT | .matches() always false |
+| regex2.k | SAT | UNSAT | .matches() always false |
+| regex_solver1.k | SAT | UNSAT | .matches() always false |
+| regex_alternation1.k | SAT | UNSAT | .matches() always false |
+| regex_dot1.k | SAT | UNSAT | .matches() always false |
+| regex_escapes1.k | SAT | UNSAT | .matches() always false |
+| regex_grouping1.k | SAT | UNSAT | .matches() always false |
 
 ### src/examples/ (59 files)
 | Category | Count | Notes |
@@ -19,19 +34,18 @@
 
 ## Known Broken Features
 
-### CRITICAL - Wrong Results Silently Accepted
-1. **external2.k, external3.k** - sqrt() with symbolic args returns garbage
-2. **external6.k** - Constraint x > 0.0 violated but "verified"
-3. **as2.k** - Type checker accepts cast between unrelated classes
+### Tests That FAIL (good - shows bug is visible)
+1. **heap_linked_list.k** - CEGAR returns false UNSAT with null constraints
+2. **regex*.k (7 tests)** - .matches() always returns false
 
-### HIGH - Features Don't Work
-1. **maximize/minimize** - Optimization directives ignored (besteffort*.k, opt*.k)
-2. **regex.matches()** - Always returns false/UNSAT (regex*.k)
-3. **external functions** - With symbolic args, return arbitrary values (cegar1.k)
+### Tests That PASS But Have Bugs (wrong values, not detectable)
+1. **cegar1.k, external2.k, external3.k, external6.k** - External functions with
+   symbolic args return SAT but values violate function semantics
+2. **besteffort*.k, opt*.k** - Optimization directives ignored, returns any SAT
+3. **soft_constraint*.k** - Soft constraints ignored, returns any SAT
 
 ### MEDIUM - Limitations
-1. **soft req** - Soft constraints parsed but ignored
-2. **opaque_uninterpreted1.k** - Z3 name collision
+1. **opaque_uninterpreted1.k** - Returns UNKNOWN (opaque function handling)
 
 ## Files by Status
 
