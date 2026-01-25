@@ -14,6 +14,7 @@ import scala.collection.mutable.ListBuffer
  * - `sm.k.1.json` - The parsed AST from "json1" field
  * - `sm.k.2.json` - The transformed AST from "json2" field
  * - `sm.model.k` - K constraints representing the solution (for verification)
+ * - `sm.k.output.txt` - Console output from test execution (optional, from "output" field)
  */
 object BaselineFileWriter {
   
@@ -78,6 +79,95 @@ object BaselineFileWriter {
       val kConstraints = smtModelToKConstraints(smtModelContent)
       writeFile(new File(baselineDir, s"$baseName.model.k"), kConstraints)
     }
+    
+    // Write output file (console output from test execution)
+    if (baseline.has("output") && !baseline.isNull("output")) {
+      val outputContent = baseline.getString("output")
+      writeFile(new File(baselineDir, s"$kFileName.output.txt"), outputContent)
+    }
+  }
+  
+  /**
+   * Compare expanded baseline files against the baseline JSON.
+   * Returns a list of (fieldName, matches, message) tuples.
+   * This provides redundant checking - comparing file contents against embedded data.
+   * 
+   * @param baselineDir The directory containing baseline files
+   * @param kFileName The name of the K file (e.g., "sm.k")
+   * @param baseline The parsed baseline JSONObject
+   * @return List of comparison results: (field, matches, message)
+   */
+  def compareExpandedFiles(baselineDir: File, kFileName: String, baseline: JSONObject): List[(String, Boolean, String)] = {
+    val baseName = if (kFileName.endsWith(".k")) kFileName.dropRight(2) else kFileName
+    val results = ListBuffer[(String, Boolean, String)]()
+    
+    // Compare SMT file
+    val smtFile = new File(baselineDir, s"$kFileName.smt")
+    if (smtFile.exists && baseline.has("smt") && !baseline.isNull("smt")) {
+      val fileContent = readFile(smtFile)
+      val jsonContent = baseline.getString("smt")
+      val matches = fileContent.trim == jsonContent.trim
+      results += (("smt", matches, if (matches) "OK" else "MISMATCH: .smt file differs from JSON"))
+    }
+    
+    // Compare SMT model file
+    val smtModelFile = new File(baselineDir, s"$kFileName.model.smt")
+    if (smtModelFile.exists && baseline.has("smtModel") && !baseline.isNull("smtModel")) {
+      val fileContent = readFile(smtModelFile)
+      val jsonContent = baseline.getString("smtModel")
+      val matches = fileContent.trim == jsonContent.trim
+      results += (("smtModel", matches, if (matches) "OK" else "MISMATCH: .model.smt file differs from JSON"))
+    }
+    
+    // Compare baseline.k file (model field)
+    val baselineKFile = new File(baselineDir, s"$baseName.baseline.k")
+    if (baselineKFile.exists && baseline.has("model") && !baseline.isNull("model")) {
+      val fileContent = readFile(baselineKFile)
+      val jsonContent = baseline.getString("model")
+      val matches = fileContent.trim == jsonContent.trim
+      results += (("model", matches, if (matches) "OK" else "MISMATCH: .baseline.k file differs from JSON"))
+    }
+    
+    // Compare json1 file
+    val json1File = new File(baselineDir, s"$kFileName.1.json")
+    if (json1File.exists && baseline.has("json1") && !baseline.isNull("json1")) {
+      val fileContent = readFile(json1File)
+      val json1 = baseline.get("json1")
+      val jsonContent = if (json1.isInstanceOf[JSONObject]) {
+        json1.asInstanceOf[JSONObject].toString(2)
+      } else if (json1.isInstanceOf[JSONArray]) {
+        json1.asInstanceOf[JSONArray].toString(2)
+      } else {
+        json1.toString
+      }
+      val matches = fileContent.trim == jsonContent.trim
+      results += (("json1", matches, if (matches) "OK" else "MISMATCH: .1.json file differs from JSON"))
+    }
+    
+    // Compare json2 file
+    val json2File = new File(baselineDir, s"$kFileName.2.json")
+    if (json2File.exists && baseline.has("json2") && !baseline.isNull("json2")) {
+      val fileContent = readFile(json2File)
+      val json2 = baseline.get("json2")
+      val jsonContent = if (json2.isInstanceOf[JSONObject]) {
+        json2.asInstanceOf[JSONObject].toString(2)
+      } else if (json2.isInstanceOf[JSONArray]) {
+        json2.asInstanceOf[JSONArray].toString(2)
+      } else {
+        json2.toString
+      }
+      val matches = fileContent.trim == jsonContent.trim
+      results += (("json2", matches, if (matches) "OK" else "MISMATCH: .2.json file differs from JSON"))
+    }
+    
+    results.toList
+  }
+  
+  /**
+   * Read file contents as a string.
+   */
+  private def readFile(file: File): String = {
+    scala.io.Source.fromFile(file).mkString
   }
   
   /**

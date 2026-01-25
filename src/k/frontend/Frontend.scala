@@ -785,6 +785,21 @@ object Frontend {
                     if (matches) {
                       baselineMatched += 1
                       baselineInfo = "baseline OK"
+                      
+                      // Also check expanded baseline files (redundant check)
+                      try {
+                        val baselineDir = new File(file.getParentFile, "baseline")
+                        val expandedResults = BaselineFileWriter.compareExpandedFiles(baselineDir, file.getName, baseline)
+                        val expandedMismatches = expandedResults.filter(!_._2).map(_._1)
+                        if (expandedMismatches.nonEmpty) {
+                          // Expanded files exist but don't match JSON - this is a warning, not failure
+                          if (batchVerbose) {
+                            log(s"  Warning: Expanded baseline file mismatch for ${file.getName}: ${expandedMismatches.mkString(", ")}")
+                          }
+                        }
+                      } catch {
+                        case _: Throwable => // Ignore errors in expanded file comparison
+                      }
                     } else {
                       baselineMismatched += 1
                       baselinePassed = false
