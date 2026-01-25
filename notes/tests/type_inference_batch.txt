@@ -1,0 +1,18 @@
+# type_inference_*.k Tests Analysis
+
+## Status Summary
+- type_inference_advanced.k: SAT ✓
+- type_inference_class.k: SAT ✓
+- type_inference_constraint.k: SAT ✓
+- type_inference_error1.k: ERROR (expected) ✓
+- type_inference_expression.k: ERROR (expected) ✓
+- type_inference_inheritance.k: SAT ✓
+- type_inference_test.k: UNSAT - test has bug (see notes)
+- type_inference_undeclared.k: SAT ✓
+
+## Issues
+- type_inference_test.k has unsatisfiable constraints (inferredSum=52 but req > 100)
+- Most tests pass correctly
+
+## Recommendations
+- Fix type_inference_test.k constraint

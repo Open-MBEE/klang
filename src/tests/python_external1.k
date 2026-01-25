@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: python_external1.k
 -- Tests import of Python math module
 -- Expected: PASSED

@@ -1,0 +1,42 @@
+# bitvector_real_conversions.k Analysis
+
+## Purpose
+Tests conversion between bitvector types and Real using `as` operator.
+Covers Int8/16/32, UInt8/16/32 to Real and Real to bitvectors.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations - ALL CONVERSIONS VERIFIED CORRECT
+- SignedInt8ToReal: x=0x80, y=-128.0 ✓ (0x80 as signed = -128)
+- SignedInt8ToRealPositive: x=0x7f, y=127.0 ✓
+- SignedInt8ToRealZero: x=0x00, y=0.0 ✓
+- UnsignedInt8ToReal: x=0x80, y=128.0 ✓ (unsigned = 128)
+- UnsignedInt8ToRealMax: x=0xff, y=255.0 ✓
+- SignedInt16ToReal: x=0x8000, y=-32768.0 ✓
+- UnsignedInt16ToReal: x=0x8000, y=32768.0 ✓
+- SignedInt32ToReal: x=0x80000000, y=-2147483648.0 ✓
+- UnsignedInt32ToReal: x=0x80000000, y=2147483648.0 ✓
+- RealToSignedInt8: x=42.7, y=0x2a (42) ✓ (truncation)
+- RealToUnsignedInt8: x=200.9, y=0xc8 (200) ✓
+- RealToSignedInt16: x=1000.0, y=0x03e8 ✓
+- RealToUnsignedInt16: x=60000.0, y=0xea60 ✓
+
+## Issues Found
+1. **Missing @expected annotation**
+2. Type checker warnings (expected for Real→Int conversions)
+3. No validation that conversions are mathematically correct - relies on manual verification
+
+## Checklist Flags
+- [x] Clear purpose - comprehensive bitvec/real conversion tests
+- [ ] @expected annotation MISSING
+- [x] All conversions produce correct values
+- [x] Signed vs unsigned semantics correct
+- [x] Truncation behavior correct
+
+## Recommendations
+1. Add `@expected SAT` annotation
+2. Add explicit assertions to verify expected values (e.g., req y = -128.0)
+   - Currently no constraints verify the conversion results

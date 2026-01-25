@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Int to String conversion - fromInt
 // Expected: SKIP - fromInt requires TypeChecker changes to support as standalone function
 // NOTE: This test is a placeholder until fromInt syntax is properly implemented

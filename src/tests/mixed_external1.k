@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: mixed_external1.k
 -- Tests BOTH Java and Python external functions in the same model
 -- This demonstrates K's ability to integrate with multiple languages

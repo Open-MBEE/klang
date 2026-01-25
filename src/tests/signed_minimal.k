@@ -1,3 +1,4 @@
+// @expected SAT
 // Minimal test for signed int conversion
 class SignedIntMinimal {
   val1 : Int = 42

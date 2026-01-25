@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test rename declaration for keeping both parent and child fields
 -- This should compile and solve successfully
 

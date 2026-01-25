@@ -1,0 +1,20 @@
+# unsat*.k Tests Analysis
+
+## Status: ALL PASS (return UNSAT correctly)
+
+## Tests
+- unsat1.k: UNSAT ✓
+- unsat2.k: UNSAT ✓
+- unsat3.k: UNSAT ✓
+- unsat4.k: UNSAT ✓
+- unsat5.k: UNSAT ✓
+- unsat_function.k: UNSAT ✓
+
+## Observations
+All unsat tests correctly return UNSAT.
+Need to verify @expected annotations.
+All have smt-only baseline mismatches.
+
+## Recommendations
+- Verify @expected UNSAT on each
+- Safe to regenerate baselines

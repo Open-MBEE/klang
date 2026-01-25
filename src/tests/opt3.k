@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Optimization with weights (multi-objective)
 // Expected: SAT with weighted objectives
 

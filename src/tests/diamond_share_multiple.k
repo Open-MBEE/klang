@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test diamond inheritance with multiple shared ancestors
 -- More complex diamond pattern
 

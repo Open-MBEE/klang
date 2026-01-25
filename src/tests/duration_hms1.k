@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Duration in HH:MM:SS.mmm format
 // This tests the new HH:MM:SS duration literal syntax
 

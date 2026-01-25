@@ -1,0 +1,19 @@
+# empty_class.k Analysis
+
+## Purpose
+Tests that empty classes (no fields) work correctly.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Empty classes work
+- [ ] @expected annotation MISSING
+
+## Recommendations
+1. Add `@expected SAT`

@@ -1443,9 +1443,27 @@ object K2Z3 {
               className == "TopLevelDeclarations" match {
                 case true => ()
                 case _ => {
-                  val res = printObjectValue("Ref " + key, heapMap, value, visited, key, false)
-                  extraRows = res._2 ++ extraRows
-                  visited = res._1 + ("Ref " + key)
+                  // When useHeapUsedFlags is enabled, skip objects where used=false
+                  val shouldPrint = if (ASTOptions.useHeapUsedFlags) {
+                    // Check used_ClassName_index flag value in the model
+                    val usedFlagName = s"used_${className}_$key"
+                    val usedFlagValue = try {
+                      val usedExpr = ctx.mkBoolConst(usedFlagName)
+                      val usedValue = z3Model.eval(usedExpr, true)
+                      usedValue.toString == "true"
+                    } catch {
+                      case _: Throwable => true // If we can't check, print it
+                    }
+                    usedFlagValue
+                  } else {
+                    true // No filtering if used flags are not enabled
+                  }
+                  
+                  if (shouldPrint) {
+                    val res = printObjectValue("Ref " + key, heapMap, value, visited, key, false)
+                    extraRows = res._2 ++ extraRows
+                    visited = res._1 + ("Ref " + key)
+                  }
                 }
               }
             }

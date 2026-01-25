@@ -1,3 +1,4 @@
+// @expected SAT
 // Simple test with explicit types only
 class SimpleTest {
   x : Int = 10

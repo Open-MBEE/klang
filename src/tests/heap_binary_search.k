@@ -1,3 +1,4 @@
+// @expected SAT
 // Binary search tree with BST property
 // Requires CEGAR to discover sufficient heap size
 

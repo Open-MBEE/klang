@@ -1,0 +1,35 @@
+# opaque_uninterpreted1.k Analysis
+
+## Status: BUG - Z3 Function Declaration Conflict
+
+## Purpose
+Tests truly uninterpreted (opaque) functions that Z3 synthesizes values for.
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: UNKNOWN with Z3 error
+- Error: "function 'y' (with the given signature) already declared"
+
+## Analysis
+The test declares:
+```
+fun mystery(n : Int) : Int
+y = mystery(x)
+```
+
+The Z3 error indicates that 'y' is being declared as a function when it should
+be a variable. There's a name collision in SMT generation.
+
+## Issues Found
+1. **BUG**: Variable 'y' and function declaration conflict
+2. **Missing @expected annotation**
+3. Opaque function handling generates invalid SMT
+
+## Checklist Flags
+- [ ] @expected annotation MISSING
+- [ ] Opaque function works - NO, Z3 error
+- [ ] SMT generation correct - NO
+
+## Recommendations
+1. Fix SMT generation for opaque functions to avoid name collisions
+2. Variable 'y' should not be generated as function declaration

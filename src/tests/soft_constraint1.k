@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: soft_constraint1.k
 -- Tests soft constraint syntax (soft req)
 -- Expected: PASSED

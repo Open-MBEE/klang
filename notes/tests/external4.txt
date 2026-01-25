@@ -1,0 +1,29 @@
+# external4.k Analysis
+
+## Purpose
+Tests multiple concrete Math functions: pow, sqrt, abs, max, min.
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT
+- Status: PASS ✓
+
+## Observations
+Output shows all correct values:
+- powValue = 8.0 (2^3) ✓
+- sqrtValue = 4.0 (sqrt(16)) ✓
+- absValue = 42.0 (abs(-42)) ✓
+- maxValue = 20.0 (max(10,20)) ✓
+- minValue = 10.0 (min(10,20)) ✓
+
+All concrete external function evaluations work correctly.
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] All Math functions work with concrete args
+- [ ] @expected annotation MISSING
+
+## Recommendations
+1. Add `@expected SAT`

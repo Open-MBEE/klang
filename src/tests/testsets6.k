@@ -1,3 +1,4 @@
+// @expected SAT
 
 class Planet
 class Earth extends Planet

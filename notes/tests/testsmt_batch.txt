@@ -1,0 +1,13 @@
+# testsmt*.k Tests Analysis (20 files)
+
+## Status: ALL PASS
+
+## Tests
+testsmt1.k through testsmt20.k - all return SAT ✓
+
+## Observations
+All testsmt tests pass functionally.
+All have smt-only baseline mismatches.
+
+## Recommendations
+- Safe to regenerate baselines

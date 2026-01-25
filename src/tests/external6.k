@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external6.k
 -- Tests CEGAR refinement with symbolic arguments
 -- Expected: PASSED (solver finds consistent values)

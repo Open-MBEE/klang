@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String case operations - stringcase1 already exists
 // This tests edge cases: empty string, single char
 

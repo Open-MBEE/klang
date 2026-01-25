@@ -1,0 +1,21 @@
+# string*.k Tests Analysis
+
+## Status: ALL PASS
+
+## Tests
+- stringcase1.k: SAT ✓
+- stringconcat1.k: SAT ✓
+- stringedge1.k: SAT ✓
+- stringfromint1.k: SAT ✓
+- stringint1.k: SAT ✓
+- stringops1.k: SAT ✓
+- stringops2.k: SAT ✓
+- stringpred1.k: SAT ✓
+- stringsolver1.k: SAT ✓
+
+## Observations
+All string operation tests pass functionally.
+All have smt-only baseline mismatches.
+
+## Recommendations
+- Safe to regenerate baselines

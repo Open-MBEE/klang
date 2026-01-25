@@ -1,3 +1,4 @@
+// @expected SAT
 // Advanced type inference tests
 // Tests more complex scenarios for type inference
 

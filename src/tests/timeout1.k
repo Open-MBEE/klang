@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Timeout annotation
 // Expected: SAT (should complete quickly, timeout is just a safeguard)
 

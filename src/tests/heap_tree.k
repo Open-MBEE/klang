@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Binary tree that requires exactly 3 nodes
 // This tests the CEGAR loop's ability to find the right heap size
 // Using a complete binary tree avoids null reference issues

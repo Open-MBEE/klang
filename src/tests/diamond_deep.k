@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test deep diamond: A extends B, C; B extends D, E; C extends D, E
 -- This creates two diamonds at once
 

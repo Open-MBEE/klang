@@ -1,3 +1,4 @@
+// @expected SAT
 // Test case for @timeout WITH @bestEffort - easier version
 // This problem should find SOME solution quickly, but may not finish optimization
 

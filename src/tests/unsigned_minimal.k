@@ -1,3 +1,4 @@
+// @expected SAT
 // Minimal test for unsigned int conversion
 class UnsignedIntMinimal {
   val1 : Int = 200

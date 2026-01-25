@@ -1,0 +1,25 @@
+# external1.k Analysis
+
+## Purpose
+Tests external Java function with CONCRETE argument: sqrt(100.0) = 10.0
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT
+- Status: PASS - x = 10.0 ✓
+
+## Observations
+- Concrete arguments work correctly
+- sqrt(100.0) = 10.0 as expected
+- This is the working case (vs symbolic args in external2.k)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Concrete external function works
+- [x] Correct result (10.0)
+- [ ] @expected annotation MISSING
+
+## Recommendations
+1. Add `@expected SAT`

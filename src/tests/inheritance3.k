@@ -1,3 +1,4 @@
+// @expected SAT
 
 -- This one fails due to type checker issue: inner bobj.get(). Reported as bug.
 

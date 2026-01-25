@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: PropertyDecl interpreted as equality constraint when name is already in scope
 -- When a variable name is already declared (e.g., as a class member or function parameter),
 -- `name = expr` in a function body should be interpreted as an equality constraint (Bool)

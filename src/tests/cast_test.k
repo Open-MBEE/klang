@@ -1,3 +1,4 @@
+// @expected SAT
 // Basic test for numeric type conversions
 // Tests basic Int/Real/BitVec conversions that are currently supported
 

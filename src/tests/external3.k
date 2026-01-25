@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external3.k
 -- Tests external Java function calls with import statement
 -- Expected: PASSED (sqrt(100.0) = 10.0 using imported Math)

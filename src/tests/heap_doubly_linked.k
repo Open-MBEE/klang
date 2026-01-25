@@ -1,3 +1,4 @@
+// @expected SAT
 // Doubly linked list with 3 nodes
 // Tests bidirectional pointer constraints
 

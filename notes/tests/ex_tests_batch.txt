@@ -1,0 +1,49 @@
+# ex_*.k Tests Analysis (31 files)
+
+## Status: ALL PASSING (with SMT-only baseline mismatches)
+
+All ex_ files have been batch tested on 2026-01-23.
+All have @expected annotations and produce correct outcomes.
+
+## Files Tested
+- ex_Bank.k - SAT ✓
+- ex_borges.k - SAT ✓
+- ex_conservative-extension.k - SAT ✓
+- ex_DSN_Pass.k - SAT ✓
+- ex_f.k - SAT ✓
+- ex_fibonacci.k - SAT ✓
+- ex_flight.k - UNSAT ✓ (correctly expects UNSAT)
+- ex_Fruits.k - SAT ✓
+- ex_function_with_class_params.k - SAT ✓
+- ex_function_with_class_params2.k - SAT ✓
+- ex_FunctionSynthesis.k - SAT ✓
+- ex_GravityScience.k - SAT ✓
+- ex_lightswitch.k - SAT ✓
+- ex_lisp.k - SAT ✓
+- ex_mathutil.k - SAT ✓
+- ex_nesting.k - SAT ✓
+- ex_orbital-petals.k - SAT ✓
+- ex_order-transformed.k - SAT ✓
+- ex_planning-simple.k - SAT ✓
+- ex_prepost.k - SAT ✓
+- ex_scheduling.k - SAT ✓
+- ex_seq_vs_array.k - SAT ✓
+- ex_Shapes.k - SAT ✓
+- ex_sm.k - SAT ✓
+- ex_stakr.k - SAT ✓
+- ex_StringDemo.k - SAT ✓
+- ex_testsmt.k - SAT ✓
+- ex_tree.k - SAT ✓
+- ex_tree2.k - SAT ✓
+- ex_tree4.k - SAT ✓
+- ex_tree_size.k - SAT ✓
+
+## Issues Found
+None - all tests have correct @expected annotations and pass
+
+## Baseline Status
+All have SMT-only baseline mismatches (cosmetic changes in generated SMT)
+- No functional regressions
+
+## Recommendations
+- These tests can have baselines regenerated safely

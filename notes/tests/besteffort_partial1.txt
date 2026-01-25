@@ -1,0 +1,37 @@
+# besteffort_partial1.k Analysis
+
+## Purpose
+Tests @bestEffort with very short timeout (100ms) and optimization.
+- Find x, y, z in [0,100] with x <= y <= z
+- Constraint: x+y+z <= 150
+- Maximize x+y+z
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Model: x=0, y=0, z=43 → sum = 43
+- Optimal would be x=50, y=50, z=50 → sum = 150
+  - Or x=0, y=75, z=75 → sum = 150
+- Currently getting sum=43, optimal is sum=150
+- Very short timeout (100ms) may cause suboptimal solution
+
+## Issues Found
+1. **Optimization gives suboptimal result** - Sum is 43, should be 150
+   - May be intentional for @bestEffort testing with short timeout
+   - But 100ms should be enough for this simple problem
+2. **Missing @expected annotation**
+3. **Test intent unclear** - Is the goal to test partial solutions or optimization?
+
+## Checklist Flags
+- [x] Constraints satisfied (x<=y<=z, sum<=150, bounds)
+- [ ] @expected annotation MISSING
+- [ ] Optimization optimal - NO, 43 vs 150
+- [ ] Test intent clear - UNCLEAR, is suboptimal expected?
+
+## Recommendations
+1. Add @expected annotation
+2. Clarify if suboptimal solution is expected behavior for @bestEffort
+3. If testing optimal, remove @bestEffort or increase timeout

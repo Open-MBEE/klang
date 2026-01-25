@@ -1,0 +1,17 @@
+# global1.k Analysis
+
+## Status: PASS
+
+## Purpose
+Tests global variable declarations.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (baseline mismatch smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Recommendations
+1. Add `@expected SAT`

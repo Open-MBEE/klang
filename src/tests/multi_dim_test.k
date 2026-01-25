@@ -1,3 +1,4 @@
+// @expected SAT
 // Test file for multi-dimensional arrays
 // Demonstrates nested Array types
 

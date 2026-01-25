@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String operations - startsWith, endsWith, contains
 // Expected: SAT with all string predicates satisfied
 

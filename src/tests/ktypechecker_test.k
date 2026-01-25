@@ -1,3 +1,4 @@
+// @expected UNSAT
 -- K-based Type Checker Test
 -- This test verifies the K-based type checker generates correct type constraints
 

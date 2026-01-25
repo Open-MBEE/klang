@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: duration_microseconds1.k
 -- Tests microsecond precision in Duration literals
 -- Expected: PASSED

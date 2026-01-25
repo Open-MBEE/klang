@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: cegar1.k
 -- Tests CEGAR-style refinement with external functions
 -- Expected: PASSED

@@ -1,0 +1,21 @@
+# diamond_share_multiple.k Analysis
+
+## Purpose
+Tests diamond with multiple shared ancestors - both A and B are diamonds.
+C, D extend A, B; E extends C, D with share A, B.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose - tests multiple shared ancestors
+- [ ] @expected annotation MISSING
+- [x] Multiple share works correctly
+
+## Recommendations
+1. Add `@expected SAT`

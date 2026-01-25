@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test: Regex character class escapes - \d, \w, \s
 // These patterns REQUIRE proper regex parsing (couldn't work with str.to_re)
 // Expected: SAT - strings match escape patterns

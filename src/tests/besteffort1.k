@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Best-effort solving with optimization
 // Expected: SAT with best solution found (may be optimal or partial)
 

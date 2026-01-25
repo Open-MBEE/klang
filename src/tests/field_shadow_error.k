@@ -1,3 +1,4 @@
+// @expected ERROR
 -- Test that field shadowing WITHOUT rename clause produces an error
 -- should not type check
 

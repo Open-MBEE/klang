@@ -1,3 +1,4 @@
+// @expected SAT
 // Cyclic graph with 3 nodes
 // Tests heap bounds with cycles
 

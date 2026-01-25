@@ -1,3 +1,4 @@
+// @expected UNKNOWN
 -- Test: opaque_uninterpreted1.k
 -- Tests truly uninterpreted (opaque) function - no Java implementation
 -- Expected: PASSED

@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: object_bounds2.k
 -- Tests sequences with more complex constraints
 -- Expected: PASSED

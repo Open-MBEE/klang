@@ -1,0 +1,30 @@
+# external7.k Analysis
+
+## Purpose
+Tests import with nested function calls: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
+Pythagorean theorem: 3-4-5 right triangle.
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT
+- Status: PASS ✓
+
+## Observations
+Output: a=3.0, b=4.0, c=5.0
+
+This is correct! sqrt(3^2 + 4^2) = sqrt(9 + 16) = sqrt(25) = 5
+
+**Interesting**: This uses import statement AND works correctly, unlike external3.k.
+The difference may be that a, b are constrained to concrete values first.
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Nested external function calls work
+- [x] Import statement works here
+- [ ] @expected annotation MISSING
+
+## Recommendations
+1. Add `@expected SAT`
+2. Investigate why this works but external3.k doesn't

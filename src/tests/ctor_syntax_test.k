@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: ctor_syntax_test.k
 -- Tests constructor application syntax for built-in types
 -- Expected: PASSED

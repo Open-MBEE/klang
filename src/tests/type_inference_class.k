@@ -1,3 +1,4 @@
+// @expected SAT
 // Test type inference in K with class instances
 // Properties with initialization expressions should have their types inferred
 

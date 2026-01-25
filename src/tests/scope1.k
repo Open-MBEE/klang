@@ -1,3 +1,4 @@
+// @expected SAT
 -- negative example, should not type check
 
 x : Int

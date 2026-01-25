@@ -1,0 +1,36 @@
+# bitvec_test.k Analysis
+
+## Purpose
+Tests BitVec type with bitwise operations (band, bor, bxor).
+- flags = 255, mask = 15
+- andResult = 255 & 15 = 15
+- orResult = 16 | 1 = 17
+- xorResult = 255 ^ 15 = 240
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- All values correct in hex:
+  - flags = #xff (255) ✓
+  - mask = #x0f (15) ✓
+  - andResult = #x0f (15) ✓
+  - orResult = #x11 (17) ✓
+  - xorResult = #xf0 (240) ✓
+- Runtime: 0.28s - good
+
+## Issues Found
+1. **Missing @expected annotation** - comment "Expected: PASSED" but no @expected
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Constraints make sense
+- [x] SAT result correct
+- [x] All values verified correct
+- [x] Clean output (hex format is fine)
+
+## Recommendations
+1. Add `@expected SAT` annotation

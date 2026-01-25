@@ -1,3 +1,4 @@
+// @expected SAT
 @noInstances
 class A {
   x : Int

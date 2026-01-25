@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: soft_constraint3.k
 -- Tests mixing hard and soft constraints
 -- Expected: PASSED

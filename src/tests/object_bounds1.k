@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: object_bounds1.k
 -- Tests basic Seq operations - dynamic collection size
 -- Expected: PASSED

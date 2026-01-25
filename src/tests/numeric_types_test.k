@@ -1,3 +1,4 @@
+// @expected SAT
 // Comprehensive numeric type tests for K language
 // Tests all new numeric types: Int8-64, UInt8-64, Float32/64
 // And type conversions with the `as` operator

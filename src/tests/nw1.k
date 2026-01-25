@@ -1,3 +1,4 @@
+// @expected SAT
   area : Real
   base : Real
   height : Real

@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test: Regex dot (.) matches any character
 // This pattern REQUIRES proper regex parsing
 // Expected: SAT - dot matches any single character

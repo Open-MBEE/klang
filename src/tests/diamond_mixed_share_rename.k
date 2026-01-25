@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test mixed share and rename: share one diamond ancestor, rename fields from another path
 
 class D1 {

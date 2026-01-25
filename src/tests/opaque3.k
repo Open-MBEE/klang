@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: opaque3.k
 -- Tests K-defined function equated to external Java function
 -- This demonstrates the pattern for providing Z3 with knowledge about

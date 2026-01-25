@@ -1,3 +1,4 @@
+// @expected SAT
 fun one : Int { 1 }
 
 class X { 

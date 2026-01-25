@@ -1,3 +1,4 @@
+// @expected SAT
 // Test file for numeric type conversions
 
 class SimpleWideningTest {

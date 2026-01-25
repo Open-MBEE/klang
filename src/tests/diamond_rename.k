@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test diamond inheritance resolved with rename (keep both copies)
 -- Unlike share (single instance), rename keeps distinct fields from each path
 

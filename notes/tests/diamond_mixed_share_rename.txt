@@ -1,0 +1,22 @@
+# diamond_mixed_share_rename.k Analysis
+
+## Purpose
+Tests combining share and rename in diamond inheritance.
+- Share D1 (one copy of x)
+- Rename D2::y differently from each path (by from B, cy from C)
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Mixed share/rename works
+
+## Recommendations
+1. Add `@expected SAT`

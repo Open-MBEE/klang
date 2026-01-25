@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Optimization - maximize objective
 // Expected: SAT with profit maximized subject to constraints
 

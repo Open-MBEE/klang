@@ -1,3 +1,4 @@
+// @expected ERROR
 -- Test: KTypeChecker should catch arithmetic result type mismatch
 -- (x + y) returns Int, can't assign to Bool
 -- @expected ERROR

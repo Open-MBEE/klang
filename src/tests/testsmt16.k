@@ -1,3 +1,4 @@
+// @expected SAT
 -- Testing empty classes/constructors and string members, which should
 -- be ignored. Hence verifyEVR is an empty class from Z3's point
 -- of view.

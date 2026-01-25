@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external1.k
 -- Tests external Java function calls with concrete evaluation
 -- Expected: PASSED (sqrt(100.0) = 10.0)

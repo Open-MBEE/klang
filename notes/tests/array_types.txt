@@ -1,0 +1,37 @@
+# array_types.k Analysis
+
+## Purpose
+Tests Java-style array type syntax (Type[]) for class types.
+- Item[] becomes Seq[Item]
+- Seq[Int] used for primitives
+
+## Current State
+- Expected: @expected SAT ✓
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Test works correctly
+- Container has items=[], numbers=[42] ✓
+- numbers.size >= 1 satisfied (size=1)
+- numbers.at(0) = 42 ✓
+- Uses HeapCEGAR correctly for dynamic heap
+- Runtime: 0.33s - reasonable
+
+## Issues Found
+1. **Excessive extra objects** - Creates 10 Item objects (Refs 1-10) that are not used
+   - The `items` array is empty!
+   - This suggests object bounds are too high for Item class
+2. **Tight heap warning** - "using all available objects" but none are needed
+
+## Checklist Flags
+- [x] Clear purpose
+- [x] @expected annotation present
+- [x] Constraints make sense  
+- [x] SAT result correct
+- [x] Model values correct for Container
+- [ ] Extra objects reasonable - NO, 10 unused Item objects
+
+## Recommendations
+1. Investigate why 10 Item objects are created when items=[] (none used)
+2. Consider whether object bounds computation is wrong for array element types

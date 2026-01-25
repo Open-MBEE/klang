@@ -1,3 +1,4 @@
+// @expected UNSAT
 class A {
 
   x : Int

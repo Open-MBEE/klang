@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external4.k
 -- Tests external Java function calls with multiple methods
 -- Expected: PASSED (concrete evaluation of various Math functions)

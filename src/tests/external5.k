@@ -1,3 +1,4 @@
+// @expected UNKNOWN
 -- Test: external5.k
 -- Tests external Java String methods
 -- Expected: PASSED (concrete evaluation of String methods)

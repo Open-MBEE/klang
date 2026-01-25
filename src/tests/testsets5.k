@@ -1,3 +1,4 @@
+// @expected SAT
 
 Null : Int = 0
 

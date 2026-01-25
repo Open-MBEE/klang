@@ -1,0 +1,41 @@
+# cast_test.k Analysis
+
+## Purpose
+Tests basic numeric type conversions: Int→Real, Real→Int, Int↔BitVec.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+1. IntToRealWidening: x=42, y=3.50
+   - Wait, y should be 3.5 per declaration, but output shows 3.50 (ok, same value)
+   - But constraint says x < y * 20.0 → 42 < 70 ✓
+   
+2. RealToIntCast: pi=3.14, truncated=3, negReal=-2.7, negTrunc=-3
+   - truncated = 3 ✓ (from 3.14159)
+   - **PROBLEM**: negTrunc = -3 but comment says "truncate toward zero"
+   - If truncating toward zero, -2.7 should become -2, not -3
+   - Either the implementation or the comment is wrong
+   - negReal shows as -(27/10) = -2.7, negTrunc = -3 suggests floor, not truncation
+
+3. BitVecConversions: intVal=255, bv=0xff, backToInt=255 ✓
+
+## Issues Found
+1. **Missing @expected annotation**
+2. **SEMANTIC ISSUE**: Real→Int conversion uses floor not truncation
+   - Comment says "truncate toward zero"
+   - -2.7 gives -3 (floor), but truncate toward zero would be -2
+   - Either fix code or fix comment
+
+## Checklist Flags
+- [x] Purpose clear
+- [ ] @expected annotation MISSING
+- [ ] Real→Int semantics correct - NO, floor vs truncate mismatch
+- [x] Int↔BitVec works
+
+## Recommendations
+1. Add `@expected SAT`
+2. Decide: floor or truncate-toward-zero for Real→Int?
+3. Update either implementation or comment to match

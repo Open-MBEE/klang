@@ -1,0 +1,18 @@
+# opaque1-4.k Tests Analysis
+
+## Status: ALL PASS
+
+## Tests
+- opaque1.k: SAT ✓
+- opaque2.k: SAT ✓
+- opaque3.k: SAT ✓
+- opaque4.k: SAT ✓
+
+## Issues Found
+- All have smt-only baseline mismatches
+
+## Note
+opaque_uninterpreted1.k has a separate bug (see that file's notes).
+
+## Recommendations
+- Safe to regenerate baselines for opaque1-4

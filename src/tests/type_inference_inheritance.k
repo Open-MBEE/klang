@@ -1,3 +1,4 @@
+// @expected SAT
 // Type inference with inheritance
 // Tests that type inference works correctly with class hierarchies
 

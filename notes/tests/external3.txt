@@ -1,0 +1,39 @@
+# external3.k Analysis
+
+## Status: CRITICAL BUG - Import Math Not Working
+
+## Purpose
+Tests external function with import statement: `import java.lang.Math`
+
+## Current State (2026-01-23)
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT with x = 2.0
+- Status: **WRONG RESULT - BUG**
+
+## Analysis
+```
+import java.lang.Math
+req x = Math.sqrt(100.0)
+```
+
+Output: x = 2.0
+
+**BUG**: sqrt(100.0) = 10.0, NOT 2.0!
+
+Compare with external1.k which uses `java.lang.Math.sqrt(100.0)` and gets 10.0.
+The import statement changes the resolution and breaks the function call.
+
+## Issues Found
+1. **CRITICAL**: Import statement breaks external function resolution
+2. **Missing @expected annotation**
+3. Baseline shows SAT but result is semantically WRONG
+
+## Checklist Flags
+- [ ] @expected annotation MISSING
+- [ ] Import resolution correct - NO, breaks function
+- [ ] Model correct - NO (2.0 ≠ 10.0)
+
+## Recommendations
+1. Fix import statement handling for external functions
+2. The shortened `Math.sqrt` should resolve to `java.lang.Math.sqrt`
+

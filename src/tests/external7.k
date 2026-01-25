@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external7.k
 -- Tests import statement with multiple external calls
 -- Expected: PASSED

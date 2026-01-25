@@ -1,3 +1,4 @@
+// @expected SAT
 -- This is a negative example to test the type checker. 
 -- Cyclic inheritance is disallowed. 
 

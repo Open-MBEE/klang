@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: object_bounds0.k
 -- Test constraints affecting the number of class objects
 -- Tests Seq[A] where A is a class with constraints

@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Time and Duration primitive types with ISO 8601 literals
 // K supports Time and Duration as primitive types
 // Times/Durations are converted to milliseconds internally for SMT solving

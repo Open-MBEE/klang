@@ -1,0 +1,30 @@
+# array_test.k Analysis
+
+## Purpose
+Basic test for SMT Array support - Array[K,V] with integer keys and values.
+Tests element access, assignment, and arithmetic with array values.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Test works correctly
+- arr[0]=42, arr[1]=100, arr[2]=142 (sum of arr[0]+arr[1]) ✓
+- Runtime: 0.26s - reasonable
+- Clean output - no SMT expression leakage
+
+## Issues Found
+1. **Missing @expected annotation** - should have `@expected SAT`
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Constraints make sense
+- [x] SAT result correct
+- [x] Model values correct
+- [x] Clean output format
+
+## Recommendations
+1. Add `@expected SAT` annotation

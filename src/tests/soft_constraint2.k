@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: soft_constraint2.k
 -- Tests soft constraints that CANNOT all be satisfied together
 -- The solver should satisfy hard constraints and as many soft as possible

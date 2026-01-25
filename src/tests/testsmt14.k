@@ -1,3 +1,4 @@
+// @expected SAT
 
 class A {
   RESULT_10 : Int

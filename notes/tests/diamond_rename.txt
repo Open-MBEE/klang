@@ -1,0 +1,20 @@
+# diamond_rename.k Analysis
+
+## Purpose
+Tests diamond inheritance resolved with rename - keep both copies of D::x as distinct fields (bx, cx).
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Rename works correctly
+
+## Recommendations
+1. Add `@expected SAT`

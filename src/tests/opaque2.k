@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: opaque2.k
 -- Tests K-defined function with mathematical relationship
 -- The sqrt function is defined with constraints: result * result = input

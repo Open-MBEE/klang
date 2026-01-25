@@ -1,0 +1,39 @@
+# array_comprehensive_test.k Analysis
+
+## Purpose
+Tests Array[K,V] support with various key/value type combinations:
+- String-keyed arrays (dict-like)
+- Bool-valued arrays
+- Computed indices
+- Default/unconstrained elements
+- Arithmetic with array values
+
+## Current State
+- Expected: PASSED (comment says this, but no @expected annotation!)
+- Actual outcome: SAT
+- Status: PASS (functional), but baseline mismatch (smt)
+
+## Observations
+- Test PASSES functionally - all 5 array scenarios work
+- Model output shows arrays working correctly:
+  - ArrayArithmeticTest: scores[3] = 253 (85+90+78) ✓
+  - ArrayStringKeyTest: dict["sum"]=3, dict["one"]=1, dict["two"]=2 ✓
+  - ArrayComputedIndexTest: data[12]=300, data[10]=100, data[11]=200 ✓
+- Runtime: 0.30s - reasonable
+
+## Issues Found
+1. **Missing @expected annotation** - Uses comment "-- Expected: PASSED" but no actual @expected
+2. **ArrayBoolValueTest output has raw SMT** - Shows `Array((store ((as const (Array Int Bool)) true) 1 false))` instead of clean format
+3. **Baseline mismatch is SMT-only** - cosmetic, not functional
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING - should have `@expected SAT`
+- [x] Constraints make sense
+- [x] SAT result correct
+- [x] Model values correct
+- [ ] Clean output for Bool arrays - has SMT expression leak
+
+## Recommendations
+1. Add `@expected SAT` annotation
+2. Investigate Bool array pretty-printing - should show clean format not raw SMT

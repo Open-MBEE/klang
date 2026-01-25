@@ -1,0 +1,26 @@
+# diamond_autoshare.k Analysis
+
+## Purpose
+Tests automatic sharing of diamond ancestor classes.
+D, E extend F; B extends D, E → diamond at F should auto-share.
+
+## Current State
+- Expected: @expected SAT ✓
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Auto-share working correctly (no error)
+- Diamond inheritance resolved automatically
+- Runtime ~0.24s
+
+## Issues Found
+- None
+
+## Checklist Flags
+- [x] @expected SAT present
+- [x] Diamond resolution works
+- [x] Auto-share behavior correct
+
+## Recommendations
+- None, test is good

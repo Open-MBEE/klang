@@ -1,3 +1,4 @@
+// @expected UNSAT
 p : Bool
 q : Bool
 r : Bool

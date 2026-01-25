@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: soft_constraint4.k
 -- Tests soft constraints with named constraints
 -- Expected: PASSED

@@ -1,3 +1,4 @@
+// @expected SAT
 // Test bitvector to Real type conversions
 // This tests both signed and unsigned bitvector conversions to Real numbers
 

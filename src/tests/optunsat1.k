@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test: Optimization - UNSAT case (constraints conflict with optimization direction)
 // Expected: UNSAT - cannot minimize x while requiring x >= 100 with upper bound 50
 

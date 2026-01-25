@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: seq1.k
 -- Tests basic Seq operations with Z3 sequence theory
 -- Expected: PASSED

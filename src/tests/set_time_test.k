@@ -1,3 +1,4 @@
+// @expected SAT
 // filepath: /Users/bclement/git/klang/src/tests/set_time_test.k
 // Test: Sets containing Time and Duration types
 // Time and Duration are primitive types that map to Int in SMT

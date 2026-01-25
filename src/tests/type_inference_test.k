@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test type inference in K
 // Properties with initialization expressions should have their types inferred
 

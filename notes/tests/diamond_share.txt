@@ -1,0 +1,22 @@
+# diamond_share.k Analysis
+
+## Purpose
+Tests basic diamond inheritance with explicit share clause.
+Left, Right extend Base; Diamond extends Left, Right with share Base.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING  
+- [x] Share clause works
+- [x] baseVal has single consistent value
+
+## Recommendations
+1. Add `@expected SAT`

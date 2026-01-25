@@ -1,3 +1,4 @@
+// @expected SAT
 // Test bitvector width conversions
 // Tests sign_extend, zero_extend, and extract operations
 

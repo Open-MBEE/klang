@@ -1,0 +1,34 @@
+# regex_tests.k Summary Analysis
+
+## Status: CRITICAL BUG - Regex Matching Broken
+
+## Tests Overview
+- regex1.k: UNSAT (should be SAT) - BUG
+- regex2.k: UNSAT (should be SAT?) - BUG
+- regex3.k: SAT ✓ - but this tests NON-matching!
+- regex_alternation1.k: UNSAT - BUG
+- regex_dot1.k: UNSAT - BUG
+- regex_escapes1.k: UNSAT - BUG
+- regex_grouping1.k: UNSAT - BUG
+- regex_solver1.k: UNSAT - BUG
+
+## Key Finding
+regex3.k tests that strings DON'T match patterns:
+- text = "hello" and matchesDigits = text.matches("[0-9]+") = false
+- This returns SAT (correct, since "hello" doesn't match [0-9]+)
+
+All other tests try to match patterns and return false UNSAT.
+
+## Hypothesis
+The regex.matches() function may be returning constant false or 
+being encoded incorrectly, making any "req x.matches(pattern)" 
+equivalent to "req false".
+
+This would explain:
+- regex3.k SAT (it requires matches = false, which it gets)
+- All others UNSAT (they require matches = true, but get false)
+
+## Recommendations
+1. Debug String.matches() encoding
+2. Check if matches() always returns false in SMT
+3. Test a simple case: req "abc".matches("[a-z]+") = true

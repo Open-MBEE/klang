@@ -1,0 +1,29 @@
+# ctor_syntax_test.k Analysis
+
+## Purpose
+Tests constructor application syntax: new Point(x, y), Seq[Int](1,2,3), nested constructors.
+
+## Current State
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- TestUserDefinedCtor: p = Point(x::10, y::20) ✓
+- TestSeqCtor: s = [1, 2, 3] ✓
+- TestNestedCtor: Rectangle with Point(0,0) and Point(100,50) ✓
+- All constructor syntax working correctly
+- Runtime: 0.32s
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Constructors working
+- [x] Nested refs resolved correctly
+- [x] Seq constructor works
+
+## Recommendations
+1. Add `@expected SAT`

@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Chain of objects that requires exactly 5 objects
 // This tests CEGAR loop refinement across iterations
 // The default instance count may be too low

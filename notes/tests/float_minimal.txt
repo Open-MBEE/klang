@@ -1,0 +1,17 @@
+# float_minimal.k Analysis
+
+## Status: PASS
+
+## Purpose
+Tests minimal floating point operations.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (baseline mismatch smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Recommendations
+1. Add `@expected SAT`

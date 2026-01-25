@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test diamond inheritance with share clause
 -- This should compile and solve successfully
 

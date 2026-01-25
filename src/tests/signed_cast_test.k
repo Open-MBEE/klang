@@ -1,3 +1,4 @@
+// @expected SAT
 // Regression test for signed/unsigned integer type conversions
 // Tests that Int8/Int16 (signed) use signed interpretation 
 // and UInt8/UInt16 (unsigned) use unsigned interpretation

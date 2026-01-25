@@ -1,0 +1,44 @@
+# besteffort1.k Analysis
+
+## Purpose
+Tests @bestEffort and @timeout annotations with optimization.
+- Find values x, y, z in [1,100]
+- Constraints: x+y+z <= 150, x*2 <= y+z
+- Maximize x
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Model: x=1, y=20, z=39
+- Let's verify constraints:
+  - x >= 1: 1 >= 1 ✓
+  - x <= 100: 1 <= 100 ✓
+  - y in [1,100]: 20 ✓
+  - z in [1,100]: 39 ✓
+  - x+y+z <= 150: 1+20+39=60 <= 150 ✓
+  - x*2 <= y+z: 2 <= 59 ✓
+- BUT maximize x should give x=50, not x=1!
+  - If x=50: 50*2=100 <= y+z, and 50+y+z <= 150 means y+z <= 100
+  - So x=50, y=50, z=50 would work (100<=100, 150<=150)
+- Runtime: 0.27s with 5s timeout
+
+## Issues Found
+1. **CRITICAL: Optimization not working** - maximize x gives x=1 instead of x=50
+   - @bestEffort may be causing suboptimal solution acceptance
+   - Or Optimize solver not being used correctly
+2. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Hard constraints satisfied
+- [ ] Optimization working - NO, x=1 when should be x=50
+- [ ] @bestEffort appropriate - unclear if it's causing premature acceptance
+
+## Recommendations
+1. Investigate why optimization gives x=1 not x=50
+2. Add @expected SAT annotation
+3. Consider if @bestEffort is being applied correctly

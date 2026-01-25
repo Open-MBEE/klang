@@ -1,3 +1,4 @@
+// @expected SAT
 // Test file for SMT Array support
 // Array[K,V] maps key type K to value type V using Z3's array theory
 

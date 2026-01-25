@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: external2.k
 -- Tests external Java function calls with symbolic arguments
 -- Expected: PASSED (uninterpreted function)

@@ -1,0 +1,27 @@
+# diamond_deep.k Analysis
+
+## Purpose
+Tests deep diamond: A extends B, C; B extends D, E; C extends D, E.
+Two diamonds at once - D and E are each reached via two paths.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- Uses explicit `share D; share E;` clauses
+- Tests field access through shared ancestors
+- Should produce: dx=1, ex=2, bx=3, cx=4, ax=5
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Clear purpose - complex diamond test
+- [ ] @expected annotation MISSING
+- [x] Diamond sharing works
+- [x] Field access through shared ancestors works
+
+## Recommendations
+1. Add `@expected SAT`

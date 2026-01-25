@@ -1,3 +1,4 @@
+// @expected ERROR
 -- Test: KTypeChecker should catch nested expression type mismatch
 -- Real + String should fail
 -- @expected ERROR

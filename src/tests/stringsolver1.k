@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String constraints where solver finds values
 // Expected: SAT - Z3 finds values satisfying string constraints
 

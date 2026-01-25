@@ -1,3 +1,4 @@
+// @expected SAT
 
 class Sets {
   s1 : Set[Int] 

@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test: String regex matching with matches()
 // Expected: SAT - strings match their patterns
 

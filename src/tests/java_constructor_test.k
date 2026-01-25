@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: java_constructor_test.k
 -- Tests calling Java static factory methods that create objects
 -- Expected: PASSED

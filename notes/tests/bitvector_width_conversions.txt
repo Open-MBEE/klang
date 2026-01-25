@@ -1,0 +1,42 @@
+# bitvector_width_conversions.k Analysis
+
+## Purpose
+Tests width conversions between different bitvector types.
+Sign-extend vs zero-extend, narrowing conversions (truncation).
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations - CONVERSIONS VERIFIED
+- Int8ToInt16: 0xff → 0xffff (sign-extend -1 → -1) ✓
+- Int16ToInt8: 0x0201 → 0x01 (truncate) ✓
+- Int32ToInt64: 0xffffffff → 0xffffffffffffffff (sign-extend -1 → -1) ✓
+- UInt32ToUInt64: 0xffffffff → 0x00000000ffffffff (zero-extend) ✓
+- UInt16ToUInt8: 0xff80 → 0x80 (truncate) ✓
+- Int16ToUInt8: 0xff00 → 0x00 (truncate) ✓
+- UInt16ToInt8: 0x0080 → 0x80 (truncate) ✓
+- UInt8ToInt8: 0x80 → 0x80 (same bits, different interp) ✓
+- Int8ToUInt8: 0xff → 0xff (same bits) ✓
+- Int8ToUInt16: 0xff → 0xffff (sign-extend then unsigned view) ✓
+- UnsignedBvToInt: 0xff → 255 (bv2int) ✓
+- SignedBvToInt: 0xff → -1 (signed interpretation) ✓
+- UInt8ToInt16: 0xff → 0x00ff (zero-extend) ✓
+- UInt8ToUInt16: 0xff → 0x00ff (zero-extend) ✓
+
+## Issues Found
+1. **Missing @expected annotation**
+2. Int8ToUInt16: 0xff → 0xffff - Is this correct? Depends on semantics
+   - If it sign-extends first (to Int16) then views as UInt16, yes
+   - If it zero-extends, it should be 0x00ff
+
+## Checklist Flags
+- [x] Clear purpose
+- [ ] @expected annotation MISSING
+- [x] Most conversions correct
+- [ ] Int8ToUInt16 semantics - verify this is intended behavior
+
+## Recommendations
+1. Add `@expected SAT`
+2. Review Int8ToUInt16 semantics - is sign-extension intended for mixed signed/unsigned?

@@ -1,3 +1,4 @@
+// @expected ERROR
 class A {
   x : Int
   y : Int

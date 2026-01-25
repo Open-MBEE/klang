@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test simple rename without diamond - just renaming an inherited field
 
 class Parent {

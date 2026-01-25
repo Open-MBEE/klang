@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Regex pattern that should NOT match
 // Expected: SAT - strings don't match the wrong patterns
 

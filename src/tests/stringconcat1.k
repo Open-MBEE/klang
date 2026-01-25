@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String concatenation with +
 // Expected: SAT with correct string concatenation
 

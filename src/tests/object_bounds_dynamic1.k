@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: object_bounds_dynamic1.k
 -- Tests sequences with sum-like constraints
 -- Expected: PASSED

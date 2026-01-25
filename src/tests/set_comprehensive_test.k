@@ -1,3 +1,4 @@
+// @expected SAT
 // Comprehensive test for Set operations in K
 class SetComprehensiveTest {
   intSet1 : Set[Int]

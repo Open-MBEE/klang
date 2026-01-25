@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String/Int conversion - toInt, fromInt
 // Expected: SAT with correct conversions between strings and integers
 

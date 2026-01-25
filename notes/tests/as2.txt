@@ -1,0 +1,39 @@
+# as2.k Analysis
+
+## Purpose
+Tests type cast between unrelated classes B and C.
+B extends A with fields x, y, z.
+C has field t.
+Constraint: (bobj as C).t = 4
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Observations
+- **PROBLEM**: Type checker ACCEPTS this but it should be an error!
+- bobj is type B (extends A), being cast to C which is unrelated
+- The cast creates a C object with t=5, but bobj has t=??? 
+- Model shows: bobj=B(x::8, y::9, z::10) and C(t::5)
+- The constraint requires (bobj as C).t = 4 but output shows C(t::5)!
+
+## Issues Found
+1. **CRITICAL: Type checker should reject this** - Casting B to unrelated C should fail
+   - as1.k correctly rejects (bobj as C).y because C has no y
+   - as2.k incorrectly accepts (bobj as C).t because C has t
+   - But B cannot be cast to C - they share no inheritance relationship!
+2. **Model inconsistency** - Constraint says t=4 but C shows t=5
+3. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Purpose is clear (testing casts)
+- [ ] @expected annotation MISSING
+- [ ] Type checker WRONG - should reject B→C cast
+- [ ] Model correct - NO, constraint violation (t=4 vs t=5)
+- [ ] Test effective - NO, false positive SAT
+
+## Recommendations
+1. **FIX TYPE CHECKER**: B should not be castable to C (no inheritance relationship)
+2. This test should expect ERROR, not SAT
+3. Investigate why model shows t=5 when constraint is t=4

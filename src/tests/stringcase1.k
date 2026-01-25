@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String case - basic string comparisons
 // Note: toUpper/toLower require Z3 4.12+ which may not be fully supported
 // Expected: SAT with string equality constraints

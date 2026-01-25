@@ -1,3 +1,4 @@
+// @expected SAT
 // Minimal test for float conversion
 class FloatMinimal {
   intVal : Int = 42

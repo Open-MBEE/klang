@@ -1,3 +1,4 @@
+// @expected UNSAT
 ========
 Both classes A and C are unsatisfiable.
 But K will stop at the first one before it can 

@@ -1,2 +1,3 @@
+// @expected SAT
 class C
 

@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: object_bounds3.k
 -- Test constraints affecting collection size and aggregate constraints
 -- Expected: PASSED

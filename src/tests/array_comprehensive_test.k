@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: array_comprehensive_test.k
 -- Comprehensive tests for Array[K,V] support
 -- Expected: PASSED

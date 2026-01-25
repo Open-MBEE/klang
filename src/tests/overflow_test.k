@@ -1,3 +1,4 @@
+// @expected SAT
 // Test signed overflow
 class SignedOverflow {
   // 128 should wrap to -128 in Int8

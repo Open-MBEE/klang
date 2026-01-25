@@ -1,0 +1,32 @@
+# as1.k Analysis
+
+## Purpose
+Tests type cast error detection - casting B to unrelated class C.
+B extends A, but C has no relationship to A/B.
+Accessing `.y` on (bobj as C) should fail type checking.
+
+## Current State
+- Expected: No @expected annotation (but behavior is ERROR)
+- Actual outcome: ERROR (type check failure)
+- Status: PASSED
+
+## Observations
+- TypeChecker correctly rejects: "(bobj as C).y" 
+- C doesn't have field y (or any fields)
+- B cannot be cast to C since they're unrelated
+- Runtime: 0.16s - fast
+
+## Issues Found
+1. **Missing @expected annotation** - should have `@expected ERROR`
+2. **Baseline shows "UNSAT or UNKNOWN"** - but this is an ERROR case
+
+## Checklist Flags
+- [x] Clear purpose - tests invalid cast detection
+- [ ] @expected annotation MISSING
+- [x] Type checker behaves correctly
+- [x] Error message is clear
+- [ ] Baseline accuracy - should indicate ERROR expected
+
+## Recommendations
+1. Add `@expected ERROR` annotation
+2. Update baseline to reflect this is an expected type error case

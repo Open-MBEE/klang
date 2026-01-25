@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: unified_solver1.k
 -- Tests unified solver with basic constraints
 -- Expected: PASSED

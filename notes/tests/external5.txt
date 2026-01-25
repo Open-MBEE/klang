@@ -1,0 +1,36 @@
+# external5.k Analysis
+
+## Status: ERROR - Missing Function Declaration
+
+## Purpose
+Tests Integer.parseInt() and Double.parseDouble() external methods.
+
+## Current State (2026-01-23)
+- Expected: Comment says PASSED, no @expected annotation
+- Actual outcome: UNKNOWN with Z3 error
+- Error: "unknown constant java_lang_Integer_parseInt (String)"
+
+## Analysis
+The test has:
+```
+req parsed = java.lang.Integer.parseInt("42")
+req parsedDouble = java.lang.Double.parseDouble("3.14159")
+```
+
+Z3 reports unknown function - these functions are not declared as uninterpreted
+or implemented as external evaluations.
+
+## Issues Found
+1. **Integer.parseInt not implemented** - not in external function registry
+2. **Double.parseDouble not implemented** - same issue
+3. **Missing @expected annotation**
+
+## Checklist Flags
+- [ ] @expected annotation MISSING
+- [ ] Integer.parseInt implemented - NO
+- [ ] Double.parseDouble implemented - NO
+
+## Recommendations
+1. Add Integer.parseInt to ExternalFunctions.scala
+2. Add Double.parseDouble similarly
+3. Or mark test as expected ERROR until implemented

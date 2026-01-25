@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: python_external3.k
 -- Tests Python math with Pythagorean theorem (matching external7.k Java version)
 -- Expected: PASSED

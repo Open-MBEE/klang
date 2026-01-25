@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: soft_constraint5.k
 -- Tests soft constraints with Real numbers
 -- Expected: PASSED

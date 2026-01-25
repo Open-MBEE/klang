@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: Optimization - minimize objective
 // Expected: SAT with cost minimized to meet performance >= 50
 

@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String operations - indexOf, replace
 // Expected: SAT with correct indexOf and replace results
 

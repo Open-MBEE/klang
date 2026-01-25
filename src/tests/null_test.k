@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test null literal support
 -- Basic test for null type checking - verifies the grammar and type checker work
 

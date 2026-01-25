@@ -1,0 +1,50 @@
+Remaining Tests Analysis - Batch Summary
+=========================================
+
+Tests that PASS correctly:
+- testsets1-6.k - Set tests, all SAT
+- tc1-3.k - Type checker error tests, expect ERROR correctly  
+- tc4.k - SAT (type checker test that should pass)
+- timeout_hard1.k, timeout_hard2.k - Test timeout handling, falls back to Optimize
+- timeout1.k - SAT
+- mutual_recursion1-4.k - SAT (recursive functions work)
+- mutual_recursion5.k, 5a.k, 5b.k - Expect ERROR correctly
+- mixed_external1.k - SAT
+- multi_dim_test.k - SAT
+- null_test.k - SAT
+- numeric_types_test.k - SAT
+- nw1.k - SAT
+- object_bounds0-3.k, object_bounds_dynamic1.k - All SAT
+- opt1-3.k - SAT (optimization tests)
+- optunsat1.k - UNSAT correctly
+- overflow_test.k - SAT
+- property_as_constraint1.k - SAT
+- python_external1-2.k - SAT (Python external functions work)
+- rename_field.k, rename_method.k, rename_simple.k - SAT
+- reservedAnnotations1.k - SAT
+- set_comprehensive_test.k, set_time_test.k - SAT
+- shadow_field.k - SAT
+- signed_cast_test.k, signed_minimal.k - SAT
+- simple_explicit_test.k - SAT
+- time_duration_demo.k - SAT
+- type_conversions_test.k - SAT
+- unified_solver1.k - SAT
+
+Known Limitations (documented):
+- mixed_external2.k - UNKNOWN (Z3 function application error)
+  Error: "invalid function application, arguments missing"
+  Baseline expects UNKNOWN - this is a known limitation with external trig functions
+
+CRITICAL BUG FOUND:
+===================
+undeclared_variable_error.k - TYPE CHECKER BUG
+  File contains: x < y (with undeclared variables)
+  Comment says: "undeclared variables in bare expressions should error"
+  Expected: ERROR (undeclared variable)
+  Actual: SAT (type checker says "No errors found")
+  
+  This is a TYPE CHECKER BUG - variables x and y are never declared,
+  but the type checker accepts the file and K finds a solution.
+  The file name even says "_error" indicating it should error!
+  
+  SEVERITY: HIGH - silent acceptance of invalid code

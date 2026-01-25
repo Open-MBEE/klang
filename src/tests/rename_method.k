@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test that rename only applies to fields, not methods
 -- Methods are inherited normally without rename
 

@@ -1,3 +1,4 @@
+// @expected UNSAT
 // Test: Solver finds string values matching regex constraints
 // This is the REAL power of regex + SMT: finding unknown values
 // Expected: SAT - solver finds strings satisfying regex + other constraints

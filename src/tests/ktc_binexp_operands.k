@@ -1,3 +1,4 @@
+// @expected ERROR
 -- Test: KTypeChecker should catch binary expression operand type mismatch
 -- Can't compare Int with String
 -- @expected ERROR

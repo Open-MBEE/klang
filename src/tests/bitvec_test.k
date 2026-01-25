@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: bitvec_test.k
 -- Tests bit vector type declarations
 -- Expected: PASSED (tests basic bitvector operations)

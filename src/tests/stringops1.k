@@ -1,3 +1,4 @@
+// @expected SAT
 // Test: String operations - length, substring, charAt
 // Expected: SAT with all string operations giving expected values
 

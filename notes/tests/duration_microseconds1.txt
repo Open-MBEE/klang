@@ -1,0 +1,19 @@
+# duration_microseconds1.k Analysis
+
+## Purpose
+Tests Duration type with microsecond values.
+
+## Current State
+- Expected: No @expected annotation
+- Actual outcome: SAT
+- Status: PASS (functional), baseline mismatch (smt only)
+
+## Issues Found
+1. **Missing @expected annotation**
+
+## Checklist Flags
+- [x] Duration microseconds work
+- [ ] @expected annotation MISSING
+
+## Recommendations
+1. Add `@expected SAT`

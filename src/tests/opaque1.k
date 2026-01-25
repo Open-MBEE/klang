@@ -1,3 +1,4 @@
+// @expected SAT
 -- Test: opaque1.k
 -- Tests opaque function with symbolic argument using CEGAR refinement.
 --
