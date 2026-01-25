@@ -1,4 +1,5 @@
-// @expected UNSAT
+// @expected SAT
+// BUG: Returns UNSAT incorrectly - see notes/tests/heap_linked_list.txt
 // Test: Linked list that requires exactly 3 nodes
 // This tests the CEGAR loop's ability to find the right heap size
 
