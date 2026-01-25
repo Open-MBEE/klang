@@ -359,10 +359,13 @@ function filterStatus(status) {
         baseline = load_baseline(kfile)
         
         # Get baseline model.k content (the K constraints from solution)
+        # This is the .model.k file which contains K constraints derived from solver output
         baseline_model_k = load_expanded_file(kfile, '.model.k')
-        if baseline_model_k is None and baseline:
-            # Fallback to model field in JSON
-            baseline_model_k = baseline.get('model', '')
+        has_model_k_file = baseline_model_k is not None
+        
+        # If no .model.k file, show a message (don't fall back to model field - that's the K source)
+        if baseline_model_k is None:
+            baseline_model_k = "(no .model.k file - run with -save-baseline to generate)"
         
         # Get K source
         k_source = get_k_source(kfile)
@@ -385,17 +388,20 @@ function filterStatus(status) {
         
         # Run single test to get current output (only if not batch-only)
         current_output = ""
-        current_model = "(run with --full to see current output)"
+        current_model = ""
         if not batch_only:
             current_output = run_single_test(kfile, timeout=30)
             current_model = extract_model_from_output(current_output)
         
         # Compute diff
-        if baseline_model_k:
+        if batch_only:
+            # In batch-only mode, we don't have current output to compare
+            model_diff = "(batch-only mode - run without --batch-only to see diff)"
+        elif not has_model_k_file:
+            model_diff = "(no .model.k file to compare against)"
+        else:
             model_diff = compute_diff(baseline_model_k, current_model, 
                                       "baseline.model.k", "current output")
-        else:
-            model_diff = "(no baseline model.k file)"
         
         # CSS classes
         css_class = "test pass" if status == "PASSED" else "test fail"
