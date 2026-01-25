@@ -1,5 +1,6 @@
 // @expected SAT
-// Full binary tree of depth 4 - no strings, fast to solve
+// @timeout 120000
+// Full binary tree of depth 4 - requires many heap objects
 // Used to study heap instance counting
 //
 // Structure needed:

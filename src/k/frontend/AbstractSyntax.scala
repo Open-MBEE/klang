@@ -1863,11 +1863,13 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       val computedInstances = UtilSMT.objectGraph.getTotalComputedInstanceCount
       // Ensure limit is at least the number of classes (since first instance of each class is forced)
       val numClassesWithUsedFlags = UtilSMT.usedFlagNames.map(_.split("_").dropRight(1).mkString("_")).distinct.size
-      val totalMaxInstances = Math.max(computedInstances, numClassesWithUsedFlags)
+      // Scale by instanceMultiplier for CEGAR iterations - the heap grows but so should the limit
+      val scaledComputedInstances = computedInstances * ASTOptions.instanceMultiplier
+      val totalMaxInstances = Math.max(scaledComputedInstances, numClassesWithUsedFlags)
       val totalHeapSlots = UtilSMT.usedFlagNames.size
       if (totalMaxInstances < totalHeapSlots) {
         result2 += UtilSMT.headline2("Global used flag limit")
-        result2 += s"; Total computed instances (strategy 1): $computedInstances\n"
+        result2 += s"; Total computed instances (strategy 1): $computedInstances (scaled by ${ASTOptions.instanceMultiplier}x = $scaledComputedInstances)\n"
         result2 += s"; Number of classes with used flags: $numClassesWithUsedFlags\n"
         result2 += s"; Effective limit: $totalMaxInstances\n"
         result2 += s"; Total heap slots: $totalHeapSlots\n"
@@ -2427,10 +2429,20 @@ case class EntityDecl(
           result += mkInvFunAndAssert(ident, constraintSMT, "_k_ignore_")
           
           // Register connectivity constraint info for later emission (after all used flags are declared)
+          // Include entries for the base type AND all its subclasses (e.g., Node + Leaf + Branch)
           if (ASTOptions.useHeapUsedFlags && heapEntries.nonEmpty) {
-            val targetEntries = UtilSMT.objectGraph.getHeapEntries(typeName)
-            if (targetEntries.nonEmpty) {
-              UtilSMT.registerConnectivityConstraint(ident, heapEntries, propertyName, typeName, targetEntries)
+            // Get entries for the base type
+            val baseEntries = UtilSMT.objectGraph.getHeapEntries(typeName)
+            if (baseEntries.nonEmpty) {
+              UtilSMT.registerConnectivityConstraint(ident, heapEntries, propertyName, typeName, baseEntries)
+            }
+            // Also get entries for all subclasses
+            val subClasses = UtilSMT.getSubClassesTransitive(typeName)
+            for (subClassName <- subClasses if subClassName != typeName) {
+              val subEntries = UtilSMT.objectGraph.getHeapEntries(subClassName)
+              if (subEntries.nonEmpty) {
+                UtilSMT.registerConnectivityConstraint(ident, heapEntries, propertyName, subClassName, subEntries)
+              }
             }
           }
         case _ => // Ignore non-matching types
