@@ -4114,8 +4114,27 @@ trait CallApplExp extends Exp {
             return s"(str.to_int $strSMT)"
           case "matches" =>
             // Regular expression matching: str.in_re
-            val patternSMT = args(0).toSMT(className, subTyping)
-            return s"(str.in_re $strSMT (str.to_re $patternSMT))"
+            // Use RegexToZ3 to convert Java regex patterns to Z3 regex algebra
+            val argExp = args(0) match {
+              case PositionalArgument(e) => e
+              case NamedArgument(_, e) => e
+              case e => e  // fallback
+            }
+            argExp match {
+              case StringLiteral(s) =>
+                // Extract the pattern string (remove surrounding quotes from parser)
+                val patternStr = if (s.startsWith("\"") && s.endsWith("\"")) {
+                  s.substring(1, s.length - 1)
+                } else {
+                  s
+                }
+                val z3Regex = RegexToZ3.convert(patternStr)
+                return s"(str.in_re $strSMT $z3Regex)"
+              case _ =>
+                // For non-literal patterns, fall back to str.to_re (limited support)
+                val patternSMT = args(0).toSMT(className, subTyping)
+                return s"(str.in_re $strSMT (str.to_re $patternSMT))"
+            }
           case "fromInt" =>
             // Convert integer to string
             val intSMT = args(0).toSMT(className, subTyping)
