@@ -1734,18 +1734,33 @@ object Frontend {
   }
 
   def runWithTimeout[T](timeoutMs: Long)(f: => T): Option[T] = {
-    //awaitAll(timeoutMs, future(f)).head.asInstanceOf[Option[T]]
-    import scala.concurrent.ExecutionContext.Implicits.global
-    import scala.concurrent._
-    //import Await._
-    //import scala.concurrent.Future
-    import scala.concurrent.Await
-    import scala.concurrent.duration._
-    //import scala.concurrent.Awaitable
-    import scala.concurrent.{Future, ExecutionContext}
-    import ExecutionContext.Implicits.global
-    Some(Await.result(Future(f), Duration.create(timeoutMs, "ms")))
+    // Run on a dedicated thread so that on timeout we can stop it. An abandoned worker that keeps
+    // running would use the global K2Z3 state (ctx) concurrently with the next test and corrupt
+    // Z3's native state (SIGSEGV/SIGBUS in libz3).
+    import java.util.concurrent.{FutureTask, TimeUnit, TimeoutException, ExecutionException, Callable}
+    val task = new FutureTask[T](new Callable[T] { def call(): T = f })
+    val worker = new Thread(task, "k-solve-worker")
+    worker.setDaemon(true)
+    worker.start()
+    try {
+      Some(task.get(timeoutMs, TimeUnit.MILLISECONDS))
+    } catch {
+      case e: ExecutionException => throw e.getCause
+      case e: TimeoutException =>
+        K2Z3.interrupted = true
+        // Cancel first (sets the thread interrupt flag checked by K2Z3.checkCancelled), then stop the
+        // current Z3 check. Only the current context is safe to interrupt; earlier ones may be closed.
+        task.cancel(true)
+        try { if (K2Z3.ctx != null) K2Z3.ctx.interrupt() } catch { case _: Throwable => }
+        worker.join(TIMEOUT_GRACE_MS)
+        if (worker.isAlive) {
+          System.err.println(s"Warning: solver thread did not stop ${TIMEOUT_GRACE_MS}ms after timeout")
+        }
+        throw e
+    }
   }
+
+  private val TIMEOUT_GRACE_MS = 15000L
 
   /**
    * Load a per-file baseline from the baseline/ subdirectory.

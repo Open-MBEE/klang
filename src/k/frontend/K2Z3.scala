@@ -545,7 +545,16 @@ object K2Z3 {
   def logDebug(msg: String) = if (debug && !silent) Misc.log("K2Z3", s"DEBUG $msg")
   def warning(msg: String) = Misc.log("K2Z3", s"Warning $msg")
 
+  /**
+   * Cooperative cancellation: runWithTimeout interrupts the worker thread on timeout. Solve loops
+   * must stop (not start new contexts/solves) so no zombie thread touches Z3 after the test ends.
+   */
+  def checkCancelled(): Unit = {
+    if (Thread.currentThread.isInterrupted) throw new InterruptedException("solve cancelled (timeout)")
+  }
+
   def reset(): Unit = {
+    checkCancelled()
     z3Model = null
     idents = new MMap
     datatypes = null

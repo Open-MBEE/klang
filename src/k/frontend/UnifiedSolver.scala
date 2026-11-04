@@ -227,6 +227,7 @@ object UnifiedSolver {
     logHeap(s"Initial multiplier: ${bounds.defaultBound} (max: ${bounds.maxBound})")
 
     while (heapIteration < maxHeapCegarIterations && !bounds.atMaxBound) {
+      K2Z3.checkCancelled()
       heapIteration += 1
       logHeap(s"")
       logHeap(s"========== Heap CEGAR Iteration $heapIteration ==========")
@@ -1081,6 +1082,7 @@ object UnifiedSolver {
     var result: SolveResult = SolveResult.Unknown("Not started")
 
     while (!done && !interrupted && iteration < maxIterations) {
+      K2Z3.checkCancelled()
       iteration += 1
       log(s"=== Iteration $iteration ===")
 
@@ -1842,6 +1844,7 @@ object UnifiedSolver {
       val batchSize = math.max(1, namedGroups.length / 10) // Check every 10% of groups
       
       for ((group, index) <- namedGroups.zipWithIndex) {
+        K2Z3.checkCancelled()
         // Add this group as hard constraint
         group.assertions.foreach { expr =>
           optimize.Add(expr)
@@ -1992,6 +1995,7 @@ object UnifiedSolver {
         
         // Add non-problematic groups as hard, problematic groups as soft
         for ((group, index) <- namedGroups.zipWithIndex) {
+          K2Z3.checkCancelled()
           if (problematicGroups.contains(index)) {
             // Add as soft constraint
             group.assertions.zipWithIndex.foreach { case (expr, exprIdx) =>
@@ -2614,6 +2618,7 @@ object UnifiedSolver {
       val batchSize = math.max(1, namedGroups.length / 10) // Check every 10% of groups
       
       for ((group, index) <- namedGroups.zipWithIndex) {
+        K2Z3.checkCancelled()
         // Add this group as hard constraint
         group.assertions.foreach { expr =>
           optimize.Add(expr)
@@ -2677,6 +2682,7 @@ object UnifiedSolver {
         
         // Add groups: hard for non-problematic, soft for problematic
         for ((group, index) <- namedGroups.zipWithIndex) {
+          K2Z3.checkCancelled()
           if (problematicGroups.contains(index)) {
             // Add as soft constraint
             group.assertions.zipWithIndex.foreach { case (expr, exprIdx) =>
