@@ -48,3 +48,18 @@ src/tests/test.k
 .copilot-inbox
 .claude/
 test-report*.html
+# Derived from baseline *.k.json by BaselineFileWriter; regenerable
+src/tests/baseline/*.k.smt
+src/tests/baseline/*.k.model.smt
+src/tests/baseline/*.baseline.k
+src/tests/baseline/*.k.1.json
+src/tests/baseline/*.k.2.json
+src/examples/baseline/*.k.smt
+src/examples/baseline/*.k.model.smt
+src/examples/baseline/*.baseline.k
+src/examples/baseline/*.k.1.json
+src/examples/baseline/*.k.2.json
+# Cached test outputs for the comprehensive report
+src/tests/output/
+src/examples/output/
+__pycache__/
