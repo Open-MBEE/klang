@@ -2004,6 +2004,16 @@ class TypeChecker(model: Model) {
             }
             ty
         }
+      case FunApplExp(IdentExp("timelineValue"), args) =>
+        if (args.length != 3) error("timelineValue(file, t, rounding) takes 3 arguments")
+        args.foreach(a => getExpType(te, a.asInstanceOf[PositionalArgument].exp, owner))
+        if (getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner) != StringType) error("timelineValue file must be a String literal")
+        if (getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner) != TimeType) error("timelineValue second argument must be a Time")
+        DurationType
+      case FunApplExp(IdentExp("eventTime"), args) =>
+        if (args.length != 2) error("eventTime(file, name) takes 2 arguments")
+        args.foreach(a => if (getExpType(te, a.asInstanceOf[PositionalArgument].exp, owner) != StringType) error("eventTime arguments must be String literals"))
+        TimeType
       case FunApplExp(fexp, args) =>
 
         // Check if this is a string method call

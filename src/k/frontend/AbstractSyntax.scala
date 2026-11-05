@@ -4046,6 +4046,11 @@ trait CallApplExp extends Exp {
   }
 
   override def toSMT(className: String, subTyping: Boolean): String = {
+    exp1 match {
+      case IdentExp("timelineValue") => return TimelineSupport.valueAtSMT(args, className, subTyping)
+      case IdentExp("eventTime")     => return TimelineSupport.eventTimeSMT(args)
+      case _ =>
+    }
     // Handle collect(...).sum() pattern specially
     // This pattern: seq.collect(x -> x.prop).sum()
     exp1 match {

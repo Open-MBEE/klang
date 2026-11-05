@@ -1774,6 +1774,13 @@ object UnifiedSolver {
           log(" Regular Solver: SAT - optimizing user objectives (minimize/maximize/soft req)")
           return solveWithUserObjectives(smtModel, config, z3Model)
 
+        case SolveResult.Sat(z3Model) if TimelineSupport.used =>
+          // Timeline lookups are exact piecewise-linear arithmetic; the plain Solver's model is authoritative
+          // and the Optimize verification pass below is very slow on them.
+          log(" Regular Solver: SAT - timeline model, skipping Optimize verification")
+          K2Z3.z3Model = z3Model
+          return SolveResult.Sat(z3Model)
+
         case SolveResult.Sat(z3Model) =>
           // SAT confirmed - we can return this directly or continue with Optimize
           // For now, continue with the existing Optimize flow for consistency
