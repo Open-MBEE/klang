@@ -203,7 +203,11 @@ object UtilSMT {
   var constantCounter: Int = 0
   var createdLocals: Set[String] = Set() // locals not detected by type checker
 
+  /** Objective terms collected from minimize/maximize: (isMaximize, weight, term SMT). */
+  var objectiveTerms: List[(Boolean, Int, String)] = Nil
+
   def reset {
+    objectiveTerms = Nil
     constraintCounter = 0
     constraintMessageMap = Map()
     objectGraph = null
@@ -1734,6 +1738,7 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     val model: Model = UtilSMT.transformModel(this)
     UtilSMT.objectGraph = new HeapLayout(model)
     UtilSMT.statistics = new Statistics()
+    UtilSMT.objectiveTerms = Nil
     statistics()
     val entityDecls = allEntityDecls(model)
 
@@ -1892,6 +1897,23 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
       result2 += "\n"
     }
     result2 += "\n"
+
+    if (UtilSMT.objectiveTerms.nonEmpty) {
+      val terms = UtilSMT.objectiveTerms.reverse
+      result2 += UtilSMT.headline1("Optimization Objectives")
+      if (terms.size == 1) {
+        val (isMax, _, term) = terms.head
+        result2 += s"(${if (isMax) "maximize" else "minimize"} $term)\n"
+      } else {
+        // Weighted sum; maximize terms are negated so everything is minimized
+        val parts = terms.map { case (isMax, w, term) =>
+          val scaled = if (w == 1) term else s"(* $w $term)"
+          if (isMax) s"(- $scaled)" else scaled
+        }
+        result2 += s"(minimize (+ ${parts.mkString(" ")}))\n"
+      }
+      result2 += "\n"
+    }
     
     // Generate connectivity constraints (must be after all invariants so all used flags are declared)
     // This propagates 'used' through object references to ensure reachable objects have enforced invariants
@@ -2513,7 +2535,8 @@ case class EntityDecl(
     }
 
     // constraints for constraint decls:
-    for (ConstraintDecl(n, exp, soft) <- constraintDecls) {
+    for (cd @ ConstraintDecl(n, exp, soft) <- constraintDecls) {
+      val softWeight = cd.weight
       val name = n match {
         case None      => ""
         case Some(str) => s" [$str]"
@@ -2568,9 +2591,10 @@ case class EntityDecl(
         result += s")\n"
         result += "\n"
         for (index <- heapEntries) {
-          val assertName = s"_xksoft${UtilSMT.constraintCounter}"
-          // Use assert-soft with weight 1 (can be made configurable)
-          result += s"(assert-soft ($functionName $index) :weight 1 :id $assertName)\n"
+          // All soft constraints share one :id so Z3 treats them as a single weighted MaxSAT objective
+          val softApp = s"($functionName $index)"
+          val softBody = if (ASTOptions.useHeapUsedFlags) s"(=> ${usedFlagName(index)} $softApp)" else softApp
+          result += s"(assert-soft $softBody :weight $softWeight :id k_soft)\n"
           UtilSMT.saveConstraintMapping(s"soft: ${exp.toString}$name")
         }
         result += "\n"
@@ -2580,15 +2604,12 @@ case class EntityDecl(
       }
     }
 
-    // optimization objectives (added as comments - use Optimize solver for actual optimization)
-    val optimizeDecls: List[OptimizeDecl] = getAllOptimizeDecls
-    if (optimizeDecls.nonEmpty) {
-      result += UtilSMT.headline3("Optimization Objectives (informational)")
-      for (OptimizeDecl(kind, exp, weight) <- optimizeDecls) {
-        val weightStr = weight.map(w => s" :weight $w").getOrElse("")
-        result += s"; (${kind.toSMT} ${exp.toSMT(ident, false)}$weightStr)\n"
+    // optimization objectives: collected globally and emitted once by Model.toSMT
+    for (OptimizeDecl(kind, exp, weight) <- getAllOptimizeDecls) {
+      val expSMT = exp.toSMT(ident, false)
+      for (index <- heapEntries) {
+        UtilSMT.objectiveTerms ::= ((kind == MaximizeKind, weight.getOrElse(1), s"(let ((this $index)) $expSMT)"))
       }
-      result += "\n"
     }
     result
   }
@@ -3437,6 +3458,10 @@ case class FunDecl(ident: String,
 }
 
 case class ConstraintDecl(name: Option[String], exp: Exp, soft: Boolean = false) extends MemberDecl {
+  /** Weight of a soft constraint (ignored for hard constraints) */
+  var weight: Int = 1
+  private def weightSuffix: String = if (weight != 1) s" weight $weight" else ""
+
   override def children: List[AnyRef] = List(exp)
 
   override def statistics() {
@@ -3454,9 +3479,9 @@ case class ConstraintDecl(name: Option[String], exp: Exp, soft: Boolean = false)
   override def toString =
     name match {
       case None =>
-        if (soft) s"soft req $exp" else s"req $exp"
+        if (soft) s"soft req $exp$weightSuffix" else s"req $exp"
       case Some(n) =>
-        if (soft) s"soft req $n: $exp" else s"req $n: $exp"
+        if (soft) s"soft req $n: $exp$weightSuffix" else s"req $n: $exp"
     }
 
   override def toJson1 = {

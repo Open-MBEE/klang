@@ -149,7 +149,7 @@ functionSpecification:
 
 constraint:
   'req' (Identifier ':')?  expression         # HardConstraint
-| 'soft' 'req' (Identifier ':')?  expression  # SoftConstraint
+| 'soft' 'req' (Identifier ':')?  expression ('weight' IntegerLiteral)?  # SoftConstraint
 ;
 
 multiplicity:

@@ -1,0 +1,274 @@
+{
+  "name": "opt_weighted1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptWeighted1 {\n  a:Int\n  b:Int\n\n  req a >= 0\n\n  req b >= 0\n\n  req a + b <= 10\n  maximize a weight 1\n  maximize b weight 3\n}\n\nmain:OptWeighted1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((OptWeighted1 (mk-OptWeighted1 (a Int)(b Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptWeighted1 (sel-OptWeighted1 OptWeighted1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptWeighted1 ((this Ref)) Bool\n  (is-lift-OptWeighted1 (deref this))\n)\n\n(define-fun deref-OptWeighted1 ((this Ref)) OptWeighted1\n  (sel-OptWeighted1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptWeighted1 ((this Ref)) Bool\n  (deref-is-OptWeighted1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; -----------------------------------\n;   Getters for class OptWeighted1:\n; -----------------------------------\n\n; --- getters for OptWeighted1.a: ---\n\n(define-fun OptWeighted1!a ((this Ref)) Int\n  (a (deref-OptWeighted1 this))\n)\n\n; --- getters for OptWeighted1.b: ---\n\n(define-fun OptWeighted1!b ((this Ref)) Int\n  (b (deref-OptWeighted1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptWeighted1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -------------------------------------\n;   Invariant for class OptWeighted1:\n; -------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptWeighted1 OptWeighted1)\n\n; --- Invariant 1: ---\n\n(define-fun OptWeighted1.inv1 ((this Ref)) Bool\n  (>= (OptWeighted1!a this) 0)\n)\n\n(assert (! (OptWeighted1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun OptWeighted1.inv2 ((this Ref)) Bool\n  (>= (OptWeighted1!b this) 0)\n)\n\n(assert (! (OptWeighted1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun OptWeighted1.inv3 ((this Ref)) Bool\n  (<= (+ (OptWeighted1!a this) (OptWeighted1!b this)) 10)\n)\n\n(assert (! (OptWeighted1.inv3 1) :named _xkassert3))\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(minimize (+ (- (let ((this 1)) (OptWeighted1!a this))) (- (* 3 (let ((this 1)) (OptWeighted1!b this))))))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptWeighted1 const-1-OptWeighted1))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert1 () Bool\n  (>= (a (sel-OptWeighted1 (select heap 1))) 0))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptWeighted1 a!1)))\n(define-fun const-1-OptWeighted1 () OptWeighted1\n  (mk-OptWeighted1 0 10))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (>= (b (sel-OptWeighted1 (select heap 1))) 0))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (+ (a (sel-OptWeighted1 (select heap 1)))\n              (b (sel-OptWeighted1 (select heap 1))))))\n  (<= a!1 10)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-OptWeighted1 (mk-OptWeighted1 0 10))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptWeighted1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "a",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "b",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "a",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "ident": "b",
+                  "type": "IdentExp"
+                }
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "a",
+              "type": "IdentExp"
+            },
+            "weight": 1,
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "b",
+              "type": "IdentExp"
+            },
+            "weight": 3,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptWeighted1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptWeighted1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "a",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "b",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "a",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "b",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            "weight": 1,
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "b",
+              "type": "ElementValue"
+            },
+            "weight": 3,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptWeighted1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

@@ -217,6 +217,7 @@ class KScalaVisitor extends ModelBaseVisitor[AnyRef] {
       else None
     val exp: Exp = visit(ctx.expression()).asInstanceOf[Exp]
     val c = ConstraintDecl(ident, exp, soft = true)
+    if (ctx.IntegerLiteral() != null) c.weight = ctx.IntegerLiteral().getText().toInt
     val line = ctx.getStart().getLine()
     val char = ctx.getStart().getCharPositionInLine()
     declToPosition += (c -> (line, char))

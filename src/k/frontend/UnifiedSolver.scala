@@ -1611,6 +1611,45 @@ object UnifiedSolver {
     printUnsatCore(smtModel)
   }
 
+  /** True if the SMT contains user-level optimization commands (minimize/maximize/soft req). */
+  private def hasUserObjectives(smt: String): Boolean =
+    smt.linesIterator.exists { l =>
+      l.startsWith("(minimize ") || l.startsWith("(maximize ") || (l.startsWith("(assert-soft ") && l.contains(":id k_soft"))
+    }
+
+  /**
+   * Solve with Z3's Optimize solver using the minimize/maximize/assert-soft commands in the SMT.
+   * Falls back to the already-found satisfying model if the optimizer cannot finish.
+   */
+  private def solveWithUserObjectives(smtModel: String, config: SolveConfig,
+                                      fallback: Z3Model): SolveResult = {
+    val opt = K2Z3.ctx.mkOptimize()
+    config.timeout.foreach { ms =>
+      val p = K2Z3.ctx.mkParams()
+      p.add("timeout", ms.toInt)
+      opt.setParameters(p)
+    }
+    try {
+      opt.fromString(smtModel)
+      opt.Check() match {
+        case Status.SATISFIABLE =>
+          val m = opt.getModel
+          log(s" Optimize: SAT, objectives = ${opt.getObjectives.map(_.toString).mkString(", ")}")
+          K2Z3.z3Model = m
+          SolveResult.Sat(m)
+        case other =>
+          log(s" Optimize returned $other - using unoptimized solution (${opt.getReasonUnknown})")
+          K2Z3.z3Model = fallback
+          SolveResult.Sat(fallback)
+      }
+    } catch {
+      case e: Throwable =>
+        log(s" Optimize failed (${e.getMessage}) - using unoptimized solution")
+        K2Z3.z3Model = fallback
+        SolveResult.Sat(fallback)
+    }
+  }
+
   /**
    * General solving method using Optimize API with incremental constraint addition.
    * This implements max-SAT: adds constraints incrementally, and when groups cause UNSAT,
@@ -1670,6 +1709,11 @@ object UnifiedSolver {
           // Solver couldn't determine - fall through to Optimize for best-effort
           log(s" Regular Solver: UNKNOWN ($reason) - falling back to Optimize")
           
+        case SolveResult.Sat(z3Model) if hasUserObjectives(smtModel) =>
+          // minimize/maximize/soft req: the plain Solver ignores them, so optimize
+          log(" Regular Solver: SAT - optimizing user objectives (minimize/maximize/soft req)")
+          return solveWithUserObjectives(smtModel, config, z3Model)
+
         case SolveResult.Sat(z3Model) =>
           // SAT confirmed - we can return this directly or continue with Optimize
           // For now, continue with the existing Optimize flow for consistency
