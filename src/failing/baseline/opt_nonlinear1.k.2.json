@@ -1,0 +1,177 @@
+{
+  "type": "Model",
+  "imports": [],
+  "annotations": [],
+  "decls": [
+    {
+      "type": "EntityDecl",
+      "annotations": [],
+      "entityToken": "class",
+      "ident": "OptNonlinear1",
+      "typeparams": [],
+      "extending": [],
+      "members": [
+        {
+          "type": "PropertyDecl",
+          "modifiers": [],
+          "annotations": [],
+          "name": "x",
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          }
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "GTE"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 0
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "ConstraintDecl",
+          "exp": {
+            "operand": [
+              {
+                "type": "ElementValue",
+                "element": "LTE"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              },
+              {
+                "type": "LiteralInteger",
+                "integer": 10
+              }
+            ],
+            "type": "Expression"
+          },
+          "annotations": []
+        },
+        {
+          "type": "FunDecl",
+          "ident": "cost",
+          "typeParams": [],
+          "params": [{
+            "type": "Param",
+            "name": "v",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          }],
+          "ty": {
+            "type": "ElementValue",
+            "element": "Integer"
+          },
+          "spec": [],
+          "body": [{
+            "type": "ExpressionDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Minus"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 100
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Times"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Minus"
+                        },
+                        {
+                          "element": "v",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 7
+                        }
+                      ],
+                      "type": "Expression"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Minus"
+                        },
+                        {
+                          "element": "v",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 7
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }],
+          "annotations": []
+        },
+        {
+          "type": "OptimizeDecl",
+          "kind": "maximize",
+          "exp": {
+            "type": "Expression",
+            "operand": [
+              {
+                "element": "cost",
+                "type": "ElementValue"
+              },
+              {
+                "element": "x",
+                "type": "ElementValue"
+              }
+            ]
+          },
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "type": "PropertyDecl",
+      "modifiers": [],
+      "annotations": [],
+      "name": "main",
+      "ty": {
+        "type": "ElementValue",
+        "element": "OptNonlinear1"
+      }
+    }
+  ],
+  "packages": []
+}

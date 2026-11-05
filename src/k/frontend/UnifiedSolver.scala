@@ -1639,12 +1639,14 @@ object UnifiedSolver {
           SolveResult.Sat(m)
         case other =>
           log(s" Optimize returned $other - using unoptimized solution (${opt.getReasonUnknown})")
+          System.err.println(s"[WARNING] Optimization did not complete ($other: ${opt.getReasonUnknown}); result may not be optimal (nonlinear objectives are often unsupported)")
           K2Z3.z3Model = fallback
           SolveResult.Sat(fallback)
       }
     } catch {
       case e: Throwable =>
         log(s" Optimize failed (${e.getMessage}) - using unoptimized solution")
+        System.err.println(s"[WARNING] Optimization failed (${e.getMessage}); result may not be optimal")
         K2Z3.z3Model = fallback
         SolveResult.Sat(fallback)
     }
