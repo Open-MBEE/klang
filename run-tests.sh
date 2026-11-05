@@ -23,7 +23,6 @@ RUN_EXAMPLES=false
 RUN_NEW_TESTS=false
 RUN_SINGLE_TEST=false
 VERBOSE=false
-SHOW_DIFF=false  # Show baseline diffs for mismatches
 FILTER=""
 TEST_FILE=""
 PARALLEL_JOBS=1  # Default: batch mode (no parallelism)
@@ -54,7 +53,6 @@ show_help() {
     echo "  -filter <pat> Run only tests matching pattern"
     echo "  -timing       Show detailed timing breakdown"
     echo "  -v, --verbose Show full output for each test"
-    echo "  -diff         Show baseline diffs for mismatched tests"
     echo "  -h, --help    Show this help"
     echo ""
     echo "Parallel execution:"
@@ -168,10 +166,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -v|--verbose)
             VERBOSE=true
-            shift
-            ;;
-        -diff)
-            SHOW_DIFF=true
             shift
             ;;
         -save-baseline)
@@ -290,21 +284,6 @@ if [ "$RUN_SINGLE_TEST" = true ]; then
                 fi
             fi
         fi
-        
-        # Show baseline diff for single test mode (always useful)
-        if [ -f "./diff-baseline.py" ]; then
-            echo ""
-            echo "--- Baseline Comparison ---"
-            python3 ./diff-baseline.py "$BASELINE_FILE" 2>/dev/null || echo "   (diff-baseline.py failed)"
-        fi
-        
-        # Show .model.k if it exists (K constraints from solver model)
-        MODEL_K_FILE="$TEST_DIR/baseline/${TEST_NAME%.k}.model.k"
-        if [ -f "$MODEL_K_FILE" ]; then
-            echo ""
-            echo "--- Model Constraints (${TEST_NAME%.k}.model.k) ---"
-            cat "$MODEL_K_FILE"
-        fi
     else
         echo "📋 No baseline file found at: $BASELINE_FILE"
     fi
@@ -346,14 +325,6 @@ if [ "$TOTAL_TESTS" = "0" ]; then
     fi
     echo "Search directories: $TEST_DIRS"
     exit 1
-fi
-
-# Safety: If running many tests in batch mode, warn about potential Z3 crash
-# Z3's native library can crash (SIGSEGV) after ~100 tests due to memory corruption
-if [ "$PARALLEL_JOBS" -eq 1 ] && [ "$TOTAL_TESTS" -gt 100 ]; then
-    echo "⚠️  Warning: Running $TOTAL_TESTS tests in batch mode may crash due to Z3 memory issues."
-    echo "   Consider using: ./run-tests.sh -j auto -all"
-    echo ""
 fi
 
 echo "Test directories: $TEST_DIRS"
@@ -490,19 +461,6 @@ if [ "$PARALLEL_JOBS" -eq 1 ]; then
     if [ "$SAVE_BASELINE" = true ]; then
         echo "Baselines saved to baseline/ subdirectories"
     fi
-    
-    # Show baseline diffs if -diff flag was used and there are mismatches
-    if [ "$SHOW_DIFF" = true ] && [ "$BASELINE_MISMATCHED" -gt 0 ]; then
-        echo ""
-        echo "=========================================="
-        echo "Baseline Differences:"
-        echo "=========================================="
-        if [ -f "./diff-baseline.py" ]; then
-            python3 ./diff-baseline.py --list-changed 2>/dev/null
-        else
-            echo "(diff-baseline.py not found)"
-        fi
-    fi
     echo ""
 
     if [ $FAILED -gt 0 ]; then
@@ -567,16 +525,7 @@ EXPECTED=$(head -50 "$TEST_FILE" 2>/dev/null | grep -E "^[[:space:]]*(//|--|/\*|
 
 if [ -n "$EXPECTED" ]; then
     # We have an expected result - compare
-    # Support pipe-separated alternatives: @expected UNKNOWN|TIMEOUT
-    MATCHED=false
-    for ALT in $(echo "$EXPECTED" | tr '|' ' '); do
-        if [ "$ACTUAL_RESULT" = "$ALT" ]; then
-            MATCHED=true
-            break
-        fi
-    done
-    
-    if [ "$MATCHED" = "true" ]; then
+    if [ "$ACTUAL_RESULT" = "$EXPECTED" ]; then
         STATUS="PASSED"
         EXTRA="$ACTUAL_RESULT (expected)"
     else

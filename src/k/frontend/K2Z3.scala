@@ -561,21 +561,26 @@ object K2Z3 {
     hasSoftConstraints = false
     optimize = null  // Will be created lazily if needed via getOptimize()
 
-    // Always create a fresh Z3 context to avoid datatype corruption issues
-    // when running many tests in the same JVM. The Z3 datatype plugin can
-    // get corrupted leading to "UNEXPECTED CODE WAS REACHED" assertion failures.
-    if (ctx != null && !lastSolveTimedOut) {
-      // Only close when it's safe (no timeout occurred)
-      try {
-        ctx.close()
-      } catch {
-        case _: Exception => // Ignore close errors
+    // If the last solve timed out, we need a fresh Z3 context to avoid 
+    // corruption in the Z3 native library. Otherwise, reuse the existing context.
+    if (ctx == null || lastSolveTimedOut) {
+      if (lastSolveTimedOut) {
+        logDebug("Creating fresh Z3 context after timeout (abandoning old context)")
+        // DON'T close the old context - it may still be in use by a timed-out thread
+        // and closing it can cause a native crash (SIGSEGV in ast_manager::delete_node).
+        // This leaks native memory, but prevents crashes.
+        // The old context will eventually be garbage collected.
+      } else if (ctx != null) {
+        // Only close when it's safe (no timeout occurred)
+        try {
+          ctx.close()
+        } catch {
+          case _: Exception => // Ignore close errors
+        }
       }
-    } else if (lastSolveTimedOut) {
-      logDebug("Abandoning old Z3 context after timeout (not closing to prevent crash)")
+      ctx = new Context(cfg.asJava)
+      lastSolveTimedOut = false
     }
-    ctx = new Context(cfg.asJava)
-    lastSolveTimedOut = false
     
     params = ctx.mkParams
     params.add("unsat_core", true)

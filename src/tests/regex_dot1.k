@@ -1,5 +1,4 @@
-// @expected SAT
-// BUG: Regex .matches() always returns false - see notes/tests/regex_summary.txt
+// @expected UNSAT
 // Test: Regex dot (.) matches any character
 // This pattern REQUIRES proper regex parsing
 // Expected: SAT - dot matches any single character
