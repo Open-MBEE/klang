@@ -1,0 +1,271 @@
+{
+  "name": "opt_multi_instance1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptMI {\n  x:Int\n\n  req x >= 1\n\n  req x <= 10\n}\n\nclass OptMax extending OptMI {\n  maximize x\n}\n\nclass OptMin extending OptMI {\n  minimize x\n}\n\na:OptMax\n\nb:OptMin\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (a Ref)(b Ref)))))\n(declare-datatypes () ((OptMI (mk-OptMI (x Int)))))\n(declare-datatypes () ((OptMax (mk-OptMax (x Int)))))\n(declare-datatypes () ((OptMin (mk-OptMin (x Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptMI (sel-OptMI OptMI))\n  (lift-OptMax (sel-OptMax OptMax))\n  (lift-OptMin (sel-OptMin OptMin))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptMI ((this Ref)) Bool\n  (is-lift-OptMI (deref this))\n)\n\n(define-fun deref-OptMI ((this Ref)) OptMI\n  (sel-OptMI (deref this))\n)\n\n(define-fun deref-is-OptMax ((this Ref)) Bool\n  (is-lift-OptMax (deref this))\n)\n\n(define-fun deref-OptMax ((this Ref)) OptMax\n  (sel-OptMax (deref this))\n)\n\n(define-fun deref-is-OptMin ((this Ref)) Bool\n  (is-lift-OptMin (deref this))\n)\n\n(define-fun deref-OptMin ((this Ref)) OptMin\n  (sel-OptMin (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptMI ((this Ref)) Bool\n  (or\n    (deref-is-OptMI this)\n    (deref-is-OptMax this)\n    (deref-is-OptMin this)\n  )\n)\n\n(define-fun deref-isa-OptMax ((this Ref)) Bool\n  (deref-is-OptMax this)\n)\n\n(define-fun deref-isa-OptMin ((this Ref)) Bool\n  (deref-is-OptMin this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.a: ---\n\n(define-fun TopLevelDeclarations!a ((this Ref)) Ref\n  (a (deref-TopLevelDeclarations this))\n)\n\n; --- getters for TopLevelDeclarations.b: ---\n\n(define-fun TopLevelDeclarations!b ((this Ref)) Ref\n  (b (deref-TopLevelDeclarations this))\n)\n\n; ----------------------------\n;   Getters for class OptMI:\n; ----------------------------\n\n; --- getters for OptMI.x: ---\n\n(define-fun OptMI!x ((this Ref)) Int\n  (x (deref-OptMI this))\n)\n\n; -----------------------------\n;   Getters for class OptMax:\n; -----------------------------\n\n; --- getters for OptMax.x: ---\n\n(define-fun OptMax!x ((this Ref)) Int\n  (x (deref-OptMax this))\n)\n\n; -----------------------------\n;   Getters for class OptMin:\n; -----------------------------\n\n; --- getters for OptMin.x: ---\n\n(define-fun OptMin!x ((this Ref)) Int\n  (x (deref-OptMin this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptMax (TopLevelDeclarations!a this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n; --- Invariant 2: ---\n\n(define-fun TopLevelDeclarations.inv2 ((this Ref)) Bool\n  (deref-isa-OptMin (TopLevelDeclarations!b this))\n)\n\n(assert (! (TopLevelDeclarations.inv2 0) :named _xkassert1))\n\n\n\n; ------------------------------\n;   Invariant for class OptMI:\n; ------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptMI OptMI)\n\n; --- Invariant 1: ---\n\n(define-fun OptMI.inv1 ((this Ref)) Bool\n  (>= (OptMI!x this) 1)\n)\n\n(assert (! (OptMI.inv1 1) :named _xkassert2))\n\n; --- Invariant 2: ---\n\n(define-fun OptMI.inv2 ((this Ref)) Bool\n  (<= (OptMI!x this) 10)\n)\n\n(assert (! (OptMI.inv2 1) :named _xkassert3))\n\n\n\n; -------------------------------\n;   Invariant for class OptMax:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-OptMax OptMax)\n\n; --- Invariant 1: ---\n\n(define-fun OptMax.inv1 ((this Ref)) Bool\n  (>= (OptMax!x this) 1)\n)\n\n(assert (! (OptMax.inv1 2) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun OptMax.inv2 ((this Ref)) Bool\n  (<= (OptMax!x this) 10)\n)\n\n(assert (! (OptMax.inv2 2) :named _xkassert5))\n\n\n\n; -------------------------------\n;   Invariant for class OptMin:\n; -------------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-OptMin OptMin)\n\n; --- Invariant 1: ---\n\n(define-fun OptMin.inv1 ((this Ref)) Bool\n  (>= (OptMin!x this) 1)\n)\n\n(assert (! (OptMin.inv1 3) :named _xkassert6))\n\n; --- Invariant 2: ---\n\n(define-fun OptMin.inv2 ((this Ref)) Bool\n  (<= (OptMin!x this) 10)\n)\n\n(assert (! (OptMin.inv2 3) :named _xkassert7))\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(minimize (+ (- (let ((this 2)) (OptMax!x this))) (let ((this 3)) (OptMin!x this))))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptMI const-1-OptMI))\n        2 (lift-OptMax const-2-OptMax))\n        3 (lift-OptMin const-3-OptMin))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert1 () Bool\n  (let ((a!1 (select heap (b (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptMin a!1)))\n(define-fun const-2-OptMax () OptMax\n  (mk-OptMax 10))\n(define-fun const-3-OptMin () OptMin\n  (mk-OptMin 1))\n(define-fun const-1-OptMI () OptMI\n  (mk-OptMI 1))\n(define-fun _xkassert4 () Bool\n  (>= (x (sel-OptMax (select heap 2))) 1))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2 3))\n(define-fun _xkassert7 () Bool\n  (<= (x (sel-OptMin (select heap 3))) 10))\n(define-fun _xkassert2 () Bool\n  (>= (x (sel-OptMI (select heap 1))) 1))\n(define-fun _xkassert5 () Bool\n  (<= (x (sel-OptMax (select heap 2))) 10))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (a (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptMax a!1)))\n(define-fun _xkassert3 () Bool\n  (<= (x (sel-OptMI (select heap 1))) 10))\n(define-fun _xkassert6 () Bool\n  (>= (x (sel-OptMin (select heap 3))) 1))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations\n                           (mk-TopLevelDeclarations 2 3)))\n                  1\n                  (lift-OptMI (mk-OptMI 1)))))\n  (store (store a!1 2 (lift-OptMax (mk-OptMax 10)))\n         3\n         (lift-OptMin (mk-OptMin 1)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMI",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 1,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMax",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["OptMI"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "OptimizeDecl",
+          "kind": "maximize",
+          "exp": {
+            "ident": "x",
+            "type": "IdentExp"
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMin",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["OptMI"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [{
+          "type": "OptimizeDecl",
+          "kind": "minimize",
+          "exp": {
+            "ident": "x",
+            "type": "IdentExp"
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "a",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptMax"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "b",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptMin"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMI",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 1
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMax",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "OptMI"
+        }],
+        "members": [{
+          "type": "OptimizeDecl",
+          "kind": "maximize",
+          "exp": {
+            "element": "x",
+            "type": "ElementValue"
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptMin",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "OptMI"
+        }],
+        "members": [{
+          "type": "OptimizeDecl",
+          "kind": "minimize",
+          "exp": {
+            "element": "x",
+            "type": "ElementValue"
+          },
+          "annotations": []
+        }]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "a",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptMax"
+        }
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "b",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptMin"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

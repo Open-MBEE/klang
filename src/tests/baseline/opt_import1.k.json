@@ -1,0 +1,352 @@
+{
+  "name": "opt_import1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\npackage opt_import1 {\n\nimport opt_import_base\n\nclass ImpDerived extending ImpBase {\n  y:Int\n\n  req y = x + 1\n}\n\nd:ImpDerived\n\n\npackage opt_import_base {\n\nclass ImpBase {\n  x:Int\n\n  req x >= 0\n\n  req x <= 50\n  maximize x\n}\n\n\n}\n\n\n}\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (d Ref)))))\n(declare-datatypes () ((ImpDerived (mk-ImpDerived (x Int)(y Int)))))\n(declare-datatypes () ((ImpBase (mk-ImpBase (x Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-ImpDerived (sel-ImpDerived ImpDerived))\n  (lift-ImpBase (sel-ImpBase ImpBase))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-ImpDerived ((this Ref)) Bool\n  (is-lift-ImpDerived (deref this))\n)\n\n(define-fun deref-ImpDerived ((this Ref)) ImpDerived\n  (sel-ImpDerived (deref this))\n)\n\n(define-fun deref-is-ImpBase ((this Ref)) Bool\n  (is-lift-ImpBase (deref this))\n)\n\n(define-fun deref-ImpBase ((this Ref)) ImpBase\n  (sel-ImpBase (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-ImpDerived ((this Ref)) Bool\n  (deref-is-ImpDerived this)\n)\n\n(define-fun deref-isa-ImpBase ((this Ref)) Bool\n  (or\n    (deref-is-ImpBase this)\n    (deref-is-ImpDerived this)\n  )\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.d: ---\n\n(define-fun TopLevelDeclarations!d ((this Ref)) Ref\n  (d (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------\n;   Getters for class ImpDerived:\n; ---------------------------------\n\n; --- getters for ImpDerived.x: ---\n\n(define-fun ImpDerived!x ((this Ref)) Int\n  (x (deref-ImpDerived this))\n)\n\n; --- getters for ImpDerived.y: ---\n\n(define-fun ImpDerived!y ((this Ref)) Int\n  (y (deref-ImpDerived this))\n)\n\n; ------------------------------\n;   Getters for class ImpBase:\n; ------------------------------\n\n; --- getters for ImpBase.x: ---\n\n(define-fun ImpBase!x ((this Ref)) Int\n  (x (deref-ImpBase this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-ImpDerived (TopLevelDeclarations!d this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class ImpDerived:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-ImpDerived ImpDerived)\n\n; --- Invariant 1: ---\n\n(define-fun ImpDerived.inv1 ((this Ref)) Bool\n  (>= (ImpDerived!x this) 0)\n)\n\n(assert (! (ImpDerived.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun ImpDerived.inv2 ((this Ref)) Bool\n  (<= (ImpDerived!x this) 50)\n)\n\n(assert (! (ImpDerived.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun ImpDerived.inv3 ((this Ref)) Bool\n  (= (ImpDerived!y this) (+ (ImpDerived!x this) 1))\n)\n\n(assert (! (ImpDerived.inv3 1) :named _xkassert3))\n\n\n\n; --------------------------------\n;   Invariant for class ImpBase:\n; --------------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-ImpBase ImpBase)\n\n; --- Invariant 1: ---\n\n(define-fun ImpBase.inv1 ((this Ref)) Bool\n  (>= (ImpBase!x this) 0)\n)\n\n(assert (! (ImpBase.inv1 2) :named _xkassert4))\n\n; --- Invariant 2: ---\n\n(define-fun ImpBase.inv2 ((this Ref)) Bool\n  (<= (ImpBase!x this) 50)\n)\n\n(assert (! (ImpBase.inv2 2) :named _xkassert5))\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(minimize (+ (- (let ((this 1)) (ImpDerived!x this))) (- (let ((this 2)) (ImpBase!x this)))))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-ImpDerived const-1-ImpDerived))\n        2 (lift-ImpBase const-2-ImpBase))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-2-ImpBase () ImpBase\n  (mk-ImpBase 50))\n(define-fun const-1-ImpDerived () ImpDerived\n  (mk-ImpDerived 50 51))\n(define-fun _xkassert4 () Bool\n  (>= (x (sel-ImpBase (select heap 2))) 0))\n(define-fun _xkassert1 () Bool\n  (>= (x (sel-ImpDerived (select heap 1))) 0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert2 () Bool\n  (<= (x (sel-ImpDerived (select heap 1))) 50))\n(define-fun _xkassert5 () Bool\n  (<= (x (sel-ImpBase (select heap 2))) 50))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (d (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-ImpDerived a!1)))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (+ (x (sel-ImpDerived (select heap 1))) 1)))\n  (= (y (sel-ImpDerived (select heap 1))) a!1)))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n                  1\n                  (lift-ImpDerived (mk-ImpDerived 50 51)))))\n  (store a!1 2 (lift-ImpBase (mk-ImpBase 50)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["opt_import1"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "opt_import1",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["opt_import_base"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "ImpDerived",
+            "typeparams": [],
+            "extending": [{
+              "args": [],
+              "ident": {
+                "names": ["ImpBase"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "y",
+                "ty": {"type": "IntType"}
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "type": "BinExp",
+                  "op": "EQ",
+                  "exp1": {
+                    "ident": "y",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "type": "BinExp",
+                    "op": "Plus",
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 1,
+                      "type": "LiteralInteger"
+                    }
+                  }
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "d",
+            "ty": {
+              "args": [],
+              "ident": {
+                "names": ["ImpDerived"],
+                "type": "QualifiedName"
+              },
+              "type": "IdentType"
+            }
+          }
+        ],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["opt_import_base"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "opt_import_base",
+            "imports": [],
+            "annotations": [],
+            "decls": [{
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "ImpBase",
+              "typeparams": [],
+              "extending": [],
+              "members": [
+                {
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "x",
+                  "ty": {"type": "IntType"}
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "GTE",
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 0,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "type": "BinExp",
+                    "op": "LTE",
+                    "exp1": {
+                      "ident": "x",
+                      "type": "IdentExp"
+                    },
+                    "exp2": {
+                      "i": 50,
+                      "type": "LiteralInteger"
+                    }
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "OptimizeDecl",
+                  "kind": "maximize",
+                  "exp": {
+                    "ident": "x",
+                    "type": "IdentExp"
+                  },
+                  "annotations": []
+                }
+              ]
+            }],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [],
+    "packages": [{
+      "type": "PackageDecl",
+      "name": {
+        "names": ["opt_import1"],
+        "type": "QualifiedName"
+      },
+      "model": {
+        "type": "Model",
+        "packageName": "opt_import1",
+        "imports": [{
+          "type": "ImportDecl",
+          "name": {
+            "names": ["opt_import_base"],
+            "type": "QualifiedName"
+          },
+          "star": "false",
+          "language": "DefaultImport"
+        }],
+        "annotations": [],
+        "decls": [
+          {
+            "type": "EntityDecl",
+            "annotations": [],
+            "entityToken": "class",
+            "ident": "ImpDerived",
+            "typeparams": [],
+            "extending": [{
+              "type": "ElementValue",
+              "element": "ImpBase"
+            }],
+            "members": [
+              {
+                "type": "PropertyDecl",
+                "modifiers": [],
+                "annotations": [],
+                "name": "y",
+                "ty": {
+                  "type": "ElementValue",
+                  "element": "Integer"
+                }
+              },
+              {
+                "type": "ConstraintDecl",
+                "exp": {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "EQ"
+                    },
+                    {
+                      "element": "y",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "operand": [
+                        {
+                          "type": "ElementValue",
+                          "element": "Plus"
+                        },
+                        {
+                          "element": "x",
+                          "type": "ElementValue"
+                        },
+                        {
+                          "type": "LiteralInteger",
+                          "integer": 1
+                        }
+                      ],
+                      "type": "Expression"
+                    }
+                  ],
+                  "type": "Expression"
+                },
+                "annotations": []
+              }
+            ]
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "d",
+            "ty": {
+              "type": "ElementValue",
+              "element": "ImpDerived"
+            }
+          }
+        ],
+        "packages": [{
+          "type": "PackageDecl",
+          "name": {
+            "names": ["opt_import_base"],
+            "type": "QualifiedName"
+          },
+          "model": {
+            "type": "Model",
+            "packageName": "opt_import_base",
+            "imports": [],
+            "annotations": [],
+            "decls": [{
+              "type": "EntityDecl",
+              "annotations": [],
+              "entityToken": "class",
+              "ident": "ImpBase",
+              "typeparams": [],
+              "extending": [],
+              "members": [
+                {
+                  "type": "PropertyDecl",
+                  "modifiers": [],
+                  "annotations": [],
+                  "name": "x",
+                  "ty": {
+                    "type": "ElementValue",
+                    "element": "Integer"
+                  }
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "GTE"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 0
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "ConstraintDecl",
+                  "exp": {
+                    "operand": [
+                      {
+                        "type": "ElementValue",
+                        "element": "LTE"
+                      },
+                      {
+                        "element": "x",
+                        "type": "ElementValue"
+                      },
+                      {
+                        "type": "LiteralInteger",
+                        "integer": 50
+                      }
+                    ],
+                    "type": "Expression"
+                  },
+                  "annotations": []
+                },
+                {
+                  "type": "OptimizeDecl",
+                  "kind": "maximize",
+                  "exp": {
+                    "element": "x",
+                    "type": "ElementValue"
+                  },
+                  "annotations": []
+                }
+              ]
+            }],
+            "packages": []
+          }
+        }]
+      }
+    }]
+  }
+}

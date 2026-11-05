@@ -1,0 +1,263 @@
+{
+  "name": "opt_inherit2.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OptP {\n  a:Int\n\n  req a >= 3\n  minimize a\n}\n\nclass OptC extending OptP {\n  b:Int\n\n  req b >= a + 2\n  minimize b\n}\n\nc:OptC\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (c Ref)))))\n(declare-datatypes () ((OptP (mk-OptP (a Int)))))\n(declare-datatypes () ((OptC (mk-OptC (a Int)(b Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OptP (sel-OptP OptP))\n  (lift-OptC (sel-OptC OptC))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OptP ((this Ref)) Bool\n  (is-lift-OptP (deref this))\n)\n\n(define-fun deref-OptP ((this Ref)) OptP\n  (sel-OptP (deref this))\n)\n\n(define-fun deref-is-OptC ((this Ref)) Bool\n  (is-lift-OptC (deref this))\n)\n\n(define-fun deref-OptC ((this Ref)) OptC\n  (sel-OptC (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OptP ((this Ref)) Bool\n  (or\n    (deref-is-OptP this)\n    (deref-is-OptC this)\n  )\n)\n\n(define-fun deref-isa-OptC ((this Ref)) Bool\n  (deref-is-OptC this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.c: ---\n\n(define-fun TopLevelDeclarations!c ((this Ref)) Ref\n  (c (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------\n;   Getters for class OptP:\n; ---------------------------\n\n; --- getters for OptP.a: ---\n\n(define-fun OptP!a ((this Ref)) Int\n  (a (deref-OptP this))\n)\n\n; ---------------------------\n;   Getters for class OptC:\n; ---------------------------\n\n; --- getters for OptC.a: ---\n\n(define-fun OptC!a ((this Ref)) Int\n  (a (deref-OptC this))\n)\n\n; --- getters for OptC.b: ---\n\n(define-fun OptC!b ((this Ref)) Int\n  (b (deref-OptC this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OptC (TopLevelDeclarations!c this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------\n;   Invariant for class OptP:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OptP OptP)\n\n; --- Invariant 1: ---\n\n(define-fun OptP.inv1 ((this Ref)) Bool\n  (>= (OptP!a this) 3)\n)\n\n(assert (! (OptP.inv1 1) :named _xkassert1))\n\n\n\n; -----------------------------\n;   Invariant for class OptC:\n; -----------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-OptC OptC)\n\n; --- Invariant 1: ---\n\n(define-fun OptC.inv1 ((this Ref)) Bool\n  (>= (OptC!a this) 3)\n)\n\n(assert (! (OptC.inv1 2) :named _xkassert2))\n\n; --- Invariant 2: ---\n\n(define-fun OptC.inv2 ((this Ref)) Bool\n  (>= (OptC!b this) (+ (OptC!a this) 2))\n)\n\n(assert (! (OptC.inv2 2) :named _xkassert3))\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(minimize (+ (let ((this 1)) (OptP!a this)) (let ((this 2)) (OptC!a this)) (let ((this 2)) (OptC!b this))))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OptP const-1-OptP))\n        2 (lift-OptC const-2-OptC))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-1-OptP () OptP\n  (mk-OptP 3))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (+ (a (sel-OptC (select heap 2))) 2)))\n  (>= (b (sel-OptC (select heap 2))) a!1)))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (c (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OptC a!1)))\n(define-fun _xkassert1 () Bool\n  (>= (a (sel-OptP (select heap 1))) 3))\n(define-fun const-2-OptC () OptC\n  (mk-OptC 3 5))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 2))\n(define-fun _xkassert2 () Bool\n  (>= (a (sel-OptC (select heap 2))) 3))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 2)))\n                  1\n                  (lift-OptP (mk-OptP 3)))))\n  (store a!1 2 (lift-OptC (mk-OptC 3 5)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptP",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "a",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 3,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "ident": "a",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptC",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["OptP"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "b",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "type": "BinExp",
+                "op": "Plus",
+                "exp1": {
+                  "ident": "a",
+                  "type": "IdentExp"
+                },
+                "exp2": {
+                  "i": 2,
+                  "type": "LiteralInteger"
+                }
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "ident": "b",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OptC"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptP",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "a",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 3
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OptC",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "OptP"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "b",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "Plus"
+                    },
+                    {
+                      "element": "a",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 2
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "minimize",
+            "exp": {
+              "element": "b",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "c",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OptC"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

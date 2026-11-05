@@ -1,0 +1,384 @@
+{
+  "name": "opt_inherit3.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass OI1 {\n  x:Int\n\n  req x >= 0\n\n  req x <= 20\n}\n\nclass OI2 extending OI1 {\n  y:Int\n\n  req y = x\n\n  soft req y = 7 weight 2\n}\n\nclass OI3 extending OI2 {\n  z:Int\n\n  req z = y\n  maximize z weight 1\n}\n\nq:OI3\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (q Ref)))))\n(declare-datatypes () ((OI1 (mk-OI1 (x Int)))))\n(declare-datatypes () ((OI2 (mk-OI2 (x Int)(y Int)))))\n(declare-datatypes () ((OI3 (mk-OI3 (x Int)(y Int)(z Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-OI1 (sel-OI1 OI1))\n  (lift-OI2 (sel-OI2 OI2))\n  (lift-OI3 (sel-OI3 OI3))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-OI1 ((this Ref)) Bool\n  (is-lift-OI1 (deref this))\n)\n\n(define-fun deref-OI1 ((this Ref)) OI1\n  (sel-OI1 (deref this))\n)\n\n(define-fun deref-is-OI2 ((this Ref)) Bool\n  (is-lift-OI2 (deref this))\n)\n\n(define-fun deref-OI2 ((this Ref)) OI2\n  (sel-OI2 (deref this))\n)\n\n(define-fun deref-is-OI3 ((this Ref)) Bool\n  (is-lift-OI3 (deref this))\n)\n\n(define-fun deref-OI3 ((this Ref)) OI3\n  (sel-OI3 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-OI1 ((this Ref)) Bool\n  (or\n    (deref-is-OI1 this)\n    (deref-is-OI2 this)\n    (deref-is-OI3 this)\n  )\n)\n\n(define-fun deref-isa-OI2 ((this Ref)) Bool\n  (or\n    (deref-is-OI2 this)\n    (deref-is-OI3 this)\n  )\n)\n\n(define-fun deref-isa-OI3 ((this Ref)) Bool\n  (deref-is-OI3 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.q: ---\n\n(define-fun TopLevelDeclarations!q ((this Ref)) Ref\n  (q (deref-TopLevelDeclarations this))\n)\n\n; --------------------------\n;   Getters for class OI1:\n; --------------------------\n\n; --- getters for OI1.x: ---\n\n(define-fun OI1!x ((this Ref)) Int\n  (x (deref-OI1 this))\n)\n\n; --------------------------\n;   Getters for class OI2:\n; --------------------------\n\n; --- getters for OI2.x: ---\n\n(define-fun OI2!x ((this Ref)) Int\n  (x (deref-OI2 this))\n)\n\n; --- getters for OI2.y: ---\n\n(define-fun OI2!y ((this Ref)) Int\n  (y (deref-OI2 this))\n)\n\n; --------------------------\n;   Getters for class OI3:\n; --------------------------\n\n; --- getters for OI3.x: ---\n\n(define-fun OI3!x ((this Ref)) Int\n  (x (deref-OI3 this))\n)\n\n; --- getters for OI3.y: ---\n\n(define-fun OI3!y ((this Ref)) Int\n  (y (deref-OI3 this))\n)\n\n; --- getters for OI3.z: ---\n\n(define-fun OI3!z ((this Ref)) Int\n  (z (deref-OI3 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-OI3 (TopLevelDeclarations!q this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ----------------------------\n;   Invariant for class OI1:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-OI1 OI1)\n\n; --- Invariant 1: ---\n\n(define-fun OI1.inv1 ((this Ref)) Bool\n  (>= (OI1!x this) 0)\n)\n\n(assert (! (OI1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun OI1.inv2 ((this Ref)) Bool\n  (<= (OI1!x this) 20)\n)\n\n(assert (! (OI1.inv2 1) :named _xkassert2))\n\n\n\n; ----------------------------\n;   Invariant for class OI2:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-2-OI2 OI2)\n\n; --- Invariant 1: ---\n\n(define-fun OI2.inv1 ((this Ref)) Bool\n  (>= (OI2!x this) 0)\n)\n\n(assert (! (OI2.inv1 2) :named _xkassert3))\n\n; --- Invariant 2: ---\n\n(define-fun OI2.inv2 ((this Ref)) Bool\n  (<= (OI2!x this) 20)\n)\n\n(assert (! (OI2.inv2 2) :named _xkassert4))\n\n; --- Invariant 3: ---\n\n(define-fun OI2.inv3 ((this Ref)) Bool\n  (= (OI2!y this) (OI2!x this))\n)\n\n(assert (! (OI2.inv3 2) :named _xkassert5))\n\n; --- Soft Constraint 4: ---\n\n(define-fun OI2.soft4 ((this Ref)) Bool\n  (= (OI2!y this) 7)\n)\n\n(assert-soft (OI2.soft4 2) :weight 2 :id k_soft)\n\n\n\n; ----------------------------\n;   Invariant for class OI3:\n; ----------------------------\n\n; --- Constants: ---\n\n(declare-const const-3-OI3 OI3)\n\n; --- Invariant 1: ---\n\n(define-fun OI3.inv1 ((this Ref)) Bool\n  (>= (OI3!x this) 0)\n)\n\n(assert (! (OI3.inv1 3) :named _xkassert7))\n\n; --- Invariant 2: ---\n\n(define-fun OI3.inv2 ((this Ref)) Bool\n  (<= (OI3!x this) 20)\n)\n\n(assert (! (OI3.inv2 3) :named _xkassert8))\n\n; --- Invariant 3: ---\n\n(define-fun OI3.inv3 ((this Ref)) Bool\n  (= (OI3!y this) (OI3!x this))\n)\n\n(assert (! (OI3.inv3 3) :named _xkassert9))\n\n; --- Soft Constraint 4: ---\n\n(define-fun OI3.soft4 ((this Ref)) Bool\n  (= (OI3!y this) 7)\n)\n\n(assert-soft (OI3.soft4 3) :weight 2 :id k_soft)\n\n; --- Invariant 5: ---\n\n(define-fun OI3.inv5 ((this Ref)) Bool\n  (= (OI3!z this) (OI3!y this))\n)\n\n(assert (! (OI3.inv5 3) :named _xkassert11))\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(maximize (let ((this 3)) (OI3!z this)))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store(store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-OI1 const-1-OI1))\n        2 (lift-OI2 const-2-OI2))\n        3 (lift-OI3 const-3-OI3))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-3-OI3 () OI3\n  (mk-OI3 7 7 7))\n(define-fun const-2-OI2 () OI2\n  (mk-OI2 7 7))\n(define-fun const-1-OI1 () OI1\n  (mk-OI1 0))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 3))\n(define-fun _xkassert1 () Bool\n  (>= (x (sel-OI1 (select heap 1))) 0))\n(define-fun _xkassert11 () Bool\n  (= (z (sel-OI3 (select heap 3))) (y (sel-OI3 (select heap 3)))))\n(define-fun _xkassert4 () Bool\n  (<= (x (sel-OI2 (select heap 2))) 20))\n(define-fun _xkassert7 () Bool\n  (>= (x (sel-OI3 (select heap 3))) 0))\n(define-fun _xkassert2 () Bool\n  (<= (x (sel-OI1 (select heap 1))) 20))\n(define-fun _xkassert5 () Bool\n  (= (y (sel-OI2 (select heap 2))) (x (sel-OI2 (select heap 2)))))\n(define-fun _xkassert9 () Bool\n  (= (y (sel-OI3 (select heap 3))) (x (sel-OI3 (select heap 3)))))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (q (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-OI3 a!1)))\n(define-fun _xkassert8 () Bool\n  (<= (x (sel-OI3 (select heap 3))) 20))\n(define-fun _xkassert3 () Bool\n  (>= (x (sel-OI2 (select heap 2))) 0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (let ((a!1 (store (store ((as const (Array Int Any)) null)\n                         0\n                         (lift-TopLevelDeclarations (mk-TopLevelDeclarations 3)))\n                  1\n                  (lift-OI1 (mk-OI1 0)))))\n  (store (store a!1 2 (lift-OI2 (mk-OI2 7 7))) 3 (lift-OI3 (mk-OI3 7 7 7)))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "x",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 20,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI2",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["OI1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "y",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "x",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "y",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 7,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI3",
+        "typeparams": [],
+        "extending": [{
+          "args": [],
+          "ident": {
+            "names": ["OI2"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "z",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "z",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "ident": "y",
+                "type": "IdentExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "z",
+              "type": "IdentExp"
+            },
+            "weight": 1,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "q",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["OI3"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "x",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 20
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI2",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "OI1"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "y",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "y",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "x",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "y",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 7
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "OI3",
+        "typeparams": [],
+        "extending": [{
+          "type": "ElementValue",
+          "element": "OI2"
+        }],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "z",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "z",
+                  "type": "ElementValue"
+                },
+                {
+                  "element": "y",
+                  "type": "ElementValue"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "z",
+              "type": "ElementValue"
+            },
+            "weight": 1,
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "q",
+        "ty": {
+          "type": "ElementValue",
+          "element": "OI3"
+        }
+      }
+    ],
+    "packages": []
+  }
+}
