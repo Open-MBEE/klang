@@ -6,6 +6,24 @@ Successfully upgraded the K language project from Z3 4.3.2 to Z3 4.13.0 with **m
 ## Date
 November 17-21, 2025
 
+## Update: Z3 4.15.4 (November 2026)
+The native libraries in `lib/` and `export/lib/` for `arm64`, `x86_64` and `linux` were later upgraded from 4.13.0 to **4.15.4** (the sections below describe the original 4.13.0 upgrade). Windows was not updated.
+
+- **Source**: official release zips (`z3-4.15.4-arm64-osx`, `-x64-osx`, `-x64-glibc`). The Python wheels don't ship `libz3java`.
+- **macOS**: the release `libz3java.dylib` depends on a bare `libz3.dylib`, so it must be patched and re-signed:
+  ```bash
+  install_name_tool -change libz3.dylib @loader_path/libz3.dylib libz3java.dylib
+  codesign --force -s - libz3java.dylib
+  ```
+- **Linux**: the 4.15.4 build requires GLIBC 2.38 (4.13.0 needed 2.34).
+- **Jars**: `com.microsoft.z3.jar` is still the 4.13-era binding; it works with the 4.15.4 natives.
+- **`select-z3-architecture.sh`** skips copying when libraries already exist, so after changing `lib/<platform>/` copy the files into `export/lib/` by hand.
+- **`z3` CLI**: the unsat-core step shells out to `z3` on the PATH (`pip install z3-solver==4.15.4.0`).
+- **Behavior differences vs 4.13.0**:
+  - Optimize now runs to its timeout where it used to give up early with `(incomplete (theory arithmetic))`, so `timeout_hard1.k` now returns TIMEOUT instead of UNKNOWN.
+  - The max-SAT partial-model Optimize runs are about 3x slower on `flight.k` at 8x instances.
+  - `ex_tree4_annotated.k` takes about 20-40s (11s on 4.13.0), so it sets `@preferred_options -timeout 60000`.
+
 ## Changes Made
 
 ### 1. Z3 Library Upgrade - Multi-Platform

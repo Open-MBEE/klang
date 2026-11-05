@@ -54,6 +54,8 @@ lib/
     └── com.microsoft.z3.jar
 ```
 
+These are Z3 4.15.4 builds (see `Z3_UPGRADE_NOTES.md`). The macOS `libz3java.dylib` files are patched to load `libz3.dylib` via `@loader_path`, and the Linux build needs GLIBC 2.38 or newer. The Windows directory has not been updated.
+
 ### 3. Automatic Platform Detection
 
 The `select-z3-architecture.sh` script automatically:
