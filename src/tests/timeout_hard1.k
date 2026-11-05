@@ -1,8 +1,8 @@
 // Test case for @timeout without @bestEffort
 // This problem is designed to be difficult enough to trigger a timeout
 // Uses non-linear constraints and large search space
-// Z3 returns UNKNOWN when it times out on difficult problems
-// @expected UNKNOWN
+// Z3 4.15+ reports TIMEOUT (4.13 gave UNKNOWN) when it times out on difficult problems
+// @expected TIMEOUT
 
 @timeout(500)  // 500ms timeout - should be too short for this problem
 class HardProblem1 {

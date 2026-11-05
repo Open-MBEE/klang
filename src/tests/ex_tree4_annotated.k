@@ -1,3 +1,4 @@
+// @preferred_options -timeout 60000
 // @expected SAT
 // Full binary tree of depth 4 - with explicit @instances annotations
 // This is a variant of ex_tree4.k that provides instance hints to the solver
