@@ -1822,7 +1822,37 @@ class TypeChecker(model: Model) {
           case LT | LTE | GT | GTE | AND | IMPL | OR | IFF | NEQ | EQ =>
             if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             BoolType
-          case MUL | DIV | ADD | SUB | REM =>
+          case ADD | SUB =>
+            // Time algebra: Time and Duration both lower to milliseconds in SMT,
+            // but combine with specific result types:
+            //   Time     + Duration -> Time        (and Duration + Time -> Time, for ADD)
+            //   Time     - Time     -> Duration
+            //   Time     - Duration -> Time
+            //   Duration +/- Duration -> Duration
+            // Any other mix of Time/Duration is a type error.
+            (ty1, ty2, op) match {
+              case (TimeType, DurationType, _)    => TimeType
+              case (DurationType, TimeType, ADD)  => TimeType
+              case (TimeType, TimeType, SUB)      => DurationType
+              case (DurationType, DurationType, _) => DurationType
+              case (TimeType, TimeType, ADD) =>
+                error(s"$exp does not type check. Cannot add two Time values; subtract them to get a Duration.")
+              case (DurationType, TimeType, SUB) =>
+                error(s"$exp does not type check. Cannot subtract a Time from a Duration.")
+              case _ =>
+                // Non-time arithmetic: fall back to the numeric/compatibility rule.
+                if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
+                (ty1, ty2) match {
+                  case (AnyType, _) => ty2
+                  case (_, AnyType) => ty1
+                  case (PythonExternalType(_), _) => ty2
+                  case (_, PythonExternalType(_)) => ty1
+                  case (ExternalType(_), _) => ty2
+                  case (_, ExternalType(_)) => ty1
+                  case _ => ty1
+                }
+            }
+          case MUL | DIV | REM =>
             // Use compatibility=true to allow implicit conversions (Int/Real, External/Real, etc.)
             if (!areTypesEqual(ty1, ty2, true)) error(s"$exp does not type check. $ty1 and $ty2 are not equivalent.")
             // Return the more specific type (prefer concrete types over AnyType, PythonExternalType, etc.)

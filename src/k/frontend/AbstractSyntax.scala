@@ -554,8 +554,8 @@ object UtilSMT {
           args.foreach(scanExp)
           
         case FunApplExp(DotExp(obj, funcName), args) =>
-          // Method call on an object - we'd need type info to resolve this
-          // For now, scan the object expression and args
+          // Method call on an object: resolve via the receiver's static type
+          receiverClassName(obj).map(c => s"$c.$funcName").filter(allFunctions.contains).foreach(calls += _)
           scanExp(obj)
           args.foreach(scanExp)
           
@@ -583,7 +583,50 @@ object UtilSMT {
     
     calls
   }
-  
+
+  /** Static class name of a method-call receiver, mirroring DotExp.toSMT's type lookup. */
+  private def receiverClassName(obj: Exp): Option[String] = {
+    val ty: Type = Option(TypeChecker.exp2Type.get(obj)).orElse {
+      obj match {
+        case ie: IdentExp if TypeChecker.exp2TypeEnv.containsKey(ie) =>
+          Option(TypeChecker.exp2TypeEnv.get(ie)).filter(_.contains(ie.ident)).map(_(ie.ident)).collect {
+            case ParamTypeInfo(p) => p.ty
+            case PropertyTypeInfo(decl, _, _, _) => decl.getType.orNull
+          }
+        case _ => None
+      }
+    }.orNull
+    ty match {
+      case it: IdentType => Some(it.toString)
+      case _ => None
+    }
+  }
+
+  /**
+   * Order (className, funDecl) pairs so that callees are defined before callers.
+   * The order is stable: the given order is kept wherever it is already valid, and a
+   * callee is hoisted only when it would otherwise be used before its definition.
+   * Mutually recursive groups (handled by define-funs-rec) are skipped.
+   */
+  def orderFunctionsByDependency(funcs: List[(String, FunDecl)]): List[(String, FunDecl)] = {
+    val byName: Map[String, (String, FunDecl)] = funcs.map(p => s"${p._1}.${p._2.ident}" -> p).toMap
+    val order = scala.collection.mutable.ListBuffer[(String, FunDecl)]()
+    val visited = scala.collection.mutable.Set[String]()
+    def visit(name: String): Unit = {
+      if (!visited.contains(name) && byName.contains(name)) {
+        visited += name
+        functionCallGraph.getOrElse(name, Set()).toList.sorted.foreach(visit)
+        order += byName(name)
+      }
+    }
+    funcs.foreach(p => visit(s"${p._1}.${p._2.ident}"))
+    order.toList
+  }
+
+  def methodsBlockToSMT(className: String, funDecls: List[FunDecl]): String =
+    if (funDecls.isEmpty) ""
+    else headline2(s"Methods for class $className") + funDecls.map(_.toSMT(className)).mkString("\n\n")
+
   /**
    * Find strongly connected components using Tarjan's algorithm.
    * Returns list of SCCs, where each SCC is a set of function fullNames.
@@ -1827,13 +1870,18 @@ case class Model(packageName: Option[String], packages: List[PackageDecl], impor
     // Generate remaining methods (non-mutually-recursive):
 
     result2 += UtilSMT.headline1("Methods")
-    for (ed <- entityDecls) {
-      val methodsSMT: String = ed.toSMTMethods
-      if (methodsSMT != "") {
-        result2 += methodsSMT + "\n"
+    // Emit in dependency order (callees first), grouping consecutive methods of the same class
+    val orderedMethods = UtilSMT.orderFunctionsByDependency(
+      entityDecls.flatMap(ed => ed.remainingMethods.map(fd => (ed.ident, fd))))
+    def emitMethodRuns(methods: List[(String, FunDecl)]): Unit = methods match {
+      case Nil =>
+      case (cls, _) :: _ =>
+        val (run, rest) = methods.span(_._1 == cls)
+        result2 += UtilSMT.methodsBlockToSMT(cls, run.map(_._2)) + "\n"
         result2 += "\n"
-      }
+        emitMethodRuns(rest)
     }
+    emitMethodRuns(orderedMethods)
 
     // Generate invariants:
 
@@ -2266,19 +2314,11 @@ case class EntityDecl(
     result
   }
 
-  def toSMTMethods: String = {
-    var result: String = ""
-    val funDecls = UtilSMT.compressFunDecls(getAllFunDecls)
-    if (!funDecls.isEmpty) {
-      // Filter out functions that were already processed by mutual recursion handling
-      val remainingFunDecls = funDecls.filterNot(fd => UtilSMT.isFunctionProcessed(ident, fd.ident))
-      if (remainingFunDecls.nonEmpty) {
-        result += UtilSMT.headline2(s"Methods for class $ident")
-        result += remainingFunDecls.map(_.toSMT(ident)).mkString("\n\n")
-      }
-    }
-    result
-  }
+  /** Methods still to be emitted as define-funs (i.e. not part of a mutual recursion group). */
+  def remainingMethods: List[FunDecl] =
+    UtilSMT.compressFunDecls(getAllFunDecls).filterNot(fd => UtilSMT.isFunctionProcessed(ident, fd.ident))
+
+  def toSMTMethods: String = UtilSMT.methodsBlockToSMT(ident, remainingMethods)
 
   def toSMTInvariant: String = {
     var constraints: List[String] = Nil
@@ -6694,20 +6734,14 @@ case class DateLiteral(s: String) extends Literal {
     value.put("type", "LiteralString").put("string", toString.replaceAll("\"", ""))
   }
   override def toSMT(className: String, subTyping: Boolean): String = {
-    // Convert ISO timestamp to milliseconds since epoch
+    // Convert ISO timestamp to MICROSECONDS since epoch. Time and Duration
+    // must share the same unit in SMT so that Time +/- Duration arithmetic is
+    // correct; TimeParser lowers Duration literals to microseconds, so Time
+    // literals use microseconds too (via TimeParser.parseDateTime).
     try {
-      val instant = java.time.Instant.parse(s)
-      instant.toEpochMilli.toString
+      TimeParser.parseDateTime(s).toString
     } catch {
-      case _: Exception =>
-        // Try parsing as LocalDateTime (without timezone) and assume UTC
-        try {
-          val ldt = java.time.LocalDateTime.parse(s)
-          val instant = ldt.toInstant(java.time.ZoneOffset.UTC)
-          instant.toEpochMilli.toString
-        } catch {
-          case _: Exception => s // fallback to string if all parse fails
-        }
+      case _: Exception => s // fallback to string if parse fails
     }
   }
 }
