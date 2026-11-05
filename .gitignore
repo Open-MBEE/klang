@@ -63,3 +63,4 @@ src/examples/baseline/*.k.2.json
 src/tests/output/
 src/examples/output/
 __pycache__/
+src/failing/output/
