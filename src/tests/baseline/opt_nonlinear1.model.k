@@ -4,5 +4,5 @@
 
 -- 2 constraints extracted
 
--- OptNonlinear1 instance: 6
 -- TopLevelDeclarations instance: 1
+-- OptNonlinear1 instance: 7

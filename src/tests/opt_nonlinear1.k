@@ -1,5 +1,5 @@
 // @expected SAT
-// KNOWN LIMITATION: Z3 Optimize reports SAT but returns non-optimal x=6 for this nonlinear objective (true optimum x=7)
+// Test: nonlinear objective; Z3 Optimize alone returns x=6, optimality refinement must reach x=7
 class OptNonlinear1 {
   x : Int
   req x >= 0

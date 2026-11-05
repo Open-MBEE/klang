@@ -1635,8 +1635,9 @@ object UnifiedSolver {
         case Status.SATISFIABLE =>
           val m = opt.getModel
           log(s" Optimize: SAT, objectives = ${opt.getObjectives.map(_.toString).mkString(", ")}")
-          K2Z3.z3Model = m
-          SolveResult.Sat(m)
+          val improved = refineSingleObjective(smtModel, config, m)
+          K2Z3.z3Model = improved
+          SolveResult.Sat(improved)
         case other =>
           log(s" Optimize returned $other - using unoptimized solution (${opt.getReasonUnknown})")
           System.err.println(s"[WARNING] Optimization did not complete ($other: ${opt.getReasonUnknown}); result may not be optimal (nonlinear objectives are often unsupported)")
@@ -1649,6 +1650,63 @@ object UnifiedSolver {
         System.err.println(s"[WARNING] Optimization failed (${e.getMessage}); result may not be optimal")
         K2Z3.z3Model = fallback
         SolveResult.Sat(fallback)
+    }
+  }
+
+  /**
+   * Z3's Optimize can return SAT with a non-optimal model for nonlinear objectives.
+   * For a single minimize/maximize objective (no soft constraints), verify optimality with the
+   * regular Solver by asking for a strictly better value, and keep improving until none exists.
+   */
+  private def refineSingleObjective(smtModel: String, config: SolveConfig,
+                                    start: Z3Model): Z3Model = {
+    val lines = smtModel.linesIterator.map(_.trim).toList
+    val objLines = lines.filter(l => l.startsWith("(minimize ") || l.startsWith("(maximize "))
+    if (objLines.size != 1 || smtModel.contains(":id k_soft")) return start
+    val isMax = objLines.head.startsWith("(maximize ")
+    // Z3 may negate maximize objectives internally, so rebuild the term from the SMT text
+    val term = objLines.head.stripPrefix("(maximize ").stripPrefix("(minimize ").stripSuffix(")")
+    val baseSmt = lines.filterNot(l => l.startsWith("(minimize ") || l.startsWith("(maximize ")).mkString("\n")
+    try {
+      val solver = K2Z3.ctx.mkSolver()
+      config.timeout.foreach { ms =>
+        val p = K2Z3.ctx.mkParams()
+        p.add("timeout", ms.toInt)
+        solver.setParameters(p)
+      }
+      val parsed = K2Z3.ctx.parseSMTLIB2String(baseSmt + "\n(assert (> " + term + " 0))",
+        Array(), Array(), Array(), Array())
+      val obj = parsed.last.getArgs()(0).asInstanceOf[ArithExpr[ArithSort]]
+      solver.add(parsed.dropRight(1): _*)
+      var best = start
+      var iterations = 0
+      var done = false
+      while (!done && iterations < 100) {
+        iterations += 1
+        val value = best.eval(obj, true).asInstanceOf[ArithExpr[ArithSort]]
+        val better = if (isMax) K2Z3.ctx.mkGt(obj, value) else K2Z3.ctx.mkLt(obj, value)
+        solver.push()
+        solver.add(better)
+        solver.check() match {
+          case Status.SATISFIABLE =>
+            best = solver.getModel
+            solver.pop()
+          case Status.UNSATISFIABLE =>
+            solver.pop()
+            done = true
+          case _ =>
+            solver.pop()
+            System.err.println("[WARNING] Could not verify optimality of the objective")
+            done = true
+        }
+      }
+      if (!done) System.err.println("[WARNING] Optimality refinement stopped after 100 iterations; result may not be optimal")
+      else if (iterations > 1) log(s" Optimize returned a non-optimal model; refined in ${iterations - 1} step(s)")
+      best
+    } catch {
+      case e: Throwable =>
+        log(s" Optimality check failed (${e.getMessage})")
+        start
     }
   }
 
