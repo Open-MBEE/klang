@@ -2010,6 +2010,10 @@ class TypeChecker(model: Model) {
         if (getExpType(te, args(0).asInstanceOf[PositionalArgument].exp, owner) != StringType) error("timelineValue file must be a String literal")
         if (getExpType(te, args(1).asInstanceOf[PositionalArgument].exp, owner) != TimeType) error("timelineValue second argument must be a Time")
         DurationType
+      case FunApplExp(IdentExp("constDuration"), args) =>
+        if (args.length != 2) error("constDuration(file, name) takes 2 arguments")
+        args.foreach(a => if (getExpType(te, a.asInstanceOf[PositionalArgument].exp, owner) != StringType) error("constDuration arguments must be String literals"))
+        DurationType
       case FunApplExp(IdentExp("eventTime"), args) =>
         if (args.length != 2) error("eventTime(file, name) takes 2 arguments")
         args.foreach(a => if (getExpType(te, a.asInstanceOf[PositionalArgument].exp, owner) != StringType) error("eventTime arguments must be String literals"))

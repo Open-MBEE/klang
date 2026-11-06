@@ -12,6 +12,7 @@ import scala.jdk.CollectionConverters._
  * K surface (intrinsics, no new grammar):
  *   timelineValue("file.csv", t, "ms")  : Duration   -- file value column is seconds; t is a Time
  *   eventTime("file.csv", "eventName")  : Time       -- file columns: event,time
+ *   constDuration("file.csv", "NAME")   : Duration   -- file columns: name,seconds
  *
  * timelineValue(t) lowers to a balanced if-then-else tree over the segments, with constant
  * coefficients only, so it is linear arithmetic in microseconds (t is the only variable):
@@ -75,6 +76,14 @@ object TimelineSupport {
     if (args.length != 2) UtilSMT.error("eventTime(file, name) takes 2 arguments")
     val f = strArg(args(0), "eventTime file"); val n = strArg(args(1), "eventTime name")
     loadEvents(f).getOrElse(n, UtilSMT.error(s"eventTime: no event '$n' in $f")).toString
+  }
+
+  def constDurationSMT(args: List[Argument]): String = {
+    if (args.length != 2) UtilSMT.error("constDuration(file, name) takes 2 arguments")
+    val f = strArg(args(0), "constDuration file"); val n = strArg(args(1), "constDuration name")
+    val row = Files.readAllLines(resolve(f)).asScala.drop(1).map(_.split(",").map(_.trim)).find(_(0) == n)
+      .getOrElse(UtilSMT.error(s"constDuration: no constant '$n' in $f"))
+    new BD(row(1)).movePointRight(6).setScale(0, java.math.RoundingMode.HALF_UP).toBigInteger.toString
   }
 
   def valueAtSMT(args: List[Argument], className: String, subTyping: Boolean): String = {

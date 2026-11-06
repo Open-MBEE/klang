@@ -4049,6 +4049,7 @@ trait CallApplExp extends Exp {
     exp1 match {
       case IdentExp("timelineValue") => return TimelineSupport.valueAtSMT(args, className, subTyping)
       case IdentExp("eventTime")     => return TimelineSupport.eventTimeSMT(args)
+      case IdentExp("constDuration") => return TimelineSupport.constDurationSMT(args)
       case _ =>
     }
     // Handle collect(...).sum() pattern specially
