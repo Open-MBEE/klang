@@ -1,0 +1,300 @@
+{
+  "name": "soft_mixed_weight1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass SoftMixed1 {\n  on:Bool\n  n:Int\n\n  req n >= 0\n\n  req n <= 10\n\n  req on = (n > 5)\n\n  soft req on weight 3\n\n  soft req !on\n  maximize n\n}\n\nmain:SoftMixed1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((SoftMixed1 (mk-SoftMixed1 (on Bool)(n Int)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-SoftMixed1 (sel-SoftMixed1 SoftMixed1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-SoftMixed1 ((this Ref)) Bool\n  (is-lift-SoftMixed1 (deref this))\n)\n\n(define-fun deref-SoftMixed1 ((this Ref)) SoftMixed1\n  (sel-SoftMixed1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-SoftMixed1 ((this Ref)) Bool\n  (deref-is-SoftMixed1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; ---------------------------------\n;   Getters for class SoftMixed1:\n; ---------------------------------\n\n; --- getters for SoftMixed1.on: ---\n\n(define-fun SoftMixed1!on ((this Ref)) Bool\n  (on (deref-SoftMixed1 this))\n)\n\n; --- getters for SoftMixed1.n: ---\n\n(define-fun SoftMixed1!n ((this Ref)) Int\n  (n (deref-SoftMixed1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-SoftMixed1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; -----------------------------------\n;   Invariant for class SoftMixed1:\n; -----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-SoftMixed1 SoftMixed1)\n\n; --- Invariant 1: ---\n\n(define-fun SoftMixed1.inv1 ((this Ref)) Bool\n  (>= (SoftMixed1!n this) 0)\n)\n\n(assert (! (SoftMixed1.inv1 1) :named _xkassert1))\n\n; --- Invariant 2: ---\n\n(define-fun SoftMixed1.inv2 ((this Ref)) Bool\n  (<= (SoftMixed1!n this) 10)\n)\n\n(assert (! (SoftMixed1.inv2 1) :named _xkassert2))\n\n; --- Invariant 3: ---\n\n(define-fun SoftMixed1.inv3 ((this Ref)) Bool\n  (= (SoftMixed1!on this) (> (SoftMixed1!n this) 5))\n)\n\n(assert (! (SoftMixed1.inv3 1) :named _xkassert3))\n\n; --- Soft Constraint 4: ---\n\n(define-fun SoftMixed1.soft4 ((this Ref)) Bool\n  (SoftMixed1!on this)\n)\n\n(assert-soft (SoftMixed1.soft4 1) :weight 3 :id k_soft)\n\n; --- Soft Constraint 5: ---\n\n(define-fun SoftMixed1.soft5 ((this Ref)) Bool\n  (not (SoftMixed1!on this))\n)\n\n(assert-soft (SoftMixed1.soft5 1) :weight 1 :id k_soft)\n\n\n\n\n; ================================\n; === Optimization Objectives: ===\n; ================================\n\n(maximize (let ((this 1)) (SoftMixed1!n this)))\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-SoftMixed1 const-1-SoftMixed1))\n  )\n)\n\n",
+  "smtModel": "(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun const-1-SoftMixed1 () SoftMixed1\n  (mk-SoftMixed1 true 10))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-SoftMixed1 a!1)))\n(define-fun _xkassert2 () Bool\n  (<= (n (sel-SoftMixed1 (select heap 1))) 10))\n(define-fun _xkassert3 () Bool\n  (let ((a!1 (> (n (sel-SoftMixed1 (select heap 1))) 5)))\n  (= (on (sel-SoftMixed1 (select heap 1))) a!1)))\n(define-fun _xkassert1 () Bool\n  (>= (n (sel-SoftMixed1 (select heap 1))) 0))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-SoftMixed1 (mk-SoftMixed1 true 10))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SoftMixed1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "on",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "n",
+            "ty": {"type": "IntType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "GTE",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 0,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "LTE",
+              "exp1": {
+                "ident": "n",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "i": 10,
+                "type": "LiteralInteger"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "BinExp",
+              "op": "EQ",
+              "exp1": {
+                "ident": "on",
+                "type": "IdentExp"
+              },
+              "exp2": {
+                "exp": {
+                  "type": "BinExp",
+                  "op": "GT",
+                  "exp1": {
+                    "ident": "n",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "i": 5,
+                    "type": "LiteralInteger"
+                  }
+                },
+                "type": "ParenExp"
+              }
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "ident": "on",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "exp": {
+                "ident": "on",
+                "type": "IdentExp"
+              },
+              "type": "UnaryExp",
+              "op": "Not"
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "ident": "n",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["SoftMixed1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SoftMixed1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "on",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "n",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Integer"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "GTE"
+                },
+                {
+                  "element": "n",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 0
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "LTE"
+                },
+                {
+                  "element": "n",
+                  "type": "ElementValue"
+                },
+                {
+                  "type": "LiteralInteger",
+                  "integer": 10
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "EQ"
+                },
+                {
+                  "element": "on",
+                  "type": "ElementValue"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "GT"
+                    },
+                    {
+                      "element": "n",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "type": "LiteralInteger",
+                      "integer": 5
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ],
+              "type": "Expression"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "element": "on",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Not"
+                },
+                {
+                  "element": "on",
+                  "type": "ElementValue"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "OptimizeDecl",
+            "kind": "maximize",
+            "exp": {
+              "element": "n",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "SoftMixed1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}

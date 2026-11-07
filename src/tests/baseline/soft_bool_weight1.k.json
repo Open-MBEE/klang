@@ -1,0 +1,187 @@
+{
+  "name": "soft_bool_weight1.k",
+  "outcome": "SAT",
+  "typeChecks": true,
+  "model": "\nclass SoftBool1 {\n  a:Bool\n  b:Bool\n\n  req !(a && b)\n\n  soft req a\n\n  soft req b weight 4\n}\n\nmain:SoftBool1\n\n",
+  "smt": "; ================\n; === Options: ===\n; ================\n\n(set-option :smt.macro-finder true)\n\n; ======================\n; === String Theory: ===\n; ======================\n\n; Z3 4.13.0+ requires explicit logic or theory declaration for strings\n(set-logic ALL)\n\n; ===========================\n; === Built-in datatypes: ===\n; ===========================\n\n(define-sort Ref () Int)\n\n(declare-datatypes (T1 T2) ((Tuple2 (mk-Tuple2 (_1 T1)(_2 T2)))))\n(declare-datatypes (T1 T2 T3) ((Tuple3 (mk-Tuple3 (_1 T1)(_2 T2)(_3 T3)))))\n\n\n; ===============================\n; === User-defined datatypes: ===\n; ===============================\n\n(declare-datatypes () ((TopLevelDeclarations (mk-TopLevelDeclarations (main Ref)))))\n(declare-datatypes () ((SoftBool1 (mk-SoftBool1 (a Bool)(b Bool)))))\n\n; =============\n; === Heap: ===\n; =============\n\n(declare-datatypes () ((Any\n  (lift-TopLevelDeclarations (sel-TopLevelDeclarations TopLevelDeclarations))\n  (lift-SoftBool1 (sel-SoftBool1 SoftBool1))\n  null))\n)\n\n(declare-const heap (Array Ref Any))\n(declare-const NULL$ String)\n(declare-const NULL$Ref Ref)\n(assert (= NULL$Ref (- 1)))\n\n(define-fun deref ((ref Ref)) Any\n  (select heap ref)\n)\n\n; ==========================================\n; === Class specific is/deref-functions: ===\n; ==========================================\n\n(define-fun deref-is-TopLevelDeclarations ((this Ref)) Bool\n  (is-lift-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-TopLevelDeclarations ((this Ref)) TopLevelDeclarations\n  (sel-TopLevelDeclarations (deref this))\n)\n\n(define-fun deref-is-SoftBool1 ((this Ref)) Bool\n  (is-lift-SoftBool1 (deref this))\n)\n\n(define-fun deref-SoftBool1 ((this Ref)) SoftBool1\n  (sel-SoftBool1 (deref this))\n)\n\n; ======================\n; === Isa-functions: ===\n; ======================\n\n(define-fun deref-isa-TopLevelDeclarations ((this Ref)) Bool\n  (deref-is-TopLevelDeclarations this)\n)\n\n(define-fun deref-isa-SoftBool1 ((this Ref)) Bool\n  (deref-is-SoftBool1 this)\n)\n\n; ================\n; === Getters: ===\n; ================\n\n; -------------------------------------------\n;   Getters for class TopLevelDeclarations:\n; -------------------------------------------\n\n; --- getters for TopLevelDeclarations.main: ---\n\n(define-fun TopLevelDeclarations!main ((this Ref)) Ref\n  (main (deref-TopLevelDeclarations this))\n)\n\n; --------------------------------\n;   Getters for class SoftBool1:\n; --------------------------------\n\n; --- getters for SoftBool1.a: ---\n\n(define-fun SoftBool1!a ((this Ref)) Bool\n  (a (deref-SoftBool1 this))\n)\n\n; --- getters for SoftBool1.b: ---\n\n(define-fun SoftBool1!b ((this Ref)) Bool\n  (b (deref-SoftBool1 this))\n)\n\n; ================\n; === Methods: ===\n; ================\n\n; ===================\n; === Invariants: ===\n; ===================\n\n; ---------------------------------------------\n;   Invariant for class TopLevelDeclarations:\n; ---------------------------------------------\n\n; --- Constants: ---\n\n(declare-const const-0-TopLevelDeclarations TopLevelDeclarations)\n\n; --- Invariant 1: ---\n\n(define-fun TopLevelDeclarations.inv1 ((this Ref)) Bool\n  (deref-isa-SoftBool1 (TopLevelDeclarations!main this))\n)\n\n(assert (! (TopLevelDeclarations.inv1 0) :named _xkassert0))\n\n\n\n; ----------------------------------\n;   Invariant for class SoftBool1:\n; ----------------------------------\n\n; --- Constants: ---\n\n(declare-const const-1-SoftBool1 SoftBool1)\n\n; --- Invariant 1: ---\n\n(define-fun SoftBool1.inv1 ((this Ref)) Bool\n  (not (and (SoftBool1!a this) (SoftBool1!b this)))\n)\n\n(assert (! (SoftBool1.inv1 1) :named _xkassert1))\n\n; --- Soft Constraint 2: ---\n\n(define-fun SoftBool1.soft2 ((this Ref)) Bool\n  (SoftBool1!a this)\n)\n\n(assert-soft (SoftBool1.soft2 1) :weight 1 :id k_soft)\n\n; --- Soft Constraint 3: ---\n\n(define-fun SoftBool1.soft3 ((this Ref)) Bool\n  (SoftBool1!b this)\n)\n\n(assert-soft (SoftBool1.soft3 1) :weight 4 :id k_soft)\n\n\n\n\n; ======================\n; === Generate heap: ===\n; ======================\n\n(assert\n  (=\n    heap\n    (store(store\n      ((as const (Array Ref Any)) null)\n        0 (lift-TopLevelDeclarations const-0-TopLevelDeclarations))\n        1 (lift-SoftBool1 const-1-SoftBool1))\n  )\n)\n\n",
+  "smtModel": "(define-fun _xkassert1 () Bool\n  (let ((a!1 (and (a (sel-SoftBool1 (select heap 1)))\n                (b (sel-SoftBool1 (select heap 1))))))\n  (not a!1)))\n(define-fun const-0-TopLevelDeclarations () TopLevelDeclarations\n  (mk-TopLevelDeclarations 1))\n(define-fun _xkassert0 () Bool\n  (let ((a!1 (select heap (main (sel-TopLevelDeclarations (select heap 0))))))\n  (is-lift-SoftBool1 a!1)))\n(define-fun const-1-SoftBool1 () SoftBool1\n  (mk-SoftBool1 false true))\n(define-fun NULL$Ref () Int\n  (- 1))\n(define-fun heap () (Array Int Any)\n  (store (store ((as const (Array Int Any)) null)\n              0\n              (lift-TopLevelDeclarations (mk-TopLevelDeclarations 1)))\n       1\n       (lift-SoftBool1 (mk-SoftBool1 false true))))",
+  "json1": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SoftBool1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {"type": "BoolType"}
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "exp": {
+                "exp": {
+                  "type": "BinExp",
+                  "op": "And",
+                  "exp1": {
+                    "ident": "a",
+                    "type": "IdentExp"
+                  },
+                  "exp2": {
+                    "ident": "b",
+                    "type": "IdentExp"
+                  }
+                },
+                "type": "ParenExp"
+              },
+              "type": "UnaryExp",
+              "op": "Not"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "ident": "a",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "ident": "b",
+              "type": "IdentExp"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "args": [],
+          "ident": {
+            "names": ["SoftBool1"],
+            "type": "QualifiedName"
+          },
+          "type": "IdentType"
+        }
+      }
+    ],
+    "packages": []
+  },
+  "json2": {
+    "type": "Model",
+    "imports": [],
+    "annotations": [],
+    "decls": [
+      {
+        "type": "EntityDecl",
+        "annotations": [],
+        "entityToken": "class",
+        "ident": "SoftBool1",
+        "typeparams": [],
+        "extending": [],
+        "members": [
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "a",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "PropertyDecl",
+            "modifiers": [],
+            "annotations": [],
+            "name": "b",
+            "ty": {
+              "type": "ElementValue",
+              "element": "Boolean"
+            }
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "type": "Expression",
+              "operand": [
+                {
+                  "type": "ElementValue",
+                  "element": "Not"
+                },
+                {
+                  "operand": [
+                    {
+                      "type": "ElementValue",
+                      "element": "And"
+                    },
+                    {
+                      "element": "a",
+                      "type": "ElementValue"
+                    },
+                    {
+                      "element": "b",
+                      "type": "ElementValue"
+                    }
+                  ],
+                  "type": "Expression"
+                }
+              ]
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "element": "a",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          },
+          {
+            "type": "ConstraintDecl",
+            "exp": {
+              "element": "b",
+              "type": "ElementValue"
+            },
+            "annotations": []
+          }
+        ]
+      },
+      {
+        "type": "PropertyDecl",
+        "modifiers": [],
+        "annotations": [],
+        "name": "main",
+        "ty": {
+          "type": "ElementValue",
+          "element": "SoftBool1"
+        }
+      }
+    ],
+    "packages": []
+  }
+}
