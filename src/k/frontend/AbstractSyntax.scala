@@ -34,6 +34,10 @@ object ASTOptions {
    *  See docs/HEAP_INSTANCE_STRATEGY.md for details.
    */
   var useHeapUsedFlags: Boolean = true
+
+  /** Scalarize heap objects: each field of a fixed-heap object is its own SMT constant (the object constant becomes a macro
+   *  over them) so Z3 can constant-fold field values instead of reasoning through datatype accessors. */
+  var scalarizeHeap: Boolean = true
   
   /** Defer subclass instance creation to later CEGAR iterations.
    *  When true, propagateInstancesToSubclasses() is skipped on iteration 1.
@@ -2379,9 +2383,14 @@ case class EntityDecl(
     // generate instances:
 
     result += UtilSMT.headline3("Constants")
+    val scalarFields = if (ASTOptions.scalarizeHeap && !ASTOptions.cvc5Compatible) getAllPropertyDecls.map(pd => (pd.name, pd.getTypeOrError.toSMT)) else Nil
     for (index <- heapEntries) {
       val const = s"const-$index-$ident"
-      result += s"(declare-const $const $ident)\n"
+      if (scalarFields.nonEmpty) {
+        for ((fname, fsort) <- scalarFields) result += s"(declare-const $const!$fname $fsort)\n"
+        result += s"(define-fun $const () $ident (mk-$ident ${scalarFields.map { case (fname, _) => s"$const!$fname" }.mkString(" ")}))\n"
+      } else
+        result += s"(declare-const $const $ident)\n"
       UtilSMT.heapInitializerConstants ::= (index, ident, const)
     }
     result += "\n"
@@ -2471,9 +2480,15 @@ case class EntityDecl(
         result += "\n"
       } else {
         // Standard constraint through getter (works for non-lambda types)
+        // Scalarized heap: a constructor-initialized reference to a class with exactly one heap slot is that slot.
+        val pinnedRef: Option[Int] = exp match {
+          case FunApplExp(IdentExp(cn), _) if ASTOptions.scalarizeHeap && UtilSMT.isClassName(ty) =>
+            Some(UtilSMT.objectGraph.getHeapEntries(cn)).filter(_.size == 1).map(_.head)
+          case _ => None
+        }
         var constraintSMT =
           if (UtilSMT.isClassName(ty) && UtilSMT.isConstructorAppl(exp))
-            s"(= (deref ($getter this)) $expSMT)"
+            pinnedRef.map(r => s"(and (= ($getter this) $r) (= (deref ($getter this)) $expSMT))").getOrElse(s"(= (deref ($getter this)) $expSMT)")
           else
             s"(= ($getter this) $expSMT)"
 

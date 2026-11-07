@@ -238,6 +238,7 @@ object Frontend {
       case "-jsonToExpression" :: value :: tail =>
         parseArgs(map ++ Map('json -> value), tail)
       case "-postnobody" :: tail => parseArgs(map ++ Map('postnobody -> true), tail)
+      case "-no-scalarize" :: tail => ASTOptions.scalarizeHeap = false; parseArgs(map, tail)
       case "-unified" :: tail => parseArgs(map ++ Map('unified -> true), tail)
       case "-unified-scenarios" :: tail => parseArgs(map ++ Map('unifiedScenarios -> true), tail)
       case "-dsn-pass" :: tail => parseArgs(map ++ Map('dsnPass -> true), tail) // DSN_Pass.k solver (scenario-based incremental)
