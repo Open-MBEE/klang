@@ -129,6 +129,38 @@ constants would be extra columns or a second file keyed by `flyby`. Undecided: a
 fixed number N of objects with an indexed lookup, or something else. The user did not like the simple variants (reasons not stated);
 ask before choosing.
 
+## 6b. Decision (user, 2026-11-06): how encounters become objects
+
+The recommendation in section 4 was accepted, which resolves section 6 without a new object-creating intrinsic:
+- The K file declares ALL encounters as ordinary instances (the list is data produced once from the encounter table; it is not
+  a per-period choice). The period is part of the K problem: `planStart`/`planEnd` are K values and each `Flyby` has
+  `active = ca >= planStart - margin && ca <= planEnd + margin` (or window intersection).
+- Everything for an encounter is looked up by its name/segment, e.g. `Timeline("SlewDur_EARTH_NADIRAPP_match.csv", segment = name)`
+  and `eventTime("encounters.csv", name + ".ca")`. The segment restriction makes each lookup a tree over only that encounter's rows
+  (hundreds, not 34,000). Needs: (a) `Timeline` with a segment key that is a constant per object (string field of a fixed-heap,
+  scalarized object), (b) constant folding so lookups whose arguments are ground collapse to numbers, which makes inactive encounters
+  nearly free, and guards `active =>` on the rest.
+- Sketch of the intended K (not implemented; this is the acceptance target):
+```
+planStart : Time = 2031-03-01T00:00:00
+planEnd   : Time = 2031-03-31T00:00:00
+
+class Turn(from, to) { ... }        // endpoints chosen by name; durations from Timeline("SlewDur_<from>_<to>_match.csv"...)
+
+class Flyby {
+  name : String                     // also the segment key of every timeline file
+  ca, approachIn, nadirIn, nadirOut, approachOut : Time      // from the encounter table
+  active : Bool = ca >= planStart && ca <= planEnd
+  earthToApp : SlewTurn = SlewTurn(from::"EARTH", to::"NADIRAPP", segment::name, endsAt::approachIn)
+  appToRam   : SlewTurn = SlewTurn(from::"NADIRAPP", to::"NADIRRAM", segment::name, endsAt::nadirIn - pad - settle)
+  ...
+  req active => earthToApp.start >= ca - 3d      // etc.
+}
+f1 : Flyby = Flyby(name::"G01") ; f2 : Flyby = Flyby(name::"G02") ; ...   // all 69, generated
+```
+- Open points for the implementer: how a `String` field becomes the (literal) segment argument at lowering time for a scalarized object;
+  whether `Flyby(name::"E01")` can pull its row (`ca`, crossings) through `eventTime("encounters.csv", name+".ca")` at lowering time.
+
 ## 7. How to reproduce
 
 ```sh
