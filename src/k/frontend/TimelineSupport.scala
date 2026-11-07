@@ -18,10 +18,11 @@ import scala.jdk.CollectionConverters._
  * coefficients only, so it is linear arithmetic in microseconds (t is the only variable):
  *   v = V_k + (V_k+1 - V_k)/(T_k+1 - T_k) * (t - T_k)    for T_k <= t < T_k+1
  * Rounding ("ms" or "us") reproduces Math.round(seconds*1000) style conversions: floor(x + 0.5).
+ * An optional third CSV column names a segment (e.g. a flyby); between segments the value is held constant.
  * Outside the sampled range the first/last segment is extrapolated; models must bound t.
  */
 object TimelineSupport {
-  case class Timeline(times: Array[Long], valuesUs: Array[BD])
+  case class Timeline(times: Array[Long], valuesUs: Array[BD], segments: Array[String])
 
   private val timelineCache = TrieMap[String, Timeline]()
   private val eventCache = TrieMap[String, Map[String, Long]]()
@@ -45,7 +46,9 @@ object TimelineSupport {
     val ts = rows.map(r => parseInstantUs(r(0))).toArray
     val vs = rows.map(r => new BD(r(1)).movePointRight(6)).toArray
     for (i <- 1 until ts.length) if (ts(i) <= ts(i - 1)) UtilSMT.error(s"Timeline $file: times must increase (row ${i + 1})")
-    Timeline(ts, vs)
+    // optional third column: segment id; the value is held (constant) between the last point of one segment and the first of the next
+    val sg = rows.map(r => if (r.length > 2) r(2) else "").toArray
+    Timeline(ts, vs, sg)
   })
 
   def loadEvents(file: String): Map[String, Long] = eventCache.getOrElseUpdate(file,
@@ -99,6 +102,7 @@ object TimelineSupport {
     val tv = s"tl_t$counter"
     val tSMT = args(1).toSMT(className, subTyping)
     def seg(k: Int): String = {
+      if (tl.segments(k) != tl.segments(k + 1)) return decimalOver(tl.valuesUs(k), 1)
       val dt = tl.times(k + 1) - tl.times(k)
       val dv = tl.valuesUs(k + 1).subtract(tl.valuesUs(k))
       s"(+ ${decimalOver(tl.valuesUs(k), 1)} (* ${decimalOver(dv, dt)} (to_real (- $tv ${tl.times(k)}))))"
